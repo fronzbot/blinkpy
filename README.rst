@@ -22,35 +22,36 @@ This library was built with the intention of allowing easy communication with Bl
 **Usage**
 =========
 In terms of usage, you just need to instantiate the module with a username and password:
-``
-import blinkpy
 
-blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD')
-``
+::
+  import blinkpy
+
+  blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD')
+
 
 If you leave out either of those parameters, you need to call the login function which will prompt for your username and password
-``
-blink.login()
-``
+::
+  blink.login()
+
 
 Once the login information is entered, you can run the `setup_system()` function which will attempt to authenticate with Blink servers using your username and password, obtain network ids, and create a list of cameras.
 The cameras are of a BlinkCamera class, of which the following parameters can be used (the code below creates a Blink object and iterates through each camera found)
-``
-blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD')
-blink.setup_system()
+::
+  blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD')
+  blink.setup_system()
 
-for camera in blink.cameras:
-    print(camera.name)          # Name of the camera
-    print(camera.id)            # Integer id of the camera (assigned by Blink)
-    print(camera.armed)        # Whether the device is armed/disarmed (ie. detecting motion)
-    print(camera.clip)          # Link to last motion clip captured
-    print(camera.thumbnail)     # Link to current camera thumbnail
-    print(camera.temperature)   # Current camera temperature (not super accurate, but might be useful for someone)
-    print(camera.battery)       # Current battery level... I think the value ranges from 0-3, but not quite sure yet.
-    print(camera.notifications) # Number of unread notifications (ie. motion alerts that haven't been viewed)
-    print(camera.motion)        # Dictionary containing values for keys ['video', 'image', 'time']
+  for camera in blink.cameras:
+      print(camera.name)          # Name of the camera
+      print(camera.id)            # Integer id of the camera (assigned by Blink)
+      print(camera.armed)        # Whether the device is armed/disarmed (ie. detecting motion)
+      print(camera.clip)          # Link to last motion clip captured
+      print(camera.thumbnail)     # Link to current camera thumbnail
+      print(camera.temperature)   # Current camera temperature (not super accurate, but might be useful for someone)
+      print(camera.battery)       # Current battery level... I think the value ranges from 0-3, but not quite sure yet.
+      print(camera.notifications) # Number of unread notifications (ie. motion alerts that haven't been viewed)
+      print(camera.motion)        # Dictionary containing values for keys ['video', 'image', 'time']
                                 # which correspond to last motion recorded, thumbnail of last motion, and timestamp of last motion
-``
+
 
 **class Blink**
 ---------------
@@ -100,12 +101,12 @@ Retrieves the network_id and account_id from Blink in order to access video and 
 
 **Blink.setup_system()**
 A wrapper script that calls:
-``
-self.get_auth_token()
-self.get_ids()
-self.get_camers()
-self.set_links()
-``
+::
+  self.get_auth_token()
+  self.get_ids()
+  self.get_camers()
+  self.set_links()
+
 
 **class BlinkCamera**
 ---------------------
