@@ -22,7 +22,6 @@ This library was built with the intention of allowing easy communication with Bl
 **Usage**
 =========
 In terms of usage, you just need to instantiate the module with a username and password
-
 ::
   import blinkpy
   blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD')
