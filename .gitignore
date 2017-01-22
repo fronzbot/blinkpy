@@ -1,0 +1,10 @@
+.cache/*
+.tox/*
+__pycache__/*
+htmlcov/*
+.coverage
+*.pyc
+*.egg*/*
+dist/*
+MANIFEST
+README
