@@ -8,3 +8,4 @@ htmlcov/*
 dist/*
 MANIFEST
 README
+.sh

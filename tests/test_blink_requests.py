@@ -4,7 +4,6 @@ import unittest
 from unittest import mock
 from blinkpy import LOGIN_URL
 from blinkpy import BASE_URL
-from blinkpy import HOST_URL
 
 def mocked_requests_post(*args, **kwargs):
     class MockPostResponse:
@@ -15,7 +14,7 @@ def mocked_requests_post(*args, **kwargs):
             return self.json_data
             
     if args[0] == LOGIN_URL:
-        return MockPostResponse({"authtoken":{"authtoken":"abcd1234"}}, 200)
+        return MockPostResponse({"region":{"test": "Notacountry"}, "authtoken":{"authtoken":"abcd1234"}}, 200)
     elif args[0].split("/")[-1] == 'arm':
         return MockPostResponse({"armed":True}, 200)
     elif args[0].split("/")[-1] == 'disarm':
@@ -40,7 +39,7 @@ def mocked_requests_get(*args, **kwargs):
                                            {'device_type':'camera','name':'test2','device_id':321,'armed':True,'thumbnail':'/some/new/url','temp':56,'battery':5,'notifications':0},
                                            {'device_type':'None'}
                                            ],
-                                'events':[{'camera_id':123, 'type':'motion', 'video_url':'/some/dumb/location.mp4'},
+                                'events':[{'camera_id':123, 'type':'motion', 'video_url':'/some/dumb/location.mp4', 'created_at':'2017-01-01'},
                                           {'camera_id':321, 'type':'None'}
                                           ],
                                 'syncmodule':{'name':'SyncName', 'status':'online'},
@@ -61,6 +60,8 @@ class TestBlinkRequests(unittest.TestCase):
         
         self.assertEqual(blink.network_id, '7777')
         self.assertEqual(blink.account_id, '3333')
+        self.assertEqual(blink.region, 'Notacountry')
+        self.assertEqual(blink.region_id, 'test')
         self.assertEqual(blink.online, True)
         self.assertEqual(blink.arm, True)
     
@@ -70,13 +71,15 @@ class TestBlinkRequests(unittest.TestCase):
         blink = blinkpy.Blink(username='user',password='password')
         blink.setup_system()
         blink.last_motion()
-        for camera in blink.cameras:
-            if camera.id == 123:
-                assert camera.name is 'test'
-                assert camera.armed is False
-                assert camera.motion['video'] is BASE_URL+'/some/dumb/location.mp4'
-            elif camera.id == 321:
-                assert camera.name is 'test2'
-                assert camera.armed is True
-                assert len(camera.motion.keys()) is 0
+        for name, camera in blink.cameras.items():
+            if camera.id == '123':
+                 self.assertEqual(name, 'test')
+                 self.assertEqual(camera.armed, False)
+                 self.assertEqual(camera.motion['video'], BASE_URL+'/some/dumb/location.mp4')
+            elif camera.id == '321':
+                 self.assertEqual(name, 'test2')
+                 self.assertEqual(camera.armed, True)
+                 self.assertEqual(len(camera.motion.keys()), 0)
+            else:
+                assert False is True
         

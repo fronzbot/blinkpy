@@ -17,25 +17,28 @@ import requests
 import getpass
 import json
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
-LOGIN_URL = 'https://prod.immedia-semi.com/login'
-BASE_URL  = 'https://prod.immedia-semi.com'
-HOST_URL  = 'prod.immedia-semi.com'
+BLINK_URL = 'immedia-semi.com'
+LOGIN_URL = 'https://prod.' + BLINK_URL + '/login'
+BASE_URL = 'https://prod.' + BLINK_URL
+DEFAULT_URL = 'prod.' + BLINK_URL
 
 logger = logging.getLogger('blinkpy')
 
 
-def _request(url, data=None, headers=None, type='get'):
+def _request(url, data=None, headers=None, type='get', stream=False, json=True):
     """Wrapper function for request"""
     if type is 'post':
         response = requests.post(url, headers=headers, data=data).json()
-    elif type is 'get':
-        response = requests.get(url, headers=headers).json()
+    elif type is 'get' and json:
+        response = requests.get(url, headers=headers, stream=stream).json()
+    elif type is 'get' and not json:
+        response = requests.get(url, headers=headers, stream=stream)
     else:
         raise ValueError("Cannot perform requests of type " + type)
 
-    if 'message' in response.keys():
+    if json and 'message' in response.keys():
         raise BlinkAuthenticationException(response['code'], response['message'])
 
     return response
@@ -53,19 +56,20 @@ class BlinkAuthenticationException(BlinkException):
 
 class BlinkCamera(object):
     """Class to initialize individual camera"""
-    def __init__(self, name, id, status, thumb, clip, temperature, battery, notifications):
-        self._ID            = id
-        self._NAME          = name
-        self._STATUS        = status
-        self._THUMB         = thumb
-        self._CLIP          = clip
-        self._TEMPERATURE   = temperature
-        self._BATTERY       = battery
-        self._NOTIFICATIONS = notifications
-        self._MOTION        = {}
-        self._HEADER        = None
-        self._IMAGE_LINK    = None
-        self._ARM_LINK      = None
+    def __init__(self, config):
+        self._ID = str(config['device_id'])
+        self._NAME = config['name']
+        self._STATUS = config['armed']
+        self._THUMB = BASE_URL + config['thumbnail'] + '.jpg'
+        self._CLIP = BASE_URL + config['thumbnail'] + '.mp4'
+        self._TEMPERATURE = config['temp']
+        self._BATTERY = config['battery']
+        self._NOTIFICATIONS = config['notifications']
+        self._MOTION = {}
+        self._HEADER = None
+        self._IMAGE_LINK = None
+        self._ARM_LINK = None
+        self._REGION_ID = config['region_id']
 
     @property
     def id(self):
@@ -78,6 +82,10 @@ class BlinkCamera(object):
     @name.setter
     def name(self, value):
         self._NAME = value
+
+    @property
+    def region_id(self):
+        return self._REGION_ID
 
     @property
     def armed(self):
@@ -93,6 +101,7 @@ class BlinkCamera(object):
 
     @property
     def thumbnail(self):
+        # RUN THUMB ACQ HERE
         return self._THUMB
 
     @thumbnail.setter
@@ -169,31 +178,46 @@ class BlinkCamera(object):
             _request(url + 'disable', headers=self._HEADER, type='post')
 
     def update(self, values):
-        self._NAME          = values['name']
-        self._STATUS        = values['armed']
-        self._THUMB         = BASE_URL + values['thumbnail'] + '.jpg'
-        self._CLIP          = BASE_URL + values['thumbnail'] + '.mp4'
-        self._TEMPERATURE   = values['temp']
-        self._BATTERY       = values['battery']
+        self._NAME = values['name']
+        self._STATUS = values['armed']
+        self._THUMB = BASE_URL + values['thumbnail'] + '.jpg'
+        self._CLIP = BASE_URL + values['thumbnail'] + '.mp4'
+        self._TEMPERATURE = values['temp']
+        self._BATTERY = values['battery']
         self._NOTIFICATIONS = values['notifications']
+
+    def image_to_file(self, path):
+        response = _request(self._THUMB, headers=self._HEADER, stream=True, json=False)
+        if response.status_code == 200:
+            with open(path, 'wb') as f:
+                for chunk in response:
+                    f.write(chunk)
 
 
 class Blink(object):
     """Class to initialize communication and sync module"""
     def __init__(self, username=None, password=None):
         """Constructor for class"""
-        self._username      = username
-        self._password      = password
-        self._TOKEN         = None
-        self._AUTH_HEADER   = None
-        self._NETWORKID     = None
-        self._ACCOUNTID     = None
-        self._EVENTS        = []
-        self._CAMERAS       = []
+        self._username = username
+        self._password = password
+        self._TOKEN = None
+        self._AUTH_HEADER = None
+        self._NETWORKID = None
+        self._ACCOUNTID = None
+        self._REGION = None
+        self._REGION_ID = None
+        self._HOST = None
+        self._EVENTS = []
+        self._CAMERAS = {}
+        self._IDLOOKUP = {}
 
     @property
     def cameras(self):
         return self._CAMERAS
+
+    @property
+    def id_table(self):
+        return self._IDLOOKUP
 
     @property
     def network_id(self):
@@ -202,6 +226,14 @@ class Blink(object):
     @property
     def account_id(self):
         return self._ACCOUNTID
+
+    @property
+    def region(self):
+        return self._REGION
+
+    @property
+    def region_id(self):
+        return self._REGION_ID
 
     @property
     def events(self):
@@ -224,10 +256,12 @@ class Blink(object):
         recent = self.events
         for element in recent:
             try:
-                camera_id = element['camera_id']
+                camera_id = str(element['camera_id'])
+                camera_name = self._IDLOOKUP[camera_id]
+                camera = self._CAMERAS[camera_name]
                 if element['type'] == 'motion':
                     url = BASE_URL + element['video_url']
-                    self._CAMERAS[str(camera_id)].motion = {'video': url, 'image': url[:-3] + 'jpg', 'time': element['created_at']}
+                    camera.motion = {'video': url, 'image': url[:-3] + 'jpg', 'time': element['created_at']}
             except KeyError:
                 pass
 
@@ -250,7 +284,7 @@ class Blink(object):
         """Gets all blink cameras and pulls their most recent status"""
         response = self.get_summary()['devices']
 
-        for camera in self._CAMERAS:
+        for name, camera in self._CAMERAS.items():
             for element in response:
                 try:
                     if element['id'] == camera.id:
@@ -260,7 +294,7 @@ class Blink(object):
 
     def get_summary(self):
         """Gets a full summary of device information"""
-        url     = BASE_URL + '/homescreen'
+        url = BASE_URL + '/homescreen'
         headers = self._AUTH_HEADER
 
         if self._AUTH_HEADER is None:
@@ -274,24 +308,17 @@ class Blink(object):
         for element in response:
             if 'device_type' in element.keys():
                 if element['device_type'] == 'camera':
-                    self._CAMERAS.append(
-                        BlinkCamera(
-                            element['name'],
-                            str(element['device_id']),
-                            element['armed'],
-                            BASE_URL + element['thumbnail'] + '.jpg',
-                            BASE_URL + element['thumbnail'] + '.mp4',
-                            element['temp'],
-                            element['battery'],
-                            element['notifications']
-                        )
-                    )
+                    # Add region to config
+                    element['region_id'] = self._REGION_ID
+                    device = BlinkCamera(element)
+                    self._CAMERAS[device.name] = device
+                    self._IDLOOKUP[device.id] = device.name
 
     def set_links(self):
         """Sets access links and required headers for each camera in system"""
-        for camera in self._CAMERAS:
+        for name, camera in self._CAMERAS.items():
             image_url = BASE_URL + '/network/' + self._NETWORKID + '/camera/' + camera.id + '/thumbnail'
-            arm_url   = BASE_URL + '/network/' + self._NETWORKID + '/camera/' + camera.id + '/'
+            arm_url = BASE_URL + '/network/' + self._NETWORKID + '/camera/' + camera.id + '/'
             camera.image_link = image_url
             camera.arm_link = arm_url
             camera.header = self._AUTH_HEADER
@@ -318,22 +345,25 @@ class Blink(object):
         if not isinstance(self._password, str):
             raise BlinkAuthenticationException(0, "Password must be a string")
 
-        headers = {'Host': HOST_URL,
+        headers = {'Host': DEFAULT_URL,
                    'Content-Type': 'application/json'
                    }
-        data    = json.dumps({"email": self._username,
-                              "password": self._password,
-                              "client_specifier": "iPhone 9.2 | 2.2 | 222"
-                              })
+        data = json.dumps({
+            "email": self._username,
+            "password": self._password,
+            "client_specifier": "iPhone 9.2 | 2.2 | 222"
+        })
         response = _request(LOGIN_URL, headers=headers, data=data, type='post')
         self._TOKEN = response['authtoken']['authtoken']
-        self._AUTH_HEADER = {'Host': HOST_URL,
+        (self._REGION_ID, self._REGION), = response['region'].items()
+        self._HOST = self._REGION + '.' + BLINK_URL
+        self._AUTH_HEADER = {'Host': self._HOST,
                              'TOKEN_AUTH': self._TOKEN
                              }
 
     def get_ids(self):
         """Sets the network ID and Account ID"""
-        url     = BASE_URL + '/networks'
+        url = BASE_URL + '/networks'
         headers = self._AUTH_HEADER
 
         if self._AUTH_HEADER is None:

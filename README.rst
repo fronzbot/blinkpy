@@ -116,6 +116,9 @@ Takes an image with the camera and saves it as the new thumbnail.  The Blink.ref
 **BlinkCamera.set_motion_detect(enable=True/False)**
 Sending True to this function will enable motion detection for the camera.  Setting to False will disable motion detection
 
+**BlinkCamera.image_to_file(path)**
+This will write the current thumbnail to the location indicated in 'path'
+
 
 
 
