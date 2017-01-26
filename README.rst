@@ -22,7 +22,6 @@ This library was built with the intention of allowing easy communication with Bl
 **Usage**
 =========
 In terms of usage, you just need to instantiate the module with a username and password
-
 ::
   import blinkpy
   blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD')
@@ -116,6 +115,9 @@ Takes an image with the camera and saves it as the new thumbnail.  The Blink.ref
 
 **BlinkCamera.set_motion_detect(enable=True/False)**
 Sending True to this function will enable motion detection for the camera.  Setting to False will disable motion detection
+
+**BlinkCamera.image_to_file(path)**
+This will write the current thumbnail to the location indicated in 'path'
 
 
 
