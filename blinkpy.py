@@ -17,7 +17,7 @@ import requests
 import getpass
 import json
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 BLINK_URL = 'immedia-semi.com'
 LOGIN_URL = 'https://prod.' + BLINK_URL + '/login'
@@ -287,7 +287,7 @@ class Blink(object):
         for name, camera in self._CAMERAS.items():
             for element in response:
                 try:
-                    if element['id'] == camera.id:
+                    if element['device_id'] == camera.id:
                         camera.update(element)
                 except KeyError:
                     pass
