@@ -17,7 +17,7 @@ import requests
 import getpass
 import json
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 
 BLINK_URL = 'immedia-semi.com'
 LOGIN_URL = 'https://prod.' + BLINK_URL + '/login'
@@ -227,6 +227,15 @@ class Blink(object):
     @property
     def cameras(self):
         return self._CAMERAS
+
+    @property
+    def camera_thumbs(self):
+        self.refresh()
+        data = {}
+        for name, camera in self._CAMERAS.items():
+            data[name] = camera.thumbnail
+
+        return data
 
     @property
     def id_table(self):
