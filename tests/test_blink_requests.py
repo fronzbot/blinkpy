@@ -4,6 +4,7 @@ import unittest
 from unittest import mock
 from blinkpy import LOGIN_URL
 from blinkpy import BASE_URL
+import test_const as const
 
 def mocked_requests_post(*args, **kwargs):
     class MockPostResponse:
@@ -14,7 +15,7 @@ def mocked_requests_post(*args, **kwargs):
             return self.json_data
             
     if args[0] == LOGIN_URL:
-        return MockPostResponse({"region":{"test": "Notacountry"}, "authtoken":{"authtoken":"abcd1234"}}, 200)
+        return MockPostResponse({"region":{const.REGION_ID: const.REGION}, "authtoken":{"authtoken":const.TOKEN}}, 200)
     elif args[0].split("/")[-1] == 'arm':
         return MockPostResponse({"armed":True}, 200)
     elif args[0].split("/")[-1] == 'disarm':
@@ -33,20 +34,9 @@ def mocked_requests_get(*args, **kwargs):
             return self.json_data
             
     if args[0] == BASE_URL + '/networks':
-        return MockGetResponse({'networks':[{"id":7777,"account_id":3333},{"nothing":"nothing"}]}, 200)
+        return MockGetResponse({'networks':[{"id":const.NETWORK_ID,"account_id":const.ACCOUNT_ID},{"nothing":"nothing"}]}, 200)
     else:
-        return MockGetResponse({'devices':[{'device_type':'camera','name':'test','device_id':123,'armed':False,'thumbnail':'/some/url','temp':65,'battery':3,'notifications':1},
-                                           {'device_type':'camera','name':'test2','device_id':321,'armed':True,'thumbnail':'/some/new/url','temp':56,'battery':5,'notifications':0},
-                                           {'device_type':'None'}
-                                           ],
-                                'events':[{'camera_id':123, 'type':'motion', 'video_url':'/some/dumb/location.mp4', 'created_at':'2017-01-01'},
-                                          {'camera_id':321, 'type':'None'}
-                                          ],
-                                'syncmodule':{'name':'SyncName', 'status':'online'},
-                                'network':{'name':'Sync','armed':True, 'notifications':4}
-                                }, 
-                                200
-                               )
+        return MockGetResponse(const.response, 200)
                                
     
     return MockGetResponse({'message':'ERROR','code':404}, 404)
@@ -58,12 +48,12 @@ class TestBlinkRequests(unittest.TestCase):
         blink = blinkpy.Blink(username='user',password='password')
         blink.setup_system()
         
-        self.assertEqual(blink.network_id, '7777')
-        self.assertEqual(blink.account_id, '3333')
-        self.assertEqual(blink.region, 'Notacountry')
-        self.assertEqual(blink.region_id, 'test')
-        self.assertEqual(blink.online, True)
-        self.assertEqual(blink.arm, True)
+        self.assertEqual(blink.network_id, str(const.NETWORK_ID))
+        self.assertEqual(blink.account_id, str(const.ACCOUNT_ID))
+        self.assertEqual(blink.region, const.REGION)
+        self.assertEqual(blink.region_id, const.REGION_ID)
+        self.assertEqual(blink.online, const.ISONLINE)
+        self.assertEqual(blink.arm, const.ARMED)
     
     @mock.patch('blinkpy.requests.post', side_effect=mocked_requests_post)
     @mock.patch('blinkpy.requests.get', side_effect=mocked_requests_get)
@@ -72,14 +62,39 @@ class TestBlinkRequests(unittest.TestCase):
         blink.setup_system()
         blink.last_motion()
         for name, camera in blink.cameras.items():
-            if camera.id == '123':
-                 self.assertEqual(name, 'test')
-                 self.assertEqual(camera.armed, False)
-                 self.assertEqual(camera.motion['video'], BASE_URL+'/some/dumb/location.mp4')
-            elif camera.id == '321':
-                 self.assertEqual(name, 'test2')
-                 self.assertEqual(camera.armed, True)
+            if camera.id == str(const.DEVICE_ID):
+                 self.assertEqual(name, const.CAMERA_NAME)
+                 self.assertEqual(camera.armed, const.ARMED)
+                 self.assertEqual(camera.motion['video'], BASE_URL + const.THUMB + '.mp4')
+            elif camera.id == str(const.DEVICE_ID2):
+                 self.assertEqual(name, const.CAMERA_NAME2)
+                 self.assertEqual(camera.armed, const.ARMED2)
                  self.assertEqual(len(camera.motion.keys()), 0)
+            else:
+                assert False is True
+                
+    @mock.patch('blinkpy.requests.post', side_effect=mocked_requests_post)
+    @mock.patch('blinkpy.requests.get', side_effect=mocked_requests_get)
+    def test_blink_refresh(self, mock_get, mock_post):
+        blink = blinkpy.Blink(username='user',password='password')
+        blink.setup_system()
+        const.response['devices'][0]['thumbnail'] = const.THUMB + const.THUMB2
+        blink.refresh()
+        for name, camera in blink.cameras.items():
+            if camera.id == str(const.DEVICE_ID):
+                self.assertEqual(camera.thumbnail, BASE_URL + const.THUMB + const.THUMB2 + '.jpg')
+            elif camera.id == str(const.DEVICE_ID2):
+                pass
+            else:
+                assert False is True
+        
+        const.response['devices'][0]['thumbnail'] = 'new'
+        blink.cameras[const.CAMERA_NAME].image_refresh()
+        for name, camera in blink.cameras.items():
+            if camera.id == str(const.DEVICE_ID):
+                self.assertEqual(camera.thumbnail, BASE_URL + 'new' + '.jpg')
+            elif camera.id == str(const.DEVICE_ID2):
+                pass
             else:
                 assert False is True
         

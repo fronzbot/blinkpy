@@ -17,7 +17,7 @@ import requests
 import getpass
 import json
 
-__version__ = '0.3.2'
+__version__ = '0.4.0'
 
 BLINK_URL = 'immedia-semi.com'
 LOGIN_URL = 'https://prod.' + BLINK_URL + '/login'
@@ -186,8 +186,21 @@ class BlinkCamera(object):
         self._BATTERY = values['battery']
         self._NOTIFICATIONS = values['notifications']
 
+    def image_refresh(self):
+        url = BASE_URL + '/homescreen'
+        response = _request(url, headers=self._HEADER, type='get')['devices']
+        for element in response:
+            try:
+                if str(element['device_id']) == self._ID:
+                    self._THUMB = BASE_URL + element['thumbnail'] + '.jpg'
+                    return self._THUMB
+            except KeyError:
+                pass
+        return None
+
     def image_to_file(self, path):
-        response = _request(self._THUMB, headers=self._HEADER, stream=True, json=False)
+        thumb = self.image_refresh()
+        response = _request(thumb, headers=self._HEADER, stream=True, json=False)
         if response.status_code == 200:
             with open(path, 'wb') as f:
                 for chunk in response:
