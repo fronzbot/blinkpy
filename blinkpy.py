@@ -17,7 +17,7 @@ import requests
 import getpass
 import json
 
-__version__ = '0.3.0'
+__version__ = '0.4.1'
 
 BLINK_URL = 'immedia-semi.com'
 LOGIN_URL = 'https://prod.' + BLINK_URL + '/login'
@@ -186,8 +186,21 @@ class BlinkCamera(object):
         self._BATTERY = values['battery']
         self._NOTIFICATIONS = values['notifications']
 
+    def image_refresh(self):
+        url = BASE_URL + '/homescreen'
+        response = _request(url, headers=self._HEADER, type='get')['devices']
+        for element in response:
+            try:
+                if str(element['device_id']) == self._ID:
+                    self._THUMB = BASE_URL + element['thumbnail'] + '.jpg'
+                    return self._THUMB
+            except KeyError:
+                pass
+        return None
+
     def image_to_file(self, path):
-        response = _request(self._THUMB, headers=self._HEADER, stream=True, json=False)
+        thumb = self.image_refresh()
+        response = _request(thumb, headers=self._HEADER, stream=True, json=False)
         if response.status_code == 200:
             with open(path, 'wb') as f:
                 for chunk in response:
@@ -214,6 +227,15 @@ class Blink(object):
     @property
     def cameras(self):
         return self._CAMERAS
+
+    @property
+    def camera_thumbs(self):
+        self.refresh()
+        data = {}
+        for name, camera in self._CAMERAS.items():
+            data[name] = camera.thumbnail
+
+        return data
 
     @property
     def id_table(self):
@@ -287,7 +309,7 @@ class Blink(object):
         for name, camera in self._CAMERAS.items():
             for element in response:
                 try:
-                    if element['id'] == camera.id:
+                    if str(element['device_id']) == camera.id:
                         camera.update(element)
                 except KeyError:
                     pass
