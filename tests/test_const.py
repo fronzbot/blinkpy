@@ -18,7 +18,7 @@ THUMB = '/url/camera/7777/clip'
 THUMB2 = '/url/camera/8888/clip'
 NOTIFS = 1
 NOTIFS2 = 1
-SYNC_ID = 0000
+SYNC_ID = 1000
 
 if ISONLINE:
     ONLINE = 'online'
@@ -78,8 +78,7 @@ response = {'account': {'notifications': 1},
                         'error_msg': '', 
                         'name': 'Blink', 
                         'notifications': NOTIFS, 
-                        'status': 'ok'},
-                    
+                        'status': 'ok'},        
             'event': [{'camera_name': CAMERA_NAME, 
                        'updated_at': '2017-01-28T19:51:52+00:00', 
                        'sync_module_id': None, 
