@@ -17,7 +17,7 @@ import requests
 import getpass
 import json
 
-__version__ = '0.4.1'
+__version__ = '0.4.2'
 
 BLINK_URL = 'immedia-semi.com'
 LOGIN_URL = 'https://prod.' + BLINK_URL + '/login'
@@ -262,7 +262,7 @@ class Blink(object):
         """Gets all events on server"""
         url = BASE_URL + '/events/network/' + self._NETWORKID
         headers = self._AUTH_HEADER
-        self._EVENTS = _request(url, headers=headers, type='get')['events']
+        self._EVENTS = _request(url, headers=headers, type='get')['event']
         return self._EVENTS
 
     @property
