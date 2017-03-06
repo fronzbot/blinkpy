@@ -17,8 +17,6 @@ import requests
 import getpass
 import json
 
-__version__ = '0.4.2'
-
 BLINK_URL = 'immedia-semi.com'
 LOGIN_URL = 'https://prod.' + BLINK_URL + '/login'
 BASE_URL = 'https://prod.' + BLINK_URL
