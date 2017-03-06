@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from blinkpy import __version__
 from setuptools import setup
 
 setup(
     name = 'blinkpy',
-    version = __version__,
+    version = '0.4.',
     description = 'A Blink camera Python library',
     long_description='A library that communicates with Blink cameras',
     author = 'Kevin Fronczak',
@@ -13,7 +12,7 @@ setup(
     license='MIT',
     url = 'https://github.com/fronzbot/blinkpy',
     py_modules=['blinkpy'],
-    install_requires=['requests'],
+    install_requires=['requests>=2,<3'],
     classifiers=[
       'Development Status :: 4 - Beta',
       'Intended Audience :: Developers',
