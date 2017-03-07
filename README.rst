@@ -1,5 +1,4 @@
-.. image:: https://coveralls.io/repos/github/fronzbot/blinkpy/badge.svg?branch=master
-:target: https://coveralls.io/github/fronzbot/blinkpy?branch=master
+.. image:: https://coveralls.io/repos/github/fronzbot/blinkpy/badge.svg?branch=master .. image:: https://travis-ci.org/fronzbot/blinkpy.svg?branch=master
 
 **blinkpy** 
 ============
