@@ -1,7 +1,4 @@
-.. image:: https://coveralls.io/repos/github/fronzbot/blinkpy/badge.svg?branch=master
-.. image:: https://travis-ci.org/fronzbot/blinkpy.svg?branch=master
-
-**blinkpy** 
+**blinkpy** |Build Status| |Coverage Status|
 ============
 A Python library for the Blink Camera system
 
@@ -122,7 +119,10 @@ Sending True to this function will enable motion detection for the camera.  Sett
 **BlinkCamera.image_to_file(path)**
 This will write the current thumbnail to the location indicated in 'path'
 
-
+.. |Build Status| image:: https://travis-ci.org/fronzbot/blinkpy.svg?branch=master
+   :target: https://travis-ci.org/fronzbot/blinkpy
+.. |Coverage Status| image:: https://coveralls.io/repos/github/fronzbot/blinkpy/badge.svg?branch=master
+   :target: https://coveralls.io/r/fronzbot/blinkpy?branch=master
 
 
 
