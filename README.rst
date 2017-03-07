@@ -1,4 +1,7 @@
-**blinkpy**
+.. image:: https://coveralls.io/repos/github/fronzbot/blinkpy/badge.svg?branch=master
+:target: https://coveralls.io/github/fronzbot/blinkpy?branch=master
+
+**blinkpy** 
 ============
 A Python library for the Blink Camera system
 
