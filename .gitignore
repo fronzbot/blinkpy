@@ -9,3 +9,4 @@ dist/*
 MANIFEST
 README
 .sh
+build/*

@@ -66,6 +66,7 @@ class TestBlinkRequests(unittest.TestCase):
                  self.assertEqual(name, const.CAMERA_NAME)
                  self.assertEqual(camera.armed, const.ARMED)
                  self.assertEqual(camera.motion['video'], BASE_URL + const.THUMB + '.mp4')
+                 self.assertEqual(camera.header, const.auth_header)
             elif camera.id == str(const.DEVICE_ID2):
                  self.assertEqual(name, const.CAMERA_NAME2)
                  self.assertEqual(camera.armed, const.ARMED2)
