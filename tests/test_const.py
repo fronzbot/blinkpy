@@ -24,7 +24,10 @@ if ISONLINE:
     ONLINE = 'online'
 else:
     ONLINE = 'offline'
-    
+
+auth_header = {'Host': REGION_ID+'.immedia-semi.com',
+               'TOKEN_AUTH': TOKEN
+              }    
 
 response = {'account': {'notifications': 1}, 
             'devices': [{'device_type': 'camera', 

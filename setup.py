@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name = 'blinkpy',
-    version = '0.4.',
+    version = '0.4.4',
     description = 'A Blink camera Python library',
     long_description='A library that communicates with Blink cameras',
     author = 'Kevin Fronczak',

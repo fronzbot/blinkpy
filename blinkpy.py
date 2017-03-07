@@ -376,7 +376,7 @@ class Blink(object):
         response = _request(LOGIN_URL, headers=headers, data=data, type='post')
         self._TOKEN = response['authtoken']['authtoken']
         (self._REGION_ID, self._REGION), = response['region'].items()
-        self._HOST = self._REGION + '.' + BLINK_URL
+        self._HOST = self._REGION_ID + '.' + BLINK_URL
         self._AUTH_HEADER = {'Host': self._HOST,
                              'TOKEN_AUTH': self._TOKEN
                              }
