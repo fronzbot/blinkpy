@@ -5,9 +5,7 @@
 blinkpy by Kevin Fronczak - A Blink camera Python library
 https://github.com/fronzbot/blinkpy
 Original protocol hacking by MattTW : https://github.com/MattTW/BlinkMonitorProtocol
-
 Published under the MIT license - See LICENSE file for more details.
-
 "Blink Wire-Free HS Home Monitoring & Alert Systems" is a trademark owned by Immedia Inc., see www.blinkforhome.com for more information.
 I am in no way affiliated with Blink, nor Immedia Inc.
 '''
@@ -185,11 +183,7 @@ class BlinkCamera(object):
         self._NOTIFICATIONS = values['notifications']
 
     def image_refresh(self):
-<<<<<<< HEAD
-        url = HOME_URL
-=======
         url = BASE_URL + '/homescreen'
->>>>>>> 8206a49dc76913b9f175bb473e17758fd2e26956
         response = _request(url, headers=self._HEADER, type='get')['devices']
         for element in response:
             try:
@@ -262,7 +256,7 @@ class Blink(object):
     @property
     def events(self):
         """Gets all events on server"""
-        url = EVENT_URL + self._NETWORKID
+        url = BASE_URL + '/events/network/' + self._NETWORKID
         headers = self._AUTH_HEADER
         self._EVENTS = _request(url, headers=headers, type='get')['event']
         return self._EVENTS
@@ -270,10 +264,10 @@ class Blink(object):
     @property
     def online(self):
         """Returns True or False depending on if sync module is online/offline"""
-        url = NETWORK_URL + self._NETWORKID + '/syncmodules'
+        url = BASE_URL + 'network/' + self._NETWORKID + '/syncmodules'
         headers = self._AUTH_HEADER
         online_dict = {'online': True, 'offline': False}
-        return online_dict[_request(url, headers=headers, type='get')[KEY_SYNCMODULE]['status']]
+        return online_dict[_request(url, headers=headers, type='get')['syncmodule']['status']]
 
     def last_motion(self):
         """Finds last motion of each camera"""

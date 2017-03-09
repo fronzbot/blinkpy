@@ -15,6 +15,6 @@ EVENT_URL = BASE_URL + '/events/network/'
 NETWORK_URL = BASE_URL + '/network/'
 
 '''
-DICT KEYS
+Dictionaries
 '''
-
+ONLINE = {'online': True, 'offline': False}
