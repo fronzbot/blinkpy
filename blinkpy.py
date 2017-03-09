@@ -5,24 +5,20 @@
 blinkpy by Kevin Fronczak - A Blink camera Python library
 https://github.com/fronzbot/blinkpy
 Original protocol hacking by MattTW : https://github.com/MattTW/BlinkMonitorProtocol
-
 Published under the MIT license - See LICENSE file for more details.
-
 "Blink Wire-Free HS Home Monitoring & Alert Systems" is a trademark owned by Immedia Inc., see www.blinkforhome.com for more information.
 I am in no way affiliated with Blink, nor Immedia Inc.
 '''
 
-import logging
 import requests
 import getpass
 import json
-
-BLINK_URL = 'immedia-semi.com'
-LOGIN_URL = 'https://prod.' + BLINK_URL + '/login'
-BASE_URL = 'https://prod.' + BLINK_URL
-DEFAULT_URL = 'prod.' + BLINK_URL
-
-logger = logging.getLogger('blinkpy')
+import errors as ERROR
+from constants import (BLINK_URL, LOGIN_URL,
+                       BASE_URL, DEFAULT_URL,
+                       HOME_URL, EVENT_URL,
+                       NETWORK_URL, NETWORKS_URL,
+                       ONLINE)
 
 
 def _request(url, data=None, headers=None, type='get', stream=False, json=True):
@@ -34,18 +30,18 @@ def _request(url, data=None, headers=None, type='get', stream=False, json=True):
     elif type is 'get' and not json:
         response = requests.get(url, headers=headers, stream=stream)
     else:
-        raise ValueError("Cannot perform requests of type " + type)
+        raise BlinkException(ERROR.REQUEST)
 
     if json and 'message' in response.keys():
-        raise BlinkAuthenticationException(response['code'], response['message'])
+        raise BlinkAuthenticationException((response['code'], response['message']))
 
     return response
 
 
 class BlinkException(Exception):
-    def __init__(self, id, message):
-        self.id = id
-        self.message = message
+    def __init__(self, errcode):
+        self.id = errcode[0]
+        self.message = errcode[1]
 
 
 class BlinkAuthenticationException(BlinkException):
@@ -185,7 +181,7 @@ class BlinkCamera(object):
         self._NOTIFICATIONS = values['notifications']
 
     def image_refresh(self):
-        url = BASE_URL + '/homescreen'
+        url = HOME_URL
         response = _request(url, headers=self._HEADER, type='get')['devices']
         for element in response:
             try:
@@ -258,7 +254,7 @@ class Blink(object):
     @property
     def events(self):
         """Gets all events on server"""
-        url = BASE_URL + '/events/network/' + self._NETWORKID
+        url = EVENT_URL + self._NETWORKID
         headers = self._AUTH_HEADER
         self._EVENTS = _request(url, headers=headers, type='get')['event']
         return self._EVENTS
@@ -266,10 +262,9 @@ class Blink(object):
     @property
     def online(self):
         """Returns True or False depending on if sync module is online/offline"""
-        url = BASE_URL + 'network/' + self._NETWORKID + '/syncmodules'
+        url = NETWORK_URL + self._NETWORKID + '/syncmodules'
         headers = self._AUTH_HEADER
-        online_dict = {'online': True, 'offline': False}
-        return online_dict[_request(url, headers=headers, type='get')['syncmodule']['status']]
+        return ONLINE[_request(url, headers=headers, type='get')['syncmodule']['status']]
 
     def last_motion(self):
         """Finds last motion of each camera"""
@@ -297,7 +292,7 @@ class Blink(object):
             value_to_append = 'arm'
         else:
             value_to_append = 'disarm'
-        url = BASE_URL + '/network/' + self._NETWORKID + '/' + value_to_append
+        url = NETWORK_URL + self._NETWORKID + '/' + value_to_append
         _request(url, headers=self._AUTH_HEADER, type='post')
 
     def refresh(self):
@@ -318,7 +313,7 @@ class Blink(object):
         headers = self._AUTH_HEADER
 
         if self._AUTH_HEADER is None:
-            raise BlinkException(0, "Authentication header incorrect.  Are you sure you logged in and received your token?")
+            raise BlinkException(ERROR.AUTH_TOKEN)
 
         return _request(url, headers=headers, type='get')
 
@@ -337,8 +332,8 @@ class Blink(object):
     def set_links(self):
         """Sets access links and required headers for each camera in system"""
         for name, camera in self._CAMERAS.items():
-            image_url = BASE_URL + '/network/' + self._NETWORKID + '/camera/' + camera.id + '/thumbnail'
-            arm_url = BASE_URL + '/network/' + self._NETWORKID + '/camera/' + camera.id + '/'
+            image_url = NETWORK_URL + self._NETWORKID + '/camera/' + camera.id + '/thumbnail'
+            arm_url = NETWORK_URL + self._NETWORKID + '/camera/' + camera.id + '/'
             camera.image_link = image_url
             camera.arm_link = arm_url
             camera.header = self._AUTH_HEADER
@@ -346,7 +341,7 @@ class Blink(object):
     def setup_system(self):
         """Method logs in and sets auth token and network ids for future requests"""
         if self._username is None or self._password is None:
-            raise BlinkAuthenticationException(3, "Cannot authenticate since either password or username has not been set")
+            raise BlinkAuthenticationException(ERROR.AUTHENTICATE)
 
         self.get_auth_token()
         self.get_ids()
@@ -361,9 +356,9 @@ class Blink(object):
     def get_auth_token(self):
         """Retrieves the authentication token from Blink"""
         if not isinstance(self._username, str):
-            raise BlinkAuthenticationException(0, "Username must be a string")
+            raise BlinkAuthenticationException(ERROR.USERNAME)
         if not isinstance(self._password, str):
-            raise BlinkAuthenticationException(0, "Password must be a string")
+            raise BlinkAuthenticationException(ERROR.PASSWORD)
 
         headers = {'Host': DEFAULT_URL,
                    'Content-Type': 'application/json'
@@ -383,11 +378,11 @@ class Blink(object):
 
     def get_ids(self):
         """Sets the network ID and Account ID"""
-        url = BASE_URL + '/networks'
+        url = NETWORKS_URL
         headers = self._AUTH_HEADER
 
         if self._AUTH_HEADER is None:
-            raise BlinkException(0, "Authentication header incorrect.  Are you sure you logged in and received your token?")
+            raise BlinkException(ERROR.AUTH_TOKEN)
 
         response = _request(url, headers=headers, type='get')
         self._NETWORKID = str(response['networks'][0]['id'])
