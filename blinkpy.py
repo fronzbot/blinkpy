@@ -185,7 +185,7 @@ class BlinkCamera(object):
         self._NOTIFICATIONS = values['notifications']
 
     def image_refresh(self):
-        url = BASE_URL + '/homescreen'
+        url = HOME_URL
         response = _request(url, headers=self._HEADER, type='get')['devices']
         for element in response:
             try:
@@ -258,7 +258,7 @@ class Blink(object):
     @property
     def events(self):
         """Gets all events on server"""
-        url = BASE_URL + '/events/network/' + self._NETWORKID
+        url = EVENT_URL + self._NETWORKID
         headers = self._AUTH_HEADER
         self._EVENTS = _request(url, headers=headers, type='get')['event']
         return self._EVENTS
@@ -266,10 +266,10 @@ class Blink(object):
     @property
     def online(self):
         """Returns True or False depending on if sync module is online/offline"""
-        url = BASE_URL + 'network/' + self._NETWORKID + '/syncmodules'
+        url = NETWORK_URL + self._NETWORKID + '/syncmodules'
         headers = self._AUTH_HEADER
         online_dict = {'online': True, 'offline': False}
-        return online_dict[_request(url, headers=headers, type='get')['syncmodule']['status']]
+        return online_dict[_request(url, headers=headers, type='get')[KEY_SYNCMODULE]['status']]
 
     def last_motion(self):
         """Finds last motion of each camera"""
