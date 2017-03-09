@@ -1,24 +1,26 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup
-from constants import (__version__, PROJECT_PACKAGE_NAME,
-                       PROJECT_LICENSE, PROJECT_URL,
-                       PROJECT_EMAIL, PROJECT_DESCRIPTION,
-                       PROJECT_CLASSIFIERS, PROJECT_AUTHOR,
-                       PROJECT_LONG_DESCRIPTION)
 
 setup(
-    name = PROJECT_PACKAGE_NAME,
-    version = __version__,
-    description = PROJECT_DESCRIPTION,
-    long_description = PROJECT_LONG_DESCRIPTION,
-    author = PROJECT_AUTHOR,
-    author_email = PROJECT_EMAIL,
-    license = PROJECT_LICENSE,
-    url = PROJECT_URL,
-    platforms = 'any',
-    py_modules = ['blinkpy'],
-    install_requires = ['requests>=2,<3'],
-    test_suite = 'tests',
-    classifiers = PROJECT_CLASSIFIERS
+    name = 'blinkpy',
+    version = '0.4.4',
+    description = 'A Blink camera Python library',
+    long_description='A library that communicates with Blink cameras',
+    author = 'Kevin Fronczak',
+    author_email = "kfronczak@gmail.com",
+    license='MIT',
+    url = 'https://github.com/fronzbot/blinkpy',
+    py_modules=['blinkpy'],
+    install_requires=['requests>=2,<3'],
+    classifiers=[
+      'Development Status :: 4 - Beta',
+      'Intended Audience :: Developers',
+      'License :: OSI Approved :: MIT License',
+      'Programming Language :: Python :: 3.4',
+      'Programming Language :: Python :: 3.5',
+      'Programming Language :: Python :: 3.6',
+      'Environment :: Plugins',
+      'Environment :: Web Environment'
+      ]
 )
