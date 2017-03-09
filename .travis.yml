@@ -1,0 +1,18 @@
+matrix:
+  fast_finish: true
+  include:
+    - python: "3.4.2"
+      env: TOXENV=py34
+    - python: "3.4.2"
+      env: TOXENV=pep8
+    - python: "3.5"
+      env: TOXENV=py35
+    - python: "3.6"
+      env: TOXENV=py36
+    - python: "3.6-dev"
+      env: TOXENV=py36
+
+install: pip install -U tox coveralls
+language: python
+script: tox
+after_success: coveralls

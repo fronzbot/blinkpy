@@ -185,7 +185,11 @@ class BlinkCamera(object):
         self._NOTIFICATIONS = values['notifications']
 
     def image_refresh(self):
+<<<<<<< HEAD
         url = HOME_URL
+=======
+        url = BASE_URL + '/homescreen'
+>>>>>>> 8206a49dc76913b9f175bb473e17758fd2e26956
         response = _request(url, headers=self._HEADER, type='get')['devices']
         for element in response:
             try:
