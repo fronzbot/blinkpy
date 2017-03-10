@@ -7,7 +7,7 @@ import constants as const
 USERNAME = 'foobar'
 PASSWORD = 'deadbeef'
 
-class TestBlinkSystem(unittest.TestCase):
+class TestBlinkSetup(unittest.TestCase):
     """Test the Blink class in blinkpy."""
     def test_initialization(self):
         """Verify we can initialize blink."""
@@ -38,4 +38,6 @@ class TestBlinkSystem(unittest.TestCase):
             blink.login()
         self.assertEqual(blink._username, USERNAME)
         self.assertEqual(blink._password, PASSWORD)
+
+    # NEXT NEED ACTUAL REQUEST TESTS
         

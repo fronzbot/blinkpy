@@ -422,12 +422,11 @@ class Blink(object):
 
     def get_auth_token(self):
         """Retrieves the authentication token from Blink"""
-        
         if not isinstance(self._username, str):
             raise BlinkAuthenticationException(ERROR.USERNAME)
         if not isinstance(self._password, str):
             raise BlinkAuthenticationException(ERROR.PASSWORD)
-        
+
         headers = {'Host': DEFAULT_URL,
                    'Content-Type': 'application/json'}
         data = json.dumps({
