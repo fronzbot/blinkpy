@@ -6,7 +6,5 @@ htmlcov/*
 *.pyc
 *.egg*/*
 dist/*
-MANIFEST
-README
 .sh
 build/*

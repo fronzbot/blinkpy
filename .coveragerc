@@ -1,0 +1,5 @@
+[run]
+omit = 
+    helpers/*
+    tests/*
+    setup.py
