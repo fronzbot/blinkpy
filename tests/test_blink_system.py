@@ -142,3 +142,22 @@ class TestBlinkSetup(unittest.TestCase):
         self.blink.setup_system()
         expected_status = const.ONLINE[mresp.RESPONSE['syncmodule']['status']]
         self.assertIs(self.blink.online, expected_status)
+
+    @mock.patch('blinkpy.blinkpy.requests.post',
+                side_effect=mresp.mocked_requests_post)
+    @mock.patch('blinkpy.blinkpy.requests.get',
+                side_effect=mresp.mocked_requests_get)
+    def test_setup_backup_subdomain(self, mock_get, mock_post):
+        """Check that we can use the 'rest.piri' subdomain."""
+        test_urls = blinkpy.BlinkURLHandler('rest.piri')
+        with mock.patch('helpers.constants.LOGIN_URL',
+                        return_value=const.LOGIN_URL + 'NO'):
+            self.blink.setup_system()
+        self.assertEqual(self.blink.region_id, 'rest.piri')
+        # pylint: disable=protected-access
+        self.assertEqual(self.blink._host, 'rest.piri.' + const.BLINK_URL)
+        self.assertEqual(self.blink.urls.base_url, test_urls.base_url)
+        self.assertEqual(self.blink.urls.home_url, test_urls.home_url)
+        self.assertEqual(self.blink.urls.event_url, test_urls.event_url)
+        self.assertEqual(self.blink.urls.network_url, test_urls.network_url)
+        self.assertEqual(self.blink.urls.networks_url, test_urls.networks_url)

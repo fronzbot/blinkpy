@@ -45,6 +45,7 @@ URLS
 '''
 BLINK_URL = 'immedia-semi.com'
 LOGIN_URL = 'https://prod.' + BLINK_URL + '/login'
+LOGIN_BACKUP_URL = 'https://rest.piri/' + BLINK_URL + '/login'
 BASE_URL = 'https://prod.' + BLINK_URL
 DEFAULT_URL = 'prod.' + BLINK_URL
 

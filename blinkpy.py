@@ -18,15 +18,19 @@ from shutil import copyfileobj
 import requests
 import helpers.errors as ERROR
 from helpers.constants import (BLINK_URL, LOGIN_URL,
+                               LOGIN_BACKUP_URL,
                                DEFAULT_URL, ONLINE)
 
 
 def _request(url, data=None, headers=None, reqtype='get',
              stream=False, json_resp=True):
     """Wrapper function for request."""
-    if reqtype is 'post':
+    if reqtype is 'post' and json_resp:
         response = requests.post(url, headers=headers,
                                  data=data).json()
+    elif reqtype is 'post' and not json_resp:
+        response = requests.post(url, headers=headers,
+                                 data=data)
     elif reqtype is 'get' and json_resp:
         response = requests.get(url, headers=headers,
                                 stream=stream).json()
@@ -441,10 +445,19 @@ class Blink(object):
             "client_specifier": "iPhone 9.2 | 2.2 | 222"
         })
         response = _request(LOGIN_URL, headers=headers,
-                            data=data, reqtype='post')
-        self._token = response['authtoken']['authtoken']
-        (self._region_id, self._region), = response['region'].items()
+                            data=data, json_resp=False, reqtype='post')
+        if response.status_code is 200:
+            response = response.json()
+            (self._region_id, self._region), = response['region'].items()
+        else:
+            response = _request(LOGIN_BACKUP_URL, headers=headers,
+                                data=data, reqtype='post')
+            self._region_id = 'rest.piri'
+            self._region = "UNKNOWN"
+
         self._host = self._region_id + '.' + BLINK_URL
+        self._token = response['authtoken']['authtoken']
+
         self._auth_header = {'Host': self._host,
                              'TOKEN_AUTH': self._token}
 
