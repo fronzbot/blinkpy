@@ -2,6 +2,8 @@
 constants.py
 Generates constants for use in blinkpy
 '''
+import os
+
 MAJOR_VERSION = 0
 MINOR_VERSION = 4
 PATCH_VERSION = 4
@@ -23,6 +25,8 @@ PROJECT_LONG_DESCRIPTION = ('blinkpy is an open-source '
                             'system with the intention for easy '
                             'integration into various home '
                             'automation platforms.')
+if os.path.exists('README.rst'):
+    PROJECT_LONG_DESCRIPTION = open('README.rst').read()
 PROJECT_CLASSIFIERS = [
     'Intended Audience :: Developers',
     'License :: OSI Approved :: MIT License',

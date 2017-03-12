@@ -96,10 +96,12 @@ Class Descriptions
   class BlinkCamera(config, urls)
   
 The ``BlinkCamera`` class expects to receive:
+
 * A dictionary ``config`` that contains the camera name, device id, armed status, thumbnail url, camera temperature, camery battery level, number of notifications, and region id
 * A ``BlinkURLHandler`` object that contains all the links necessary for communication.
 
 Ultimately, this class is just a wrapper for each individual camera in order to make communication with individual cameras less clunky.  The following properties/methods are availiable (in addition to the ones mentioned earlier):
+
 * ``BlinkCamera.snap_picture()`` Takes an image with the camera and saves it as the new thumbnail.  The ``Blink.refresh()`` method should be called after this if you want to store the new thumbnail link.
 * ``BlinkCamera.set_motion_detect(enable=True/False)`` Sending True to this function will enable motion detection for the camera.  Setting to False will disable motion detection.
 * ``BlinkCamera.image_to_file(path)`` This will write the current thumbnail to the location indicated in 'path'

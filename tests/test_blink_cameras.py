@@ -28,6 +28,37 @@ class TestBlinkCameraSetup(unittest.TestCase):
                 side_effect=mresp.mocked_requests_post)
     @mock.patch('blinkpy.blinkpy.requests.get',
                 side_effect=mresp.mocked_requests_get)
+    def test_camera_properties(self, mock_get, mock_post):
+        """Tests all property set/recall."""
+        test_value = 'foobar'
+        self.blink.setup_system()
+        for name in self.blink.cameras:
+            camera = self.blink.cameras[name]
+            camera.name = test_value
+            camera.clip = test_value + '.mp4'
+            camera.thumbnail = test_value + '.jpg'
+            camera.temperature = 10
+            camera.battery = 0
+            camera.notifications = 100
+            camera.image_link = test_value + '/image.jpg'
+            camera.arm_link = test_value + '/arm'
+            camera.header = {'foo': 'bar'}
+            camera.motion = {'bar': 'foo'}
+            self.assertEqual(camera.clip, test_value + '.mp4')
+            self.assertEqual(camera.name, test_value)
+            self.assertEqual(camera.thumbnail, test_value + '.jpg')
+            self.assertEqual(camera.temperature, 10)
+            self.assertEqual(camera.battery, 0)
+            self.assertEqual(camera.notifications, 100)
+            self.assertEqual(camera.image_link, test_value + '/image.jpg')
+            self.assertEqual(camera.arm_link, test_value + '/arm')
+            self.assertEqual(camera.header, {'foo': 'bar'})
+            self.assertEqual(camera.motion, {'bar': 'foo'})
+
+    @mock.patch('blinkpy.blinkpy.requests.post',
+                side_effect=mresp.mocked_requests_post)
+    @mock.patch('blinkpy.blinkpy.requests.get',
+                side_effect=mresp.mocked_requests_get)
     def test_camera_values_from_setup(self, mock_get, mock_post):
         """Tests all property values after camera setup."""
         self.blink.setup_system()
