@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+"""
+blinkpy by Kevin Fronczak - A Blink camera Python library.
 
-'''
-blinkpy by Kevin Fronczak - A Blink camera Python library
 https://github.com/fronzbot/blinkpy
 Original protocol hacking by MattTW :
 https://github.com/MattTW/BlinkMonitorProtocol
@@ -10,19 +10,19 @@ Published under the MIT license - See LICENSE file for more details.
 "Blink Wire-Free HS Home Monitoring & Alert Systems" is a trademark
 owned by Immedia Inc., see www.blinkforhome.com for more information.
 I am in no way affiliated with Blink, nor Immedia Inc.
-'''
+"""
 
 import json
 import getpass
 import requests
-import errors as ERROR
-from constants import (BLINK_URL, LOGIN_URL,
-                       DEFAULT_URL, ONLINE)
+import helpers.errors as ERROR
+from helpers.constants import (BLINK_URL, LOGIN_URL,
+                               DEFAULT_URL, ONLINE)
 
 
 def _request(url, data=None, headers=None, reqtype='get',
              stream=False, json_resp=True):
-    """Wrapper function for request"""
+    """Wrapper function for request."""
     if reqtype is 'post':
         response = requests.post(url, headers=headers,
                                  data=data).json()
@@ -44,23 +44,23 @@ def _request(url, data=None, headers=None, reqtype='get',
 
 # pylint: disable=super-init-not-called
 class BlinkException(Exception):
-    """
-    Class to throw general blink exception.
-    """
+    """Class to throw general blink exception."""
+
     def __init__(self, errcode):
+        """Initialize BlinkException."""
         self.errid = errcode[0]
         self.message = errcode[1]
 
 
 class BlinkAuthenticationException(BlinkException):
-    """
-    Class to throw authentication exception.
-    """
+    """Class to throw authentication exception."""
+
     pass
 
 
 class BlinkURLHandler(object):
-    """Class that handles Blink URLS"""
+    """Class that handles Blink URLS."""
+
     def __init__(self, region_id):
         """Initialize the urls."""
         self.base_url = 'https://' + region_id + '.' + BLINK_URL
@@ -72,7 +72,9 @@ class BlinkURLHandler(object):
 
 class BlinkCamera(object):
     """Class to initialize individual camera."""
+
     def __init__(self, config, urls):
+        """Initiailize BlinkCamera."""
         self.urls = urls
         self._id = str(config['device_id'])
         self._name = config['name']
@@ -91,125 +93,125 @@ class BlinkCamera(object):
     @property
     # pylint: disable=invalid-name
     def id(self):
-        """Returns camera id"""
+        """Return camera id."""
         return self._id
 
     @property
     def name(self):
-        """Returns camera name"""
+        """Return camera name."""
         return self._name
 
     @name.setter
     def name(self, value):
-        """Sets camera name"""
+        """Set camera name."""
         self._name = value
 
     @property
     def region_id(self):
-        """Returns region id"""
+        """Return region id."""
         return self._region_id
 
     @property
     def armed(self):
-        """Returns camera arm status"""
+        """Return camera arm status."""
         return self._status
 
     @property
     def clip(self):
-        """Returns current clip"""
+        """Return current clip."""
         return self._clip
 
     @clip.setter
     def clip(self, value):
-        """Sets current clip"""
+        """Set current clip."""
         self._clip = value
 
     @property
     def thumbnail(self):
-        """Returns current thumbnail"""
+        """Return current thumbnail."""
         return self._thumb
 
     @thumbnail.setter
     def thumbnail(self, value):
-        """Sets current thumbnail"""
+        """Set current thumbnail."""
         self._thumb = value
 
     @property
     def temperature(self):
-        """Returns camera temperature"""
+        """Return camera temperature."""
         return self._temperature
 
     @temperature.setter
     def temperature(self, value):
-        """Sets camera temperature"""
+        """Set camera temperature."""
         self._temperature = value
 
     @property
     def battery(self):
-        """Returns battery level"""
+        """Return battery level."""
         return self._battery
 
     @battery.setter
     def battery(self, value):
-        """Sets battery level"""
+        """Set battery level."""
         self._battery = value
 
     @property
     def notifications(self):
-        """Returns number of notifications"""
+        """Return number of notifications."""
         return self._notifications
 
     @notifications.setter
     def notifications(self, value):
-        """Sets number of notifications"""
+        """Set number of notifications."""
         self._notifications = value
 
     @property
     def image_link(self):
-        """Returns image link"""
+        """Return image link."""
         return self._image_link
 
     @image_link.setter
     def image_link(self, value):
-        """Sets image link"""
+        """Set image link."""
         self._image_link = value
 
     @property
     def arm_link(self):
-        """Returns link to arm camera"""
+        """Return link to arm camera."""
         return self._arm_link
 
     @arm_link.setter
     def arm_link(self, value):
-        """Sets link to arm camera"""
+        """Set link to arm camera."""
         self._arm_link = value
 
     @property
     def header(self):
-        """Returns request header"""
+        """Return request header."""
         return self._header
 
     @header.setter
     def header(self, value):
-        """Sets request header"""
+        """Set request header."""
         self._header = value
 
     @property
     def motion(self):
-        """Returns last motion event detail"""
+        """Return last motion event detail."""
         return self._motion
 
     @motion.setter
     def motion(self, value):
-        """Sets link to last motion and timestamp"""
+        """Set link to last motion and timestamp."""
         self._motion = value
 
     def snap_picture(self):
-        """Takes a picture with camera to create a new thumbnail"""
+        """Take a picture with camera to create a new thumbnail."""
         _request(self._image_link, headers=self._header, reqtype='post')
 
     def set_motion_detect(self, enable):
-        """Sets motion detection"""
+        """Set motion detection."""
         url = self._arm_link
         if enable:
             _request(url + 'enable', headers=self._header, reqtype='post')
@@ -217,7 +219,7 @@ class BlinkCamera(object):
             _request(url + 'disable', headers=self._header, reqtype='post')
 
     def update(self, values):
-        """Updates camera information"""
+        """Update camera information."""
         self._name = values['name']
         self._status = values['armed']
         self._thumb = self.urls.base_url + values['thumbnail'] + '.jpg'
@@ -227,7 +229,7 @@ class BlinkCamera(object):
         self._notifications = values['notifications']
 
     def image_refresh(self):
-        """Refreshs current thumbnail"""
+        """Refresh current thumbnail."""
         url = self.urls.home_url
         response = _request(url, headers=self._header,
                             reqtype='get')['devices']
@@ -242,7 +244,7 @@ class BlinkCamera(object):
         return None
 
     def image_to_file(self, path):
-        """Writes image to file"""
+        """Write image to file."""
         thumb = self.image_refresh()
         response = _request(thumb, headers=self._header,
                             stream=True, json_resp=False)
@@ -253,9 +255,10 @@ class BlinkCamera(object):
 
 
 class Blink(object):
-    """Class to initialize communication and sync module"""
+    """Class to initialize communication and sync module."""
+
     def __init__(self, username=None, password=None):
-        """Constructor for class"""
+        """Initialize Blink system."""
         self._username = username
         self._password = password
         self._token = None
@@ -272,12 +275,12 @@ class Blink(object):
 
     @property
     def cameras(self):
-        """Returns camera/id pairs"""
+        """Return camera/id pairs."""
         return self._cameras
 
     @property
     def camera_thumbs(self):
-        """Returns camera thumbnails"""
+        """Return camera thumbnails."""
         self.refresh()
         data = {}
         for name, camera in self._cameras.items():
@@ -287,32 +290,32 @@ class Blink(object):
 
     @property
     def id_table(self):
-        """Returns id/camera pairs"""
+        """Return id/camera pairs."""
         return self._idlookup
 
     @property
     def network_id(self):
-        """Returns network id"""
+        """Return network id."""
         return self._network_id
 
     @property
     def account_id(self):
-        """Returns account id"""
+        """Return account id."""
         return self._account_id
 
     @property
     def region(self):
-        """Returns current region"""
+        """Return current region."""
         return self._region
 
     @property
     def region_id(self):
-        """Returns region id"""
+        """Return region id."""
         return self._region_id
 
     @property
     def events(self):
-        """Gets all events on server"""
+        """Get all events on server."""
         url = self.urls.event_url + self._network_id
         headers = self._auth_header
         self._events = _request(url, headers=headers,
@@ -321,17 +324,14 @@ class Blink(object):
 
     @property
     def online(self):
-        """
-        Returns True or False depending on if
-        sync module is online/offline
-        """
+        """Return boolean system online status."""
         url = self.urls.network_url + self._network_id + '/syncmodules'
         headers = self._auth_header
         return ONLINE[_request(url, headers=headers,
                                reqtype='get')['syncmodule']['status']]
 
     def last_motion(self):
-        """Finds last motion of each camera"""
+        """Find last motion of each camera."""
         recent = self.events
         for element in recent:
             try:
@@ -348,15 +348,12 @@ class Blink(object):
 
     @property
     def arm(self):
-        """Returns status of sync module: armed/disarmed"""
+        """Return status of sync module: armed/disarmed."""
         return self.get_summary()['network']['armed']
 
     @arm.setter
     def arm(self, value):
-        """
-        Arms or disarms system.
-        Arms/disarms all if camera not named.
-        """
+        """Arm or disarm system."""
         if value:
             value_to_append = 'arm'
         else:
@@ -365,7 +362,7 @@ class Blink(object):
         _request(url, headers=self._auth_header, reqtype='post')
 
     def refresh(self):
-        """Gets all blink cameras and pulls their most recent status"""
+        """Get all blink cameras and pulls their most recent status."""
         response = self.get_summary()['devices']
 
         for name in self._cameras:
@@ -378,7 +375,7 @@ class Blink(object):
                     pass
 
     def get_summary(self):
-        """Gets a full summary of device information"""
+        """Get a full summary of device information."""
         url = self.urls.home_url
         headers = self._auth_header
 
@@ -388,7 +385,7 @@ class Blink(object):
         return _request(url, headers=headers, reqtype='get')
 
     def get_cameras(self):
-        """Finds and creates cameras"""
+        """Find and creates cameras."""
         response = self.get_summary()['devices']
         for element in response:
             if ('device_type' in element and
@@ -400,10 +397,7 @@ class Blink(object):
                 self._idlookup[device.id] = device.name
 
     def set_links(self):
-        """
-        Sets access links and required headers
-        for each camera in system
-        """
+        """Set access links and required headers for each camera in system."""
         for name in self._cameras:
             camera = self._cameras[name]
             network_id_url = self.urls.network_url + self._network_id
@@ -415,8 +409,9 @@ class Blink(object):
 
     def setup_system(self):
         """
-        Method logs in and sets auth token and
-        network ids for future requests.
+        Wrapper for various setup functions.
+
+        Method logs in and sets auth token, urls, and ids for future requests.
         """
         if self._username is None or self._password is None:
             raise BlinkAuthenticationException(ERROR.AUTHENTICATE)
@@ -427,12 +422,12 @@ class Blink(object):
         self.set_links()
 
     def login(self):
-        """Prompts user for username and password"""
+        """Prompt user for username and password."""
         self._username = input("Username:")
         self._password = getpass.getpass("Password:")
 
     def get_auth_token(self):
-        """Retrieves the authentication token from Blink"""
+        """Retrieve the authentication token from Blink."""
         if not isinstance(self._username, str):
             raise BlinkAuthenticationException(ERROR.USERNAME)
         if not isinstance(self._password, str):
@@ -456,7 +451,7 @@ class Blink(object):
         self.urls = BlinkURLHandler(self._region_id)
 
     def get_ids(self):
-        """Sets the network ID and Account ID"""
+        """Set the network ID and Account ID."""
         url = self.urls.networks_url
         headers = self._auth_header
 

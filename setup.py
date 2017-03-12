@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-
 from setuptools import setup
-from constants import (__version__, PROJECT_PACKAGE_NAME,
-                       PROJECT_LICENSE, PROJECT_URL,
-                       PROJECT_EMAIL, PROJECT_DESCRIPTION,
-                       PROJECT_CLASSIFIERS, PROJECT_AUTHOR,
-                       PROJECT_LONG_DESCRIPTION)
+from helpers.constants import (__version__, PROJECT_PACKAGE_NAME,
+                               PROJECT_LICENSE, PROJECT_URL,
+                               PROJECT_EMAIL, PROJECT_DESCRIPTION,
+                               PROJECT_CLASSIFIERS, PROJECT_AUTHOR,
+                               PROJECT_LONG_DESCRIPTION)
 
 setup(
     name = PROJECT_PACKAGE_NAME,
