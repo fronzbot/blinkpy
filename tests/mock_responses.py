@@ -156,6 +156,8 @@ def mocked_requests_post(*args, **kwargs):
     if args[0] == const.LOGIN_URL:
         # Request to login
         return MockPostResponse(LOGIN_RESPONSE, 200)
+    elif args[0] == const.LOGIN_BACKUP_URL:
+        return MockPostResponse(LOGIN_RESPONSE, 200)
     elif url_tail == 'arm' or url_tail == 'disarm':
         # Request to arm/disarm system
         NETWORKS_RESPONSE['networks'][0]['armed'] = url_tail == 'arm'
@@ -210,11 +212,16 @@ def mocked_requests_get(*args, **kwargs):
     # pylint: disable=unused-variable
     (region_id, region), = LOGIN_RESPONSE['region'].items()
     set_region_id = args[0].split('/')[2].split('.')[0]
+    if set_region_id == 'rest':
+        set_region_id = (set_region_id + '.' +
+                         args[0].split('/')[2].split('.')[1])
+        region_id = 'rest.piri'
     neturl = 'https://' + set_region_id + '.' + const.BLINK_URL + '/networks'
     if args[0] == neturl:
         return MockGetResponse(NETWORKS_RESPONSE, 200)
     elif set_region_id != region_id:
-        raise ConnectionError('Received url ' + args[0])
+        raise ConnectionError('Received region id ' + region_id +
+                              ' Expected ' + set_region_id)
     elif args[0] in IMAGE_TO_WRITE_URL:
         return MockGetResponse({}, 200, raw_data=MOCK_BYTES)
     else:
