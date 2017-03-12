@@ -16,10 +16,10 @@ $ git remote add upstream https://github.com/fronzbot/blinkpy.git
 
 ## Create a Local Branch
 
-First, you need to make sure you're on the 'dev' branch:
-``git checkout dev``
-Next, you will want to create a new branch to hold your changes:
+First, you will want to create a new branch to hold your changes:
 ``git checkout -b <your-branch-name>``
+Next, you need to make sure you pull from the 'dev' branch:
+``git pull origin dev``
 
 ## Make changes
 
