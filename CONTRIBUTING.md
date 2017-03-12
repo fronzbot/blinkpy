@@ -63,8 +63,8 @@ Please do not locally disable any linter warnings within the ``blinkpy.py`` modu
 If your code is taking a while to develop, you may be behind the ``dev`` branch, in which case you need to catch up before creating your pull-request.  To do this you can run ``git rebase`` as follows (running this on your local branch):
 
 ```shell
-$ git fetch upstream/dev
-$ git rebase upstrea/dev
+$ git fetch upstream dev
+$ git rebase upstream/dev
 ```
 
 If rebase detects conflicts, repeat the following process until all changes have been resolved:
