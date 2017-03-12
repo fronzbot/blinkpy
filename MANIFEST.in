@@ -1,4 +1,5 @@
 include README.rst
-include LICENSE
+include LICENSE.md
+include API.md
 include tests/*.py
 include helpers/*.py

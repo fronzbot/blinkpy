@@ -22,6 +22,8 @@ NETWORKS_RESPONSE['networks'] = [{
     'feature_plan_id': None
 }]
 
+NEW_THUMBNAIL = '/NEW/THUMBNAIL/YAY'
+
 FIRST_CAMERA = {'device_type': 'camera',
                 'notifications': 1,
                 'battery': 2,
@@ -116,6 +118,16 @@ RESPONSE['network'] = {'armed': NETWORKS_RESPONSE['networks'][0]['armed'],
 RESPONSE['event'] = [FIRST_EVENT, SECOND_EVENT]
 RESPONSE['syncmodule'] = {'name': 'Vengerberg', 'status': 'online'}
 
+MOCK_BYTES = '\x00\x10JFIF\x00\x01'
+
+IMAGE_TO_WRITE_URL = list()
+IMAGE_TO_WRITE_URL.append('https://ciri.' + const.BLINK_URL +
+                          FIRST_CAMERA['thumbnail'] + '.jpg')
+IMAGE_TO_WRITE_URL.append('https://ciri.' + const.BLINK_URL +
+                          SECOND_CAMERA['thumbnail'] + '.jpg')
+
+FAKE_FILES = list()
+
 
 def mocked_requests_post(*args, **kwargs):
     """Mock post request."""
@@ -131,16 +143,45 @@ def mocked_requests_post(*args, **kwargs):
             """Return json data from post request."""
             return self.json_data
 
-    url_tail = args[0].split("/")[-1]
+    # pylint: disable=global-variable-not-assigned
+    global RESPONSE
+    # pylint: disable=global-variable-not-assigned
+    global NETWORKS_RESPONSE
+
+    if args[0] is not None:
+        url_tail = args[0].split("/")[-1]
+    else:
+        return MockPostResponse({'message': 'ERROR', 'code': 404}, 404)
+
     if args[0] == const.LOGIN_URL:
+        # Request to login
         return MockPostResponse(LOGIN_RESPONSE, 200)
     elif url_tail == 'arm' or url_tail == 'disarm':
-        # pylint: disable=global-variable-not-assigned
-        global NETWORKS_RESPONSE
-        # pylint: disable=global-variable-not-assigned
-        global RESPONSE
+        # Request to arm/disarm system
         NETWORKS_RESPONSE['networks'][0]['armed'] = url_tail == 'arm'
         RESPONSE['network']['armed'] = url_tail == 'arm'
+        return MockPostResponse({}, 200)
+    elif url_tail == 'enable' or url_tail == 'disable':
+        # Request to enable/disable motion detection per camera
+        received_id = args[0].split("/")[-2]
+        all_devices = list()
+        for element in RESPONSE['devices']:
+            all_devices.append(element)
+            current_id = element['device_id']
+            if str(current_id) == received_id:
+                element['armed'] = url_tail == 'enable'
+                element['enabled'] = url_tail == 'enable'
+        RESPONSE['devices'] = all_devices
+        return MockPostResponse({}, 200)
+    elif url_tail == 'thumbnail':
+        # Requesting a new image
+        received_id = args[0].split("/")[-2]
+        all_devices = list()
+        for element in RESPONSE['devices']:
+            all_devices.append(element)
+            if str(element['device_id']) == received_id:
+                element['thumbnail'] = NEW_THUMBNAIL
+        RESPONSE['devices'] = all_devices
         return MockPostResponse({}, 200)
 
     return MockPostResponse({'message': 'ERROR', 'code': 404}, 404)
@@ -151,14 +192,21 @@ def mocked_requests_get(*args, **kwargs):
     class MockGetResponse:
         """Class for mock get response."""
 
-        def __init__(self, json_data, status_code):
-            """Initialze mock get response."""
+        def __init__(self, json_data, status_code, raw_data=None):
+            """Initialize mock get response."""
             self.json_data = json_data
             self.status_code = status_code
+            self.raw_data = raw_data
 
         def json(self):
-            """Return json data from post request."""
+            """Return json data from get request."""
             return self.json_data
+
+        @property
+        def raw(self):
+            """Return raw data from get request."""
+            return self.raw_data
+
     # pylint: disable=unused-variable
     (region_id, region), = LOGIN_RESPONSE['region'].items()
     set_region_id = args[0].split('/')[2].split('.')[0]
@@ -167,7 +215,53 @@ def mocked_requests_get(*args, **kwargs):
         return MockGetResponse(NETWORKS_RESPONSE, 200)
     elif set_region_id != region_id:
         raise ConnectionError('Received url ' + args[0])
+    elif args[0] in IMAGE_TO_WRITE_URL:
+        return MockGetResponse({}, 200, raw_data=MOCK_BYTES)
     else:
         return MockGetResponse(RESPONSE, 200)
 
     return MockGetResponse({'message': 'ERROR', 'code': 404}, 404)
+
+
+def mocked_copyfileobj(*args, **kwargs):
+    """Mock shutil.copyfileobj."""
+    class MockCopyFileObj:
+        """Class for mock copy file."""
+
+        def __init__(self, src, dst):
+            """Initialize copyfile mock."""
+            self.src = src
+            self.dst = dst
+    # pylint: disable=global-variable-not-assigned
+    global FAKE_FILES
+    mockobj = MockCopyFileObj(args[0], args[1])
+    FAKE_FILES.append(mockobj.src)
+    return
+
+
+def get_test_cameras(base_url):
+    """Helper function to return cameras named in this file."""
+    test_cameras = dict()
+    for element in RESPONSE['devices']:
+        if ('device_type' in element and
+                element['device_type'] == 'camera'):
+            test_cameras[element['name']] = {
+                'device_id': str(element['device_id']),
+                'armed': element['armed'],
+                'thumbnail': (base_url +
+                              element['thumbnail'] + '.jpg'),
+                'temperature': element['temp'],
+                'battery': element['battery'],
+                'notifications': element['notifications']
+            }
+    return test_cameras
+
+
+def get_test_id_table():
+    """Helper function to return mock id table."""
+    test_id_table = dict()
+    for element in RESPONSE['devices']:
+        if ('device_type' in element and
+                element['device_type'] == 'camera'):
+            test_id_table[str(element['device_id'])] = element['name']
+    return test_id_table

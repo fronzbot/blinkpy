@@ -41,6 +41,10 @@ class TestBlinkSetup(unittest.TestCase):
             self.blink_no_cred.get_auth_token()
         with self.assertRaises(blinkpy.BlinkAuthenticationException):
             self.blink_no_cred.setup_system()
+        # pylint: disable=protected-access
+        self.blink_no_cred._username = USERNAME
+        with self.assertRaises(blinkpy.BlinkAuthenticationException):
+            self.blink_no_cred.get_auth_token()
 
     def test_no_auth_header(self):
         """Check that we throw an excpetion when no auth header given."""
@@ -49,6 +53,8 @@ class TestBlinkSetup(unittest.TestCase):
         self.blink.urls = blinkpy.BlinkURLHandler(region_id)
         with self.assertRaises(blinkpy.BlinkException):
             self.blink.get_ids()
+        with self.assertRaises(blinkpy.BlinkException):
+            self.blink.get_summary()
 
     @mock.patch('blinkpy.blinkpy.getpass.getpass')
     def test_manual_login(self, getpwd):
@@ -65,6 +71,20 @@ class TestBlinkSetup(unittest.TestCase):
                 side_effect=mresp.mocked_requests_post)
     @mock.patch('blinkpy.blinkpy.requests.get',
                 side_effect=mresp.mocked_requests_get)
+    def test_bad_request(self, mock_get, mock_post):
+        """Check that we raise an Exception with a bad request."""
+        with self.assertRaises(blinkpy.BlinkException):
+            # pylint: disable=protected-access
+            blinkpy.blinkpy._request(None, reqtype='bad')
+
+        with self.assertRaises(blinkpy.BlinkAuthenticationException):
+            # pylint: disable=protected-access
+            blinkpy.blinkpy._request(None, reqtype='post')
+
+    @mock.patch('blinkpy.blinkpy.requests.post',
+                side_effect=mresp.mocked_requests_post)
+    @mock.patch('blinkpy.blinkpy.requests.get',
+                side_effect=mresp.mocked_requests_get)
     def test_full_setup(self, mock_get, mock_post):
         """Check that we can set Blink up properly."""
         self.blink.setup_system()
@@ -76,13 +96,8 @@ class TestBlinkSetup(unittest.TestCase):
         network_id = mresp.NETWORKS_RESPONSE['networks'][0]['id']
         account_id = mresp.NETWORKS_RESPONSE['networks'][0]['account_id']
         test_urls = blinkpy.BlinkURLHandler(region_id)
-        test_cameras = list()
-        test_camera_id = dict()
-        for element in mresp.RESPONSE['devices']:
-            if ('device_type' in element and
-                    element['device_type'] == 'camera'):
-                test_cameras.append(element['name'])
-                test_camera_id[str(element['device_id'])] = element['name']
+        test_cameras = mresp.get_test_cameras(test_urls.base_url)
+        test_camera_id = mresp.get_test_id_table()
 
         # Check that all links have been set properly
         self.assertEqual(self.blink.region_id, region_id)

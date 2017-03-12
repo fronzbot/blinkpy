@@ -3,6 +3,7 @@ reports=no
 
 # Reasons disabled:
 # locally-disabled - it spams too much
+# duplicate-code - it's annoying
 # unused-argument - generic callbacks and setup methods create a lot of warnings
 # too-many-* - are not enforced for the sake of readability
 # too-few-* - same as too-many-*
@@ -10,6 +11,7 @@ reports=no
 disable=
   locally-disabled,
   unused-argument,
+  duplicate-code,
   too-many-arguments,
   too-many-branches,
   too-many-instance-attributes,

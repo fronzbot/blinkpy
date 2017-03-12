@@ -14,6 +14,7 @@ I am in no way affiliated with Blink, nor Immedia Inc.
 
 import json
 import getpass
+from shutil import copyfileobj
 import requests
 import helpers.errors as ERROR
 from helpers.constants import (BLINK_URL, LOGIN_URL,
@@ -247,11 +248,10 @@ class BlinkCamera(object):
         """Write image to file."""
         thumb = self.image_refresh()
         response = _request(thumb, headers=self._header,
-                            stream=True, json_resp=False)
+                            reqtype='get', stream=True, json_resp=False)
         if response.status_code == 200:
             with open(path, 'wb') as imgfile:
-                for chunk in response:
-                    imgfile.write(chunk)
+                copyfileobj(response.raw, imgfile)
 
 
 class Blink(object):

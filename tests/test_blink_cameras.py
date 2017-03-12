@@ -31,6 +31,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
     def test_camera_properties(self, mock_get, mock_post):
         """Tests all property set/recall."""
         test_value = 'foobar'
+        test_region_id = list(mresp.LOGIN_RESPONSE['region'].keys())[0]
         self.blink.setup_system()
         for name in self.blink.cameras:
             camera = self.blink.cameras[name]
@@ -54,6 +55,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             self.assertEqual(camera.arm_link, test_value + '/arm')
             self.assertEqual(camera.header, {'foo': 'bar'})
             self.assertEqual(camera.motion, {'bar': 'foo'})
+            self.assertEqual(camera.region_id, test_region_id)
 
     @mock.patch('blinkpy.blinkpy.requests.post',
                 side_effect=mresp.mocked_requests_post)
@@ -71,19 +73,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         expected_header = self.blink._auth_header
         test_urls = blinkpy.BlinkURLHandler(region_id)
 
-        test_cameras = dict()
-        for element in mresp.RESPONSE['devices']:
-            if ('device_type' in element and
-                    element['device_type'] == 'camera'):
-                test_cameras[element['name']] = {
-                    'device_id': str(element['device_id']),
-                    'armed': element['armed'],
-                    'thumbnail': (test_urls.base_url +
-                                  element['thumbnail'] + '.jpg'),
-                    'temperature': element['temp'],
-                    'battery': element['battery'],
-                    'notifications': element['notifications']
-                }
+        test_cameras = mresp.get_test_cameras(test_urls.base_url)
         test_net_id_url = test_urls.network_url + test_network_id
         for name in self.blink.cameras:
             camera = self.blink.cameras[name]
