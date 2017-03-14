@@ -35,8 +35,8 @@ PROJECT_CLASSIFIERS = [
     'Topic :: Home Automation'
 ]
 
-PROJECT_GITHUB_USERNAME = 'home-assistant'
-PROJECT_GITHUB_REPOSITORY = 'home-assistant'
+PROJECT_GITHUB_USERNAME = 'fronzbot'
+PROJECT_GITHUB_REPOSITORY = 'blinkpy'
 
 PYPI_URL = 'https://pypi.python.org/pypi/{}'.format(PROJECT_PACKAGE_NAME)
 
