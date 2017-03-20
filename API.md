@@ -10,7 +10,7 @@ The Client API is a straightforward REST API using JSON and HTTPS.
 ## This Document
 The purpose here is to describe what is going on behind the scenes, and what commands we know are available to communicate with Blink servers.  This is NOT a description of the blinkpy module, but a description of the commands blinkpy relies on to effectively communicate.
 
-##Login
+## Login
 
 Client login to the Blink Servers.
 
@@ -41,7 +41,7 @@ JSON response containing information including Network ID and Account ID.
 Network ID is needed to issue arm/disarm calls
 
 
-##Sync Modules
+## Sync Modules
 
 Obtain information about the Blink Sync Modules on the given network.
 
@@ -55,7 +55,7 @@ JSON response containing information about the known state of the Sync module, m
 Probably not strictly needed but checking result can verify that the sync module is online and will respond to requests to arm/disarm, etc.
 
 
-##Arm
+## Arm
 
 Arm the given network (start recording/reporting motion events)
 
@@ -68,7 +68,7 @@ JSON response containing information about the arm command request, including th
 **Notes:**
 When this call returns, it does not mean the arm request is complete,  the client must gather the request ID from the response and poll for the status of the command.
 
-##Disarm
+## Disarm
 
 Disarm the given network (stop recording/reporting motion events)
 
@@ -82,7 +82,7 @@ JSON response containing information about the disarm command request, including
 When this call returns, it does not mean the disarm request is complete,  the client must gather the request ID from the response and poll for the status of the command.
 
 
-##Command Status
+## Command Status
 
 Get status info on the given command
 
@@ -98,7 +98,7 @@ After an arm/disarm command, the client appears to poll this URL every second or
 **Known Commands:**
 lv_relay, arm, disarm, thumbnail, clip
 
-##Home Screen
+## Home Screen
 
 Return information displayed on the home screen of the mobile client
 
@@ -207,7 +207,7 @@ Deletes all videos
 **Response**
 Unknown - not tested
 
-##Cameras
+## Cameras
 
 **Request**
 Gets a list of cameras
@@ -252,7 +252,7 @@ JSON response containing camera information
 *Note*: enabling or disabling motion detection is independent of arming or disarming the system.  No motion detection or video recording will take place unless the system is armed.
 
 
-##Miscellaneous
+## Miscellaneous
 
 **Request**
 Gets information about devices that have connected to the blink service
