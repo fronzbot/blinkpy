@@ -6,7 +6,8 @@ import os
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 5
-PATCH_VERSION = 2
+PATCH_VERSION = '3.dev0'
+
 __version__ = '{}.{}.{}'.format(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION)
 
 REQUIRED_PYTHON_VER = (3, 4, 2)
@@ -35,8 +36,8 @@ PROJECT_CLASSIFIERS = [
     'Topic :: Home Automation'
 ]
 
-PROJECT_GITHUB_USERNAME = 'home-assistant'
-PROJECT_GITHUB_REPOSITORY = 'home-assistant'
+PROJECT_GITHUB_USERNAME = 'fronzbot'
+PROJECT_GITHUB_REPOSITORY = 'blinkpy'
 
 PYPI_URL = 'https://pypi.python.org/pypi/{}'.format(PROJECT_PACKAGE_NAME)
 
