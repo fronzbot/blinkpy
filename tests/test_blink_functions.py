@@ -105,6 +105,19 @@ class TestBlinkFunctions(unittest.TestCase):
             camera = self.blink.cameras[camera_name]
             self.assertEqual(camera.thumbnail, test_thumbnail)
 
+    @mock.patch('blinkpy.blinkpy.requests.post',
+                side_effect=mresp.mocked_requests_post)
+    @mock.patch('blinkpy.blinkpy.requests.get',
+                side_effect=mresp.mocked_requests_get)
+    def test_image_with_bad_data(self, mock_get, mock_post):
+        """Checks for handling of bad keys."""
+        self.blink.setup_system()
+        for camera_name in self.blink.cameras:
+            camera = self.blink.cameras[camera_name]
+            camera.snap_picture()
+            camera.urls.home_url = "use_bad_response"
+            self.assertEqual(camera.image_refresh(), None)
+
     def test_camera_update(self):
         """Checks that the update function is doing the right thing."""
         self.test_urls = blinkpy.BlinkURLHandler('test')

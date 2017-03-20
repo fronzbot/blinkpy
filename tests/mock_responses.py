@@ -118,6 +118,12 @@ RESPONSE['network'] = {'armed': NETWORKS_RESPONSE['networks'][0]['armed'],
 RESPONSE['event'] = [FIRST_EVENT, SECOND_EVENT]
 RESPONSE['syncmodule'] = {'name': 'Vengerberg', 'status': 'online'}
 
+BAD_RESPONSE = {}
+BAD_RESPONSE['account'] = {'nothing': 'here'}
+BAD_RESPONSE['devices'] = [{'foo': 'bar', 'device_type': 'camera'},
+                           {'device_type': 'camera', 'device_id': 2112}]
+BAD_RESPONSE['network'] = {'bar': 'foo'}
+
 MOCK_BYTES = '\x00\x10JFIF\x00\x01'
 
 IMAGE_TO_WRITE_URL = list()
@@ -211,7 +217,11 @@ def mocked_requests_get(*args, **kwargs):
 
     # pylint: disable=unused-variable
     (region_id, region), = LOGIN_RESPONSE['region'].items()
-    set_region_id = args[0].split('/')[2].split('.')[0]
+    if args[0] != 'use_bad_response':
+        set_region_id = args[0].split('/')[2].split('.')[0]
+    else:
+        set_region_id = 'ciri'
+
     if set_region_id == 'rest':
         set_region_id = (set_region_id + '.' +
                          args[0].split('/')[2].split('.')[1])
@@ -224,6 +234,8 @@ def mocked_requests_get(*args, **kwargs):
                               ' Expected ' + set_region_id)
     elif args[0] in IMAGE_TO_WRITE_URL:
         return MockGetResponse({}, 200, raw_data=MOCK_BYTES)
+    elif args[0] == 'use_bad_response':
+        return MockGetResponse(BAD_RESPONSE, 200)
     else:
         return MockGetResponse(RESPONSE, 200)
 
