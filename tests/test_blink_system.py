@@ -85,6 +85,16 @@ class TestBlinkSetup(unittest.TestCase):
                 side_effect=mresp.mocked_requests_post)
     @mock.patch('blinkpy.blinkpy.requests.get',
                 side_effect=mresp.mocked_requests_get)
+    def test_system_bad_refresh(self, mock_get, mock_post):
+        """Checks for handling of bad keys."""
+        self.blink.setup_system()
+        self.blink.urls.home_url = 'use_bad_response'
+        self.assertEqual(self.blink.refresh(), None)
+
+    @mock.patch('blinkpy.blinkpy.requests.post',
+                side_effect=mresp.mocked_requests_post)
+    @mock.patch('blinkpy.blinkpy.requests.get',
+                side_effect=mresp.mocked_requests_get)
     def test_full_setup(self, mock_get, mock_post):
         """Check that we can set Blink up properly."""
         self.blink.setup_system()
