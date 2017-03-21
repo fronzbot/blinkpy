@@ -1,4 +1,4 @@
-# Changelog
+Changelog
 -----------
 
 A list of changes between each release
