@@ -21,14 +21,16 @@ from helpers.constants import (BLINK_URL, LOGIN_URL,
                                LOGIN_BACKUP_URL,
                                DEFAULT_URL, ONLINE)
 
+
 def _attempt_reauthorization(blink):
     """Attempt to refresh auth token."""
     headers = blink.get_auth_token()
     blink.set_links()
     return headers
 
-def _request(blink, url='http://google.com', data=None, headers=None, reqtype='get',
-             stream=False, json_resp=True, is_retry=False):
+
+def _request(blink, url='http://google.com', data=None, headers=None,
+             reqtype='get', stream=False, json_resp=True, is_retry=False):
     """Wrapper function for request."""
     if reqtype == 'post':
         response = requests.post(url, headers=headers,
@@ -45,8 +47,9 @@ def _request(blink, url='http://google.com', data=None, headers=None, reqtype='g
                 (response.json()['code'], response.json()['message']))
         else:
             headers = _attempt_reauthorization(blink)
-            _request(blink, url=url, data=data, headers=headers, reqtype=reqtype,
-                     stream=stream, json_resp=json_resp, is_retry=True)
+            _request(blink, url=url, data=data, headers=headers,
+                     reqtype=reqtype, stream=stream, json_resp=json_resp,
+                     is_retry=True)
 
     if json_resp:
         return response.json()
@@ -110,15 +113,18 @@ class BlinkCamera(object):
 
     def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
-        _request(self.blink, url=self.image_link, headers=self.header, reqtype='post')
+        _request(self.blink, url=self.image_link,
+                 headers=self.header, reqtype='post')
 
     def set_motion_detect(self, enable):
         """Set motion detection."""
         url = self.arm_link
         if enable:
-            _request(self.blink, url=url + 'enable', headers=self.header, reqtype='post')
+            _request(self.blink, url=url + 'enable',
+                     headers=self.header, reqtype='post')
         else:
-            _request(self.blink, url=url + 'disable', headers=self.header, reqtype='post')
+            _request(self.blink, url=url + 'disable',
+                     headers=self.header, reqtype='post')
 
     def update(self, values):
         """Update camera information."""
