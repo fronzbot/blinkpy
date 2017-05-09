@@ -18,6 +18,7 @@ class TestBlinkFunctions(unittest.TestCase):
                                    password=PASSWORD)
         (self.region_id, self.region), = mresp.LOGIN_RESPONSE['region'].items()
         self.test_urls = blinkpy.BlinkURLHandler(self.region_id)
+        self.urls = self.test_urls
 
     def tearDown(self):
         """Clean up after test."""
@@ -25,6 +26,7 @@ class TestBlinkFunctions(unittest.TestCase):
         self.region = None
         self.region_id = None
         self.test_urls = None
+        self.urls = None
 
     @mock.patch('blinkpy.blinkpy.requests.post',
                 side_effect=mresp.mocked_requests_post)
