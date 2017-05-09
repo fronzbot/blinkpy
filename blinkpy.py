@@ -27,7 +27,7 @@ def _attempt_reauthorization(blink):
     blink.set_links()
     return headers
 
-def _request(blink, url=url, data=None, headers=None, reqtype='get',
+def _request(blink, url='http://google.com', data=None, headers=None, reqtype='get',
              stream=False, json_resp=True, is_retry=False):
     """Wrapper function for request."""
     if reqtype == 'post':

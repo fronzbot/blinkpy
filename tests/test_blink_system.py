@@ -47,7 +47,7 @@ class TestBlinkSetup(unittest.TestCase):
             self.blink_no_cred.get_auth_token()
 
     def test_no_auth_header(self):
-        """Check that we throw an excpetion when no auth header given."""
+        """Check that we throw an excepetion when no auth header given."""
         # pylint: disable=unused-variable
         (region_id, region), = mresp.LOGIN_RESPONSE['region'].items()
         self.blink.urls = blinkpy.BlinkURLHandler(region_id)
@@ -79,7 +79,7 @@ class TestBlinkSetup(unittest.TestCase):
 
         with self.assertRaises(blinkpy.BlinkAuthenticationException):
             # pylint: disable=protected-access
-            blinkpy.blinkpy._request(None, reqtype='post')
+            blinkpy.blinkpy._request(None, reqtype='post', is_retry=True)
 
     @mock.patch('blinkpy.blinkpy.requests.post',
                 side_effect=mresp.mocked_requests_post)
