@@ -22,7 +22,7 @@ from helpers.constants import (BLINK_URL, LOGIN_URL,
                                DEFAULT_URL, ONLINE)
 
 def _attempt_reauthorization(blink):
-    """Attempt to refresh auth token"""
+    """Attempt to refresh auth token."""
     headers = blink.get_auth_token()
     blink.set_links()
     return headers
@@ -46,7 +46,7 @@ def _request(blink, url='http://google.com', data=None, headers=None, reqtype='g
         else:
             headers = _attempt_reauthorization(blink)
             _request(blink, url=url, data=data, headers=headers, reqtype=reqtype,
-                stream=stream, json_resp=json_resp, is_retry=True)
+                     stream=stream, json_resp=json_resp, is_retry=True)
 
     if json_resp:
         return response.json()
