@@ -47,7 +47,7 @@ class TestBlinkSetup(unittest.TestCase):
             self.blink_no_cred.get_auth_token()
 
     def test_no_auth_header(self):
-        """Check that we throw an excepetion when no auth header given."""
+        """Check that we throw an exception when no auth header given."""
         # pylint: disable=unused-variable
         (region_id, region), = mresp.LOGIN_RESPONSE['region'].items()
         self.blink.urls = blinkpy.BlinkURLHandler(region_id)
