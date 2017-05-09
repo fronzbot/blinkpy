@@ -3,6 +3,10 @@ Changelog
 
 A list of changes between each release
 
+0.6.0.dev1 (unreleased)
+^^^^^^^^^^^^^^^^^^
+- Added auto-reauthorization (token refresh) when a request fails due to an expired token
+
 0.6.0.dev0 (unreleased)
 ^^^^^^^^^^^^^^^^^^
 - Removed redundent properties that only called hidden variables
