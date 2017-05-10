@@ -48,8 +48,8 @@ def _request(blink, url='http://google.com', data=None, headers=None,
         else:
             headers = _attempt_reauthorization(blink)
             return _request(blink, url=url, data=data, headers=headers,
-                            reqtype=reqtype, stream=stream, json_resp=json_resp,
-                            is_retry=True)
+                            reqtype=reqtype, stream=stream, 
+                            json_resp=json_resp, is_retry=True)
 
     if json_resp:
         return response.json()
