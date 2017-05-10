@@ -80,6 +80,10 @@ class TestBlinkSetup(unittest.TestCase):
         with self.assertRaises(blinkpy.BlinkAuthenticationException):
             # pylint: disable=protected-access
             blinkpy.blinkpy._request(None, reqtype='post', is_retry=True)
+        
+        with self.assertRaises(blinkpy.BlinkAuthenticationException):
+            # pylint: disable=protected-access
+            blinkpy.blinkpy._request(None, reqtype='get', is_retry=False)
 
     @mock.patch('blinkpy.blinkpy.requests.post',
                 side_effect=mresp.mocked_requests_post)
