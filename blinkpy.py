@@ -23,7 +23,7 @@ from helpers.constants import (BLINK_URL, LOGIN_URL,
 
 
 def _attempt_reauthorization(blink):
-    """Attempt to refresh auth token."""
+    """Attempt to refresh auth token and links."""
     headers = blink.get_auth_token()
     blink.set_links()
     return headers
