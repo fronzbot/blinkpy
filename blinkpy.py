@@ -47,7 +47,7 @@ def _request(blink, url='http://google.com', data=None, headers=None,
                 (response.json()['code'], response.json()['message']))
         else:
             headers = _attempt_reauthorization(blink)
-            _request(blink, url=url, data=data, headers=headers,
+            return _request(blink, url=url, data=data, headers=headers,
                      reqtype=reqtype, stream=stream, json_resp=json_resp,
                      is_retry=True)
 
