@@ -171,3 +171,32 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(self.blink.urls.event_url, test_urls.event_url)
         self.assertEqual(self.blink.urls.network_url, test_urls.network_url)
         self.assertEqual(self.blink.urls.networks_url, test_urls.networks_url)
+
+    @mock.patch('blinkpy.blinkpy.requests.post',
+                side_effect=mresp.mocked_requests_post)
+    @mock.patch('blinkpy.blinkpy.requests.get',
+                side_effect=mresp.mocked_requests_get)
+    @mock.patch('blinkpy.blinkpy.BlinkURLHandler',
+                side_effect=mresp.MockURLHandler)
+    def test_continuous_bad_auth(self, mock_url, mock_get, mock_post):
+        """Check that we don't get stuck if we can't reauthorize."""
+        with self.assertRaises(blinkpy.BlinkAuthenticationException):
+            self.blink.setup_system()      
+
+'''
+    @mock.patch('blinkpy.blinkpy.requests.post',
+                side_effect=mresp.mocked_requests_post)
+    @mock.patch('blinkpy.blinkpy.requests.get',
+                side_effect=mresp.mocked_requests_get)
+    def test_reauthorization_attempt(self, mock_get, mock_post):
+        """Check that we can reauthorize after first unsuccessful attempt."""
+        self.blink.setup_system()
+        old_token = self.blink._token
+        self.blink._token = 'BADTOKEN'
+        (region_id, region), = mresp.LOGIN_RESPONSE['region'].items()
+        test_urls = blinkpy.BlinkURLHandler(region_id)
+        self.blink.urls.home_url = 'reauth'
+        self.assertEqual(self.blink.refresh(), None)
+        self.assertEqual(self.blink.urls.home_url, test_urls.home_url)
+
+'''
