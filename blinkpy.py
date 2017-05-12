@@ -22,8 +22,15 @@ from helpers.constants import (BLINK_URL, LOGIN_URL,
                                DEFAULT_URL, ONLINE)
 
 
-def _request(url, data=None, headers=None, reqtype='get',
-             stream=False, json_resp=True):
+def _attempt_reauthorization(blink):
+    """Attempt to refresh auth token and links."""
+    headers = blink.get_auth_token()
+    blink.set_links()
+    return headers
+
+
+def _request(blink, url='http://google.com', data=None, headers=None,
+             reqtype='get', stream=False, json_resp=True, is_retry=False):
     """Wrapper function for request."""
     if reqtype == 'post':
         response = requests.post(url, headers=headers,
@@ -35,8 +42,14 @@ def _request(url, data=None, headers=None, reqtype='get',
         raise BlinkException(ERROR.REQUEST)
 
     if json_resp and 'code' in response.json():
-        raise BlinkAuthenticationException(
-            (response.json()['code'], response.json()['message']))
+        if is_retry:
+            raise BlinkAuthenticationException(
+                (response.json()['code'], response.json()['message']))
+        else:
+            headers = _attempt_reauthorization(blink)
+            return _request(blink, url=url, data=data, headers=headers,
+                            reqtype=reqtype, stream=stream,
+                            json_resp=json_resp, is_retry=True)
 
     if json_resp:
         return response.json()
@@ -75,9 +88,10 @@ class BlinkURLHandler(object):
 class BlinkCamera(object):
     """Class to initialize individual camera."""
 
-    def __init__(self, config, urls):
+    def __init__(self, config, blink):
         """Initiailize BlinkCamera."""
-        self.urls = urls
+        self.blink = blink
+        self.urls = self.blink.urls
         self.id = str(config['device_id'])  # pylint: disable=invalid-name
         self.name = config['name']
         self._status = config['armed']
@@ -99,15 +113,18 @@ class BlinkCamera(object):
 
     def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
-        _request(self.image_link, headers=self.header, reqtype='post')
+        _request(self.blink, url=self.image_link,
+                 headers=self.header, reqtype='post')
 
     def set_motion_detect(self, enable):
         """Set motion detection."""
         url = self.arm_link
         if enable:
-            _request(url + 'enable', headers=self.header, reqtype='post')
+            _request(self.blink, url=url + 'enable',
+                     headers=self.header, reqtype='post')
         else:
-            _request(url + 'disable', headers=self.header, reqtype='post')
+            _request(self.blink, url=url + 'disable',
+                     headers=self.header, reqtype='post')
 
     def update(self, values):
         """Update camera information."""
@@ -122,7 +139,7 @@ class BlinkCamera(object):
     def image_refresh(self):
         """Refresh current thumbnail."""
         url = self.urls.home_url
-        response = _request(url, headers=self.header,
+        response = _request(self.blink, url=url, headers=self.header,
                             reqtype='get')['devices']
         for element in response:
             try:
@@ -137,7 +154,7 @@ class BlinkCamera(object):
     def image_to_file(self, path):
         """Write image to file."""
         thumb = self.image_refresh()
-        response = _request(thumb, headers=self.header,
+        response = _request(self.blink, url=thumb, headers=self.header,
                             reqtype='get', stream=True, json_resp=False)
         if response.status_code == 200:
             with open(path, 'wb') as imgfile:
@@ -183,7 +200,7 @@ class Blink(object):
         """Get all events on server."""
         url = self.urls.event_url + self.network_id
         headers = self._auth_header
-        self._events = _request(url, headers=headers,
+        self._events = _request(self, url=url, headers=headers,
                                 reqtype='get')['event']
         return self._events
 
@@ -192,7 +209,7 @@ class Blink(object):
         """Return boolean system online status."""
         url = self.urls.network_url + self.network_id + '/syncmodules'
         headers = self._auth_header
-        return ONLINE[_request(url, headers=headers,
+        return ONLINE[_request(self, url=url, headers=headers,
                                reqtype='get')['syncmodule']['status']]
 
     def last_motion(self):
@@ -224,7 +241,7 @@ class Blink(object):
         else:
             value_to_append = 'disarm'
         url = self.urls.network_url + self.network_id + '/' + value_to_append
-        _request(url, headers=self._auth_header, reqtype='post')
+        _request(self, url=url, headers=self._auth_header, reqtype='post')
 
     def refresh(self):
         """Get all blink cameras and pulls their most recent status."""
@@ -248,7 +265,7 @@ class Blink(object):
         if self._auth_header is None:
             raise BlinkException(ERROR.AUTH_TOKEN)
 
-        return _request(url, headers=headers, reqtype='get')
+        return _request(self, url=url, headers=headers, reqtype='get')
 
     def get_cameras(self):
         """Find and creates cameras."""
@@ -258,7 +275,7 @@ class Blink(object):
                     element['device_type'] == 'camera'):
                 # Add region to config
                 element['region_id'] = self.region_id
-                device = BlinkCamera(element, self.urls)
+                device = BlinkCamera(element, self)
                 self.cameras[device.name] = device
                 self._idlookup[device.id] = device.name
 
@@ -306,13 +323,13 @@ class Blink(object):
             "password": self._password,
             "client_specifier": "iPhone 9.2 | 2.2 | 222"
         })
-        response = _request(LOGIN_URL, headers=headers,
+        response = _request(self, url=LOGIN_URL, headers=headers,
                             data=data, json_resp=False, reqtype='post')
         if response.status_code is 200:
             response = response.json()
             (self.region_id, self.region), = response['region'].items()
         else:
-            response = _request(LOGIN_BACKUP_URL, headers=headers,
+            response = _request(self, url=LOGIN_BACKUP_URL, headers=headers,
                                 data=data, reqtype='post')
             self.region_id = 'rest.piri'
             self.region = "UNKNOWN"
@@ -325,6 +342,8 @@ class Blink(object):
 
         self.urls = BlinkURLHandler(self.region_id)
 
+        return self._auth_header
+
     def get_ids(self):
         """Set the network ID and Account ID."""
         url = self.urls.networks_url
@@ -333,6 +352,6 @@ class Blink(object):
         if self._auth_header is None:
             raise BlinkException(ERROR.AUTH_TOKEN)
 
-        response = _request(url, headers=headers, reqtype='get')
+        response = _request(self, url=url, headers=headers, reqtype='get')
         self.network_id = str(response['networks'][0]['id'])
         self.account_id = str(response['networks'][0]['account_id'])

@@ -18,6 +18,7 @@ class TestBlinkFunctions(unittest.TestCase):
                                    password=PASSWORD)
         (self.region_id, self.region), = mresp.LOGIN_RESPONSE['region'].items()
         self.test_urls = blinkpy.BlinkURLHandler(self.region_id)
+        self.urls = self.test_urls
 
     def tearDown(self):
         """Clean up after test."""
@@ -25,6 +26,7 @@ class TestBlinkFunctions(unittest.TestCase):
         self.region = None
         self.region_id = None
         self.test_urls = None
+        self.urls = None
 
     @mock.patch('blinkpy.blinkpy.requests.post',
                 side_effect=mresp.mocked_requests_post)
@@ -122,7 +124,8 @@ class TestBlinkFunctions(unittest.TestCase):
         """Checks that the update function is doing the right thing."""
         self.test_urls = blinkpy.BlinkURLHandler('test')
         test_config = mresp.FIRST_CAMERA
-        test_camera = blinkpy.blinkpy.BlinkCamera(test_config, self.test_urls)
+        self.urls = self.test_urls
+        test_camera = blinkpy.blinkpy.BlinkCamera(test_config, self)
         test_update = mresp.SECOND_CAMERA
         test_camera.update(test_update)
         test_image_url = self.test_urls.base_url + test_update['thumbnail']
