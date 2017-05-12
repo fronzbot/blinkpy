@@ -57,6 +57,12 @@ class TestBlinkCameraSetup(unittest.TestCase):
             self.assertEqual(camera.motion, {'bar': 'foo'})
             self.assertEqual(camera.region_id, test_region_id)
 
+            self.assertEqual(camera.battery_string, "Low")
+            camera.battery = 3
+            self.assertEqual(camera.battery_string, "OK")
+            camera.battery = -10
+            self.assertEqual(camera.battery_string, "Unknown")
+
     @mock.patch('blinkpy.blinkpy.requests.post',
                 side_effect=mresp.mocked_requests_post)
     @mock.patch('blinkpy.blinkpy.requests.get',

@@ -111,6 +111,16 @@ class BlinkCamera(object):
         """Return camera arm status."""
         return self._status
 
+    @property
+    def battery_string(self):
+        """Return string indicating battery status."""
+        if self.battery > 1 and self.battery <= 3:
+            return "OK"
+        elif self.battery >= 0:
+            return "Low"
+        else:
+            return "Unknown"
+
     def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
         _request(self.blink, url=self.image_link,

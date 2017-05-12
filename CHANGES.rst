@@ -3,15 +3,13 @@ Changelog
 
 A list of changes between each release
 
-0.6.0.dev1 (unreleased)
-^^^^^^^^^^^^^^^^^^
-- Added auto-reauthorization (token refresh) when a request fails due to an expired token
-
-0.6.0.dev0 (unreleased)
+0.6.0 (unreleased)
 ^^^^^^^^^^^^^^^^^^
 - Removed redundent properties that only called hidden variables
 - Revised request wrapper function to be more intelligent
 - Added tests to ensure exceptions are caught and handled (100% coverage!)
+- Added auto-reauthorization (token refresh) when a request fails due to an expired token (@TySwift93)
+- Added battery level string to reduce confusion with the way Blink reports battery level as integer from 0 to 3
 
 0.5.2 (2017-03-12)
 ^^^^^^^^^^^^^^^^^^
