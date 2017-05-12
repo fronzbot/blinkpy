@@ -171,3 +171,31 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(self.blink.urls.event_url, test_urls.event_url)
         self.assertEqual(self.blink.urls.network_url, test_urls.network_url)
         self.assertEqual(self.blink.urls.networks_url, test_urls.networks_url)
+
+    @mock.patch('blinkpy.blinkpy.requests.post',
+                side_effect=mresp.mocked_requests_post)
+    @mock.patch('blinkpy.blinkpy.requests.get',
+                side_effect=mresp.mocked_requests_get)
+    @mock.patch('blinkpy.blinkpy.BlinkURLHandler',
+                side_effect=mresp.MockURLHandler)
+    def test_continuous_bad_auth(self, mock_url, mock_get, mock_post):
+        """Check that we don't get stuck if we can't reauthorize."""
+        with self.assertRaises(blinkpy.BlinkAuthenticationException):
+            self.blink.setup_system()
+
+    @mock.patch('blinkpy.blinkpy.requests.post',
+                side_effect=mresp.mocked_requests_post)
+    @mock.patch('blinkpy.blinkpy.requests.get',
+                side_effect=mresp.mocked_requests_get)
+    def test_reauthorization_attempt(self, mock_get, mock_post):
+        """Check that we can reauthorize after first unsuccessful attempt."""
+        self.blink.setup_system()
+        # pylint: disable=protected-access
+        original_header = self.blink._auth_header
+        bad_header = {'Host': self.blink._host, 'TOKEN_AUTH': 'BADTOKEN'}
+        self.blink._auth_header = bad_header
+        # pylint: disable=protected-access
+        self.assertEqual(self.blink._auth_header, bad_header)
+        self.blink.get_summary()
+        # pylint: disable=protected-access
+        self.assertEqual(self.blink._auth_header, original_header)

@@ -214,10 +214,16 @@ def mocked_requests_get(*args, **kwargs):
         def raw(self):
             """Return raw data from get request."""
             return self.raw_data
-
+    rx_header = kwargs.pop('headers')
+    expected_token = LOGIN_RESPONSE['authtoken']['authtoken']
     # pylint: disable=unused-variable
+    if ('Content-Type' not in rx_header
+            and rx_header['TOKEN_AUTH'] != expected_token):
+        return MockGetResponse({'message': 'Not Authorized', 'code': 400}, 400)
+
     (region_id, region), = LOGIN_RESPONSE['region'].items()
-    if args[0] != 'use_bad_response':
+    if (args[0] != 'use_bad_response'
+            and args[0] != 'reauth' and args[0] is not None):
         set_region_id = args[0].split('/')[2].split('.')[0]
     else:
         set_region_id = 'ciri'
@@ -236,6 +242,8 @@ def mocked_requests_get(*args, **kwargs):
         return MockGetResponse({}, 200, raw_data=MOCK_BYTES)
     elif args[0] == 'use_bad_response':
         return MockGetResponse(BAD_RESPONSE, 200)
+    elif args[0] == 'reauth':
+        return MockGetResponse({'message': 'REAUTH', 'code': 777}, 777)
     else:
         return MockGetResponse(RESPONSE, 200)
 
@@ -284,3 +292,15 @@ def get_test_id_table():
                 element['device_type'] == 'camera'):
             test_id_table[str(element['device_id'])] = element['name']
     return test_id_table
+
+
+class MockURLHandler(object):
+    """Mocks URL Handler in blinkpy module."""
+
+    def __init__(self, region_id):
+        """Initialize the urls."""
+        self.base_url = 'https://' + region_id + '.' + const.BLINK_URL
+        self.home_url = 'reauth'
+        self.event_url = self.base_url + '/events/network/'
+        self.network_url = self.base_url + '/network/'
+        self.networks_url = self.base_url + '/networks'
