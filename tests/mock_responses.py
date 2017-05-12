@@ -214,10 +214,16 @@ def mocked_requests_get(*args, **kwargs):
         def raw(self):
             """Return raw data from get request."""
             return self.raw_data
-
+    rx_header = kwargs.pop('headers')
+    expected_token = LOGIN_RESPONSE['authtoken']['authtoken']
     # pylint: disable=unused-variable
+    if ('Content-Type' not in rx_header
+            and rx_header['TOKEN_AUTH'] != expected_token):
+        return MockGetResponse({'message': 'Not Authorized', 'code': 400}, 400)
+
     (region_id, region), = LOGIN_RESPONSE['region'].items()
-    if args[0] != 'use_bad_response' and args[0] != 'reauth' and args[0] is not None:
+    if (args[0] != 'use_bad_response'
+            and args[0] != 'reauth' and args[0] is not None):
         set_region_id = args[0].split('/')[2].split('.')[0]
     else:
         set_region_id = 'ciri'
