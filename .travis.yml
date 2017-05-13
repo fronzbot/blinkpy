@@ -11,6 +11,8 @@ matrix:
       env: TOXENV=py36
     - python: "3.6-dev"
       env: TOXENV=py36
+    - python: "3.4.2"
+      env: TOXENV=build
 
 install: pip install -U tox coveralls
 language: python

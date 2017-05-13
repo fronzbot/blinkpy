@@ -1,6 +1,9 @@
 """
+Test all camera attributes.
+
 Tests the camera initialization and attributes of
-individual BlinkCamera instantiations.
+individual BlinkCamera instantiations once the
+Blink system is set up.
 """
 
 import unittest

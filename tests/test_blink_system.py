@@ -1,4 +1,6 @@
 """
+Test full system.
+
 Tests the system initialization and attributes of
 the main Blink system.  Tests if we properly catch
 any communication related errors at startup.
@@ -136,7 +138,7 @@ class TestBlinkSetup(unittest.TestCase):
     @mock.patch('blinkpy.blinkpy.requests.get',
                 side_effect=mresp.mocked_requests_get)
     def test_arm_disarm_system(self, mock_get, mock_post):
-        """Check that we can arm/disarm the system"""
+        """Check that we can arm/disarm the system."""
         self.blink.setup_system()
         self.blink.arm = False
         self.assertIs(self.blink.arm, False)

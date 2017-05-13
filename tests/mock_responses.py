@@ -150,8 +150,10 @@ def mocked_requests_post(*args, **kwargs):
             return self.json_data
 
     # pylint: disable=global-variable-not-assigned
+    # pylint: disable=global-statement
     global RESPONSE
     # pylint: disable=global-variable-not-assigned
+    # pylint: disable=global-statement
     global NETWORKS_RESPONSE
 
     if args[0] is not None:
@@ -260,6 +262,7 @@ def mocked_copyfileobj(*args, **kwargs):
             self.src = src
             self.dst = dst
     # pylint: disable=global-variable-not-assigned
+    # pylint: disable=global-statement
     global FAKE_FILES
     mockobj = MockCopyFileObj(args[0], args[1])
     FAKE_FILES.append(mockobj.src)
@@ -267,7 +270,7 @@ def mocked_copyfileobj(*args, **kwargs):
 
 
 def get_test_cameras(base_url):
-    """Helper function to return cameras named in this file."""
+    """Return cameras named in this file."""
     test_cameras = dict()
     for element in RESPONSE['devices']:
         if ('device_type' in element and
@@ -285,7 +288,7 @@ def get_test_cameras(base_url):
 
 
 def get_test_id_table():
-    """Helper function to return mock id table."""
+    """Return mock id table."""
     test_id_table = dict()
     for element in RESPONSE['devices']:
         if ('device_type' in element and
