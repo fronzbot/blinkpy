@@ -31,7 +31,7 @@ def _attempt_reauthorization(blink):
 
 def _request(blink, url='http://google.com', data=None, headers=None,
              reqtype='get', stream=False, json_resp=True, is_retry=False):
-    """Wrapper function for request."""
+    """Perform server requests and check if reauthorization neccessary."""
     if reqtype == 'post':
         response = requests.post(url, headers=headers,
                                  data=data)
@@ -50,7 +50,7 @@ def _request(blink, url='http://google.com', data=None, headers=None,
             return _request(blink, url=url, data=data, headers=headers,
                             reqtype=reqtype, stream=stream,
                             json_resp=json_resp, is_retry=True)
-
+    # pylint: disable=no-else-return
     if json_resp:
         return response.json()
     else:
@@ -114,12 +114,12 @@ class BlinkCamera(object):
     @property
     def battery_string(self):
         """Return string indicating battery status."""
+        status = "Unknown"
         if self.battery > 1 and self.battery <= 3:
-            return "OK"
+            status = "OK"
         elif self.battery >= 0:
-            return "Low"
-        else:
-            return "Unknown"
+            status = "Low"
+        return status
 
     def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
@@ -302,9 +302,10 @@ class Blink(object):
 
     def setup_system(self):
         """
-        Wrapper for various setup functions.
+        Perform full system setup.
 
         Method logs in and sets auth token, urls, and ids for future requests.
+        Essentially this is just a wrapper function for ease of use.
         """
         if self._username is None or self._password is None:
             raise BlinkAuthenticationException(ERROR.AUTHENTICATE)
@@ -335,7 +336,7 @@ class Blink(object):
         })
         response = _request(self, url=LOGIN_URL, headers=headers,
                             data=data, json_resp=False, reqtype='post')
-        if response.status_code is 200:
+        if response.status_code == 200:
             response = response.json()
             (self.region_id, self.region), = response['region'].items()
         else:

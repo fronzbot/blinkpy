@@ -3,6 +3,10 @@ Changelog
 
 A list of changes between each release
 
+0.7.0.dev (development version)
+^^^^^^^^^^^^^^^^^^
+- Fixed style errors for bumped pydocstring and pylint versions
+
 0.6.0 (2017-05-12)
 ^^^^^^^^^^^^^^^^^^
 - Removed redundent properties that only called hidden variables
