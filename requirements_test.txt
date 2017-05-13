@@ -1,5 +1,7 @@
 flake8==3.3
-pylint==1.6.5
-pydocstyle==1.1.1
+flake8-docstrings==1.1.0
+pylint==1.7.1
+pydocstyle==2.0.0
 pytest>=2.9.2
+pytest-cov>=2.3.1
 pytest-sugar>=0.8.0
