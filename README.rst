@@ -1,5 +1,5 @@
 blinkpy |Build Status| |Coverage Status|
-============
+=============================================
 A Python library for the Blink Camera system
 
 Disclaimer:
@@ -85,6 +85,8 @@ Class Descriptions
 * ``Blink.get_auth_token()`` Uses login information to retrieve authorization token from Blink for further communication.
 * ``Blink.get_ids()`` Retrieves the network_id and account_id from Blink in order to access video and image pages on their server.
 * ``Blink.setup_system()`` A wrapper script that calls:
+
+
 .. code:: python
 
     Blink.get_auth_token()
@@ -101,12 +103,14 @@ The ``BlinkCamera`` class expects to receive:
 * A dictionary ``config`` that contains the camera name, device id, armed status, thumbnail url, camera temperature, camery battery level, number of notifications, and region id
 * A ``BlinkURLHandler`` object that contains all the links necessary for communication.
 
+
 Ultimately, this class is just a wrapper for each individual camera in order to make communication with individual cameras less clunky.  The following properties/methods are availiable (in addition to the ones mentioned earlier):
 
 * ``BlinkCamera.snap_picture()`` Takes an image with the camera and saves it as the new thumbnail.  The ``Blink.refresh()`` method should be called after this if you want to store the new thumbnail link.
 * ``BlinkCamera.set_motion_detect(enable=True/False)`` Sending True to this function will enable motion detection for the camera.  Setting to False will disable motion detection.
 * ``BlinkCamera.image_to_file(path)`` This will write the current thumbnail to the location indicated in 'path'
 * ``BlinkCamera.image_refresh()`` Refreshes the current thumbnail.
+
 
 .. code:: python
 
@@ -118,10 +122,3 @@ The ``BlinkURLHandler`` class expects to be initialized with the region id found
    :target: https://travis-ci.org/fronzbot/blinkpy
 .. |Coverage Status| image:: https://coveralls.io/repos/github/fronzbot/blinkpy/badge.svg?branch=master
     :target: https://coveralls.io/github/fronzbot/blinkpy?branch=master
-
-
-
-
-
-
-
