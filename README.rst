@@ -50,8 +50,8 @@ The cameras are of a BlinkCamera class, of which the following parameters can be
     blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD')
     blink.setup_system()
     
-    for camera in blink.cameras:
-        print(camera.name)           # Name of the camera
+    for name, camera in blink.cameras.items():
+        print(name)                  # Name of the camera
         print(camera.id)             # Integer id of the camera (assigned by Blink)
         print(camera.armed)          # Whether the device is armed/disarmed (ie. detecting motion)
         print(camera.clip)           # Link to last motion clip captured
@@ -61,7 +61,7 @@ The cameras are of a BlinkCamera class, of which the following parameters can be
         print(camera.battery_string) # Gives battery level as a string ("OK" or "Low").  Returns "Unknown" if value is... well, unknown 
         print(camera.notifications)  # Number of unread notifications (ie. motion alerts that haven't been viewed)
         print(camera.motion)         # Dictionary containing values for keys ['video', 'image', 'time']
-                                     # which correspond to last motion recorded, thumbnail of last motion, and timestamp of last motion
+                                     #   which corresponds to last motion recorded, thumbnail of last motion, and timestamp of last motion
 
 
 Class Descriptions
