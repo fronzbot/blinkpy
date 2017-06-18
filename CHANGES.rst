@@ -6,6 +6,7 @@ A list of changes between each release
 0.7.0.dev (development version)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Fixed style errors for bumped pydocstring and pylint versions
+- Changed Blink.cameras dictionary to be case-insensitive (fixes #35)
 
 0.6.0 (2017-05-12)
 ^^^^^^^^^^^^^^^^^^

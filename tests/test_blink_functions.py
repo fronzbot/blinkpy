@@ -2,6 +2,7 @@
 
 import unittest
 from unittest import mock
+import random
 import blinkpy
 import tests.mock_responses as mresp
 
@@ -119,6 +120,26 @@ class TestBlinkFunctions(unittest.TestCase):
             camera.snap_picture()
             camera.urls.home_url = "use_bad_response"
             self.assertEqual(camera.image_refresh(), None)
+
+    @mock.patch('blinkpy.blinkpy.requests.post',
+                side_effect=mresp.mocked_requests_post)
+    @mock.patch('blinkpy.blinkpy.requests.get',
+                side_effect=mresp.mocked_requests_get)
+    def test_camera_random_case(self, mock_get, mock_post):
+        """Checks for case of camera name."""
+        self.blink.setup_system()
+        for camera_name in self.blink.cameras:
+
+            rand_name = camera_name
+            # Make sure we never pass this test if rand_name = camera_name
+            while rand_name == camera_name:
+                rand_name = ''.join(
+                    random.choice(
+                        (str.upper, str.lower)
+                    )(x) for x in camera_name)
+
+            self.assertEqual(self.blink.cameras[camera_name].name,
+                             self.blink.cameras[rand_name].name)
 
     def test_camera_update(self):
         """Checks that the update function is doing the right thing."""

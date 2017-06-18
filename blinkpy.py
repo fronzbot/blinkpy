@@ -16,6 +16,7 @@ import json
 import getpass
 from shutil import copyfileobj
 import requests
+from requests.structures import CaseInsensitiveDict
 import helpers.errors as ERROR
 from helpers.constants import (BLINK_URL, LOGIN_URL,
                                LOGIN_BACKUP_URL,
@@ -186,7 +187,7 @@ class Blink(object):
         self.region_id = None
         self._host = None
         self._events = []
-        self.cameras = {}
+        self.cameras = CaseInsensitiveDict({})
         self._idlookup = {}
         self.urls = None
 
