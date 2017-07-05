@@ -1,6 +1,6 @@
 flake8==3.3
 flake8-docstrings==1.1.0
-pylint==1.7.1
+pylint==1.7.2
 pydocstyle==2.0.0
 pytest>=2.9.2
 pytest-cov>=2.3.1
