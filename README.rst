@@ -1,5 +1,5 @@
 blinkpy |Build Status| |Coverage Status| |PyPi Version|
-=============================================
+===========================================================
 A Python library for the Blink Camera system
 
 Disclaimer:
@@ -23,7 +23,7 @@ To install the current development version, perform the following steps.  Note t
     $ git clone https://github.com/fronzbot/blinkpy.git
     $ cd blinkpy
     $ rm -rf build dist
-    $ python setup.py bdist_wheel
+    $ python3 setup.py bdist_wheel
     $ pip3 install --upgrade dist/*.whl
 
 
@@ -132,5 +132,6 @@ The ``BlinkURLHandler`` class expects to be initialized with the region id found
    :target: https://travis-ci.org/fronzbot/blinkpy
 .. |Coverage Status| image:: https://coveralls.io/repos/github/fronzbot/blinkpy/badge.svg?branch=master
     :target: https://coveralls.io/github/fronzbot/blinkpy?branch=master
-.. |PyPi Version| image:: https://badge.fury.io/py/blinkpy.svg
-    :target: https://badge.fury.io/py/blinkpy
+.. |PyPi Version| image:: https://img.shields.io/pypi/v/blinkpy.svg
+    :target: https://pypi.python.org/pypi/blinkpy
+    
