@@ -14,6 +14,10 @@ Original protocol hacking by MattTW : https://github.com/MattTW/BlinkMonitorProt
 
 API calls faster than 60 seconds is not recommended as it can overwhelm Blink's servers.  Please use this module responsibly.
 
+Installation
+================
+``pip3 install blinkpy``
+
 Installing Development Version
 ==================================
 To install the current development version, perform the following steps.  Note that the following will create a blinkpy directory in your home area:
