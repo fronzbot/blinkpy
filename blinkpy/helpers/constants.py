@@ -1,7 +1,5 @@
-'''
-constants.py
-Generates constants for use in blinkpy
-'''
+"""Generates constants for use in blinkpy."""
+
 import os
 
 MAJOR_VERSION = 0

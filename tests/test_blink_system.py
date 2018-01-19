@@ -9,8 +9,8 @@ any communication related errors at startup.
 import unittest
 from unittest import mock
 from blinkpy import blinkpy as blinkpy
-import tests.mock_responses as mresp
 import blinkpy.helpers.constants as const
+import tests.mock_responses as mresp
 
 USERNAME = 'foobar'
 PASSWORD = 'deadbeef'
