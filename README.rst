@@ -3,10 +3,6 @@ blinkpy |Build Status| |Coverage Status| |PyPi Version|
 A Python library for the Blink Camera system
 Only compatible with Python 3+
 
-UPDATE (Dec. 29, 2017)
-======================
-Work on this API has been halted indefinitely since Blink has seemed to cut off API access.  Looks like it's time to cut losses and go with a different camera system that's more friendly to the DIY community.
-
 Disclaimer:
 ~~~~~~~~~~~~~~~
 Published under the MIT license - See LICENSE file for more details.
