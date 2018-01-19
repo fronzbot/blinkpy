@@ -133,7 +133,7 @@ Ultimately, this class is just a wrapper for each individual camera in order to 
     
 The ``BlinkURLHandler`` class expects to be initialized with the region id found in the ``Blink.get_auth_token()`` function.  The class will then create the necessary links required for various communication.
 
-.. |Build Status| image:: https://travis-ci.org/fronzbot/blinkpy.svg?branch=master
+.. |Build Status| image:: https://travis-ci.org/fronzbot/blinkpy.svg?branch=dev
    :target: https://travis-ci.org/fronzbot/blinkpy
 .. |Coverage Status| image:: https://coveralls.io/repos/github/fronzbot/blinkpy/badge.svg?branch=master
     :target: https://coveralls.io/github/fronzbot/blinkpy?branch=master
