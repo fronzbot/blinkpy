@@ -8,7 +8,7 @@ Blink system is set up.
 
 import unittest
 from unittest import mock
-import blinkpy
+from blinkpy import blinkpy
 import tests.mock_responses as mresp
 
 USERNAME = 'foobar'

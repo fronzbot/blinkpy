@@ -17,10 +17,11 @@ import getpass
 from shutil import copyfileobj
 import requests
 from requests.structures import CaseInsensitiveDict
-import helpers.errors as ERROR
-from helpers.constants import (BLINK_URL, LOGIN_URL,
-                               LOGIN_BACKUP_URL,
-                               DEFAULT_URL, ONLINE)
+import blinkpy.helpers.errors as ERROR
+from blinkpy.helpers.constants import (
+    BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL,
+    DEFAULT_URL, ONLINE
+)
 
 
 def _attempt_reauthorization(blink):

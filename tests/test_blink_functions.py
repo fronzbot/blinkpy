@@ -3,7 +3,7 @@
 import unittest
 from unittest import mock
 import random
-import blinkpy
+from blinkpy import blinkpy as blinkpy
 import tests.mock_responses as mresp
 
 USERNAME = 'foobar'
@@ -146,7 +146,7 @@ class TestBlinkFunctions(unittest.TestCase):
         self.test_urls = blinkpy.BlinkURLHandler('test')
         test_config = mresp.FIRST_CAMERA
         self.urls = self.test_urls
-        test_camera = blinkpy.blinkpy.BlinkCamera(test_config, self)
+        test_camera = blinkpy.BlinkCamera(test_config, self)
         test_update = mresp.SECOND_CAMERA
         test_camera.update(test_update)
         test_image_url = self.test_urls.base_url + test_update['thumbnail']

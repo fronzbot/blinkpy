@@ -5,7 +5,7 @@ This file should be updated any time the Blink server responses
 change so we can make sure blinkpy can still communicate.
 """
 
-import helpers.constants as const
+import blinkpy.helpers.constants as const
 
 NETWORKS_RESPONSE = {}
 NETWORKS_RESPONSE['summary'] = {'onboarded': True, 'name': 'Nilfgaard'}

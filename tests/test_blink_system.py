@@ -8,9 +8,9 @@ any communication related errors at startup.
 
 import unittest
 from unittest import mock
-import blinkpy
+from blinkpy import blinkpy as blinkpy
 import tests.mock_responses as mresp
-import helpers.constants as const
+import blinkpy.helpers.constants as const
 
 USERNAME = 'foobar'
 PASSWORD = 'deadbeef'
@@ -77,11 +77,11 @@ class TestBlinkSetup(unittest.TestCase):
         """Check that we raise an Exception with a bad request."""
         with self.assertRaises(blinkpy.BlinkException):
             # pylint: disable=protected-access
-            blinkpy.blinkpy._request(None, reqtype='bad')
+            blinkpy._request(None, reqtype='bad')
 
         with self.assertRaises(blinkpy.BlinkAuthenticationException):
             # pylint: disable=protected-access
-            blinkpy.blinkpy._request(None, reqtype='post', is_retry=True)
+            blinkpy._request(None, reqtype='post', is_retry=True)
 
     @mock.patch('blinkpy.blinkpy.requests.post',
                 side_effect=mresp.mocked_requests_post)
@@ -162,7 +162,7 @@ class TestBlinkSetup(unittest.TestCase):
     def test_setup_backup_subdomain(self, mock_get, mock_post):
         """Check that we can use the 'rest.piri' subdomain."""
         test_urls = blinkpy.BlinkURLHandler('rest.piri')
-        with mock.patch('helpers.constants.LOGIN_URL',
+        with mock.patch('blinkpy.helpers.constants.LOGIN_URL',
                         return_value=const.LOGIN_URL + 'NO'):
             self.blink.setup_system()
         self.assertEqual(self.blink.region_id, 'rest.piri')

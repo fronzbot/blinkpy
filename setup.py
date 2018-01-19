@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
-from helpers.constants import (__version__, PROJECT_PACKAGE_NAME,
-                               PROJECT_LICENSE, PROJECT_URL,
-                               PROJECT_EMAIL, PROJECT_DESCRIPTION,
-                               PROJECT_CLASSIFIERS, PROJECT_AUTHOR,
-                               PROJECT_LONG_DESCRIPTION)
+from blinkpy.helpers.constants import (
+    __version__, PROJECT_PACKAGE_NAME, PROJECT_LICENSE, PROJECT_URL,
+    PROJECT_EMAIL, PROJECT_DESCRIPTION, PROJECT_CLASSIFIERS, PROJECT_AUTHOR,
+    PROJECT_LONG_DESCRIPTION
+)
+
+REQUIRES = [
+    'requests>=2.12.4'
+]
+
+PACKAGES = find_packages()
 
 setup(
     name = PROJECT_PACKAGE_NAME,
@@ -17,8 +23,8 @@ setup(
     url = PROJECT_URL,
     platforms = 'any',
     py_modules = ['blinkpy'],
-    packages=find_packages(),
-    install_requires = ['requests>=2,<3'],
+    packages=PACKAGES,
+    install_requires = REQUIRES,
     test_suite = 'tests',
     classifiers = PROJECT_CLASSIFIERS
 )
