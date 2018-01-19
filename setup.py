@@ -14,10 +14,10 @@ test_reqs = parse_requirements('{}/requirements_test.txt'.format(this_dir), sess
 REQUIRES = [str(ir.req) for ir in install_reqs]
 TEST_REQUIRES = [str(ir.req) for ir in test_reqs]
 
-PACKAGES = find_packages(exclue=['tests*'])
+PACKAGES = find_packages(exclude=['tests*'])
 
 with open('{}/README.rst'.format(this_dir), encoding='utf-8') as readme_file:
-    long_descriptin = readme_file.read()
+    long_description = readme_file.read()
 
 setup(
     name = PROJECT_PACKAGE_NAME,
