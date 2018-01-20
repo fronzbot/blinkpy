@@ -199,6 +199,7 @@ class Blink(object):
         self.urls = None
         self._video_count = 0
         self._all_videos = {}
+        self._summary = None
 
     @property
     def camera_thumbs(self):
@@ -227,35 +228,28 @@ class Blink(object):
     @property
     def events(self):
         """Get all events on server."""
-        url = "{}/{}".format(self.urls.event_url, self.network_id)
-        headers = self._auth_header
-        self._events = _request(self, url=url, headers=headers,
-                                reqtype='get')['event']
         return self._events
 
     @property
     def online(self):
         """Return boolean system online status."""
-        url = "{}/{}/syncmodules".format(self.urls.network_url,
-                                         self.network_id)
-        headers = self._auth_header
-        return ONLINE[_request(self, url=url, headers=headers,
-                               reqtype='get')['syncmodule']['status']]
+        return ONLINE[self._status_request()['syncmodule']['status']]
 
     @property
     def videos(self):
         """Return video list."""
         return self._all_videos
 
-    def get_videos(self, start_page=0, end_page=10):
+    @property
+    def summary(self):
+        """Get a full summary of device information."""
+        return self._summary
+
+    def get_videos(self, start_page=0, end_page=1):
         """Retrieve last recorded videos per camera."""
-        url = "{}/page".format(self.urls.video_url)
-        headers = self._auth_header
         videos = list()
         for page_num in range(start_page, end_page + 1):
-            url_page = "{}/{}".format(url, page_num)
-            this_page = _request(self, url=url_page, headers=headers,
-                                 reqtype='get')
+            this_page = self._video_request(page_num)
             if not this_page:
                 break
             videos.append(this_page)
@@ -264,32 +258,26 @@ class Blink(object):
             for entry in page:
                 camera_name = entry['camera_name']
                 clip_addr = entry['address']
+                thumb_addr = entry['thumbnail']
                 try:
-                    self._all_videos[camera_name].append(clip_addr)
+                    self._all_videos[camera_name].append(
+                        {
+                            'clip': clip_addr,
+                            'thumb': thumb_addr,
+                        }
+                    )
                 except KeyError:
-                    self._all_videos[camera_name] = [clip_addr]
-
-    def last_motion(self):
-        """Find last motion of each camera."""
-        recent = self.events
-        for element in recent:
-            try:
-                camera_id = str(element['camera_id'])
-                camera_name = self.id_table[camera_id]
-                camera = self.cameras[camera_name]
-                if element['type'] == 'motion':
-                    url = "{}{}".format(self.urls.base_url,
-                                        element['video_url'])
-                    camera.motion = {'video': url,
-                                     'image': url[:-3] + 'jpg',
-                                     'time': element['created_at']}
-            except KeyError:
-                pass
+                    self._all_videos[camera_name] = [
+                        {
+                            'clip': clip_addr,
+                            'thumb': thumb_addr,
+                        }
+                    ]
 
     @property
     def arm(self):
         """Return status of sync module: armed/disarmed."""
-        return self.get_summary()['network']['armed']
+        return self.summary['network']['armed']
 
     @arm.setter
     def arm(self, value):
@@ -305,41 +293,38 @@ class Blink(object):
 
     def refresh(self):
         """Get all blink cameras and pulls their most recent status."""
-        response = self.get_summary()['devices']
+        self._summary = self._summary_request()
+        self._events = self._events_request()
+        response = self.summary['devices']
         self.get_videos()
         for name in self.cameras:
             camera = self.cameras[name]
             for element in response:
                 try:
                     if str(element['device_id']) == camera.id:
-                        element['video'] = self.videos[camera][0]
+                        element['video'] = self.videos[camera][0]['clip']
+                        element['thumbnail'] = self.videos[camera][0]['thumb']
                         camera.update(element)
                 except KeyError:
                     pass
         return None
 
-    def get_summary(self):
-        """Get a full summary of device information."""
-        url = self.urls.home_url
-        headers = self._auth_header
-
-        if self._auth_header is None:
-            raise BlinkException(ERROR.AUTH_TOKEN)
-
-        return _request(self, url=url, headers=headers, reqtype='get')
-
     def get_cameras(self):
         """Find and creates cameras."""
-        response = self.get_summary()['devices']
+        self._summary = self._summary_request()
+        response = self.summary['devices']
         for element in response:
             if ('device_type' in element and
                     element['device_type'] == 'camera'):
                 # Add region to config
                 element['region_id'] = self.region_id
                 try:
-                    element['video'] = self.videos[element['name']][0]
+                    name = element['name']
+                    element['video'] = self.videos[name][0]['clip']
+                    element['thumbnail'] = self.videos[name][0]['thumb']
                 except KeyError:
                     element['video'] = None
+                    element['thumbnail'] = None
                 device = BlinkCamera(element, self)
                 self.cameras[device.name] = device
                 self._idlookup[device.id] = device.name
@@ -374,6 +359,7 @@ class Blink(object):
         if self.video_count > 0:
             self.get_cameras()
         self.set_links()
+        self._events = self._events_request()
 
     def login(self):
         """Prompt user for username and password."""
@@ -417,12 +403,41 @@ class Blink(object):
 
     def get_ids(self):
         """Set the network ID and Account ID."""
-        url = self.urls.networks_url
-        headers = self._auth_header
-
-        if self._auth_header is None:
-            raise BlinkException(ERROR.AUTH_TOKEN)
-
-        response = _request(self, url=url, headers=headers, reqtype='get')
+        response = self._network_request()
         self.network_id = str(response['networks'][0]['id'])
         self.account_id = str(response['networks'][0]['account_id'])
+
+    def _video_request(self, page=0):
+        """Perform a request for videos."""
+        url = "{}/page/{}".format(self.urls.video_url, page)
+        headers = self._auth_header
+        return _request(self, url=url, headers=headers, reqtype='get')
+
+    def _summary_request(self):
+        """Get blink summary."""
+        url = self.urls.home_url
+        headers = self._auth_header
+        if headers is None:
+            raise BlinkException(ERROR.AUTH_TOKEN)
+        return _request(self, url=url, headers=headers, reqtype='get')
+
+    def _network_request(self):
+        """Get network and account information."""
+        url = self.urls.networks_url
+        headers = self._auth_header
+        if headers is None:
+            raise BlinkException(ERROR.AUTH_TOKEN)
+        return _request(self, url=url, headers=headers, reqtype='get')
+
+    def _events_request(self):
+        """Get events on server."""
+        url = "{}/{}".format(self.urls.event_url, self.network_id)
+        headers = self._auth_header
+        return _request(self, url=url, headers=headers, reqtype='get')
+
+    def _status_request(self):
+        """Get syncmodule status."""
+        url = "{}/{}/syncmodules".format(self.urls.network_url,
+                                         self.network_id)
+        headers = self._auth_header
+        return _request(self, url=url, headers=headers, reqtype='get')

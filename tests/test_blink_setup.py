@@ -55,7 +55,8 @@ class TestBlinkSetup(unittest.TestCase):
         with self.assertRaises(blinkpy.BlinkException):
             self.blink.get_ids()
         with self.assertRaises(blinkpy.BlinkException):
-            self.blink.get_summary()
+            # pylint: disable=protected-access
+            self.blink._summary_request()
 
     @mock.patch('blinkpy.blinkpy.getpass.getpass')
     def test_manual_login(self, getpwd):
@@ -105,6 +106,7 @@ class TestBlinkSetup(unittest.TestCase):
         self.blink._auth_header = bad_header
         # pylint: disable=protected-access
         self.assertEqual(self.blink._auth_header, bad_header)
-        self.blink.get_summary()
+        # pylint: disable=protected-access
+        self.blink._summary_request()
         # pylint: disable=protected-access
         self.assertEqual(self.blink._auth_header, original_header)

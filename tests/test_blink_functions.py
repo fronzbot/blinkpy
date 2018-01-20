@@ -18,71 +18,27 @@ class TestBlinkFunctions(unittest.TestCase):
         """Set up Blink module."""
         self.blink = blinkpy.Blink(username=USERNAME,
                                    password=PASSWORD)
-        (self.region_id, self.region), = mresp.LOGIN_RESPONSE['region'].items()
-        self.test_urls = blinkpy.BlinkURLHandler(self.region_id)
-        self.urls = self.test_urls
+        self.blink.get_auth_token()
+        self.urls = blinkpy.BlinkURLHandler('test')
+        self.config = {
+            'device_id': 1111,
+            'name': 'foobar',
+            'armed': False,
+            'thumbnail': '/test',
+            'video': '/test.mp4',
+            'temp': 80,
+            'battery': 3,
+            'notifications': 2,
+            'region_id': 'test'
+        }
+        self.camera = blinkpy.BlinkCamera(self.config, self.blink)
 
     def tearDown(self):
         """Clean up after test."""
         self.blink = None
-        self.region = None
-        self.region_id = None
-        self.test_urls = None
         self.urls = None
-
-    @mock.patch('blinkpy.blinkpy.requests.post',
-                side_effect=mresp.mocked_requests_post)
-    @mock.patch('blinkpy.blinkpy.requests.get',
-                side_effect=mresp.mocked_requests_get)
-    @pytest.mark.skip(reason="Need to simplify")
-    def test_set_motion_detect(self, mock_get, mock_post):
-        """Checks if we can set motion detection."""
-        self.blink.setup_system()
-        self.test_urls = blinkpy.BlinkURLHandler(self.region_id)
-        test_cameras = {}  # mresp.get_test_cameras(self.test_urls.base_url)
-        for camera_name in test_cameras:
-            self.blink.cameras[camera_name].set_motion_detect(True)
-            self.blink.refresh()
-            self.assertEqual(self.blink.cameras[camera_name].armed, True)
-            self.blink.cameras[camera_name].set_motion_detect(False)
-            self.blink.refresh()
-            self.assertEqual(self.blink.cameras[camera_name].armed, False)
-
-    @mock.patch('blinkpy.blinkpy.requests.post',
-                side_effect=mresp.mocked_requests_post)
-    @mock.patch('blinkpy.blinkpy.requests.get',
-                side_effect=mresp.mocked_requests_get)
-    @pytest.mark.skip(reason="Need to simplify")
-    def test_last_motion(self, mock_get, mock_post):
-        """Checks that we can get the last motion info."""
-        self.test_urls = blinkpy.BlinkURLHandler(self.region_id)
-        test_events = []  # mresp.RESPONSE['event']
-        test_video = dict()
-        test_image = dict()
-        test_time = dict()
-        for event in test_events:
-            if event['type'] == 'motion':
-                url = self.test_urls.base_url + event['video_url']
-                test_video[event['camera_name']] = url
-                test_image[event['camera_name']] = url[:-3] + 'jpg'
-                test_time[event['camera_name']] = event['created_at']
-
-        self.blink.setup_system()
-        for name in self.blink.cameras:
-            camera = self.blink.cameras[name]
-            self.blink.last_motion()
-            if name in test_video:
-                self.assertEqual(camera.motion['video'], test_video[name])
-            else:
-                self.assertEqual(camera.motion, {})
-            if name in test_image:
-                self.assertEqual(camera.motion['image'], test_image[name])
-            else:
-                self.assertEqual(camera.motion, {})
-            if name in test_video:
-                self.assertEqual(camera.motion['time'], test_time[name])
-            else:
-                self.assertEqual(camera.motion, {})
+        self.config = {}
+        self.camera = None
 
     @mock.patch('blinkpy.blinkpy.requests.post',
                 side_effect=mresp.mocked_requests_post)
@@ -155,7 +111,6 @@ class TestBlinkFunctions(unittest.TestCase):
     @pytest.mark.skip(reason="Need to simplify")
     def test_camera_thumbs(self, mock_get, mock_post):
         """Checks to see if we can retrieve camera thumbs."""
-        self.test_urls = blinkpy.BlinkURLHandler(self.region_id)
         test_cameras = {}  # mresp.get_test_cameras(self.test_urls.base_url)
         self.blink.setup_system()
         for name in self.blink.cameras:
