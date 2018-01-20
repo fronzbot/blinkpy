@@ -127,9 +127,9 @@ BAD_RESPONSE['network'] = {'bar': 'foo'}
 MOCK_BYTES = '\x00\x10JFIF\x00\x01'
 
 IMAGE_TO_WRITE_URL = list()
-IMAGE_TO_WRITE_URL.append('https://ciri.' + const.BLINK_URL +
+IMAGE_TO_WRITE_URL.append('https://rest.ciri.' + const.BLINK_URL +
                           FIRST_CAMERA['thumbnail'] + '.jpg')
-IMAGE_TO_WRITE_URL.append('https://ciri.' + const.BLINK_URL +
+IMAGE_TO_WRITE_URL.append('https://rest.ciri.' + const.BLINK_URL +
                           SECOND_CAMERA['thumbnail'] + '.jpg')
 
 FAKE_FILES = list()
@@ -234,7 +234,7 @@ def mocked_requests_get(*args, **kwargs):
         set_region_id = (set_region_id + '.' +
                          args[0].split('/')[2].split('.')[1])
         region_id = 'rest.piri'
-    neturl = 'https://' + set_region_id + '.' + const.BLINK_URL + '/networks'
+    neturl = 'https://rest.' + set_region_id + '.' + const.BLINK_URL + '/networks'
     if args[0] == neturl:
         return MockGetResponse(NETWORKS_RESPONSE, 200)
     elif set_region_id != region_id:
