@@ -336,7 +336,10 @@ class Blink(object):
                     element['device_type'] == 'camera'):
                 # Add region to config
                 element['region_id'] = self.region_id
-                element['video'] = self.videos[element['name']][0]
+                try:
+                    element['video'] = self.videos[element['name']][0]
+                except KeyError:
+                    element['video'] = None
                 device = BlinkCamera(element, self)
                 self.cameras[device.name] = device
                 self._idlookup[device.id] = device.name
@@ -368,7 +371,8 @@ class Blink(object):
         self.get_auth_token()
         self.get_ids()
         self.get_videos()
-        self.get_cameras()
+        if self.video_count > 0:
+            self.get_cameras()
         self.set_links()
 
     def login(self):
