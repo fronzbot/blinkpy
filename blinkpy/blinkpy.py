@@ -85,7 +85,7 @@ class BlinkURLHandler(object):
         self.event_url = "{}/events/network".format(self.base_url)
         self.network_url = "{}/network".format(self.base_url)
         self.networks_url = "{}/networks".format(self.base_url)
-        self.videos_url = "{}/api/v2/videos/page".format(self.base_url)
+        self.video_url = "{}/api/v2/videos".format(self.base_url)
 
 
 class BlinkCamera(object):
@@ -99,7 +99,7 @@ class BlinkCamera(object):
         self.name = config['name']
         self._status = config['armed']
         self.thumbnail = "{}{}.jpg".format(self.urls.base_url, config['thumbnail'])
-        self.clip = "{}{}.mp4".format(self.urls.base_url, config['thumbnail'])
+        self.clip = "{}{}".format(self.urls.base_url, config['video'])
         self.temperature = config['temp']
         self.battery = config['battery']
         self.notifications = config['notifications']
@@ -145,8 +145,8 @@ class BlinkCamera(object):
         self._status = values['armed']
         self.thumbnail = "{}{}.jpg".format(
             self.urls.base_url, values['thumbnail'])
-        self.clip = "{}{}.mp4".format(
-            self.urls.base_url, values['thumbnail'])
+        self.clip = "{}{}".format(
+            self.urls.base_url, values['video'])
         self.temperature = values['temp']
         self.battery = values['battery']
         self.notifications = values['notifications']
@@ -196,6 +196,8 @@ class Blink(object):
         self.cameras = CaseInsensitiveDict({})
         self._idlookup = {}
         self.urls = None
+        self._video_count = 0
+        self._all_videos = {}
 
     @property
     def camera_thumbs(self):
@@ -211,6 +213,15 @@ class Blink(object):
     def id_table(self):
         """Return id/camera pairs."""
         return self._idlookup
+
+    @property
+    def video_count(self):
+        """Return number of videos on server."""
+        url = "{}/count".format(self.urls.video_url)
+        headers = self._auth_header
+        self._video_count = _request(self, url=url, headers=headers,
+                                     reqtype='get')['count']
+        return self._video_count
 
     @property
     def events(self):
@@ -229,9 +240,36 @@ class Blink(object):
         return ONLINE[_request(self, url=url, headers=headers,
                                reqtype='get')['syncmodule']['status']]
 
+    @property
+    def videos(self):
+        """Return video list."""
+        return self._all_videos
+
+    def get_videos(self, start_page=0, end_page=10):
+        """Retrieves last recorded videos per camera."""
+        url = "{}/page".format(self.urls.video_url)
+        headers = self._auth_header
+        videos = list()
+        for page_num in range(start_page, end_page + 1):
+            url_page = "{}/{}".format(url, page_num)
+            this_page =  _request(self, url=url_page, headers=headers,
+                                  reqtype='get')
+            if not this_page:
+                break
+            videos.append(this_page)
+
+        for page in videos:
+            for entry in page:
+                camera_name = entry['camera_name']
+                clip_addr = entry['address']
+                try:
+                    self._all_videos[camera_name].append(clip_addr)
+                except KeyError:
+                    self._all_videos[camera_name] = [clip_addr]
+
     def last_motion(self):
         """Find last motion of each camera."""
-        recent = self.events
+        recent_videos = self.events
         for element in recent:
             try:
                 camera_id = str(element['camera_id'])
@@ -263,12 +301,13 @@ class Blink(object):
     def refresh(self):
         """Get all blink cameras and pulls their most recent status."""
         response = self.get_summary()['devices']
-
+        self.get_videos()
         for name in self.cameras:
             camera = self.cameras[name]
             for element in response:
                 try:
                     if str(element['device_id']) == camera.id:
+                        element['video'] = self.videos[camera][0]
                         camera.update(element)
                 except KeyError:
                     pass
@@ -292,6 +331,7 @@ class Blink(object):
                     element['device_type'] == 'camera'):
                 # Add region to config
                 element['region_id'] = self.region_id
+                element['video'] = self.videos[element['name']][0]
                 device = BlinkCamera(element, self)
                 self.cameras[device.name] = device
                 self._idlookup[device.id] = device.name
@@ -319,6 +359,7 @@ class Blink(object):
 
         self.get_auth_token()
         self.get_ids()
+        self.get_videos()
         self.get_cameras()
         self.set_links()
 
