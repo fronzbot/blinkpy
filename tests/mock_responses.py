@@ -234,7 +234,8 @@ def mocked_requests_get(*args, **kwargs):
         set_region_id = (set_region_id + '.' +
                          args[0].split('/')[2].split('.')[1])
         region_id = 'rest.piri'
-    neturl = 'https://rest.' + set_region_id + '.' + const.BLINK_URL + '/networks'
+    neturl = 'https://rest.{}.{}/networks'.format(set_region_id,
+                                                  const.BLINK_URL)
     if args[0] == neturl:
         return MockGetResponse(NETWORKS_RESPONSE, 200)
     elif set_region_id != region_id:

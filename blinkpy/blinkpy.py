@@ -98,7 +98,8 @@ class BlinkCamera(object):
         self.id = str(config['device_id'])  # pylint: disable=invalid-name
         self.name = config['name']
         self._status = config['armed']
-        self.thumbnail = "{}{}.jpg".format(self.urls.base_url, config['thumbnail'])
+        self.thumbnail = "{}{}.jpg".format(self.urls.base_url,
+                                           config['thumbnail'])
         self.clip = "{}{}".format(self.urls.base_url, config['video'])
         self.temperature = config['temp']
         self.battery = config['battery']
@@ -235,7 +236,8 @@ class Blink(object):
     @property
     def online(self):
         """Return boolean system online status."""
-        url = "{}/{}/syncmodules".format(self.urls.network_url, self.network_id)
+        url = "{}/{}/syncmodules".format(self.urls.network_url,
+                                         self.network_id)
         headers = self._auth_header
         return ONLINE[_request(self, url=url, headers=headers,
                                reqtype='get')['syncmodule']['status']]
@@ -246,14 +248,14 @@ class Blink(object):
         return self._all_videos
 
     def get_videos(self, start_page=0, end_page=10):
-        """Retrieves last recorded videos per camera."""
+        """Retrieve last recorded videos per camera."""
         url = "{}/page".format(self.urls.video_url)
         headers = self._auth_header
         videos = list()
         for page_num in range(start_page, end_page + 1):
             url_page = "{}/{}".format(url, page_num)
-            this_page =  _request(self, url=url_page, headers=headers,
-                                  reqtype='get')
+            this_page = _request(self, url=url_page, headers=headers,
+                                 reqtype='get')
             if not this_page:
                 break
             videos.append(this_page)
@@ -269,14 +271,15 @@ class Blink(object):
 
     def last_motion(self):
         """Find last motion of each camera."""
-        recent_videos = self.events
+        recent = self.events
         for element in recent:
             try:
                 camera_id = str(element['camera_id'])
                 camera_name = self.id_table[camera_id]
                 camera = self.cameras[camera_name]
                 if element['type'] == 'motion':
-                    url = "{}{}".format(self.urls.base_url, element['video_url'])
+                    url = "{}{}".format(self.urls.base_url,
+                                        element['video_url'])
                     camera.motion = {'video': url,
                                      'image': url[:-3] + 'jpg',
                                      'time': element['created_at']}
@@ -295,7 +298,9 @@ class Blink(object):
             value_to_append = 'arm'
         else:
             value_to_append = 'disarm'
-        url = "{}/{}/{}".format(self.urls.network_url, self.network_id, value_to_append)
+        url = "{}/{}/{}".format(self.urls.network_url,
+                                self.network_id,
+                                value_to_append)
         _request(self, url=url, headers=self._auth_header, reqtype='post')
 
     def refresh(self):
@@ -340,9 +345,12 @@ class Blink(object):
         """Set access links and required headers for each camera in system."""
         for name in self.cameras:
             camera = self.cameras[name]
-            network_id_url = "{}/{}".format(self.urls.network_url, self.network_id)
-            image_url = "{}/camera/{}/thumbnail".format(network_id_url, camera.id)
-            arm_url = "{}/camera/{}/".format(network_id_url, camera.id)
+            network_id_url = "{}/{}".format(self.urls.network_url,
+                                            self.network_id)
+            image_url = "{}/camera/{}/thumbnail".format(network_id_url,
+                                                        camera.id)
+            arm_url = "{}/camera/{}/".format(network_id_url,
+                                             camera.id)
             camera.image_link = image_url
             camera.arm_link = arm_url
             camera.header = self._auth_header
