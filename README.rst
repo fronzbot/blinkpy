@@ -1,5 +1,5 @@
-blinkpy |Build Status| |Coverage Status| |PyPi Version|
-===========================================================
+blinkpy |Build Status| |Coverage Status| |Docs|  |PyPi Version|
+================================================================
 A Python library for the Blink Camera system
 Only compatible with Python 3+
 
@@ -83,4 +83,5 @@ The cameras are of a BlinkCamera class, of which the following parameters can be
     :target: https://coveralls.io/github/fronzbot/blinkpy?branch=dev
 .. |PyPi Version| image:: https://img.shields.io/pypi/v/blinkpy.svg
     :target: https://pypi.python.org/pypi/blinkpy
-    
+.. |Docs| image:: https://readthedocs.org/projects/blinkpy/badge/?version=latest
+   :target: http://blinkpy.readthedocs.io/en/latest/?badge=latest
