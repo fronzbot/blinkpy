@@ -47,7 +47,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
     def test_camera_properties(self, mock_get, mock_post):
         """Tests all property set/recall."""
         self.blink.urls = blinkpy.BlinkURLHandler('test')
-       
+
         self.blink.cameras = {
             'foobar': blinkpy.BlinkCamera(self.camera_config, self.blink)
         }
