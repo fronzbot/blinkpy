@@ -1,4 +1,6 @@
 python:
   enabled: true
+  ignored_directories:
+  - docs
 
 fail_on_violations: true
