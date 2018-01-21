@@ -245,35 +245,6 @@ class Blink(object):
         """Get a full summary of device information."""
         return self._summary
 
-    def get_videos(self, start_page=0, end_page=1):
-        """Retrieve last recorded videos per camera."""
-        videos = list()
-        for page_num in range(start_page, end_page + 1):
-            this_page = self._video_request(page_num)
-            if not this_page:
-                break
-            videos.append(this_page)
-
-        for page in videos:
-            for entry in page:
-                camera_name = entry['camera_name']
-                clip_addr = entry['address']
-                thumb_addr = entry['thumbnail']
-                try:
-                    self._all_videos[camera_name].append(
-                        {
-                            'clip': clip_addr,
-                            'thumb': thumb_addr,
-                        }
-                    )
-                except KeyError:
-                    self._all_videos[camera_name] = [
-                        {
-                            'clip': clip_addr,
-                            'thumb': thumb_addr,
-                        }
-                    ]
-
     @property
     def arm(self):
         """Return status of sync module: armed/disarmed."""
@@ -302,12 +273,41 @@ class Blink(object):
             for element in response:
                 try:
                     if str(element['device_id']) == camera.id:
-                        element['video'] = self.videos[camera][0]['clip']
-                        element['thumbnail'] = self.videos[camera][0]['thumb']
+                        element['video'] = self.videos[name][0]['clip']
+                        element['thumbnail'] = self.videos[name][0]['thumb']
                         camera.update(element)
                 except KeyError:
                     pass
         return None
+
+    def get_videos(self, start_page=0, end_page=1):
+        """Retrieve last recorded videos per camera."""
+        videos = list()
+        for page_num in range(start_page, end_page + 1):
+            this_page = self._video_request(page_num)
+            if not this_page:
+                break
+            videos.append(this_page)
+
+        for page in videos:
+            for entry in page:
+                camera_name = entry['camera_name']
+                clip_addr = entry['address']
+                thumb_addr = entry['thumbnail']
+                try:
+                    self._all_videos[camera_name].append(
+                        {
+                            'clip': clip_addr,
+                            'thumb': thumb_addr,
+                        }
+                    )
+                except KeyError:
+                    self._all_videos[camera_name] = [
+                        {
+                            'clip': clip_addr,
+                            'thumb': thumb_addr,
+                        }
+                    ]
 
     def get_cameras(self):
         """Find and creates cameras."""
@@ -388,7 +388,7 @@ class Blink(object):
         else:
             response = _request(self, url=LOGIN_BACKUP_URL, headers=headers,
                                 data=data, reqtype='post')
-            self.region_id = 'rest.piri'
+            self.region_id = 'piri'
             self.region = "UNKNOWN"
 
         self._host = "{}.{}".format(self.region_id, BLINK_URL)
