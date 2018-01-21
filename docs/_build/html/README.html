@@ -1,0 +1,156 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>blinkpy &#8212; blinkpy 0.7.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="blinkpy.blinkpy" href="api/blinkpy.html" />
+    <link rel="prev" title="Welcome to blinkpy’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="blinkpy-build-status-coverage-status-pypi-version">
+<h1>blinkpy <a class="reference external" href="https://travis-ci.org/fronzbot/blinkpy"><img alt="Build Status" src="https://travis-ci.org/fronzbot/blinkpy.svg?branch=dev" /></a> <a class="reference external" href="https://coveralls.io/github/fronzbot/blinkpy?branch=dev"><img alt="Coverage Status" src="https://coveralls.io/repos/github/fronzbot/blinkpy/badge.svg?branch=dev" /></a> <a class="reference external" href="https://pypi.python.org/pypi/blinkpy"><img alt="PyPi Version" src="https://img.shields.io/pypi/v/blinkpy.svg" /></a><a class="headerlink" href="#blinkpy-build-status-coverage-status-pypi-version" title="Permalink to this headline">¶</a></h1>
+<p>A Python library for the Blink Camera system
+Only compatible with Python 3+</p>
+<div class="section" id="disclaimer">
+<h2>Disclaimer:<a class="headerlink" href="#disclaimer" title="Permalink to this headline">¶</a></h2>
+<p>Published under the MIT license - See LICENSE file for more details.</p>
+<p>“Blink Wire-Free HS Home Monitoring &amp; Alert Systems” is a trademark owned by Immedia Inc., see www.blinkforhome.com for more information.
+I am in no way affiliated with Blink, nor Immedia Inc.</p>
+<p>Original protocol hacking by MattTW : <a class="reference external" href="https://github.com/MattTW/BlinkMonitorProtocol">https://github.com/MattTW/BlinkMonitorProtocol</a></p>
+<p>API calls faster than 60 seconds is not recommended as it can overwhelm Blink’s servers.  Please use this module responsibly.</p>
+</div>
+</div>
+<div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal"><span class="pre">pip3</span> <span class="pre">install</span> <span class="pre">blinkpy</span></code></p>
+</div>
+<div class="section" id="installing-development-version">
+<h1>Installing Development Version<a class="headerlink" href="#installing-development-version" title="Permalink to this headline">¶</a></h1>
+<p>To install the current development version, perform the following steps.  Note that the following will create a blinkpy directory in your home area:</p>
+<div class="code bash highlight-default"><div class="highlight"><pre><span></span>$ cd ~
+$ git clone https://github.com/fronzbot/blinkpy.git
+$ cd blinkpy
+$ rm -rf build dist
+$ python3 setup.py bdist_wheel
+$ pip3 install --upgrade dist/*.whl
+</pre></div>
+</div>
+</div>
+<div class="section" id="purpose">
+<h1>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h1>
+<p>This library was built with the intention of allowing easy communication with Blink camera systems, specifically so I can add a module into homeassistant <a class="reference external" href="https://home-assistant.io">https://home-assistant.io</a></p>
+</div>
+<div class="section" id="usage">
+<h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h1>
+<p>In terms of usage, you just need to instantiate the module with a username and password and call the <code class="docutils literal"><span class="pre">setup_system()</span></code> method.</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">blinkpy</span>
+<span class="n">blink</span> <span class="o">=</span> <span class="n">blinkpy</span><span class="o">.</span><span class="n">Blink</span><span class="p">(</span><span class="n">username</span><span class="o">=</span><span class="s1">&#39;YOUR USER NAME&#39;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s1">&#39;YOUR PASSWORD&#39;</span><span class="p">)</span>
+<span class="n">blink</span><span class="o">.</span><span class="n">setup_system</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If you leave out either of those parameters, you need to call the login function which will prompt for your username and password</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">blinkpy</span>
+<span class="n">blink</span> <span class="o">=</span> <span class="n">blinkpy</span><span class="o">.</span><span class="n">Blink</span><span class="p">()</span>
+<span class="n">blink</span><span class="o">.</span><span class="n">login</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Once the login information is entered, you can run the <cite>setup_system()</cite> function which will attempt to authenticate with Blink servers using your username and password, obtain network ids, and create a list of cameras.
+The cameras are of a BlinkCamera class, of which the following parameters can be used (the code below creates a Blink object and iterates through each camera found)</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">blinkpy</span>
+
+<span class="n">blink</span> <span class="o">=</span> <span class="n">blinkpy</span><span class="o">.</span><span class="n">Blink</span><span class="p">(</span><span class="n">username</span><span class="o">=</span><span class="s1">&#39;YOUR USER NAME&#39;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s1">&#39;YOUR PASSWORD&#39;</span><span class="p">)</span>
+<span class="n">blink</span><span class="o">.</span><span class="n">setup_system</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">camera</span> <span class="ow">in</span> <span class="n">blink</span><span class="o">.</span><span class="n">cameras</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>                  <span class="c1"># Name of the camera</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>             <span class="c1"># Integer id of the camera (assigned by Blink)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">armed</span><span class="p">)</span>          <span class="c1"># Whether the device is armed/disarmed (ie. detecting motion)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">clip</span><span class="p">)</span>           <span class="c1"># Link to last motion clip captured</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">thumbnail</span><span class="p">)</span>      <span class="c1"># Link to current camera thumbnail</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">temperature</span><span class="p">)</span>    <span class="c1"># Current camera temperature (not super accurate, but might be useful for someone)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">battery</span><span class="p">)</span>        <span class="c1"># Current battery level... I think the value ranges from 0-3, but not quite sure yet.</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">battery_string</span><span class="p">)</span> <span class="c1"># Gives battery level as a string (&quot;OK&quot; or &quot;Low&quot;).  Returns &quot;Unknown&quot; if value is... well, unknown</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">notifications</span><span class="p">)</span>  <span class="c1"># Number of unread notifications (ie. motion alerts that haven&#39;t been viewed)</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to blinkpy’s documentation!</a></li>
+      <li>Next: <a href="api/blinkpy.html" title="next chapter"><code class="docutils literal"><span class="pre">blinkpy.blinkpy</span></code></a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Kevin Fronczak.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/README.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
