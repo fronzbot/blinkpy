@@ -178,6 +178,13 @@ class BlinkCamera(object):
             with open(path, 'wb') as imgfile:
                 copyfileobj(response.raw, imgfile)
 
+    def video_to_file(self, path):
+        """Write video to file."""
+        response = _request(self.blink, url=self.clip, headers=self.header,
+                            reqtype='get', stream=True, json_resp=False)
+        with open(path, 'wb') as vidfile:
+            copyfileobj(response.raw, vidfile)
+
 
 class Blink(object):
     """Class to initialize communication and sync module."""

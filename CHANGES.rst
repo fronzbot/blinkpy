@@ -12,6 +12,7 @@ A list of changes between each release
 - Refactored code for better organization
 - Moved some request calls out of @property methods (enables future CLI support)
 - Renamed get_summary() method to summary and changed to @property
+- Added ability to download most recent video clip
 
 0.6.0 (2017-05-12)
 ^^^^^^^^^^^^^^^^^^
