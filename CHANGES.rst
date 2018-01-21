@@ -7,6 +7,11 @@ A list of changes between each release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Fixed style errors for bumped pydocstring and pylint versions
 - Changed Blink.cameras dictionary to be case-insensitive (fixes `#35 <https://github.com/fronzbot/blinkpy/issues/35>`_)
+- Changed api endpoint for video extraction (fixes `#35 <https://github.com/fronzbot/blinkpy/issues/35>`_ and `#41 <https://github.com/fronzbot/blinkpy/issues/41>`_)
+- Removed last_motion() function from Blink class
+- Refactored code for better organization
+- Moved some request calls out of @property methods (enables future CLI support)
+- Renamed get_summary() method to summary and changed to @property
 
 0.6.0 (2017-05-12)
 ^^^^^^^^^^^^^^^^^^
