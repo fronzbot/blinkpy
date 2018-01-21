@@ -23,6 +23,18 @@ class TestBlinkCameraSetup(unittest.TestCase):
         """Set up Blink module."""
         self.blink = blinkpy.Blink(username=USERNAME,
                                    password=PASSWORD)
+        self.camera_config = {
+            'device_id': 1111,
+            'name': 'foobar',
+            'armed': False,
+            'thumbnail': '/test/image',
+            'video': '/test/clip/clip.mp4',
+            'temp': 70,
+            'battery': 3,
+            'notifications': 2,
+            'region_id': 'test'
+        }
+        self.blink.urls = blinkpy.BlinkURLHandler('test')
 
     def tearDown(self):
         """Clean up after test."""
@@ -35,19 +47,9 @@ class TestBlinkCameraSetup(unittest.TestCase):
     def test_camera_properties(self, mock_get, mock_post):
         """Tests all property set/recall."""
         self.blink.urls = blinkpy.BlinkURLHandler('test')
-        camera_config = {
-            'device_id': 1111,
-            'name': 'foobar',
-            'armed': False,
-            'thumbnail': '/test/image',
-            'video': '/test/clip/clip.mp4',
-            'temp': 70,
-            'battery': 3,
-            'notifications': 2,
-            'region_id': 'test'
-        }
+       
         self.blink.cameras = {
-            'foobar': blinkpy.BlinkCamera(camera_config, self.blink)
+            'foobar': blinkpy.BlinkCamera(self.camera_config, self.blink)
         }
 
         for name in self.blink.cameras:
@@ -69,7 +71,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             self.assertEqual(camera.battery_string, "OK")
             self.assertEqual(camera.notifications, 2)
             self.assertEqual(camera.region_id, 'test')
-
+        camera_config = self.camera_config
         camera_config['armed'] = True
         camera_config['thumbnail'] = '/test2/image'
         camera_config['video'] = '/test2/clip.mp4'
@@ -96,3 +98,9 @@ class TestBlinkCameraSetup(unittest.TestCase):
             camera_config['battery'] = -10
             camera.update(camera_config)
             self.assertEqual(camera.battery_string, "Unknown")
+
+    def test_camera_case(self):
+        """Tests camera case sensitivity."""
+        camera_object = blinkpy.BlinkCamera(self.camera_config, self.blink)
+        self.blink.cameras['foobar'] = camera_object
+        self.assertEqual(camera_object, self.blink.cameras['fOoBaR'])
