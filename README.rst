@@ -135,8 +135,8 @@ The ``BlinkURLHandler`` class expects to be initialized with the region id found
 
 .. |Build Status| image:: https://travis-ci.org/fronzbot/blinkpy.svg?branch=dev
    :target: https://travis-ci.org/fronzbot/blinkpy
-.. |Coverage Status| image:: https://coveralls.io/repos/github/fronzbot/blinkpy/badge.svg?branch=master
-    :target: https://coveralls.io/github/fronzbot/blinkpy?branch=master
+.. |Coverage Status| image:: https://coveralls.io/repos/github/fronzbot/blinkpy/badge.svg?branch=dev
+    :target: https://coveralls.io/github/fronzbot/blinkpy?branch=dev
 .. |PyPi Version| image:: https://img.shields.io/pypi/v/blinkpy.svg
     :target: https://pypi.python.org/pypi/blinkpy
     
