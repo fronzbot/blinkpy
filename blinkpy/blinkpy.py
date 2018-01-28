@@ -103,13 +103,13 @@ class BlinkCamera(object):
         self.clip = "{}{}".format(self.urls.base_url, config['video'])
         self.temperature = config['temperature']
         self.battery = config['battery_state']
-        self.notifications = 0 # not available through camera api
+        self.notifications = 0  # not available through camera api
         self.motion = {}
         self.header = None
         self.image_link = None
         self.arm_link = None
         self.region_id = config['region_id']
-        self.region_id = config['network_id']
+        self.network_id = config['network_id']
 
     @property
     def armed(self):
@@ -238,7 +238,7 @@ class Blink(object):
     @property
     def online(self):
         """Return boolean system online status."""
-        return ONLINE[self._status_request(self.network_id[0])['syncmodule']['status']] # currently just looks for first network_id
+        return ONLINE[self._status_request(self.network_id[0])['syncmodule']['status']]  # currently just looks for first network_id
 
     @property
     def videos(self):
@@ -253,7 +253,7 @@ class Blink(object):
     @property
     def arm(self):
         """Return status of sync module: armed/disarmed."""
-        return self.summary['network']['armed'] # only pulls arm status of last added network_id
+        return self.summary['network']['armed']  # only pulls arm status of last added network_id
 
     @arm.setter
     def arm(self, value):
@@ -262,18 +262,14 @@ class Blink(object):
             value_to_append = 'arm'
         else:
             value_to_append = 'disarm'
-        for network in self.network_id: # arm all networks
-            url = "{}/{}/{}".format(self.urls.network_url,
-                                network,
-                                value_to_append)
+        for network in self.network_id:  # arm all networks
+            url = "{}/{}/{}".format(self.urls.network_url, network, value_to_append)
             _request(self, url=url, headers=self._auth_header, reqtype='post')
 
     def refresh(self):
         """Get all blink cameras and pulls their most recent status."""
         self._summary = self._summary_request()
-        self._events = self._events_request(self.network_id[0]) # currently only pulls for first network_id
-        #response = self.summary['devices']
-        #self.get_videos()
+        self._events = self._events_request(self.network_id[0])  # currently only pulls for first network_id
 
         # Update camera data for each network_id
         camera_request = []
@@ -286,9 +282,6 @@ class Blink(object):
             for element in camera_request:
                 try:
                     if str(element['camera_id']) == camera.id:
-                        #if (name in self.videos):
-                        #    element['video'] = self.videos[name][0]['clip']
-                        #    element['thumbnail'] = self.videos[name][0]['thumb']
                         camera.update(element)
                 except KeyError:
                     pass
@@ -350,7 +343,7 @@ class Blink(object):
         for name in self.cameras:
             camera = self.cameras[name]
             network_id_url = "{}/{}".format(self.urls.network_url,
-                                            self.network_id)
+                                            camera.network_id)
             image_url = "{}/camera/{}/thumbnail".format(network_id_url,
                                                         camera.id)
             arm_url = "{}/camera/{}/".format(network_id_url,
@@ -372,10 +365,9 @@ class Blink(object):
         self.get_auth_token()
         self.get_ids()
         self.get_videos()
-        #if self.video_count > 0:
         self.get_cameras()
         self.set_links()
-        self._events = self._events_request(self.network_id[0]) # currently just pull for first network
+        self._events = self._events_request(self.network_id[0])  # currently just pull for first network
 
     def login(self):
         """Prompt user for username and password."""
@@ -461,7 +453,6 @@ class Blink(object):
 
     def _camera_request(self, network_id):
         """Get camera information."""
-        url = "{}/{}/cameras".format(self.urls.network_url,
-                                         network_id)
+        url = "{}/{}/cameras".format(self.urls.network_url, network_id)
         headers = self._auth_header
         return _request(self, url=url, headers=headers, reqtype='get')
