@@ -95,20 +95,21 @@ class BlinkCamera(object):
         """Initiailize BlinkCamera."""
         self.blink = blink
         self.urls = self.blink.urls
-        self.id = str(config['device_id'])  # pylint: disable=invalid-name
+        self.id = str(config['camera_id'])  # pylint: disable=invalid-name
         self.name = config['name']
-        self._status = config['armed']
+        self._status = config['enabled']
         self.thumbnail = "{}{}.jpg".format(self.urls.base_url,
                                            config['thumbnail'])
         self.clip = "{}{}".format(self.urls.base_url, config['video'])
-        self.temperature = config['temp']
-        self.battery = config['battery']
-        self.notifications = config['notifications']
+        self.temperature = config['temperature']
+        self.battery = config['battery_state']
+        self.notifications = 0  # not available through camera api
         self.motion = {}
         self.header = None
         self.image_link = None
         self.arm_link = None
         self.region_id = config['region_id']
+        self.network_id = config['network_id']
 
     @property
     def armed(self):
@@ -119,10 +120,8 @@ class BlinkCamera(object):
     def battery_string(self):
         """Return string indicating battery status."""
         status = "Unknown"
-        if self.battery > 1 and self.battery <= 3:
+        if self.battery == "ok":
             status = "OK"
-        elif self.battery >= 0:
-            status = "Low"
         return status
 
     def snap_picture(self):
@@ -143,14 +142,13 @@ class BlinkCamera(object):
     def update(self, values):
         """Update camera information."""
         self.name = values['name']
-        self._status = values['armed']
+        self._status = values['enabled']
         self.thumbnail = "{}{}.jpg".format(
             self.urls.base_url, values['thumbnail'])
         self.clip = "{}{}".format(
             self.urls.base_url, values['video'])
-        self.temperature = values['temp']
-        self.battery = values['battery']
-        self.notifications = values['notifications']
+        self.temperature = values['temperature']
+        self.battery = values['battery_state']
 
     def image_refresh(self):
         """Refresh current thumbnail."""
@@ -195,8 +193,8 @@ class Blink(object):
         self._password = password
         self._token = None
         self._auth_header = None
-        self.network_id = None
-        self.account_id = None
+        self.network_id = []
+        self.account_id = []
         self.region = None
         self.region_id = None
         self._host = None
@@ -240,7 +238,7 @@ class Blink(object):
     @property
     def online(self):
         """Return boolean system online status."""
-        return ONLINE[self._status_request()['syncmodule']['status']]
+        return ONLINE[self._status_request(self.network_id[0])['syncmodule']['status']]  # currently just looks for first network_id
 
     @property
     def videos(self):
@@ -255,7 +253,7 @@ class Blink(object):
     @property
     def arm(self):
         """Return status of sync module: armed/disarmed."""
-        return self.summary['network']['armed']
+        return self.summary['network']['armed']  # only pulls arm status of last added network_id
 
     @arm.setter
     def arm(self, value):
@@ -264,24 +262,26 @@ class Blink(object):
             value_to_append = 'arm'
         else:
             value_to_append = 'disarm'
-        url = "{}/{}/{}".format(self.urls.network_url,
-                                self.network_id,
-                                value_to_append)
-        _request(self, url=url, headers=self._auth_header, reqtype='post')
+        for network in self.network_id:  # arm all networks
+            url = "{}/{}/{}".format(self.urls.network_url, network, value_to_append)
+            _request(self, url=url, headers=self._auth_header, reqtype='post')
 
     def refresh(self):
         """Get all blink cameras and pulls their most recent status."""
         self._summary = self._summary_request()
-        self._events = self._events_request()
-        response = self.summary['devices']
-        self.get_videos()
+        self._events = self._events_request(self.network_id[0])  # currently only pulls for first network_id
+
+        # Update camera data for each network_id
+        camera_request = []
+        for network in self.network_id:
+            camera_response = self._camera_request(network)
+            for camera in camera_response['devicestatus']:
+                camera_request.append(camera)
         for name in self.cameras:
             camera = self.cameras[name]
-            for element in response:
+            for element in camera_request:
                 try:
-                    if str(element['device_id']) == camera.id:
-                        element['video'] = self.videos[name][0]['clip']
-                        element['thumbnail'] = self.videos[name][0]['thumb']
+                    if str(element['camera_id']) == camera.id:
                         camera.update(element)
                 except KeyError:
                     pass
@@ -320,11 +320,13 @@ class Blink(object):
         """Find and creates cameras."""
         self._summary = self._summary_request()
         response = self.summary['devices']
-        for element in response:
-            if ('device_type' in element and
-                    element['device_type'] == 'camera'):
-                # Add region to config
+        
+        for network in self.network_id:
+            response = self._camera_request(network)    
+            for element in response['devicestatus']:
+                # Add region and network_id to config
                 element['region_id'] = self.region_id
+                element['network_id'] = network
                 try:
                     name = element['name']
                     element['video'] = self.videos[name][0]['clip']
@@ -341,7 +343,7 @@ class Blink(object):
         for name in self.cameras:
             camera = self.cameras[name]
             network_id_url = "{}/{}".format(self.urls.network_url,
-                                            self.network_id)
+                                            camera.network_id)
             image_url = "{}/camera/{}/thumbnail".format(network_id_url,
                                                         camera.id)
             arm_url = "{}/camera/{}/".format(network_id_url,
@@ -363,10 +365,9 @@ class Blink(object):
         self.get_auth_token()
         self.get_ids()
         self.get_videos()
-        if self.video_count > 0:
-            self.get_cameras()
+        self.get_cameras()
         self.set_links()
-        self._events = self._events_request()
+        self._events = self._events_request(self.network_id[0])  # currently just pull for first network
 
     def login(self):
         """Prompt user for username and password."""
@@ -411,8 +412,9 @@ class Blink(object):
     def get_ids(self):
         """Set the network ID and Account ID."""
         response = self._network_request()
-        self.network_id = str(response['networks'][0]['id'])
-        self.account_id = str(response['networks'][0]['account_id'])
+        for network in response['networks']:
+            self.network_id.append(str(network['id']))
+            self.account_id.append(str(network['account_id']))
 
     def _video_request(self, page=0):
         """Perform a request for videos."""
@@ -436,15 +438,21 @@ class Blink(object):
             raise BlinkException(ERROR.AUTH_TOKEN)
         return _request(self, url=url, headers=headers, reqtype='get')
 
-    def _events_request(self):
+    def _events_request(self, network_id):
         """Get events on server."""
-        url = "{}/{}".format(self.urls.event_url, self.network_id)
+        url = "{}/{}".format(self.urls.event_url, network_id)
         headers = self._auth_header
         return _request(self, url=url, headers=headers, reqtype='get')
 
-    def _status_request(self):
+    def _status_request(self, network_id):
         """Get syncmodule status."""
         url = "{}/{}/syncmodules".format(self.urls.network_url,
-                                         self.network_id)
+                                         network_id)
+        headers = self._auth_header
+        return _request(self, url=url, headers=headers, reqtype='get')
+
+    def _camera_request(self, network_id):
+        """Get camera information."""
+        url = "{}/{}/cameras".format(self.urls.network_url, network_id)
         headers = self._auth_header
         return _request(self, url=url, headers=headers, reqtype='get')
