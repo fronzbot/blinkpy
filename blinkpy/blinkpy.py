@@ -97,7 +97,7 @@ class BlinkCamera(object):
         self.urls = self.blink.urls
         self.id = str(config['device_id'])  # pylint: disable=invalid-name
         self.name = config['name']
-        self._status = config['armed']
+        self._status = config['active']
         self.thumbnail = "{}{}.jpg".format(self.urls.base_url,
                                            config['thumbnail'])
         self.clip = "{}{}".format(self.urls.base_url, config['video'])
@@ -111,9 +111,14 @@ class BlinkCamera(object):
         self.region_id = config['region_id']
 
     @property
+    def status(self):
+        """Return camera status."""
+        return self._status
+
+    @property
     def armed(self):
         """Return camera arm status."""
-        return self._status
+        return True if self._status == 'armed' else False
 
     @property
     def battery_string(self):
@@ -143,7 +148,7 @@ class BlinkCamera(object):
     def update(self, values):
         """Update camera information."""
         self.name = values['name']
-        self._status = values['armed']
+        self._status = values['active']
         self.thumbnail = "{}{}.jpg".format(
             self.urls.base_url, values['thumbnail'])
         self.clip = "{}{}".format(
