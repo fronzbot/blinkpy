@@ -27,6 +27,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             'device_id': 1111,
             'name': 'foobar',
             'armed': False,
+            'active': 'disarmed',
             'thumbnail': '/test/image',
             'video': '/test/clip/clip.mp4',
             'temp': 70,
@@ -72,7 +73,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             self.assertEqual(camera.notifications, 2)
             self.assertEqual(camera.region_id, 'test')
         camera_config = self.camera_config
-        camera_config['armed'] = True
+        camera_config['active'] = 'armed'
         camera_config['thumbnail'] = '/test2/image'
         camera_config['video'] = '/test2/clip.mp4'
         camera_config['temp'] = 60

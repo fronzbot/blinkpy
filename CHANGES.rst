@@ -13,6 +13,7 @@ A list of changes between each release
 - Moved some request calls out of @property methods (enables future CLI support)
 - Renamed get_summary() method to summary and changed to @property
 - Added ability to download most recent video clip
+- Improved camera arm/disarm handling (`@b10m <https://github.com/fronzbot/blinkpy/pull/50>`_)
 
 0.6.0 (2017-05-12)
 ^^^^^^^^^^^^^^^^^^

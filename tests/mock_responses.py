@@ -11,6 +11,7 @@ LOGIN_RESPONSE = {
             'name': 'TestNetwork',
             'account_id': 1111,
             'id': 2222,
+            'active': 'armed',
             'armed': True,
             'arm_string': 'Armed'
         }]
