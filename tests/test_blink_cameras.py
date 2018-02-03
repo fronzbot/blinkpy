@@ -27,6 +27,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             'device_id': 1111,
             'name': 'foobar',
             'armed': False,
+            'active': 'disarmed',
             'thumbnail': '/test/image',
             'video': '/test/clip/clip.mp4',
             'temp': 70,

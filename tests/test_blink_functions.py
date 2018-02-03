@@ -27,6 +27,7 @@ class TestBlinkFunctions(unittest.TestCase):
             'device_id': 1111,
             'name': 'foobar',
             'armed': False,
+            'active': 'disabled',
             'thumbnail': '/test',
             'video': '/test.mp4',
             'temp': 80,
