@@ -36,6 +36,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             'region_id': 'test'
         }
         self.blink.urls = blinkpy.BlinkURLHandler('test')
+        self.blink.network_id = '0000'
 
     def tearDown(self):
         """Clean up after test."""
@@ -105,3 +106,30 @@ class TestBlinkCameraSetup(unittest.TestCase):
         camera_object = blinkpy.BlinkCamera(self.camera_config, self.blink)
         self.blink.cameras['foobar'] = camera_object
         self.assertEqual(camera_object, self.blink.cameras['fOoBaR'])
+
+    def test_camera_attributes(self):
+        """Tests camera attributes."""
+        self.blink.urls = blinkpy.BlinkURLHandler('test')
+
+        self.blink.cameras = {
+            'foobar': blinkpy.BlinkCamera(self.camera_config, self.blink)
+        }
+
+        for name in self.blink.cameras:
+            camera = self.blink.cameras[name]
+            camera_attr = camera.attributes
+            self.assertEqual(camera_attr['device_id'], '1111')
+            self.assertEqual(camera_attr['name'], 'foobar')
+            self.assertEqual(camera_attr['armed'], False)
+            self.assertEqual(
+                camera_attr['thumbnail'],
+                "https://rest.test.{}/test/image.jpg".format(BLINK_URL)
+            )
+            self.assertEqual(
+                camera_attr['video'],
+                "https://rest.test.{}/test/clip/clip.mp4".format(BLINK_URL)
+            )
+            self.assertEqual(camera_attr['temperature'], 70)
+            self.assertEqual(camera_attr['battery'], 3)
+            self.assertEqual(camera_attr['notifications'], 2)
+            self.assertEqual(camera_attr['network_id'], '0000')

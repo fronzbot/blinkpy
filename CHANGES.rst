@@ -15,6 +15,7 @@ A list of changes between each release
 - Added ability to download most recent video clip
 - Improved camera arm/disarm handling (`@b10m <https://github.com/fronzbot/blinkpy/pull/50>`_)
 - Added authentication to ``login()`` function and deprecated ``setup_system()`` in favor of ``start()``
+- Added ``attributes`` dictionary to camera object
 
 0.6.0 (2017-05-12)
 ^^^^^^^^^^^^^^^^^^
