@@ -15,6 +15,7 @@ I am in no way affiliated with Blink, nor Immedia Inc.
 import json
 import getpass
 from shutil import copyfileobj
+import logging
 import requests
 from requests.structures import CaseInsensitiveDict
 import blinkpy.helpers.errors as ERROR
@@ -23,9 +24,12 @@ from blinkpy.helpers.constants import (
     DEFAULT_URL, ONLINE
 )
 
+_LOGGER = logging.getLogger('blinkpy')
+
 
 def _attempt_reauthorization(blink):
     """Attempt to refresh auth token and links."""
+    _LOGGER.debug("Auth token expired, attempting reauthorization.")
     headers = blink.get_auth_token()
     blink.set_links()
     return headers
@@ -86,6 +90,7 @@ class BlinkURLHandler(object):
         self.network_url = "{}/network".format(self.base_url)
         self.networks_url = "{}/networks".format(self.base_url)
         self.video_url = "{}/api/v2/videos".format(self.base_url)
+        _LOGGER.debug("Setting base url to %s.", self.base_url)
 
 
 class BlinkCamera(object):
@@ -176,6 +181,7 @@ class BlinkCamera(object):
 
     def image_to_file(self, path):
         """Write image to file."""
+        _LOGGER.debug("Writing image from %s to %s", self.name, path)
         thumb = self.image_refresh()
         response = _request(self.blink, url=thumb, headers=self.header,
                             reqtype='get', stream=True, json_resp=False)
@@ -185,6 +191,7 @@ class BlinkCamera(object):
 
     def video_to_file(self, path):
         """Write video to file."""
+        _LOGGER.debug("Writing video from %s to %s", self.name, path)
         response = _request(self.blink, url=self.clip, headers=self.header,
                             reqtype='get', stream=True, json_resp=False)
         with open(path, 'wb') as vidfile:
@@ -276,6 +283,7 @@ class Blink(object):
 
     def refresh(self):
         """Get all blink cameras and pulls their most recent status."""
+        _LOGGER.debug("Attempting refresh of cameras.")
         self._summary = self._summary_request()
         self._events = self._events_request()
         response = self.summary['devices']
@@ -398,6 +406,11 @@ class Blink(object):
             response = response.json()
             (self.region_id, self.region), = response['region'].items()
         else:
+            _LOGGER.debug(
+                ("Received response code %s "
+                 "when authenticating, "
+                 "trying new url"), response.status_code
+            )
             response = _request(self, url=LOGIN_BACKUP_URL, headers=headers,
                                 data=data, reqtype='post')
             self.region_id = 'piri'
