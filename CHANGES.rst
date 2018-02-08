@@ -3,6 +3,9 @@ Changelog
 
 A list of changes between each release
 
+0.8.0.dev (Development version)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 0.7.0 (2018-02-08)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Fixed style errors for bumped pydocstring and pylint versions
