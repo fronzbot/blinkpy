@@ -116,6 +116,23 @@ class BlinkCamera(object):
         self.region_id = config['region_id']
 
     @property
+    def attributes(self):
+        """Return dictionary of all camera attributes."""
+        attributes = {
+            'name': self.name,
+            'device_id': self.id,
+            'status': self._status,
+            'armed': self.armed,
+            'temperature': self.temperature,
+            'battery': self.battery,
+            'thumbnail': self.thumbnail,
+            'video': self.clip,
+            'notifications': self.notifications,
+            'network_id': self.blink.network_id
+        }
+        return attributes
+
+    @property
     def status(self):
         """Return camera status."""
         return self._status
