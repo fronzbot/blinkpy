@@ -3,7 +3,7 @@ Changelog
 
 A list of changes between each release
 
-0.7.0.dev (development version)
+0.7.0 (2018-02-08)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Fixed style errors for bumped pydocstring and pylint versions
 - Changed Blink.cameras dictionary to be case-insensitive (fixes `#35 <https://github.com/fronzbot/blinkpy/issues/35>`_)
