@@ -364,6 +364,14 @@ class Blink(object):
             camera.header = self._auth_header
 
     def setup_system(self):
+        """Legacy method support."""
+        _LOGGER.warning(
+            ("Blink.setup_system() will be deprecated in future release. "
+             "Please use Blink.start() instead.")
+        )
+        self.start()
+
+    def start(self):
         """
         Perform full system setup.
 
@@ -371,9 +379,10 @@ class Blink(object):
         Essentially this is just a wrapper function for ease of use.
         """
         if self._username is None or self._password is None:
-            raise BlinkAuthenticationException(ERROR.AUTHENTICATE)
+            self.login()
+        else:
+            self.get_auth_token()
 
-        self.get_auth_token()
         self.get_ids()
         self.get_videos()
         if self.video_count > 0:
@@ -385,6 +394,11 @@ class Blink(object):
         """Prompt user for username and password."""
         self._username = input("Username:")
         self._password = getpass.getpass("Password:")
+        if self.get_auth_token():
+            _LOGGER.info("Login successful!")
+            return True
+        _LOGGER.warning("Unable to login with %s.", self._username)
+        return False
 
     def get_auth_token(self):
         """Retrieve the authentication token from Blink."""
