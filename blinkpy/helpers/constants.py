@@ -1,12 +1,10 @@
-'''
-constants.py
-Generates constants for use in blinkpy
-'''
+"""Generates constants for use in blinkpy."""
+
 import os
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 7
-PATCH_VERSION = '0.dev'
+PATCH_VERSION = 0
 
 __version__ = '{}.{}.{}'.format(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION)
 

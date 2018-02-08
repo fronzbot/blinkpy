@@ -1,0 +1,679 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>blinkpy.blinkpy &mdash; blinkpy 0.7.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="blinkpy 0.7.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> blinkpy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.7.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../README.html">blinkpy   </a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../README.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../README.html#installing-development-version">Installing Development Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../README.html#purpose">Purpose</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../README.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/blinkpy.html"><code class="docutils literal"><span class="pre">blinkpy.blinkpy</span></code></a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">blinkpy</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>blinkpy.blinkpy</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for blinkpy.blinkpy</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">blinkpy by Kevin Fronczak - A Blink camera Python library.</span>
+
+<span class="sd">https://github.com/fronzbot/blinkpy</span>
+<span class="sd">Original protocol hacking by MattTW :</span>
+<span class="sd">https://github.com/MattTW/BlinkMonitorProtocol</span>
+<span class="sd">Published under the MIT license - See LICENSE file for more details.</span>
+<span class="sd">&quot;Blink Wire-Free HS Home Monitoring &amp; Alert Systems&quot; is a trademark</span>
+<span class="sd">owned by Immedia Inc., see www.blinkforhome.com for more information.</span>
+<span class="sd">I am in no way affiliated with Blink, nor Immedia Inc.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">getpass</span>
+<span class="kn">from</span> <span class="nn">shutil</span> <span class="k">import</span> <span class="n">copyfileobj</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">requests.structures</span> <span class="k">import</span> <span class="n">CaseInsensitiveDict</span>
+<span class="kn">import</span> <span class="nn">blinkpy.helpers.errors</span> <span class="k">as</span> <span class="nn">ERROR</span>
+<span class="kn">from</span> <span class="nn">blinkpy.helpers.constants</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">BLINK_URL</span><span class="p">,</span> <span class="n">LOGIN_URL</span><span class="p">,</span> <span class="n">LOGIN_BACKUP_URL</span><span class="p">,</span>
+    <span class="n">DEFAULT_URL</span><span class="p">,</span> <span class="n">ONLINE</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="_attempt_reauthorization"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy._attempt_reauthorization">[docs]</a><span class="k">def</span> <span class="nf">_attempt_reauthorization</span><span class="p">(</span><span class="n">blink</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Attempt to refresh auth token and links.&quot;&quot;&quot;</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="n">blink</span><span class="o">.</span><span class="n">get_auth_token</span><span class="p">()</span>
+    <span class="n">blink</span><span class="o">.</span><span class="n">set_links</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">headers</span></div>
+
+
+<div class="viewcode-block" id="_request"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy._request">[docs]</a><span class="k">def</span> <span class="nf">_request</span><span class="p">(</span><span class="n">blink</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="s1">&#39;http://google.com&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+             <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">json_resp</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">is_retry</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Perform server requests and check if reauthorization neccessary.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">reqtype</span> <span class="o">==</span> <span class="s1">&#39;post&#39;</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+                                 <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">reqtype</span> <span class="o">==</span> <span class="s1">&#39;get&#39;</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+                                <span class="n">stream</span><span class="o">=</span><span class="n">stream</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">BlinkException</span><span class="p">(</span><span class="n">ERROR</span><span class="o">.</span><span class="n">REQUEST</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">json_resp</span> <span class="ow">and</span> <span class="s1">&#39;code&#39;</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">is_retry</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BlinkAuthenticationException</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;code&#39;</span><span class="p">],</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;message&#39;</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">headers</span> <span class="o">=</span> <span class="n">_attempt_reauthorization</span><span class="p">(</span><span class="n">blink</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">_request</span><span class="p">(</span><span class="n">blink</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+                            <span class="n">reqtype</span><span class="o">=</span><span class="n">reqtype</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="n">stream</span><span class="p">,</span>
+                            <span class="n">json_resp</span><span class="o">=</span><span class="n">json_resp</span><span class="p">,</span> <span class="n">is_retry</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># pylint: disable=no-else-return</span>
+    <span class="k">if</span> <span class="n">json_resp</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+<span class="c1"># pylint: disable=super-init-not-called</span>
+<span class="k">class</span> <span class="nc">BlinkException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to throw general blink exception.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">errcode</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize BlinkException.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errid</span> <span class="o">=</span> <span class="n">errcode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">errcode</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">BlinkAuthenticationException</span><span class="p">(</span><span class="n">BlinkException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to throw authentication exception.&quot;&quot;&quot;</span>
+
+    <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="BlinkURLHandler"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.BlinkURLHandler">[docs]</a><span class="k">class</span> <span class="nc">BlinkURLHandler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class that handles Blink URLS.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize the urls.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_url</span> <span class="o">=</span> <span class="s2">&quot;https://rest.</span><span class="si">{}</span><span class="s2">.</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">region_id</span><span class="p">,</span> <span class="n">BLINK_URL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">home_url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/homescreen&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/events/network&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">network_url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/network&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">networks_url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/networks&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">video_url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/api/v2/videos&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BlinkCamera"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.BlinkCamera">[docs]</a><span class="k">class</span> <span class="nc">BlinkCamera</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to initialize individual camera.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">blink</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initiailize BlinkCamera.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blink</span> <span class="o">=</span> <span class="n">blink</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">urls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">blink</span><span class="o">.</span><span class="n">urls</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;device_id&#39;</span><span class="p">])</span>  <span class="c1"># pylint: disable=invalid-name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;armed&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thumbnail</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}{}</span><span class="s2">.jpg&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">base_url</span><span class="p">,</span>
+                                           <span class="n">config</span><span class="p">[</span><span class="s1">&#39;thumbnail&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clip</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">base_url</span><span class="p">,</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;video&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;temp&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">battery</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;battery&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">notifications</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;notifications&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_link</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arm_link</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">region_id</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;region_id&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">armed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return camera arm status.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">battery_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return string indicating battery status.&quot;&quot;&quot;</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;Unknown&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">battery</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">battery</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;OK&quot;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">battery</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;Low&quot;</span>
+        <span class="k">return</span> <span class="n">status</span>
+
+<div class="viewcode-block" id="BlinkCamera.snap_picture"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.BlinkCamera.snap_picture">[docs]</a>    <span class="k">def</span> <span class="nf">snap_picture</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Take a picture with camera to create a new thumbnail.&quot;&quot;&quot;</span>
+        <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blink</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">image_link</span><span class="p">,</span>
+                 <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">,</span> <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;post&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BlinkCamera.set_motion_detect"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.BlinkCamera.set_motion_detect">[docs]</a>    <span class="k">def</span> <span class="nf">set_motion_detect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enable</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set motion detection.&quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arm_link</span>
+        <span class="k">if</span> <span class="n">enable</span><span class="p">:</span>
+            <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blink</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span> <span class="o">+</span> <span class="s1">&#39;enable&#39;</span><span class="p">,</span>
+                     <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">,</span> <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;post&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blink</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span> <span class="o">+</span> <span class="s1">&#39;disable&#39;</span><span class="p">,</span>
+                     <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">,</span> <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;post&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BlinkCamera.update"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.BlinkCamera.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update camera information.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s1">&#39;armed&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thumbnail</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}{}</span><span class="s2">.jpg&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">base_url</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="s1">&#39;thumbnail&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clip</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">base_url</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="s1">&#39;video&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s1">&#39;temp&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">battery</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s1">&#39;battery&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">notifications</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s1">&#39;notifications&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="BlinkCamera.image_refresh"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.BlinkCamera.image_refresh">[docs]</a>    <span class="k">def</span> <span class="nf">image_refresh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Refresh current thumbnail.&quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">home_url</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blink</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">,</span>
+                            <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="p">)[</span><span class="s1">&#39;devices&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">element</span><span class="p">[</span><span class="s1">&#39;device_id&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">thumbnail</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="s2">&quot;</span><span class="si">{}{}</span><span class="s2">.jpg&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">base_url</span><span class="p">,</span> <span class="n">element</span><span class="p">[</span><span class="s1">&#39;thumbnail&#39;</span><span class="p">])</span>
+                    <span class="p">)</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">thumbnail</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="BlinkCamera.image_to_file"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.BlinkCamera.image_to_file">[docs]</a>    <span class="k">def</span> <span class="nf">image_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write image to file.&quot;&quot;&quot;</span>
+        <span class="n">thumb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_refresh</span><span class="p">()</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blink</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">thumb</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">,</span>
+                            <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">json_resp</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">imgfile</span><span class="p">:</span>
+                <span class="n">copyfileobj</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">raw</span><span class="p">,</span> <span class="n">imgfile</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BlinkCamera.video_to_file"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.BlinkCamera.video_to_file">[docs]</a>    <span class="k">def</span> <span class="nf">video_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write video to file.&quot;&quot;&quot;</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blink</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">clip</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">,</span>
+                            <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">json_resp</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">vidfile</span><span class="p">:</span>
+            <span class="n">copyfileobj</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">raw</span><span class="p">,</span> <span class="n">vidfile</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Blink"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.Blink">[docs]</a><span class="k">class</span> <span class="nc">Blink</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to initialize communication and sync module.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize Blink system.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_username</span> <span class="o">=</span> <span class="n">username</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_password</span> <span class="o">=</span> <span class="n">password</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_token</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_auth_header</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">network_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">account_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">region_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_host</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_events</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cameras</span> <span class="o">=</span> <span class="n">CaseInsensitiveDict</span><span class="p">({})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_idlookup</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">urls</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_video_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_all_videos</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_summary</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">camera_thumbs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return camera thumbnails.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">camera</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cameras</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">camera</span><span class="o">.</span><span class="n">thumbnail</span>
+
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return id/camera pairs.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idlookup</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">video_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return number of videos on server.&quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/count&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">video_url</span><span class="p">)</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auth_header</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_video_count</span> <span class="o">=</span> <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+                                     <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="p">)[</span><span class="s1">&#39;count&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_video_count</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">events</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get all events on server.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_events</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">online</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return boolean system online status.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ONLINE</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_status_request</span><span class="p">()[</span><span class="s1">&#39;syncmodule&#39;</span><span class="p">][</span><span class="s1">&#39;status&#39;</span><span class="p">]]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">videos</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return video list.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_videos</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get a full summary of device information.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_summary</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">arm</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return status of sync module: armed/disarmed.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;network&#39;</span><span class="p">][</span><span class="s1">&#39;armed&#39;</span><span class="p">]</span>
+
+    <span class="nd">@arm</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">arm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Arm or disarm system.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+            <span class="n">value_to_append</span> <span class="o">=</span> <span class="s1">&#39;arm&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">value_to_append</span> <span class="o">=</span> <span class="s1">&#39;disarm&#39;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">network_url</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">network_id</span><span class="p">,</span>
+                                <span class="n">value_to_append</span><span class="p">)</span>
+        <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth_header</span><span class="p">,</span> <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;post&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Blink.refresh"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.Blink.refresh">[docs]</a>    <span class="k">def</span> <span class="nf">refresh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get all blink cameras and pulls their most recent status.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_summary_request</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_events_request</span><span class="p">()</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;devices&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_videos</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cameras</span><span class="p">:</span>
+            <span class="n">camera</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cameras</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">element</span><span class="p">[</span><span class="s1">&#39;device_id&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="n">camera</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                        <span class="n">element</span><span class="p">[</span><span class="s1">&#39;video&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">videos</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;clip&#39;</span><span class="p">]</span>
+                        <span class="n">element</span><span class="p">[</span><span class="s1">&#39;thumbnail&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">videos</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;thumb&#39;</span><span class="p">]</span>
+                        <span class="n">camera</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="k">pass</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="Blink.get_videos"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.Blink.get_videos">[docs]</a>    <span class="k">def</span> <span class="nf">get_videos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_page</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end_page</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieve last recorded videos per camera.&quot;&quot;&quot;</span>
+        <span class="n">videos</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">page_num</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_page</span><span class="p">,</span> <span class="n">end_page</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">this_page</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_video_request</span><span class="p">(</span><span class="n">page_num</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">this_page</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">videos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">this_page</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">videos</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">page</span><span class="p">:</span>
+                <span class="n">camera_name</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;camera_name&#39;</span><span class="p">]</span>
+                <span class="n">clip_addr</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">]</span>
+                <span class="n">thumb_addr</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;thumbnail&#39;</span><span class="p">]</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_all_videos</span><span class="p">[</span><span class="n">camera_name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="p">{</span>
+                            <span class="s1">&#39;clip&#39;</span><span class="p">:</span> <span class="n">clip_addr</span><span class="p">,</span>
+                            <span class="s1">&#39;thumb&#39;</span><span class="p">:</span> <span class="n">thumb_addr</span><span class="p">,</span>
+                        <span class="p">}</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_all_videos</span><span class="p">[</span><span class="n">camera_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="p">{</span>
+                            <span class="s1">&#39;clip&#39;</span><span class="p">:</span> <span class="n">clip_addr</span><span class="p">,</span>
+                            <span class="s1">&#39;thumb&#39;</span><span class="p">:</span> <span class="n">thumb_addr</span><span class="p">,</span>
+                        <span class="p">}</span>
+                    <span class="p">]</span></div>
+
+<div class="viewcode-block" id="Blink.get_cameras"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.Blink.get_cameras">[docs]</a>    <span class="k">def</span> <span class="nf">get_cameras</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find and creates cameras.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_summary_request</span><span class="p">()</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;devices&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;device_type&#39;</span> <span class="ow">in</span> <span class="n">element</span> <span class="ow">and</span>
+                    <span class="n">element</span><span class="p">[</span><span class="s1">&#39;device_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;camera&#39;</span><span class="p">):</span>
+                <span class="c1"># Add region to config</span>
+                <span class="n">element</span><span class="p">[</span><span class="s1">&#39;region_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region_id</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">element</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+                    <span class="n">element</span><span class="p">[</span><span class="s1">&#39;video&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">videos</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;clip&#39;</span><span class="p">]</span>
+                    <span class="n">element</span><span class="p">[</span><span class="s1">&#39;thumbnail&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">videos</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;thumb&#39;</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="n">element</span><span class="p">[</span><span class="s1">&#39;video&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="n">element</span><span class="p">[</span><span class="s1">&#39;thumbnail&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">device</span> <span class="o">=</span> <span class="n">BlinkCamera</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cameras</span><span class="p">[</span><span class="n">device</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">device</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_idlookup</span><span class="p">[</span><span class="n">device</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">device</span><span class="o">.</span><span class="n">name</span></div>
+
+<div class="viewcode-block" id="Blink.set_links"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.Blink.set_links">[docs]</a>    <span class="k">def</span> <span class="nf">set_links</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set access links and required headers for each camera in system.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cameras</span><span class="p">:</span>
+            <span class="n">camera</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cameras</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="n">network_id_url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">network_url</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">network_id</span><span class="p">)</span>
+            <span class="n">image_url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/camera/</span><span class="si">{}</span><span class="s2">/thumbnail&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">network_id_url</span><span class="p">,</span>
+                                                        <span class="n">camera</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="n">arm_url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/camera/</span><span class="si">{}</span><span class="s2">/&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">network_id_url</span><span class="p">,</span>
+                                             <span class="n">camera</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="n">camera</span><span class="o">.</span><span class="n">image_link</span> <span class="o">=</span> <span class="n">image_url</span>
+            <span class="n">camera</span><span class="o">.</span><span class="n">arm_link</span> <span class="o">=</span> <span class="n">arm_url</span>
+            <span class="n">camera</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auth_header</span></div>
+
+<div class="viewcode-block" id="Blink.setup_system"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.Blink.setup_system">[docs]</a>    <span class="k">def</span> <span class="nf">setup_system</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform full system setup.</span>
+
+<span class="sd">        Method logs in and sets auth token, urls, and ids for future requests.</span>
+<span class="sd">        Essentially this is just a wrapper function for ease of use.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_username</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_password</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BlinkAuthenticationException</span><span class="p">(</span><span class="n">ERROR</span><span class="o">.</span><span class="n">AUTHENTICATE</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_auth_token</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_ids</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_videos</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">video_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_cameras</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_links</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_events_request</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Blink.login"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.Blink.login">[docs]</a>    <span class="k">def</span> <span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Prompt user for username and password.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_username</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Username:&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_password</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">(</span><span class="s2">&quot;Password:&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Blink.get_auth_token"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.Blink.get_auth_token">[docs]</a>    <span class="k">def</span> <span class="nf">get_auth_token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieve the authentication token from Blink.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_username</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">BlinkAuthenticationException</span><span class="p">(</span><span class="n">ERROR</span><span class="o">.</span><span class="n">USERNAME</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_password</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">BlinkAuthenticationException</span><span class="p">(</span><span class="n">ERROR</span><span class="o">.</span><span class="n">PASSWORD</span><span class="p">)</span>
+
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Host&#39;</span><span class="p">:</span> <span class="n">DEFAULT_URL</span><span class="p">,</span>
+                   <span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">}</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+            <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_username</span><span class="p">,</span>
+            <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_password</span><span class="p">,</span>
+            <span class="s2">&quot;client_specifier&quot;</span><span class="p">:</span> <span class="s2">&quot;iPhone 9.2 | 2.2 | 222&quot;</span>
+        <span class="p">})</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">LOGIN_URL</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+                            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">json_resp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;post&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">region_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">),</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;region&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">LOGIN_BACKUP_URL</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+                                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;post&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">region_id</span> <span class="o">=</span> <span class="s1">&#39;piri&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">=</span> <span class="s2">&quot;UNKNOWN&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_host</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">.</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">region_id</span><span class="p">,</span> <span class="n">BLINK_URL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_token</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;authtoken&#39;</span><span class="p">][</span><span class="s1">&#39;authtoken&#39;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_auth_header</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Host&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span>
+                             <span class="s1">&#39;TOKEN_AUTH&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_token</span><span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">urls</span> <span class="o">=</span> <span class="n">BlinkURLHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">region_id</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auth_header</span></div>
+
+<div class="viewcode-block" id="Blink.get_ids"><a class="viewcode-back" href="../../api/blinkpy.html#blinkpy.blinkpy.Blink.get_ids">[docs]</a>    <span class="k">def</span> <span class="nf">get_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the network ID and Account ID.&quot;&quot;&quot;</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_network_request</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">network_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">&#39;networks&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">account_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">&#39;networks&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;account_id&#39;</span><span class="p">])</span></div>
+
+    <span class="k">def</span> <span class="nf">_video_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perform a request for videos.&quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/page/</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">video_url</span><span class="p">,</span> <span class="n">page</span><span class="p">)</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auth_header</span>
+        <span class="k">return</span> <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_summary_request</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get blink summary.&quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">home_url</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auth_header</span>
+        <span class="k">if</span> <span class="n">headers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BlinkException</span><span class="p">(</span><span class="n">ERROR</span><span class="o">.</span><span class="n">AUTH_TOKEN</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_network_request</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get network and account information.&quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">networks_url</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auth_header</span>
+        <span class="k">if</span> <span class="n">headers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BlinkException</span><span class="p">(</span><span class="n">ERROR</span><span class="o">.</span><span class="n">AUTH_TOKEN</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_events_request</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get events on server.&quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">event_url</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">network_id</span><span class="p">)</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auth_header</span>
+        <span class="k">return</span> <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_status_request</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get syncmodule status.&quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">/syncmodules&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">network_url</span><span class="p">,</span>
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">network_id</span><span class="p">)</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auth_header</span>
+        <span class="k">return</span> <span class="n">_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">reqtype</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Kevin Fronczak.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0.7.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
