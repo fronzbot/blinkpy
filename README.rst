@@ -38,24 +38,16 @@ This library was built with the intention of allowing easy communication with Bl
 
 Usage
 =========
-In terms of usage, you just need to instantiate the module with a username and password and call the ``setup_system()`` method.
+The simplest way to use this package from a terminal is to call ``Blink.start()`` which will prompt for your Blink username and password and then log you in.  Alternatively, you can instantiate the Blink class with a username and password, and call ``Blink.start()`` to login and setup without prompt, as shown below.
 
 .. code:: python
 
     import blinkpy
     blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD')
-    blink.setup_system()
+    blink.start()
 
-If you leave out either of those parameters, you need to call the login function which will prompt for your username and password
+If you would like to log in without setting up the cameras or system, you can simply call the ``Blink.login()`` function which will prompt for a username and password and then authenticate with the server.  This is useful if you want to avoid use of the ``start()`` function which simply acts as a wrapper for more targeted API methods.
 
-.. code:: python
-
-    import blinkpy
-    blink = blinkpy.Blink()
-    blink.login()
-
-
-Once the login information is entered, you can run the `setup_system()` function which will attempt to authenticate with Blink servers using your username and password, obtain network ids, and create a list of cameras.
 The cameras are of a BlinkCamera class, of which the following parameters can be used (the code below creates a Blink object and iterates through each camera found)
 
 .. code:: python
@@ -63,7 +55,7 @@ The cameras are of a BlinkCamera class, of which the following parameters can be
     import blinkpy
     
     blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD')
-    blink.setup_system()
+    blink.start()
     
     for name, camera in blink.cameras.items():
         print(name)                  # Name of the camera

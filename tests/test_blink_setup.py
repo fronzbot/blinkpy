@@ -40,8 +40,6 @@ class TestBlinkSetup(unittest.TestCase):
         """Check that we throw an exception when no username/password."""
         with self.assertRaises(blinkpy.BlinkAuthenticationException):
             self.blink_no_cred.get_auth_token()
-        with self.assertRaises(blinkpy.BlinkAuthenticationException):
-            self.blink_no_cred.setup_system()
         # pylint: disable=protected-access
         self.blink_no_cred._username = USERNAME
         with self.assertRaises(blinkpy.BlinkAuthenticationException):
@@ -58,12 +56,14 @@ class TestBlinkSetup(unittest.TestCase):
             # pylint: disable=protected-access
             self.blink._summary_request()
 
+    @mock.patch('blinkpy.blinkpy.requests.post',
+                side_effect=mresp.mocked_requests_post)
     @mock.patch('blinkpy.blinkpy.getpass.getpass')
-    def test_manual_login(self, getpwd):
+    def test_manual_login(self, getpwd, mock_post):
         """Check that we can manually use the login() function."""
         getpwd.return_value = PASSWORD
         with mock.patch('builtins.input', return_value=USERNAME):
-            self.blink_no_cred.login()
+            self.assertTrue(self.blink_no_cred.login())
         # pylint: disable=protected-access
         self.assertEqual(self.blink_no_cred._username, USERNAME)
         # pylint: disable=protected-access
