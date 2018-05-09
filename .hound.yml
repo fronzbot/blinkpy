@@ -1,5 +1,6 @@
 python:
   enabled: true
+  ignore_file: setup.py
   ignored_directories:
   - docs
 
