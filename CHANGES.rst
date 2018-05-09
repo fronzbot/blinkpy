@@ -3,8 +3,9 @@ Changelog
 
 A list of changes between each release
 
-0.8.0.dev (Development version)
+0.7.1 (2018-05-09)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Fixed pip 10 import issue during setup (`@fronzbot <https://github.com/fronzbot/blinkpy/pull/61>`_)
 
 0.7.0 (2018-02-08)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
