@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 from os.path import abspath, dirname, join
 from setuptools import setup, find_packages
-from pip.req import parse_requirements
+# Fixes import error due to breaking change in pip 10
+# https://stackoverflow.com/a/49867265
+try: # pip > 10
+    from pip._internal.req import parse_requirements
+except ImportError: # pip < 10
+    from pip.req import parse_requirements
 from blinkpy.helpers.constants import (
     __version__, PROJECT_PACKAGE_NAME, PROJECT_LICENSE, PROJECT_URL,
     PROJECT_EMAIL, PROJECT_DESCRIPTION, PROJECT_CLASSIFIERS, PROJECT_AUTHOR,
