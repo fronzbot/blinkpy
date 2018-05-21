@@ -3,7 +3,7 @@ Changelog
 
 A list of changes between each release
 
-0.8.0.dev (Development version)
+0.8.0 (2018-05-21)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Added support for battery voltage level (fixes `#64 <https://github.com/fronzbot/blinkpy/issues/64>`_)
 - Added motion detection per camera
