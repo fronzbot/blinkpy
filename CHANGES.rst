@@ -3,12 +3,19 @@ Changelog
 
 A list of changes between each release
 
-0.8.0.dev (Development version)
+0.9.0.dev (Development Version)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+0.8.0 (2018-05-21)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Added support for battery voltage level (fixes `#64 <https://github.com/fronzbot/blinkpy/issues/64>`_)
 - Added motion detection per camera
 - Added fully accessible camera configuration dict
 - Added celcius property to camera (fixes `#60 <https://github.com/fronzbot/blinkpy/issues/60>`_)
+
+0.7.1 (2018-05-09)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Fixed pip 10 import issue during setup (`@fronzbot <https://github.com/fronzbot/blinkpy/pull/61>`_)
 
 0.7.0 (2018-02-08)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
