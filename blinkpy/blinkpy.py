@@ -107,13 +107,17 @@ class BlinkCamera(object):
                                            config['thumbnail'])
         self.clip = "{}{}".format(self.urls.base_url, config['video'])
         self.temperature = config['temp']
-        self.battery = config['battery']
+        self._battery_string = config['battery']
         self.notifications = config['notifications']
-        self.motion = {}
+        self.motion = dict()
         self.header = None
         self.image_link = None
         self.arm_link = None
         self.region_id = config['region_id']
+        self.battery_voltage = -180
+        self.motion_detected = None
+        self.wifi_strength = None
+        self.camera_config = dict()
 
     @property
     def attributes(self):
@@ -124,10 +128,13 @@ class BlinkCamera(object):
             'status': self._status,
             'armed': self.armed,
             'temperature': self.temperature,
+            'temperature_c': self.temperature_c,
             'battery': self.battery,
             'thumbnail': self.thumbnail,
             'video': self.clip,
             'notifications': self.notifications,
+            'motion_detected': self.motion_detected,
+            'wifi_strength': self.wifi_strength,
             'network_id': self.blink.network_id
         }
         return attributes
@@ -143,14 +150,24 @@ class BlinkCamera(object):
         return True if self._status == 'armed' else False
 
     @property
+    def battery(self):
+        """Return battery level as percentage."""
+        return round(self.battery_voltage / 180 * 100)
+
+    @property
     def battery_string(self):
         """Return string indicating battery status."""
         status = "Unknown"
-        if self.battery > 1 and self.battery <= 3:
+        if self._battery_string > 1 and self._battery_string <= 3:
             status = "OK"
-        elif self.battery >= 0:
+        elif self._battery_string >= 0:
             status = "Low"
         return status
+
+    @property
+    def temperature_c(self):
+        """Return temperature in celcius."""
+        return round((self.temperature - 32) / 9.0 * 5.0, 1)
 
     def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
@@ -175,9 +192,25 @@ class BlinkCamera(object):
             self.urls.base_url, values['thumbnail'])
         self.clip = "{}{}".format(
             self.urls.base_url, values['video'])
-        self.temperature = values['temp']
-        self.battery = values['battery']
+        self._battery_string = values['battery']
         self.notifications = values['notifications']
+
+        try:
+            cfg = self.blink.camera_config_request(self.id)
+            self.camera_config = cfg
+        except requests.exceptions.RequestException as err:
+            _LOGGER.warning("Could not get config for %s with id %s",
+                            self.name, self.id)
+            _LOGGER.warning("Exception raised: %s", err)
+
+        try:
+            self.battery_voltage = cfg['camera'][0]['battery_voltage']
+            self.motion_detected = cfg['camera'][0]['motion_alert']
+            self.wifi_strength = cfg['camera'][0]['wifi_strength']
+            self.temperature = cfg['camera'][0]['temperature']
+        except KeyError:
+            _LOGGER.warning("Problem extracting config for camera %s",
+                            self.name)
 
     def image_refresh(self):
         """Refresh current thumbnail."""
@@ -327,6 +360,7 @@ class Blink(object):
             videos.append(this_page)
 
         for page in videos:
+            _LOGGER.debug("Retrieved video page %s", page)
             for entry in page:
                 camera_name = entry['camera_name']
                 clip_addr = entry['address']
@@ -365,6 +399,7 @@ class Blink(object):
                 device = BlinkCamera(element, self)
                 self.cameras[device.name] = device
                 self._idlookup[device.id] = device.name
+        self.refresh()
 
     def set_links(self):
         """Set access links and required headers for each camera in system."""
@@ -495,5 +530,13 @@ class Blink(object):
         """Get syncmodule status."""
         url = "{}/{}/syncmodules".format(self.urls.network_url,
                                          self.network_id)
+        headers = self._auth_header
+        return _request(self, url=url, headers=headers, reqtype='get')
+
+    def camera_config_request(self, camera_id):
+        """Retrieve more info about Blink config."""
+        url = "{}/network/{}/camera/{}/config".format(self.urls.base_url,
+                                                      self.network_id,
+                                                      str(camera_id))
         headers = self._auth_header
         return _request(self, url=url, headers=headers, reqtype='get')
