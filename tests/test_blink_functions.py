@@ -61,9 +61,17 @@ class TestBlinkFunctions(unittest.TestCase):
                          '/test/thumb')
 
     @mock.patch('blinkpy.blinkpy._request')
-    def test_get_cameras(self, req):
+    @mock.patch('blinkpy.blinkpy.Blink._video_request')
+    def test_get_cameras(self, vid_req, req):
         """Test camera extraction."""
         req.return_value = {'devices': [self.config]}
+        vid_req.return_value = [
+            {
+                'camera_name': 'foobar',
+                'address': '/new.mp4',
+                'thumbnail': '/new'
+            }
+        ]
         self.blink.get_cameras()
         self.assertTrue('foobar' in self.blink.cameras)
 

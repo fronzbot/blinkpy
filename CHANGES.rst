@@ -5,6 +5,9 @@ A list of changes between each release
 
 0.8.0.dev (Development version)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Added support for battery voltage level
+- Added motion detection per camera
+- Added fully accessible camera configuration dict
 
 0.7.0 (2018-02-08)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

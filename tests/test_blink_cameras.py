@@ -15,6 +15,17 @@ import tests.mock_responses as mresp
 USERNAME = 'foobar'
 PASSWORD = 'deadbeef'
 
+CAMERA_CFG = {
+    'camera': [
+        {
+            'battery_voltage': 90,
+            'motion_alert': True,
+            'wifi_strength': -30,
+            'temperature': 68
+        }
+    ]
+}
+
 
 class TestBlinkCameraSetup(unittest.TestCase):
     """Test the Blink class in blinkpy."""
@@ -35,6 +46,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             'notifications': 2,
             'region_id': 'test'
         }
+
         self.blink.urls = blinkpy.BlinkURLHandler('test')
         self.blink.network_id = '0000'
 
@@ -42,11 +54,13 @@ class TestBlinkCameraSetup(unittest.TestCase):
         """Clean up after test."""
         self.blink = None
 
+    @mock.patch('blinkpy.blinkpy.Blink.camera_config_request',
+                return_value=CAMERA_CFG)
     @mock.patch('blinkpy.blinkpy.requests.post',
                 side_effect=mresp.mocked_requests_post)
     @mock.patch('blinkpy.blinkpy.requests.get',
                 side_effect=mresp.mocked_requests_get)
-    def test_camera_properties(self, mock_get, mock_post):
+    def test_camera_properties(self, mock_get, mock_post, mock_cfg):
         """Tests all property set/recall."""
         self.blink.urls = blinkpy.BlinkURLHandler('test')
 
@@ -56,7 +70,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
         for name in self.blink.cameras:
             camera = self.blink.cameras[name]
-
+            camera.update(self.camera_config)
             self.assertEqual(camera.id, '1111')
             self.assertEqual(camera.name, 'foobar')
             self.assertEqual(camera.armed, False)
@@ -68,11 +82,14 @@ class TestBlinkCameraSetup(unittest.TestCase):
                 camera.clip,
                 "https://rest.test.{}/test/clip/clip.mp4".format(BLINK_URL)
             )
-            self.assertEqual(camera.temperature, 70)
-            self.assertEqual(camera.battery, 3)
+            self.assertEqual(camera.temperature, 68)
+            self.assertEqual(camera.battery, 50)
             self.assertEqual(camera.battery_string, "OK")
             self.assertEqual(camera.notifications, 2)
             self.assertEqual(camera.region_id, 'test')
+            self.assertEqual(camera.motion_detected, True)
+            self.assertEqual(camera.wifi_strength, -30)
+
         camera_config = self.camera_config
         camera_config['active'] = 'armed'
         camera_config['thumbnail'] = '/test2/image'
@@ -80,7 +97,6 @@ class TestBlinkCameraSetup(unittest.TestCase):
         camera_config['temp'] = 60
         camera_config['battery'] = 0
         camera_config['notifications'] = 4
-
         for name in self.blink.cameras:
             camera = self.blink.cameras[name]
             camera.update(camera_config)
@@ -93,8 +109,8 @@ class TestBlinkCameraSetup(unittest.TestCase):
                 camera.clip,
                 "https://rest.test.{}/test2/clip.mp4".format(BLINK_URL)
             )
-            self.assertEqual(camera.temperature, 60)
-            self.assertEqual(camera.battery, 0)
+            self.assertEqual(camera.temperature, 68)
+            self.assertEqual(camera.battery, 50)
             self.assertEqual(camera.battery_string, "Low")
             self.assertEqual(camera.notifications, 4)
             camera_config['battery'] = -10
@@ -107,7 +123,9 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.blink.cameras['foobar'] = camera_object
         self.assertEqual(camera_object, self.blink.cameras['fOoBaR'])
 
-    def test_camera_attributes(self):
+    @mock.patch('blinkpy.blinkpy.Blink.camera_config_request',
+                return_value=CAMERA_CFG)
+    def test_camera_attributes(self, mock_cfg):
         """Tests camera attributes."""
         self.blink.urls = blinkpy.BlinkURLHandler('test')
 
@@ -117,6 +135,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
         for name in self.blink.cameras:
             camera = self.blink.cameras[name]
+            camera.update(self.camera_config)
             camera_attr = camera.attributes
             self.assertEqual(camera_attr['device_id'], '1111')
             self.assertEqual(camera_attr['name'], 'foobar')
@@ -129,7 +148,9 @@ class TestBlinkCameraSetup(unittest.TestCase):
                 camera_attr['video'],
                 "https://rest.test.{}/test/clip/clip.mp4".format(BLINK_URL)
             )
-            self.assertEqual(camera_attr['temperature'], 70)
-            self.assertEqual(camera_attr['battery'], 3)
+            self.assertEqual(camera_attr['temperature'], 68)
+            self.assertEqual(camera_attr['battery'], 50)
             self.assertEqual(camera_attr['notifications'], 2)
             self.assertEqual(camera_attr['network_id'], '0000')
+            self.assertEqual(camera_attr['motion_detected'], True)
+            self.assertEqual(camera_attr['wifi_strength'], -30)
