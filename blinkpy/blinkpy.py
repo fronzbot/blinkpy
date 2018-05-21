@@ -114,7 +114,7 @@ class BlinkCamera(object):
         self.image_link = None
         self.arm_link = None
         self.region_id = config['region_id']
-        self.battery_voltage = -180 
+        self.battery_voltage = -180
         self.motion_detected = None
         self.wifi_strength = None
         self.camera_config = dict()
@@ -190,19 +190,21 @@ class BlinkCamera(object):
         self.notifications = values['notifications']
 
         try:
-            cfg = self.blink._camera_config_request(self.id)
+            cfg = self.blink.camera_config_request(self.id)
             self.camera_config = cfg
-        except:
-            _LOGGER.warning("Could not get config for {} with id {}".format(
-                             self.name, self.id))
+        except requests.exceptions.RequestException as err:
+            _LOGGER.warning("Could not get config for %s with id %s",
+                            self.name, self.id)
+            _LOGGER.warning("Exception raised: %s", err)
+
         try:
             self.battery_voltage = cfg['camera'][0]['battery_voltage']
             self.motion_detected = cfg['camera'][0]['motion_alert']
             self.wifi_strength = cfg['camera'][0]['wifi_strength']
             self.temperature = cfg['camera'][0]['temperature']
         except KeyError:
-            _LOGGER.warning("Problem extracting config for camera {}".format(
-                            self.name))
+            _LOGGER.warning("Problem extracting config for camera %s",
+                            self.name)
 
     def image_refresh(self):
         """Refresh current thumbnail."""
@@ -352,6 +354,7 @@ class Blink(object):
             videos.append(this_page)
 
         for page in videos:
+            _LOGGER.debug("Retrieved video page %s", page)
             for entry in page:
                 camera_name = entry['camera_name']
                 clip_addr = entry['address']
@@ -524,7 +527,7 @@ class Blink(object):
         headers = self._auth_header
         return _request(self, url=url, headers=headers, reqtype='get')
 
-    def _camera_config_request(self, camera_id):
+    def camera_config_request(self, camera_id):
         """Retrieve more info about Blink config."""
         url = "{}/network/{}/camera/{}/config".format(self.urls.base_url,
                                                       self.network_id,
