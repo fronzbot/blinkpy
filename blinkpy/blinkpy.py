@@ -128,6 +128,7 @@ class BlinkCamera(object):
             'status': self._status,
             'armed': self.armed,
             'temperature': self.temperature,
+            'temperature_c': self.temperature_c,
             'battery': self.battery,
             'thumbnail': self.thumbnail,
             'video': self.clip,
@@ -162,6 +163,11 @@ class BlinkCamera(object):
         elif self._battery_string >= 0:
             status = "Low"
         return status
+
+    @property
+    def temperature_c(self):
+        """Return temperature in celcius."""
+        return round((self.temperature - 32) / 9.0 * 5.0, 1)
 
     def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
