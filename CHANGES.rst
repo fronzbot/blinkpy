@@ -10,6 +10,10 @@ A list of changes between each release
 - Added fully accessible camera configuration dict
 - Added celcius property to camera (fixes `#60 <https://github.com/fronzbot/blinkpy/issues/60>`_)
 
+0.7.1 (2018-05-09)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Fixed pip 10 import issue during setup (`@fronzbot <https://github.com/fronzbot/blinkpy/pull/61>`_)
+
 0.7.0 (2018-02-08)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Fixed style errors for bumped pydocstring and pylint versions
