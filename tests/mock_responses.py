@@ -39,7 +39,7 @@ def mocked_requests_post(*args, **kwargs):
     response_to_return = {'message': 'Error', 'code': 404}
     code_to_return = 404
 
-    if url_arg == const.LOGIN_URL or url_arg == const.LOGIN_BACKUP_URL:
+    if url_arg in (const.LOGIN_URL, const.LOGIN_BACKUP_URL):
         response_to_return = LOGIN_RESPONSE
         code_to_return = 200
     elif url_arg is not None:
@@ -77,6 +77,7 @@ def mocked_requests_get(*args, **kwargs):
 
     url_arg = args[0]
 
+    # pylint: disable=R1711
     if url_arg == 'use_bad_response':
         return MockGetResponse({'foo': 'bar'}, 200)
     elif url_arg == 'reauth':
