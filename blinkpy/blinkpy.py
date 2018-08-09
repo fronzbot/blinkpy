@@ -79,7 +79,7 @@ class BlinkAuthenticationException(BlinkException):
     pass
 
 
-class BlinkURLHandler(object):
+class BlinkURLHandler():
     """Class that handles Blink URLS."""
 
     def __init__(self, region_id):
@@ -93,7 +93,7 @@ class BlinkURLHandler(object):
         _LOGGER.debug("Setting base url to %s.", self.base_url)
 
 
-class BlinkCamera(object):
+class BlinkCamera():
     """Class to initialize individual camera."""
 
     def __init__(self, config, blink):
@@ -248,7 +248,7 @@ class BlinkCamera(object):
             copyfileobj(response.raw, vidfile)
 
 
-class Blink(object):
+class Blink():
     """Class to initialize communication and sync module."""
 
     def __init__(self, username=None, password=None):
@@ -348,7 +348,6 @@ class Blink(object):
                         camera.update(element)
                 except KeyError:
                     pass
-        return None
 
     def get_videos(self, start_page=0, end_page=1):
         """Retrieve last recorded videos per camera."""
