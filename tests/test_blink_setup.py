@@ -8,7 +8,7 @@ any communication related errors at startup.
 
 import unittest
 from unittest import mock
-from blinkpy import blinkpy as blinkpy
+from blinkpy import blinkpy
 import tests.mock_responses as mresp
 
 USERNAME = 'foobar'
