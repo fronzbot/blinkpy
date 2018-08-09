@@ -76,7 +76,7 @@ def mocked_requests_get(*args, **kwargs):
         return MockGetResponse({'message': 'Not Authorized', 'code': 400}, 400)
 
     url_arg = args[0]
-    
+
     # pylint: disable=R1711
     if url_arg == 'use_bad_response':
         return MockGetResponse({'foo': 'bar'}, 200)
