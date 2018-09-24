@@ -1,3 +1,4 @@
+.pytest_cache/*
 .cache/*
 .tox/*
 __pycache__/*

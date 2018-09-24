@@ -88,7 +88,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             self.assertEqual(camera.battery_string, "OK")
             self.assertEqual(camera.notifications, 2)
             self.assertEqual(camera.region_id, 'test')
-            self.assertEqual(camera.motion_detected, True)
+            self.assertEqual(camera.motion_enabled, True)
             self.assertEqual(camera.wifi_strength, -30)
 
         camera_config = self.camera_config
@@ -154,5 +154,5 @@ class TestBlinkCameraSetup(unittest.TestCase):
             self.assertEqual(camera_attr['battery'], 50)
             self.assertEqual(camera_attr['notifications'], 2)
             self.assertEqual(camera_attr['network_id'], '0000')
-            self.assertEqual(camera_attr['motion_detected'], True)
+            self.assertEqual(camera_attr['motion_enabled'], True)
             self.assertEqual(camera_attr['wifi_strength'], -30)

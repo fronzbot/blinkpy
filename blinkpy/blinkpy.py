@@ -26,6 +26,8 @@ from blinkpy.helpers.constants import (
 
 _LOGGER = logging.getLogger('blinkpy')
 
+MAX_CLIPS = 5
+
 
 def _attempt_reauthorization(blink):
     """Attempt to refresh auth token and links."""
@@ -79,7 +81,7 @@ class BlinkAuthenticationException(BlinkException):
     pass
 
 
-class BlinkURLHandler(object):
+class BlinkURLHandler():
     """Class that handles Blink URLS."""
 
     def __init__(self, region_id):
@@ -93,7 +95,7 @@ class BlinkURLHandler(object):
         _LOGGER.debug("Setting base url to %s.", self.base_url)
 
 
-class BlinkCamera(object):
+class BlinkCamera():
     """Class to initialize individual camera."""
 
     def __init__(self, config, blink):
@@ -118,6 +120,8 @@ class BlinkCamera(object):
         self.motion_detected = None
         self.wifi_strength = None
         self.camera_config = dict()
+        self.motion_enabled = None
+        self.last_record = list()
 
     @property
     def attributes(self):
@@ -132,10 +136,12 @@ class BlinkCamera(object):
             'battery': self.battery,
             'thumbnail': self.thumbnail,
             'video': self.clip,
+            'motion_enabled': self.motion_enabled,
             'notifications': self.notifications,
             'motion_detected': self.motion_detected,
             'wifi_strength': self.wifi_strength,
-            'network_id': self.blink.network_id
+            'network_id': self.blink.network_id,
+            'last_record': self.last_record
         }
         return attributes
 
@@ -205,11 +211,29 @@ class BlinkCamera(object):
 
         try:
             self.battery_voltage = cfg['camera'][0]['battery_voltage']
-            self.motion_detected = cfg['camera'][0]['motion_alert']
+            self.motion_enabled = cfg['camera'][0]['motion_alert']
             self.wifi_strength = cfg['camera'][0]['wifi_strength']
             self.temperature = cfg['camera'][0]['temperature']
         except KeyError:
             _LOGGER.warning("Problem extracting config for camera %s",
+                            self.name)
+
+        # Check if the most recent clip is included in the last_record list
+        # and that the last_record list is populated
+        try:
+            new_clip = self.blink.videos[self.name][0]['clip']
+            if new_clip not in self.last_record and self.last_record:
+                self.motion_detected = True
+                self.last_record.insert(0, new_clip)
+                if len(self.last_record) > MAX_CLIPS:
+                    self.last_record.pop()
+            elif not self.last_record:
+                self.last_record.insert(0, new_clip)
+                self.motion_detected = False
+            else:
+                self.motion_detected = False
+        except KeyError:
+            _LOGGER.warning("Could not extract clip info from camera %s",
                             self.name)
 
     def image_refresh(self):
@@ -248,7 +272,7 @@ class BlinkCamera(object):
             copyfileobj(response.raw, vidfile)
 
 
-class Blink(object):
+class Blink():
     """Class to initialize communication and sync module."""
 
     def __init__(self, username=None, password=None):
@@ -348,7 +372,6 @@ class Blink(object):
                         camera.update(element)
                 except KeyError:
                     pass
-        return None
 
     def get_videos(self, start_page=0, end_page=1):
         """Retrieve last recorded videos per camera."""
