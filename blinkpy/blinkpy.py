@@ -17,6 +17,7 @@ import getpass
 from shutil import copyfileobj
 import logging
 import requests
+import time
 from requests.structures import CaseInsensitiveDict
 import blinkpy.helpers.errors as ERROR
 from blinkpy.helpers.constants import (
@@ -27,6 +28,7 @@ from blinkpy.helpers.constants import (
 _LOGGER = logging.getLogger('blinkpy')
 
 MAX_CLIPS = 5
+REFRESH_RATE = 30
 
 
 def _attempt_reauthorization(blink):
@@ -280,7 +282,7 @@ class BlinkCamera():
 class Blink():
     """Class to initialize communication and sync module."""
 
-    def __init__(self, username=None, password=None):
+    def __init__(self, username=None, password=None, refresh_rate=REFRESH_RATE):
         """Initialize Blink system."""
         self._username = username
         self._password = password
@@ -299,6 +301,8 @@ class Blink():
         self._all_videos = {}
         self._summary = None
         self.record_dates = dict()
+        self.refresh_rate = refresh_rate
+        self.last_refresh = None
 
     @property
     def camera_thumbs(self):
@@ -363,21 +367,27 @@ class Blink():
 
     def refresh(self):
         """Get all blink cameras and pulls their most recent status."""
-        _LOGGER.debug("Attempting refresh of cameras.")
-        self._summary = self._summary_request()
-        self._events = self._events_request()
-        response = self.summary['devices']
-        self.get_videos()
-        for name in self.cameras:
-            camera = self.cameras[name]
-            for element in response:
-                try:
-                    if str(element['device_id']) == camera.id:
-                        element['video'] = self.videos[name][0]['clip']
-                        element['thumbnail'] = self.videos[name][0]['thumb']
-                        camera.update(element)
-                except KeyError:
-                    pass
+        current_time = int(time.time())
+        last_refresh = self.last_refresh
+        if last_refresh is None:
+            last_refresh = 0
+        if current_time >= (last_refresh + self.refresh_rate):
+            _LOGGER.debug("Attempting refresh of cameras.")
+            self._summary = self._summary_request()
+            self._events = self._events_request()
+            response = self.summary['devices']
+            self.get_videos()
+            for name in self.cameras:
+                camera = self.cameras[name]
+                for element in response:
+                    try:
+                        if str(element['device_id']) == camera.id:
+                            element['video'] = self.videos[name][0]['clip']
+                            element['thumbnail'] = self.videos[name][0]['thumb']
+                            camera.update(element)
+                    except KeyError:
+                        pass
+            self.last_refresh = int(time.time())
 
     def get_videos(self, start_page=0, end_page=1):
         """Retrieve last recorded videos per camera."""
