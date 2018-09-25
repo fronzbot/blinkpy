@@ -1,13 +1,11 @@
 """Defines a sync module for Blink."""
 
 import logging
-import time
 
 from requests.structures import CaseInsensitiveDict
 from blinkpy.camera import BlinkCamera
-from blinkpy.helpers.util import http_req, BlinkException
+from blinkpy.helpers.util import http_req
 from blinkpy.helpers.constants import ONLINE
-import blinkpy.helpers.errors as ERROR
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +33,7 @@ class BlinkSyncModule():
     @property
     def camera_thumbs(self):
         """Return camera thumbnails."""
-        self.refresh()
+        self.blink.refresh()
         data = {}
         for name, camera in self.cameras.items():
             data[name] = camera.thumbnail
@@ -169,7 +167,7 @@ class BlinkSyncModule():
                 device = BlinkCamera(element, self)
                 self.cameras[device.name] = device
                 self._idlookup[device.id] = device.name
-        self.refresh()
+        self.blink.refresh()
 
     def set_links(self):
         """Set access links and required headers for each camera in system."""
@@ -184,6 +182,10 @@ class BlinkSyncModule():
             camera.image_link = image_url
             camera.arm_link = arm_url
             camera.header = self._auth_header
+
+    def _summary_request(self):
+        """Request a summary from blink."""
+        return self.blink.summary_request
 
     def _video_request(self, page=0):
         """Perform a request for videos."""
