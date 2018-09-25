@@ -196,8 +196,8 @@ class BlinkCamera():
         self._status = values['active']
         self.clip = "{}{}".format(
             self.urls.base_url, values['video'])
-        thumb_from_clip = self.clip[0:-4]
-        self.thumbnail = "{}.jpg".format(thumb_from_clip)
+        self.thumbnail = "{}{}.jpg".format(
+            self.urls.base_url, values['thumbnail'])
         self._battery_string = values['battery']
         self.notifications = values['notifications']
 
@@ -245,10 +245,9 @@ class BlinkCamera():
         for element in response:
             try:
                 if str(element['device_id']) == self.id:
-                    clip = element['video']
                     self.thumbnail = (
                         "{}{}.jpg".format(
-                            self.urls.base_url, clip[0:-4])
+                            self.urls.base_url, element['thumbnail'])
                     )
                     return self.thumbnail
             except KeyError:
@@ -259,11 +258,15 @@ class BlinkCamera():
         """Write image to file."""
         _LOGGER.debug("Writing image from %s to %s", self.name, path)
         thumb = self.image_refresh()
+        if not thumb:
+            thumb = self.thumbnail
         response = _request(self.blink, url=thumb, headers=self.header,
                             reqtype='get', stream=True, json_resp=False)
         if response.status_code == 200:
             with open(path, 'wb') as imgfile:
                 copyfileobj(response.raw, imgfile)
+        else:
+            print(response)
 
     def video_to_file(self, path):
         """Write video to file."""
