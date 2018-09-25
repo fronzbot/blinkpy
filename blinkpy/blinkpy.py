@@ -194,10 +194,10 @@ class BlinkCamera():
         """Update camera information."""
         self.name = values['name']
         self._status = values['active']
-        self.thumbnail = "{}{}.jpg".format(
-            self.urls.base_url, values['thumbnail'])
         self.clip = "{}{}".format(
             self.urls.base_url, values['video'])
+        thumb_from_clip = self.clip[0:-4]
+        self.thumbnail = "{}.jpg".format(thumb_from_clip)
         self._battery_string = values['battery']
         self.notifications = values['notifications']
 
@@ -221,7 +221,8 @@ class BlinkCamera():
         # Check if the most recent clip is included in the last_record list
         # and that the last_record list is populated
         try:
-            new_clip = self.blink.videos[self.name][0]['clip']
+            records = sorted(self.blink.record_dates[self.name])
+            new_clip = records.pop()
             if new_clip not in self.last_record and self.last_record:
                 self.motion_detected = True
                 self.last_record.insert(0, new_clip)
@@ -244,9 +245,10 @@ class BlinkCamera():
         for element in response:
             try:
                 if str(element['device_id']) == self.id:
+                    clip = element['video']
                     self.thumbnail = (
                         "{}{}.jpg".format(
-                            self.urls.base_url, element['thumbnail'])
+                            self.urls.base_url, clip[0:-4])
                     )
                     return self.thumbnail
             except KeyError:
@@ -293,6 +295,7 @@ class Blink():
         self._video_count = 0
         self._all_videos = {}
         self._summary = None
+        self.record_dates = dict()
 
     @property
     def camera_thumbs(self):
@@ -376,6 +379,7 @@ class Blink():
     def get_videos(self, start_page=0, end_page=1):
         """Retrieve last recorded videos per camera."""
         videos = list()
+        all_dates = dict()
         for page_num in range(start_page, end_page + 1):
             this_page = self._video_request(page_num)
             if not this_page:
@@ -388,6 +392,12 @@ class Blink():
                 camera_name = entry['camera_name']
                 clip_addr = entry['address']
                 thumb_addr = entry['thumbnail']
+                clip_date = clip_addr.split('_')[-6:]
+                clip_date = '_'.join(clip_date)
+                clip_date = clip_date.split('.')[0]
+                if camera_name not in all_dates:
+                    all_dates[camera_name] = list()
+                all_dates[camera_name].append(clip_date)
                 try:
                     self._all_videos[camera_name].append(
                         {
@@ -402,6 +412,7 @@ class Blink():
                             'thumb': thumb_addr,
                         }
                     ]
+        self.record_dates = all_dates
 
     def get_cameras(self):
         """Find and creates cameras."""
