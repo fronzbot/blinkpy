@@ -138,7 +138,7 @@ class BlinkCamera():
             update_cached_image = True
         self.thumbnail = new_thumbnail
         try:
-            cfg = self.sync.camera_confighttp_req(self.id)
+            cfg = self.sync.camera_config_request(self.id)
             self.camera_config = cfg
         except RequestException as err:
             _LOGGER.warning("Could not get config for %s with id %s",

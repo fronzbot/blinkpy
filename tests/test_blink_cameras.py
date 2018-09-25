@@ -9,6 +9,9 @@ Blink system is set up.
 import unittest
 from unittest import mock
 from blinkpy import blinkpy
+from blinkpy.helpers.util import BlinkURLHandler
+from blinkpy.sync_module import BlinkSyncModule
+from blinkpy.camera import BlinkCamera
 from blinkpy.helpers.constants import BLINK_URL
 import tests.mock_responses as mresp
 
@@ -47,29 +50,30 @@ class TestBlinkCameraSetup(unittest.TestCase):
             'region_id': 'test'
         }
 
-        self.blink.urls = blinkpy.BlinkURLHandler('test')
+        self.blink.urls = BlinkURLHandler('test')
         self.blink.network_id = '0000'
+        self.blink.sync = BlinkSyncModule(self.blink, dict(), self.blink.urls)
 
     def tearDown(self):
         """Clean up after test."""
         self.blink = None
 
-    @mock.patch('blinkpy.blinkpy.Blink.camera_config_request',
+    @mock.patch('blinkpy.sync_module.BlinkSyncModule.camera_config_request',
                 return_value=CAMERA_CFG)
-    @mock.patch('blinkpy.blinkpy.requests.post',
+    @mock.patch('blinkpy.helpers.util.requests.post',
                 side_effect=mresp.mocked_requests_post)
-    @mock.patch('blinkpy.blinkpy.requests.get',
+    @mock.patch('blinkpy.helpers.util.requests.get',
                 side_effect=mresp.mocked_requests_get)
     def test_camera_properties(self, mock_get, mock_post, mock_cfg):
         """Tests all property set/recall."""
-        self.blink.urls = blinkpy.BlinkURLHandler('test')
+        self.blink.urls = BlinkURLHandler('test')
 
-        self.blink.cameras = {
-            'foobar': blinkpy.BlinkCamera(self.camera_config, self.blink)
+        self.blink.sync.cameras = {
+            'foobar': BlinkCamera(self.camera_config, self.blink.sync)
         }
 
-        for name in self.blink.cameras:
-            camera = self.blink.cameras[name]
+        for name in self.blink.sync.cameras:
+            camera = self.blink.sync.cameras[name]
             camera.update(self.camera_config, skip_cache=True)
             self.assertEqual(camera.id, '1111')
             self.assertEqual(camera.name, 'foobar')
@@ -98,8 +102,8 @@ class TestBlinkCameraSetup(unittest.TestCase):
         camera_config['temp'] = 60
         camera_config['battery'] = 0
         camera_config['notifications'] = 4
-        for name in self.blink.cameras:
-            camera = self.blink.cameras[name]
+        for name in self.blink.sync.cameras:
+            camera = self.blink.sync.cameras[name]
             camera.update(camera_config, skip_cache=True)
             self.assertEqual(camera.armed, True)
             self.assertEqual(
@@ -120,22 +124,22 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
     def test_camera_case(self):
         """Tests camera case sensitivity."""
-        camera_object = blinkpy.BlinkCamera(self.camera_config, self.blink)
-        self.blink.cameras['foobar'] = camera_object
-        self.assertEqual(camera_object, self.blink.cameras['fOoBaR'])
+        camera_object = BlinkCamera(self.camera_config, self.blink.sync)
+        self.blink.sync.cameras['foobar'] = camera_object
+        self.assertEqual(camera_object, self.blink.sync.cameras['fOoBaR'])
 
-    @mock.patch('blinkpy.blinkpy.Blink.camera_config_request',
+    @mock.patch('blinkpy.sync_module.BlinkSyncModule.camera_config_request',
                 return_value=CAMERA_CFG)
     def test_camera_attributes(self, mock_cfg):
         """Tests camera attributes."""
-        self.blink.urls = blinkpy.BlinkURLHandler('test')
+        self.blink.urls = BlinkURLHandler('test')
 
-        self.blink.cameras = {
-            'foobar': blinkpy.BlinkCamera(self.camera_config, self.blink)
+        self.blink.sync.cameras = {
+            'foobar': BlinkCamera(self.camera_config, self.blink.sync)
         }
 
-        for name in self.blink.cameras:
-            camera = self.blink.cameras[name]
+        for name in self.blink.sync.cameras:
+            camera = self.blink.sync.cameras[name]
             camera.update(self.camera_config, skip_cache=True)
             camera_attr = camera.attributes
             self.assertEqual(camera_attr['device_id'], '1111')
