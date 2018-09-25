@@ -194,10 +194,10 @@ class BlinkCamera():
         """Update camera information."""
         self.name = values['name']
         self._status = values['active']
-        self.thumbnail = "{}{}.jpg".format(
-            self.urls.base_url, values['thumbnail'])
         self.clip = "{}{}".format(
             self.urls.base_url, values['video'])
+        thumb_from_clip = self.clip[0:-4]
+        self.thumbnail = "{}.jpg".format(thumb_from_clip)
         self._battery_string = values['battery']
         self.notifications = values['notifications']
 
@@ -245,9 +245,10 @@ class BlinkCamera():
         for element in response:
             try:
                 if str(element['device_id']) == self.id:
+                    clip = element['video']
                     self.thumbnail = (
                         "{}{}.jpg".format(
-                            self.urls.base_url, element['thumbnail'])
+                            self.urls.base_url, clip[0:-4])
                     )
                     return self.thumbnail
             except KeyError:
