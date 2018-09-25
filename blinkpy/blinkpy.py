@@ -16,6 +16,7 @@ import json
 import getpass
 from shutil import copyfileobj
 import logging
+import time
 import requests
 from requests.structures import CaseInsensitiveDict
 import blinkpy.helpers.errors as ERROR
@@ -27,6 +28,7 @@ from blinkpy.helpers.constants import (
 _LOGGER = logging.getLogger('blinkpy')
 
 MAX_CLIPS = 5
+REFRESH_RATE = 30
 
 
 def _attempt_reauthorization(blink):
@@ -122,6 +124,8 @@ class BlinkCamera():
         self.camera_config = dict()
         self.motion_enabled = None
         self.last_record = list()
+        self._cached_image = None
+        self._cached_video = None
 
     @property
     def attributes(self):
@@ -175,6 +179,20 @@ class BlinkCamera():
         """Return temperature in celcius."""
         return round((self.temperature - 32) / 9.0 * 5.0, 1)
 
+    @property
+    def image_from_cache(self):
+        """Return the most recently cached image."""
+        if self._cached_image:
+            return self._cached_image
+        return None
+
+    @property
+    def video_from_cache(self):
+        """Return the most recently cached video."""
+        if self._cached_video:
+            return self._cached_video
+        return None
+
     def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
         _request(self.blink, url=self.image_link,
@@ -190,17 +208,21 @@ class BlinkCamera():
             _request(self.blink, url=url + 'disable',
                      headers=self.header, reqtype='post')
 
-    def update(self, values):
+    def update(self, values, force_cache=False, skip_cache=False):
         """Update camera information."""
         self.name = values['name']
         self._status = values['active']
         self.clip = "{}{}".format(
             self.urls.base_url, values['video'])
-        self.thumbnail = "{}{}.jpg".format(
+        new_thumbnail = "{}{}.jpg".format(
             self.urls.base_url, values['thumbnail'])
         self._battery_string = values['battery']
         self.notifications = values['notifications']
 
+        update_cached_image = False
+        if new_thumbnail != self.thumbnail or self._cached_image is None:
+            update_cached_image = True
+        self.thumbnail = new_thumbnail
         try:
             cfg = self.blink.camera_config_request(self.id)
             self.camera_config = cfg
@@ -237,6 +259,16 @@ class BlinkCamera():
             _LOGGER.warning("Could not extract clip info from camera %s",
                             self.name)
 
+        if not skip_cache:
+            if update_cached_image or force_cache:
+                self._cached_image = _request(
+                    self.blink, url=self.image_refresh(), headers=self.header,
+                    reqtype='get', stream=True, json_resp=False)
+            if (self.clip is None) or self.motion_detected or force_cache:
+                self._cached_video = _request(
+                    self.blink, url=self.clip, headers=self.header,
+                    reqtype='get', stream=True, json_resp=False)
+
     def image_refresh(self):
         """Refresh current thumbnail."""
         url = self.urls.home_url
@@ -257,22 +289,18 @@ class BlinkCamera():
     def image_to_file(self, path):
         """Write image to file."""
         _LOGGER.debug("Writing image from %s to %s", self.name, path)
-        thumb = self.image_refresh()
-        if not thumb:
-            thumb = self.thumbnail
-        response = _request(self.blink, url=thumb, headers=self.header,
-                            reqtype='get', stream=True, json_resp=False)
+        response = self._cached_image
         if response.status_code == 200:
             with open(path, 'wb') as imgfile:
                 copyfileobj(response.raw, imgfile)
         else:
-            print(response)
+            _LOGGER.error("Cannot write image to file, response %s",
+                          response.status_code)
 
     def video_to_file(self, path):
         """Write video to file."""
         _LOGGER.debug("Writing video from %s to %s", self.name, path)
-        response = _request(self.blink, url=self.clip, headers=self.header,
-                            reqtype='get', stream=True, json_resp=False)
+        response = self._cached_video
         with open(path, 'wb') as vidfile:
             copyfileobj(response.raw, vidfile)
 
@@ -280,7 +308,8 @@ class BlinkCamera():
 class Blink():
     """Class to initialize communication and sync module."""
 
-    def __init__(self, username=None, password=None):
+    def __init__(self, username=None, password=None,
+                 refresh_rate=REFRESH_RATE):
         """Initialize Blink system."""
         self._username = username
         self._password = password
@@ -299,6 +328,8 @@ class Blink():
         self._all_videos = {}
         self._summary = None
         self.record_dates = dict()
+        self.refresh_rate = refresh_rate
+        self.last_refresh = None
 
     @property
     def camera_thumbs(self):
@@ -361,23 +392,31 @@ class Blink():
                                 value_to_append)
         _request(self, url=url, headers=self._auth_header, reqtype='post')
 
-    def refresh(self):
+    def refresh(self, force_cache=False):
         """Get all blink cameras and pulls their most recent status."""
-        _LOGGER.debug("Attempting refresh of cameras.")
-        self._summary = self._summary_request()
-        self._events = self._events_request()
-        response = self.summary['devices']
-        self.get_videos()
-        for name in self.cameras:
-            camera = self.cameras[name]
-            for element in response:
-                try:
-                    if str(element['device_id']) == camera.id:
-                        element['video'] = self.videos[name][0]['clip']
-                        element['thumbnail'] = self.videos[name][0]['thumb']
-                        camera.update(element)
-                except KeyError:
-                    pass
+        current_time = int(time.time())
+        last_refresh = self.last_refresh
+        if last_refresh is None:
+            last_refresh = 0
+            force_cache = True
+        if current_time >= (last_refresh + self.refresh_rate):
+            _LOGGER.debug("Attempting refresh of cameras.")
+            self._summary = self._summary_request()
+            self._events = self._events_request()
+            response = self.summary['devices']
+            self.get_videos()
+            for name in self.cameras:
+                camera = self.cameras[name]
+                for element in response:
+                    try:
+                        if str(element['device_id']) == camera.id:
+                            element['video'] = self.videos[name][0]['clip']
+                            thumb = self.videos[name][0]['thumb']
+                            element['thumbnail'] = thumb
+                            camera.update(element, force_cache=force_cache)
+                    except KeyError:
+                        pass
+            self.last_refresh = int(time.time())
 
     def get_videos(self, start_page=0, end_page=1):
         """Retrieve last recorded videos per camera."""
