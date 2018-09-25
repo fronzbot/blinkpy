@@ -70,7 +70,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
         for name in self.blink.cameras:
             camera = self.blink.cameras[name]
-            camera.update(self.camera_config)
+            camera.update(self.camera_config, skip_cache=True)
             self.assertEqual(camera.id, '1111')
             self.assertEqual(camera.name, 'foobar')
             self.assertEqual(camera.armed, False)
@@ -100,7 +100,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         camera_config['notifications'] = 4
         for name in self.blink.cameras:
             camera = self.blink.cameras[name]
-            camera.update(camera_config)
+            camera.update(camera_config, skip_cache=True)
             self.assertEqual(camera.armed, True)
             self.assertEqual(
                 camera.thumbnail,
@@ -115,7 +115,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             self.assertEqual(camera.battery_string, "Low")
             self.assertEqual(camera.notifications, 4)
             camera_config['battery'] = -10
-            camera.update(camera_config)
+            camera.update(camera_config, skip_cache=True)
             self.assertEqual(camera.battery_string, "Unknown")
 
     def test_camera_case(self):
@@ -136,7 +136,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
         for name in self.blink.cameras:
             camera = self.blink.cameras[name]
-            camera.update(self.camera_config)
+            camera.update(self.camera_config, skip_cache=True)
             camera_attr = camera.attributes
             self.assertEqual(camera_attr['device_id'], '1111')
             self.assertEqual(camera_attr['name'], 'foobar')
