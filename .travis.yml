@@ -1,3 +1,4 @@
+sudo: required
 matrix:
   fast_finish: true
   include:
@@ -11,9 +12,6 @@ matrix:
       env: TOXENV=build
     - python: "3.7"
       env: TOXENV=py37
-      dist: xenial
-    - python: "3.8-dev"
-      env: TOXENV=py38
       dist: xenial
 
 install: pip install -U tox coveralls
