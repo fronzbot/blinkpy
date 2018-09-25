@@ -39,7 +39,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             'name': 'foobar',
             'armed': False,
             'active': 'disarmed',
-            'thumbnail': '/test/clip/clip.jpg',
+            'thumbnail': '/test/image',
             'video': '/test/clip/clip.mp4',
             'temp': 70,
             'battery': 3,
@@ -76,7 +76,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             self.assertEqual(camera.armed, False)
             self.assertEqual(
                 camera.thumbnail,
-                "https://rest.test.{}/test/clip/clip.jpg".format(BLINK_URL)
+                "https://rest.test.{}/test/image.jpg".format(BLINK_URL)
             )
             self.assertEqual(
                 camera.clip,
@@ -93,7 +93,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
         camera_config = self.camera_config
         camera_config['active'] = 'armed'
-        camera_config['thumbnail'] = '/test2/clip.jpg'
+        camera_config['thumbnail'] = '/test2/image'
         camera_config['video'] = '/test2/clip.mp4'
         camera_config['temp'] = 60
         camera_config['battery'] = 0
@@ -104,7 +104,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             self.assertEqual(camera.armed, True)
             self.assertEqual(
                 camera.thumbnail,
-                "https://rest.test.{}/test2/clip.jpg".format(BLINK_URL)
+                "https://rest.test.{}/test2/image.jpg".format(BLINK_URL)
             )
             self.assertEqual(
                 camera.clip,
@@ -143,7 +143,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             self.assertEqual(camera_attr['armed'], False)
             self.assertEqual(
                 camera_attr['thumbnail'],
-                "https://rest.test.{}/test/clip/clip.jpg".format(BLINK_URL)
+                "https://rest.test.{}/test/image.jpg".format(BLINK_URL)
             )
             self.assertEqual(
                 camera_attr['video'],
