@@ -258,7 +258,7 @@ class BlinkCamera():
     def image_to_file(self, path):
         """Write image to file."""
         _LOGGER.debug("Writing image from %s to %s", self.name, path)
-        thumb = self.image_refresh()
+        thumb = self.thumbnail
         response = _request(self.blink, url=thumb, headers=self.header,
                             reqtype='get', stream=True, json_resp=False)
         if response.status_code == 200:
