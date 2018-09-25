@@ -294,7 +294,7 @@ class Blink():
         self._video_count = 0
         self._all_videos = {}
         self._summary = None
-        self.record_dates = list()
+        self.record_dates = dict()
 
     @property
     def camera_thumbs(self):
