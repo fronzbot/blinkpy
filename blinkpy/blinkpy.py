@@ -175,5 +175,6 @@ class Blink():
         if last_refresh is None:
             last_refresh = 0
         if current_time >= (last_refresh + self.refresh_rate):
+            self.last_refresh = current_time
             return True
         return False
