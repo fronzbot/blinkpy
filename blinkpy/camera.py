@@ -3,7 +3,6 @@
 from shutil import copyfileobj
 import logging
 from requests.exceptions import RequestException
-from blinkpy.helpers.util import http_req
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -15,9 +14,8 @@ class BlinkCamera():
 
     def __init__(self, config, sync):
         """Initiailize BlinkCamera."""
-        self.blink = sync.blink
         self.sync = sync
-        self.urls = self.blink.urls
+        self.urls = self.sync.urls
         self.id = str(config['device_id'])  # pylint: disable=invalid-name
         self.name = config['name']
         self._status = config['active']
@@ -58,7 +56,7 @@ class BlinkCamera():
             'notifications': self.notifications,
             'motion_detected': self.motion_detected,
             'wifi_strength': self.wifi_strength,
-            'network_id': self.blink.network_id,
+            'network_id': self.sync.network_id,
             'last_record': self.last_record
         }
         return attributes
@@ -109,18 +107,15 @@ class BlinkCamera():
 
     def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
-        http_req(self.blink, url=self.image_link,
-                 headers=self.header, reqtype='post')
+        self.sync.http_post(self.image_link)
 
     def set_motion_detect(self, enable):
         """Set motion detection."""
         url = self.arm_link
         if enable:
-            http_req(self.blink, url=url + 'enable',
-                     headers=self.header, reqtype='post')
+            self.sync.http_post("{}{}".format(url, 'enable'))
         else:
-            http_req(self.blink, url=url + 'disable',
-                     headers=self.header, reqtype='post')
+            self.sync.http_post("{}{}".format(url, 'disable'))
 
     def update(self, values, force_cache=False, skip_cache=False):
         """Update camera information."""
@@ -175,19 +170,16 @@ class BlinkCamera():
 
         if not skip_cache:
             if update_cached_image or force_cache:
-                self._cached_image = http_req(
-                    self.blink, url=self.image_refresh(), headers=self.header,
-                    reqtype='get', stream=True, json_resp=False)
+                self._cached_image = self.sync.http_get(
+                    self.image_refresh(), stream=True, json=False)
             if (self.clip is None) or self.motion_detected or force_cache:
-                self._cached_video = http_req(
-                    self.blink, url=self.clip, headers=self.header,
-                    reqtype='get', stream=True, json_resp=False)
+                self._cached_video = self.sync.http_get(
+                    self.clip, stream=True, json=False)
 
     def image_refresh(self):
         """Refresh current thumbnail."""
         url = self.urls.home_url
-        response = http_req(self.blink, url=url, headers=self.header,
-                            reqtype='get')['devices']
+        response = self.sync.http_get(url)['devices']
         for element in response:
             try:
                 if str(element['device_id']) == self.id:

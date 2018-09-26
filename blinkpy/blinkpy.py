@@ -40,6 +40,8 @@ class Blink():
         self._auth_header = None
         self._host = None
         self._events = []
+        self._last_summary = None
+        self._last_events = None
         self.network_id = None
         self.account_id = None
         self.urls = None
@@ -67,7 +69,7 @@ class Blink():
             self.get_auth_token()
 
         self.get_ids()
-        self.sync = BlinkSyncModule(self, self._auth_header, self.urls)
+        self.sync = BlinkSyncModule(self, self._auth_header)
         self.sync.get_videos()
         if self.sync.video_count > 0:
             self.sync.get_cameras()
@@ -142,7 +144,10 @@ class Blink():
         """Get events on server."""
         url = "{}/{}".format(self.urls.event_url, self.network_id)
         headers = self._auth_header
-        return http_req(self, url=url, headers=headers, reqtype='get')
+        if self.check_if_ok_to_update() or self._last_events is None:
+            self._last_events = http_req(
+                self, url=url, headers=headers, reqtype='get')
+        return self._last_events
 
     def summary_request(self):
         """Get blink summary."""
@@ -150,15 +155,25 @@ class Blink():
         headers = self._auth_header
         if headers is None:
             raise BlinkException(ERROR.AUTH_TOKEN)
-        return http_req(self, url=url, headers=headers, reqtype='get')
+        if self.check_if_ok_to_update() or self._last_summary is None:
+            self._last_summary = http_req(
+                self, url=url, headers=headers, reqtype='get')
+        return self._last_summary
 
     def refresh(self, force_cache=False):
-        """Check if it is ok to refresh."""
+        """Perform a system refresh."""
+        if self.last_refresh is None:
+            force_cache = True
+        if self.check_if_ok_to_update():
+            _LOGGER.debug("Attempting refresh of cameras.")
+            self.sync.refresh(force_cache=force_cache)
+
+    def check_if_ok_to_update(self):
+        """Check if it is ok to perform an http request."""
         current_time = int(time.time())
         last_refresh = self.last_refresh
         if last_refresh is None:
             last_refresh = 0
-            force_cache = True
         if current_time >= (last_refresh + self.refresh_rate):
-            _LOGGER.debug("Attempting refresh of cameras.")
-            self.sync.refresh(force_cache=force_cache)
+            return True
+        return False

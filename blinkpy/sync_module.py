@@ -13,7 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 class BlinkSyncModule():
     """Class to initialize sync module."""
 
-    def __init__(self, blink, header, urls):
+    def __init__(self, blink, header, urls=None):
         """Initialize Blink sync module."""
         self.blink = blink
         self._auth_header = header
@@ -24,11 +24,20 @@ class BlinkSyncModule():
         self._events = []
         self.cameras = CaseInsensitiveDict({})
         self._idlookup = {}
-        self.urls = urls
         self._video_count = 0
         self._all_videos = {}
         self._summary = None
         self.record_dates = dict()
+
+    @property
+    def urls(self):
+        """Return device urls."""
+        return self.blink.urls
+
+    @property
+    def network_id(self):
+        """Return the network id."""
+        return self.blink.network_id
 
     @property
     def camera_thumbs(self):
@@ -49,9 +58,7 @@ class BlinkSyncModule():
     def video_count(self):
         """Return number of videos on server."""
         url = "{}/count".format(self.urls.video_url)
-        headers = self._auth_header
-        self._video_count = http_req(self.blink, url=url, headers=headers,
-                                     reqtype='get')['count']
+        self._video_count = self.http_get(url)['count']
         return self._video_count
 
     @property
@@ -87,15 +94,14 @@ class BlinkSyncModule():
         else:
             value_to_append = 'disarm'
         url = "{}/{}/{}".format(self.urls.network_url,
-                                self.blink.network_id,
+                                self.network_id,
                                 value_to_append)
-        http_req(self.blink, url=url, headers=self._auth_header,
-                 reqtype='post')
+        self.http_post(url)
 
     def refresh(self, force_cache=False):
         """Get all blink cameras and pulls their most recent status."""
         self._summary = self._summary_request()
-        self._events = self.blink.events_request()
+        self._events = self._events_request()
         response = self.summary['devices']
         self.get_videos()
         for name in self.cameras:
@@ -174,7 +180,7 @@ class BlinkSyncModule():
         for name in self.cameras:
             camera = self.cameras[name]
             network_id_url = "{}/{}".format(self.urls.network_url,
-                                            self.blink.network_id)
+                                            self.network_id)
             image_url = "{}/camera/{}/thumbnail".format(network_id_url,
                                                         camera.id)
             arm_url = "{}/camera/{}/".format(network_id_url,
@@ -187,23 +193,34 @@ class BlinkSyncModule():
         """Request a summary from blink."""
         return self.blink.summary_request
 
+    def _events_request(self):
+        """Request a list of events from blink."""
+        return self.blink.events_request
+
     def _video_request(self, page=0):
         """Perform a request for videos."""
         url = "{}/page/{}".format(self.urls.video_url, page)
-        headers = self._auth_header
-        return http_req(self.blink, url=url, headers=headers, reqtype='get')
+        return self.http_get(url)
 
     def _status_request(self):
         """Get syncmodule status."""
         url = "{}/{}/syncmodules".format(self.urls.network_url,
-                                         self.blink.network_id)
-        headers = self._auth_header
-        return http_req(self.blink, url=url, headers=headers, reqtype='get')
+                                         self.network_id)
+        return self.http_get(url)
 
     def camera_config_request(self, camera_id):
         """Retrieve more info about Blink config."""
         url = "{}/network/{}/camera/{}/config".format(self.urls.base_url,
-                                                      self.blink.network_id,
+                                                      self.network_id,
                                                       str(camera_id))
-        headers = self._auth_header
-        return http_req(self.blink, url=url, headers=headers, reqtype='get')
+        return self.http_get(url)
+
+    def http_get(self, url, stream=False, json=True):
+        """Perform a get request."""
+        return http_req(self.blink, url=url, headers=self._auth_header,
+                        reqtype='get', stream=stream, json_resp=json)
+
+    def http_post(self, url):
+        """Perform a post request."""
+        return http_req(self.blink, url=url, headers=self._auth_header,
+                        reqtype='post')
