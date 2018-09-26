@@ -162,9 +162,7 @@ class Blink():
 
     def refresh(self, force_cache=False):
         """Perform a system refresh."""
-        if self.last_refresh is None:
-            force_cache = True
-        if self.check_if_ok_to_update():
+        if self.check_if_ok_to_update() or force_cache:
             _LOGGER.debug("Attempting refresh of cameras.")
             self.sync.refresh(force_cache=force_cache)
 

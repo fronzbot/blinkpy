@@ -28,6 +28,7 @@ class BlinkSyncModule():
         self._all_videos = {}
         self._summary = None
         self.record_dates = dict()
+        self.first_init = True
 
     @property
     def urls(self):
@@ -173,7 +174,8 @@ class BlinkSyncModule():
                 device = BlinkCamera(element, self)
                 self.cameras[device.name] = device
                 self._idlookup[device.id] = device.name
-        self.blink.refresh()
+        self.blink.refresh(force_cache=self.first_init)
+        self.first_init = False
 
     def set_links(self):
         """Set access links and required headers for each camera in system."""
