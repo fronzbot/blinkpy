@@ -1,8 +1,10 @@
 """Tests camera and system functions."""
+import time
+
 import unittest
 from unittest import mock
 
-import pytest
+# import pytest
 
 from blinkpy import blinkpy
 from blinkpy.sync_module import BlinkSyncModule
@@ -12,6 +14,28 @@ import tests.mock_responses as mresp
 
 USERNAME = 'foobar'
 PASSWORD = 'deadbeef'
+
+
+class MockSyncModule(BlinkSyncModule):
+    """Mock http requests from sync module."""
+
+    def __init__(self, blink, header):
+        """Create mock sync module instance."""
+        super().__init__(blink, header)
+        self.blink = blink
+        self.header = header
+        self.return_value = None
+        self.return_value2 = None
+
+    def http_get(self, url, stream=False, json=True):
+        """Mock get request."""
+        if stream and self.return_value2 is not None:
+            return self.return_value2
+        return self.return_value
+
+    def http_post(self, url):
+        """Mock post request."""
+        return self.return_value
 
 
 class TestBlinkFunctions(unittest.TestCase):
@@ -40,8 +64,8 @@ class TestBlinkFunctions(unittest.TestCase):
             'region_id': 'test',
             'device_type': 'camera'
         }
-        self.blink.sync = BlinkSyncModule(
-            self.blink, self.blink._auth_header, self.blink.urls)
+        self.blink.sync = MockSyncModule(
+            self.blink, self.blink._auth_header)
 
         self.camera = BlinkCamera(self.config, self.blink.sync)
 
@@ -51,10 +75,9 @@ class TestBlinkFunctions(unittest.TestCase):
         self.config = {}
         self.camera = None
 
-    @mock.patch('blinkpy.sync_module.http_req')
-    def test_get_videos(self, req):
+    def test_get_videos(self):
         """Test video access."""
-        req.return_value = [
+        self.blink.sync.return_value = [
             {
                 'camera_name': 'foobar',
                 'address': '/new/test.mp4',
@@ -84,36 +107,38 @@ class TestBlinkFunctions(unittest.TestCase):
         self.blink.sync.get_cameras()
         self.assertTrue('foobar' in self.blink.sync.cameras)
 
-    @pytest.mark.skip(reason="Need to mock sync class.")
-    @mock.patch('blinkpy.camera.http_req')
-    def test_image_refresh(self, req):
+    def test_image_refresh(self):
         """Test image refresh function."""
-        req.return_value = {'devices': [self.config]}
+        self.blink.sync.return_value = {'devices': [self.config]}
         image = self.camera.image_refresh()
         self.assertEqual(image,
                          'https://rest.test.{}/test.jpg'.format(BLINK_URL))
 
-    @mock.patch('blinkpy.sync_module.http_req')
-    def test_video_count(self, req):
+    def test_video_count(self):
         """Test video count function."""
-        req.return_value = {'count': 1}
+        self.blink.sync.return_value = {'count': 1}
         self.assertEqual(self.blink.sync.video_count, 1)
 
-    @pytest.mark.skip(reason="Need to mock Blink class, not methods")
-    @mock.patch('blinkpy.sync_module.http_req')
+    @mock.patch('blinkpy.sync_module.BlinkSyncModule.camera_config_request')
     @mock.patch('blinkpy.sync_module.BlinkSyncModule._video_request')
     def test_refresh(self, vid_req, req):
         """Test blinkpy refresh function."""
+        req.return_value = {'foo': 'bar'}
         self.blink.sync.cameras = {'foobar': self.camera}
-        req.return_value = {'devices': [self.config]}
+        self.blink.sync.return_value = {'devices': [{'foo': 'bar'}]}
+        # pylint: disable=protected-access
+        self.blink._last_summary = {'devices': [self.config]}
+        # pylint: disable=protected-access
+        self.blink._last_events = {'foo': 'bar'}
         vid_req.return_value = [
             {
                 'camera_name': 'foobar',
                 'address': '/new.mp4',
-                'thumbnail': '/new'
+                'thumbnail': '/new',
             }
         ]
-        self.blink.last_refresh = -1
+        self.blink.last_refresh = int(time.time())
+        self.blink.refresh_rate = 100000
         self.blink.sync.refresh()
         test_camera = self.blink.sync.cameras['foobar']
         self.assertEqual(test_camera.clip,

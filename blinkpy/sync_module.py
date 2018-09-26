@@ -191,11 +191,11 @@ class BlinkSyncModule():
 
     def _summary_request(self):
         """Request a summary from blink."""
-        return self.blink.summary_request
+        return self.blink.summary_request()
 
     def _events_request(self):
         """Request a list of events from blink."""
-        return self.blink.events_request
+        return self.blink.events_request()
 
     def _video_request(self, page=0):
         """Perform a request for videos."""
