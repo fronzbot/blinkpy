@@ -9,6 +9,10 @@ any communication related errors at startup.
 import unittest
 from unittest import mock
 from blinkpy import blinkpy
+from blinkpy.sync_module import BlinkSyncModule
+from blinkpy.helpers.util import (
+    http_req, BlinkAuthenticationException, BlinkException,
+    BlinkURLHandler)
 import tests.mock_responses as mresp
 
 USERNAME = 'foobar'
@@ -23,6 +27,7 @@ class TestBlinkSetup(unittest.TestCase):
         self.blink_no_cred = blinkpy.Blink()
         self.blink = blinkpy.Blink(username=USERNAME,
                                    password=PASSWORD)
+        self.blink.sync = BlinkSyncModule(self.blink, dict(), self.blink.urls)
 
     def tearDown(self):
         """Clean up after test."""
@@ -38,25 +43,24 @@ class TestBlinkSetup(unittest.TestCase):
 
     def test_no_credentials(self):
         """Check that we throw an exception when no username/password."""
-        with self.assertRaises(blinkpy.BlinkAuthenticationException):
+        with self.assertRaises(BlinkAuthenticationException):
             self.blink_no_cred.get_auth_token()
         # pylint: disable=protected-access
         self.blink_no_cred._username = USERNAME
-        with self.assertRaises(blinkpy.BlinkAuthenticationException):
+        with self.assertRaises(BlinkAuthenticationException):
             self.blink_no_cred.get_auth_token()
 
     def test_no_auth_header(self):
         """Check that we throw an exception when no auth header given."""
         # pylint: disable=unused-variable
         (region_id, region), = mresp.LOGIN_RESPONSE['region'].items()
-        self.blink.urls = blinkpy.BlinkURLHandler(region_id)
-        with self.assertRaises(blinkpy.BlinkException):
+        self.blink.urls = BlinkURLHandler(region_id)
+        with self.assertRaises(BlinkException):
             self.blink.get_ids()
-        with self.assertRaises(blinkpy.BlinkException):
-            # pylint: disable=protected-access
-            self.blink._summary_request()
+        with self.assertRaises(BlinkException):
+            self.blink.summary_request()
 
-    @mock.patch('blinkpy.blinkpy.requests.post',
+    @mock.patch('blinkpy.helpers.util.requests.post',
                 side_effect=mresp.mocked_requests_post)
     @mock.patch('blinkpy.blinkpy.getpass.getpass')
     def test_manual_login(self, getpwd, mock_post):
@@ -69,23 +73,23 @@ class TestBlinkSetup(unittest.TestCase):
         # pylint: disable=protected-access
         self.assertEqual(self.blink_no_cred._password, PASSWORD)
 
-    @mock.patch('blinkpy.blinkpy.requests.post',
+    @mock.patch('blinkpy.helpers.util.requests.post',
                 side_effect=mresp.mocked_requests_post)
-    @mock.patch('blinkpy.blinkpy.requests.get',
+    @mock.patch('blinkpy.helpers.util.requests.get',
                 side_effect=mresp.mocked_requests_get)
     def test_bad_request(self, mock_get, mock_post):
         """Check that we raise an Exception with a bad request."""
-        with self.assertRaises(blinkpy.BlinkException):
+        with self.assertRaises(BlinkException):
             # pylint: disable=protected-access
-            blinkpy._request(None, reqtype='bad')
+            http_req(None, reqtype='bad')
 
-        with self.assertRaises(blinkpy.BlinkAuthenticationException):
+        with self.assertRaises(BlinkAuthenticationException):
             # pylint: disable=protected-access
-            blinkpy._request(None, reqtype='post', is_retry=True)
+            http_req(None, reqtype='post', is_retry=True)
 
-    @mock.patch('blinkpy.blinkpy.requests.post',
+    @mock.patch('blinkpy.helpers.util.requests.post',
                 side_effect=mresp.mocked_requests_post)
-    @mock.patch('blinkpy.blinkpy.requests.get',
+    @mock.patch('blinkpy.helpers.util.requests.get',
                 side_effect=mresp.mocked_requests_get)
     def test_authentication(self, mock_get, mock_post):
         """Check that we can authenticate Blink up properly."""
@@ -93,9 +97,9 @@ class TestBlinkSetup(unittest.TestCase):
         expected = mresp.LOGIN_RESPONSE['authtoken']['authtoken']
         self.assertEqual(authtoken, expected)
 
-    @mock.patch('blinkpy.blinkpy.requests.post',
+    @mock.patch('blinkpy.helpers.util.requests.post',
                 side_effect=mresp.mocked_requests_post)
-    @mock.patch('blinkpy.blinkpy.requests.get',
+    @mock.patch('blinkpy.helpers.util.requests.get',
                 side_effect=mresp.mocked_requests_get)
     def test_reauthorization_attempt(self, mock_get, mock_post):
         """Check that we can reauthorize after first unsuccessful attempt."""
@@ -106,7 +110,6 @@ class TestBlinkSetup(unittest.TestCase):
         self.blink._auth_header = bad_header
         # pylint: disable=protected-access
         self.assertEqual(self.blink._auth_header, bad_header)
-        # pylint: disable=protected-access
-        self.blink._summary_request()
+        self.blink.summary_request()
         # pylint: disable=protected-access
         self.assertEqual(self.blink._auth_header, original_header)

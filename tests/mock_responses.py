@@ -1,6 +1,6 @@
 """Simple mock responses definitions."""
 
-from blinkpy.blinkpy import BlinkURLHandler
+from blinkpy.helpers.util import BlinkURLHandler
 import blinkpy.helpers.constants as const
 
 LOGIN_RESPONSE = {
