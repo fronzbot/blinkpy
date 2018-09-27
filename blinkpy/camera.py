@@ -193,7 +193,11 @@ class BlinkCamera():
         return None
 
     def image_to_file(self, path):
-        """Write image to file."""
+        """
+        Write image to file.
+
+        :param path: Path to write file
+        """
         _LOGGER.debug("Writing image from %s to %s", self.name, path)
         response = self._cached_image
         if response.status_code == 200:
@@ -204,7 +208,10 @@ class BlinkCamera():
                           response.status_code)
 
     def video_to_file(self, path):
-        """Write video to file."""
+        """Write video to file.
+
+        :param path: Path to write file
+        """
         _LOGGER.debug("Writing video from %s to %s", self.name, path)
         response = self._cached_video
         with open(path, 'wb') as vidfile:

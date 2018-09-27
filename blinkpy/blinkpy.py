@@ -34,7 +34,14 @@ class Blink():
 
     def __init__(self, username=None, password=None,
                  refresh_rate=REFRESH_RATE):
-        """Initialize Blink system."""
+        """
+        Initialize Blink system.
+
+        :param username: Blink username (usually email address)
+        :param password: Blink password
+        :param refresh_rate: Refresh rate of blink information.
+                             Defaults to 15 (seconds)
+        """
         self._username = username
         self._password = password
         self._token = None
@@ -167,7 +174,11 @@ class Blink():
         return self._last_summary
 
     def refresh(self, force_cache=False):
-        """Perform a system refresh."""
+        """
+        Perform a system refresh.
+
+        :param force_cache: Force an update of the camera cache
+        """
         if self.check_if_ok_to_update() or force_cache:
             _LOGGER.debug("Attempting refresh of cameras.")
             self._last_events = self.events_request(skip_throttle=True)
