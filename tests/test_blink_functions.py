@@ -75,49 +75,12 @@ class TestBlinkFunctions(unittest.TestCase):
         self.config = {}
         self.camera = None
 
-    def test_get_videos(self):
-        """Test video access."""
-        self.blink.sync.return_value = [
-            {
-                'camera_name': 'foobar',
-                'address': '/new/test.mp4',
-                'thumbnail': '/test/thumb'
-            }
-        ]
-        self.blink.sync.get_videos()
-        self.assertEqual(self.blink.sync.videos['foobar'][0]['clip'],
-                         '/new/test.mp4')
-        self.assertEqual(self.blink.sync.videos['foobar'][0]['thumb'],
-                         '/test/thumb')
-
-    @mock.patch('blinkpy.sync_module.BlinkSyncModule.refresh')
-    @mock.patch('blinkpy.sync_module.BlinkSyncModule._summary_request')
-    @mock.patch('blinkpy.sync_module.BlinkSyncModule._video_request')
-    def test_get_cameras(self, vid_req, req, refresh):
-        """Test camera extraction."""
-        refresh.return_value = True
-        req.return_value = {'devices': [self.config]}
-        vid_req.return_value = [
-            {
-                'camera_name': 'foobar',
-                'address': '/new.mp4',
-                'thumbnail': '/new'
-            }
-        ]
-        self.blink.sync.get_cameras()
-        self.assertTrue('foobar' in self.blink.sync.cameras)
-
     def test_image_refresh(self):
         """Test image refresh function."""
         self.blink.sync.return_value = {'devices': [self.config]}
         image = self.camera.image_refresh()
         self.assertEqual(image,
                          'https://rest.test.{}/test.jpg'.format(BLINK_URL))
-
-    def test_video_count(self):
-        """Test video count function."""
-        self.blink.sync.return_value = {'count': 1}
-        self.assertEqual(self.blink.sync.video_count, 1)
 
     @mock.patch('blinkpy.sync_module.BlinkSyncModule.camera_config_request')
     @mock.patch('blinkpy.sync_module.BlinkSyncModule._video_request')

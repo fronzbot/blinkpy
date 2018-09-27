@@ -50,9 +50,13 @@ class TestBlinkCameraSetup(unittest.TestCase):
             'region_id': 'test'
         }
 
+        header = {
+            'Host': 'abc.zxc',
+            'TOKEN_AUTH': mresp.LOGIN_RESPONSE['authtoken']['authtoken']
+        }
         self.blink.urls = BlinkURLHandler('test')
         self.blink.network_id = '0000'
-        self.blink.sync = BlinkSyncModule(self.blink, dict(), self.blink.urls)
+        self.sync = BlinkSyncModule(self.blink, header, self.blink.urls)
 
     def tearDown(self):
         """Clean up after test."""
@@ -68,12 +72,12 @@ class TestBlinkCameraSetup(unittest.TestCase):
         """Tests all property set/recall."""
         self.blink.urls = BlinkURLHandler('test')
 
-        self.blink.sync.cameras = {
-            'foobar': BlinkCamera(self.camera_config, self.blink.sync)
+        self.sync.cameras = {
+            'foobar': BlinkCamera(self.camera_config, self.sync)
         }
 
-        for name in self.blink.sync.cameras:
-            camera = self.blink.sync.cameras[name]
+        for name in self.sync.cameras:
+            camera = self.sync.cameras[name]
             camera.update(self.camera_config, skip_cache=True)
             self.assertEqual(camera.id, '1111')
             self.assertEqual(camera.name, 'foobar')
@@ -102,8 +106,8 @@ class TestBlinkCameraSetup(unittest.TestCase):
         camera_config['temp'] = 60
         camera_config['battery'] = 0
         camera_config['notifications'] = 4
-        for name in self.blink.sync.cameras:
-            camera = self.blink.sync.cameras[name]
+        for name in self.sync.cameras:
+            camera = self.sync.cameras[name]
             camera.update(camera_config, skip_cache=True)
             self.assertEqual(camera.armed, True)
             self.assertEqual(
@@ -124,9 +128,9 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
     def test_camera_case(self):
         """Tests camera case sensitivity."""
-        camera_object = BlinkCamera(self.camera_config, self.blink.sync)
-        self.blink.sync.cameras['foobar'] = camera_object
-        self.assertEqual(camera_object, self.blink.sync.cameras['fOoBaR'])
+        camera_object = BlinkCamera(self.camera_config, self.sync)
+        self.sync.cameras['foobar'] = camera_object
+        self.assertEqual(camera_object, self.sync.cameras['fOoBaR'])
 
     @mock.patch('blinkpy.sync_module.BlinkSyncModule.camera_config_request',
                 return_value=CAMERA_CFG)
@@ -134,12 +138,12 @@ class TestBlinkCameraSetup(unittest.TestCase):
         """Tests camera attributes."""
         self.blink.urls = BlinkURLHandler('test')
 
-        self.blink.sync.cameras = {
-            'foobar': BlinkCamera(self.camera_config, self.blink.sync)
+        self.sync.cameras = {
+            'foobar': BlinkCamera(self.camera_config, self.sync)
         }
 
-        for name in self.blink.sync.cameras:
-            camera = self.blink.sync.cameras[name]
+        for name in self.sync.cameras:
+            camera = self.sync.cameras[name]
             camera.update(self.camera_config, skip_cache=True)
             camera_attr = camera.attributes
             self.assertEqual(camera_attr['device_id'], '1111')
@@ -160,3 +164,55 @@ class TestBlinkCameraSetup(unittest.TestCase):
             self.assertEqual(camera_attr['network_id'], '0000')
             self.assertEqual(camera_attr['motion_enabled'], True)
             self.assertEqual(camera_attr['wifi_strength'], -30)
+
+    @mock.patch('blinkpy.camera.BlinkCamera.image_refresh',
+                side_effect='refresh/url')
+    @mock.patch('blinkpy.helpers.util.requests.get',
+                side_effect=mresp.mocked_requests_get)
+    def test_camera_cache(self, req, img_refresh):
+        """Tests camera cache."""
+        update_vals = {
+            'name': 'foobar',
+            'active': 'disabled',
+            'video': '/clip.mp4',
+            'thumbnail': '/image',
+            'battery': 3,
+            'notifications': 1,
+        }
+        self.sync.cameras = {
+            'foobar': BlinkCamera(self.camera_config, self.sync)
+        }
+
+        test_image = 'https://rest.test.immedia-semi.com/image.jpg'
+        test_clip = 'https://rest.test.immedia-semi.com/clip.mp4'
+
+        for name, camera in self.sync.cameras.items():
+            # Check that no cache returns None
+            self.assertEqual(camera.name, name)
+            self.assertEqual(camera.image_from_cache, None)
+            self.assertEqual(camera.video_from_cache, None)
+
+            # Now, call an update with a new thumbnail to see if we update
+            self.sync.records = []
+            # pylint: disable=protected-access
+            camera.update(update_vals)
+            self.assertEqual(camera.thumbnail, test_image)
+            self.assertEqual(camera.image_from_cache.status_code, 200)
+
+            # Now update the clip
+            self.sync.record_dates = {camera.name: ['7', '1', '4', '3']}
+            self.assertEqual(camera.last_record, list())
+            camera.update(update_vals)
+            self.assertEqual(camera.clip, test_clip)
+            self.assertEqual(camera.last_record, list('7'))
+            # First update should be false
+            self.assertEqual(camera.motion_detected, False)
+            self.sync.record_dates[camera.name].append('88')
+            camera.update(update_vals)
+            self.assertEqual(camera.last_record, ['88', '7'])
+            self.assertEqual(camera.motion_detected, True)
+            self.assertEqual(camera.video_from_cache.status_code, 200)
+            # Next update shouldn't change records, and motion_dected=False
+            camera.update(update_vals)
+            self.assertEqual(camera.motion_detected, False)
+            self.assertEqual(camera.video_from_cache.status_code, 200)
