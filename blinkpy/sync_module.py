@@ -85,7 +85,7 @@ class BlinkSyncModule():
     @property
     def arm(self):
         """Return status of sync module: armed/disarmed."""
-        return self.summary['network']['armed']
+        return self._summary['network']['armed']
 
     @arm.setter
     def arm(self, value):
@@ -101,9 +101,9 @@ class BlinkSyncModule():
 
     def refresh(self, force_cache=False):
         """Get all blink cameras and pulls their most recent status."""
-        self._summary = self._summary_request()
-        self._events = self._events_request()
-        response = self.summary['devices']
+        summary = self._summary_request()
+        events = self._events_request()
+        response = summary['devices']
         self.get_videos()
         for name in self.cameras:
             camera = self.cameras[name]
@@ -116,6 +116,8 @@ class BlinkSyncModule():
                         camera.update(element, force_cache=force_cache)
                 except KeyError:
                     pass
+        self._summary = summary
+        self._events = events
 
     def get_videos(self, start_page=0, end_page=1):
         """Retrieve last recorded videos per camera."""
@@ -158,7 +160,7 @@ class BlinkSyncModule():
     def get_cameras(self):
         """Find and creates cameras."""
         self._summary = self._summary_request()
-        response = self.summary['devices']
+        response = self._summary['devices']
         for element in response:
             if ('device_type' in element and
                     element['device_type'] == 'camera'):
