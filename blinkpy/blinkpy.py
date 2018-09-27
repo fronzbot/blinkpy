@@ -19,7 +19,8 @@ import logging
 import blinkpy.helpers.errors as ERROR
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers.util import (
-    http_req, BlinkURLHandler, BlinkException, BlinkAuthenticationException)
+    http_req, create_session, BlinkURLHandler,
+    BlinkException, BlinkAuthenticationException)
 from blinkpy.helpers.constants import (
     DEFAULT_URL, BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
 
@@ -50,6 +51,8 @@ class Blink():
         self.region_id = None
         self.last_refresh = None
         self.refresh_rate = refresh_rate
+        self.session = None
+        self._login_url = LOGIN_URL
 
     @property
     def events(self):
@@ -100,7 +103,8 @@ class Blink():
             "password": self._password,
             "client_specifier": "iPhone 9.2 | 2.2 | 222"
         })
-        response = http_req(self, url=LOGIN_URL, headers=headers,
+        self.session = create_session()
+        response = http_req(self, url=self._login_url, headers=headers,
                             data=data, json_resp=False, reqtype='post')
         if response.status_code == 200:
             response = response.json()
@@ -111,7 +115,8 @@ class Blink():
                  "when authenticating, "
                  "trying new url"), response.status_code
             )
-            response = http_req(self, url=LOGIN_BACKUP_URL, headers=headers,
+            self._login_url = LOGIN_BACKUP_URL
+            response = http_req(self, url=self._login_url, headers=headers,
                                 data=data, reqtype='post')
             self.region_id = 'piri'
             self.region = "UNKNOWN"
@@ -140,22 +145,23 @@ class Blink():
             raise BlinkException(ERROR.AUTH_TOKEN)
         return http_req(self, url=url, headers=headers, reqtype='get')
 
-    def events_request(self):
+    def events_request(self, skip_throttle=False):
         """Get events on server."""
         url = "{}/{}".format(self.urls.event_url, self.network_id)
         headers = self._auth_header
-        if self.check_if_ok_to_update() or self._last_events is None:
-            self._last_events = http_req(
-                self, url=url, headers=headers, reqtype='get')
+        if self.check_if_ok_to_update() or skip_throttle:
+            self._last_events = http_req(self, url=url,
+                                         headers=headers,
+                                         reqtype='get')
         return self._last_events
 
-    def summary_request(self):
+    def summary_request(self, skip_throttle=False):
         """Get blink summary."""
         url = self.urls.home_url
         headers = self._auth_header
         if headers is None:
             raise BlinkException(ERROR.AUTH_TOKEN)
-        if self.check_if_ok_to_update() or self._last_summary is None:
+        if self.check_if_ok_to_update() or skip_throttle:
             self._last_summary = http_req(
                 self, url=url, headers=headers, reqtype='get')
         return self._last_summary
@@ -164,6 +170,8 @@ class Blink():
         """Perform a system refresh."""
         if self.check_if_ok_to_update() or force_cache:
             _LOGGER.debug("Attempting refresh of cameras.")
+            self._last_events = self.events_request(skip_throttle=True)
+            self._last_summary = self.summary_request(skip_throttle=True)
             self.sync.refresh(force_cache=force_cache)
 
     def check_if_ok_to_update(self):

@@ -9,7 +9,7 @@ Blink system is set up.
 import unittest
 from unittest import mock
 from blinkpy import blinkpy
-from blinkpy.helpers.util import BlinkURLHandler
+from blinkpy.helpers.util import create_session, BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera
 from blinkpy.helpers.constants import BLINK_URL
@@ -30,6 +30,8 @@ CAMERA_CFG = {
 }
 
 
+@mock.patch('blinkpy.helpers.util.Session.send',
+            side_effect=mresp.mocked_session_send)
 class TestBlinkCameraSetup(unittest.TestCase):
     """Test the Blink class in blinkpy."""
 
@@ -54,6 +56,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             'Host': 'abc.zxc',
             'TOKEN_AUTH': mresp.LOGIN_RESPONSE['authtoken']['authtoken']
         }
+        self.blink.session = create_session()
         self.blink.urls = BlinkURLHandler('test')
         self.blink.network_id = '0000'
         self.sync = BlinkSyncModule(self.blink, header, self.blink.urls)
@@ -64,11 +67,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
     @mock.patch('blinkpy.sync_module.BlinkSyncModule.camera_config_request',
                 return_value=CAMERA_CFG)
-    @mock.patch('blinkpy.helpers.util.requests.post',
-                side_effect=mresp.mocked_requests_post)
-    @mock.patch('blinkpy.helpers.util.requests.get',
-                side_effect=mresp.mocked_requests_get)
-    def test_camera_properties(self, mock_get, mock_post, mock_cfg):
+    def test_camera_properties(self, mock_cfg, mock_sess):
         """Tests all property set/recall."""
         self.blink.urls = BlinkURLHandler('test')
 
@@ -126,7 +125,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             camera.update(camera_config, skip_cache=True)
             self.assertEqual(camera.battery_string, "Unknown")
 
-    def test_camera_case(self):
+    def test_camera_case(self, mock_sess):
         """Tests camera case sensitivity."""
         camera_object = BlinkCamera(self.camera_config, self.sync)
         self.sync.cameras['foobar'] = camera_object
@@ -134,7 +133,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
     @mock.patch('blinkpy.sync_module.BlinkSyncModule.camera_config_request',
                 return_value=CAMERA_CFG)
-    def test_camera_attributes(self, mock_cfg):
+    def test_camera_attributes(self, mock_cfg, mock_sess):
         """Tests camera attributes."""
         self.blink.urls = BlinkURLHandler('test')
 
@@ -166,10 +165,8 @@ class TestBlinkCameraSetup(unittest.TestCase):
             self.assertEqual(camera_attr['wifi_strength'], -30)
 
     @mock.patch('blinkpy.camera.BlinkCamera.image_refresh',
-                side_effect='refresh/url')
-    @mock.patch('blinkpy.helpers.util.requests.get',
-                side_effect=mresp.mocked_requests_get)
-    def test_camera_cache(self, req, img_refresh):
+                return_value='https://fake.url')
+    def test_camera_cache(self, img_refresh, mock_sess):
         """Tests camera cache."""
         update_vals = {
             'name': 'foobar',

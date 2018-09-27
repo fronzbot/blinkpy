@@ -1,12 +1,18 @@
 """Useful functions for blinkpy."""
 
 import logging
-import requests
+from requests import Request, Session
 import blinkpy.helpers.errors as ERROR
 from blinkpy.helpers.constants import BLINK_URL
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def create_session():
+    """Create a session for blink communication."""
+    sess = Session()
+    return sess
 
 
 def attempt_reauthorization(blink):
@@ -17,17 +23,18 @@ def attempt_reauthorization(blink):
     return headers
 
 
-def http_req(blink, url='http://google.com', data=None, headers=None,
+def http_req(blink, url='http://example.com', data=None, headers=None,
              reqtype='get', stream=False, json_resp=True, is_retry=False):
     """Perform server requests and check if reauthorization neccessary."""
     if reqtype == 'post':
-        response = requests.post(url, headers=headers,
-                                 data=data)
+        req = Request('POST', url, headers=headers, data=data)
     elif reqtype == 'get':
-        response = requests.get(url, headers=headers,
-                                stream=stream)
+        req = Request('GET', url, headers=headers)
     else:
         raise BlinkException(ERROR.REQUEST)
+
+    prepped = req.prepare()
+    response = blink.session.send(prepped, stream=stream)
 
     if json_resp and 'code' in response.json():
         if is_retry:
@@ -38,19 +45,19 @@ def http_req(blink, url='http://google.com', data=None, headers=None,
             return http_req(blink, url=url, data=data, headers=headers,
                             reqtype=reqtype, stream=stream,
                             json_resp=json_resp, is_retry=True)
-    # pylint: disable=no-else-return
+
     if json_resp:
         return response.json()
-    else:
-        return response
+
+    return response
 
 
-# pylint: disable=super-init-not-called
 class BlinkException(Exception):
     """Class to throw general blink exception."""
 
     def __init__(self, errcode):
         """Initialize BlinkException."""
+        super().__init__()
         self.errid = errcode[0]
         self.message = errcode[1]
 
