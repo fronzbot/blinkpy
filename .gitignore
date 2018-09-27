@@ -9,3 +9,4 @@ htmlcov/*
 dist/*
 .sh
 build/*
+docs/_build

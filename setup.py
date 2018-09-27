@@ -26,6 +26,9 @@ PACKAGES = find_packages(exclude=['tests*', 'docs'])
 with open('{}/README.rst'.format(this_dir), encoding='utf-8') as readme_file:
     long_description = readme_file.read()
 
+name = PROJECT_PACKAGE_NAME
+version = __version__
+
 setup(
     name = PROJECT_PACKAGE_NAME,
     version = __version__,

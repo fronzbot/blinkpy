@@ -14,7 +14,13 @@ class BlinkSyncModule():
     """Class to initialize sync module."""
 
     def __init__(self, blink, header, urls=None):
-        """Initialize Blink sync module."""
+        """
+        Initialize Blink sync module.
+
+        :param blink: Blink class instantiation
+        :param header: Blink authentication header
+        :param urls: URL Handler instantiation (deprecated)
+        """
         self.blink = blink
         self._auth_header = header
         self.sync_id = None
@@ -120,7 +126,13 @@ class BlinkSyncModule():
         self._events = events
 
     def get_videos(self, start_page=0, end_page=1):
-        """Retrieve last recorded videos per camera."""
+        """
+        Retrieve last recorded videos per camera.
+
+        :param start_page: Page to start reading from on blink servers
+                           (defaults to 0)
+        :param end_page: Page to stop reading from (defaults to 1)
+        """
         videos = list()
         all_dates = dict()
         for page_num in range(start_page, end_page + 1):
@@ -220,11 +232,20 @@ class BlinkSyncModule():
         return self.http_get(url)
 
     def http_get(self, url, stream=False, json=True):
-        """Perform a get request."""
+        """
+        Perform an http get request.
+
+        :param url: URL to perform get request
+        :param stream: Stream response? True/FALSE
+        :param json: Return json response? TRUE/False
+        """
         return http_req(self.blink, url=url, headers=self._auth_header,
                         reqtype='get', stream=stream, json_resp=json)
 
     def http_post(self, url):
-        """Perform a post request."""
+        """Perform a post request.
+
+        :param url: URL to perform post request
+        """
         return http_req(self.blink, url=url, headers=self._auth_header,
                         reqtype='post')

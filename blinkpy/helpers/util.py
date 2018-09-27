@@ -25,7 +25,18 @@ def attempt_reauthorization(blink):
 
 def http_req(blink, url='http://example.com', data=None, headers=None,
              reqtype='get', stream=False, json_resp=True, is_retry=False):
-    """Perform server requests and check if reauthorization neccessary."""
+    """
+    Perform server requests and check if reauthorization neccessary.
+
+    :param blink: Blink instance
+    :param url: URL to perform request
+    :param data: Data to send (default: None)
+    :param headers: Headers to send (default: None)
+    :param reqtype: Can be 'get' or 'post' (default: 'get')
+    :param stream: Stream response? True/FALSE
+    :param json_resp: Return JSON response? TRUE/False
+    :param is_retry: Is this a retry attempt? True/FALSE
+    """
     if reqtype == 'post':
         req = Request('POST', url, headers=headers, data=data)
     elif reqtype == 'get':
