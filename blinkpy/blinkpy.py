@@ -150,8 +150,9 @@ class Blink():
         url = "{}/{}".format(self.urls.event_url, self.network_id)
         headers = self._auth_header
         if self.check_if_ok_to_update() or skip_throttle:
-            self._last_events = http_req(
-            self, url=url, headers=headers, reqtype='get')
+            self._last_events = http_req(self, url=url,
+                                         headers=headers,
+                                         reqtype='get')
         return self._last_events
 
     def summary_request(self, skip_throttle=False):
