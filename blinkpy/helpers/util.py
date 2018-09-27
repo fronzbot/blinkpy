@@ -23,7 +23,7 @@ def attempt_reauthorization(blink):
     return headers
 
 
-def http_req(blink, url='http://google.com', data=None, headers=None,
+def http_req(blink, url='http://example.com', data=None, headers=None,
              reqtype='get', stream=False, json_resp=True, is_retry=False):
     """Perform server requests and check if reauthorization neccessary."""
     if reqtype == 'post':
@@ -45,19 +45,19 @@ def http_req(blink, url='http://google.com', data=None, headers=None,
             return http_req(blink, url=url, data=data, headers=headers,
                             reqtype=reqtype, stream=stream,
                             json_resp=json_resp, is_retry=True)
-    # pylint: disable=no-else-return
+
     if json_resp:
         return response.json()
-    else:
-        return response
+
+    return response
 
 
-# pylint: disable=super-init-not-called
 class BlinkException(Exception):
     """Class to throw general blink exception."""
 
     def __init__(self, errcode):
         """Initialize BlinkException."""
+        super().__init__()
         self.errid = errcode[0]
         self.message = errcode[1]
 

@@ -1,14 +1,13 @@
 """Tests camera and system functions."""
-import time
-
 import unittest
 from unittest import mock
 
-# import pytest
+from requests import Request
 
 from blinkpy import blinkpy
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera
+from blinkpy.helpers.util import create_session
 from blinkpy.helpers.constants import BLINK_URL
 import tests.mock_responses as mresp
 
@@ -38,6 +37,8 @@ class MockSyncModule(BlinkSyncModule):
         return self.return_value
 
 
+@mock.patch('blinkpy.helpers.util.Session.send',
+            side_effect=mresp.mocked_session_send)
 class TestBlinkFunctions(unittest.TestCase):
     """Test Blink and BlinkCamera functions in blinkpy."""
 
@@ -66,7 +67,7 @@ class TestBlinkFunctions(unittest.TestCase):
         }
         self.blink.sync = MockSyncModule(
             self.blink, self.blink._auth_header)
-
+        self.blink.session = create_session()
         self.camera = BlinkCamera(self.config, self.blink.sync)
 
     def tearDown(self):
@@ -75,7 +76,7 @@ class TestBlinkFunctions(unittest.TestCase):
         self.config = {}
         self.camera = None
 
-    def test_image_refresh(self):
+    def test_image_refresh(self, mock_sess):
         """Test image refresh function."""
         self.blink.sync.return_value = {'devices': [self.config]}
         image = self.camera.image_refresh()
@@ -84,15 +85,15 @@ class TestBlinkFunctions(unittest.TestCase):
 
     @mock.patch('blinkpy.sync_module.BlinkSyncModule.camera_config_request')
     @mock.patch('blinkpy.sync_module.BlinkSyncModule._video_request')
-    def test_refresh(self, vid_req, req):
+    def test_refresh(self, vid_req, req, mock_sess):
         """Test blinkpy refresh function."""
         req.return_value = {'foo': 'bar'}
         self.blink.sync.cameras = {'foobar': self.camera}
         self.blink.sync.return_value = {'devices': [{'foo': 'bar'}]}
         # pylint: disable=protected-access
-        self.blink._last_summary = {'devices': [self.config]}
+        summary = {'devices': [self.config]}
         # pylint: disable=protected-access
-        self.blink._last_events = {'foo': 'bar'}
+        events = {'foo': 'bar'}
         vid_req.return_value = [
             {
                 'camera_name': 'foobar',
@@ -100,16 +101,19 @@ class TestBlinkFunctions(unittest.TestCase):
                 'thumbnail': '/new',
             }
         ]
-        self.blink.last_refresh = int(time.time())
-        self.blink.refresh_rate = 100000
-        self.blink.sync.refresh()
+        with mock.patch('blinkpy.blinkpy.Blink.summary_request',
+                        return_value=summary):
+            with mock.patch('blinkpy.blinkpy.Blink.events_request',
+                            return_value=events):
+                self.blink.refresh_rate = 0
+                self.blink.refresh()
         test_camera = self.blink.sync.cameras['foobar']
         self.assertEqual(test_camera.clip,
                          'https://rest.test.{}/new.mp4'.format(BLINK_URL))
         self.assertEqual(test_camera.thumbnail,
                          'https://rest.test.{}/new.jpg'.format(BLINK_URL))
 
-    def test_set_links(self):
+    def test_set_links(self, mock_sess):
         """Test the link set method."""
         self.blink.sync.cameras = {'foobar': self.camera}
         self.blink.network_id = 9999
@@ -121,12 +125,15 @@ class TestBlinkFunctions(unittest.TestCase):
                          "{}/camera/1111/".format(net_url))
 
     @mock.patch('blinkpy.blinkpy.http_req')
-    def test_backup_url(self, req):
+    def test_backup_url(self, req, mock_sess):
         """Test backup login method."""
+        fake_req = Request('POST', 'http://wrong.url').prepare()
         req.side_effect = [
-            mresp.mocked_requests_post(None),
+            mresp.mocked_session_send(fake_req),
             {'authtoken': {'authtoken': 'foobar123'}}
         ]
         self.blink.get_auth_token()
         self.assertEqual(self.blink.region_id, 'piri')
         self.assertEqual(self.blink.region, 'UNKNOWN')
+        # pylint: disable=protected-access
+        self.assertEqual(self.blink._token, 'foobar123')

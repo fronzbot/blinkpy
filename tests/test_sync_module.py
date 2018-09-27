@@ -84,7 +84,7 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertEqual(self.blink.sync.videos['foobar'][0]['thumb'],
                          '/test/thumb')
 
-    @mock.patch('blinkpy.sync_module.BlinkSyncModule.refresh')
+    @mock.patch('blinkpy.blinkpy.Blink.refresh')
     @mock.patch('blinkpy.sync_module.BlinkSyncModule._summary_request')
     @mock.patch('blinkpy.sync_module.BlinkSyncModule._video_request')
     def test_get_cameras(self, vid_req, req, refresh):
