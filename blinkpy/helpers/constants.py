@@ -4,7 +4,7 @@ import os
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 9
-PATCH_VERSION = '0.dev'
+PATCH_VERSION = 0
 
 __version__ = '{}.{}.{}'.format(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION)
 
