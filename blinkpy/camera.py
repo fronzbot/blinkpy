@@ -16,23 +16,22 @@ class BlinkCamera():
         """Initiailize BlinkCamera."""
         self.sync = sync
         self.urls = self.sync.urls
-        self.id = str(config['device_id'])  # pylint: disable=invalid-name
+        self.network_id = config["network_id"]
+        self.id = str(config['camera_id'])  # pylint: disable=invalid-name
         self.name = config['name']
-        self._status = config['active']
+        self._status = config['status']
         self.thumbnail = "{}{}.jpg".format(self.urls.base_url,
                                            config['thumbnail'])
-        self.clip = "{}{}".format(self.urls.base_url, config['video'])
-        self.temperature = config['temp']
-        self._battery_string = config['battery']
-        self.notifications = config['notifications']
+        self.clip = "{}/network/{}/camera/{}/clip".format(self.urls.base_url,config["network_id"], config["camera_id"])
+        self.temperature = config['temperature']
+        self._battery_string = config['battery_state']
         self.motion = dict()
         self.header = None
         self.image_link = None
         self.arm_link = None
-        self.region_id = config['region_id']
-        self.battery_voltage = -180
+        self.battery_voltage = config['battery_voltage'] 
         self.motion_detected = None
-        self.wifi_strength = None
+        self.wifi_strength = config['wifi_strength'] 
         self.camera_config = dict()
         self.motion_enabled = None
         self.last_record = list()
@@ -53,10 +52,9 @@ class BlinkCamera():
             'thumbnail': self.thumbnail,
             'video': self.clip,
             'motion_enabled': self.motion_enabled,
-            'notifications': self.notifications,
             'motion_detected': self.motion_detected,
             'wifi_strength': self.wifi_strength,
-            'network_id': self.sync.network_id,
+            'network_id': self.network_id,
             'last_record': self.last_record
         }
         return attributes
@@ -120,13 +118,13 @@ class BlinkCamera():
     def update(self, values, force_cache=False, skip_cache=False):
         """Update camera information."""
         self.name = values['name']
-        self._status = values['active']
-        self.clip = "{}{}".format(
-            self.urls.base_url, values['video'])
+        self._status = values['status']
+        #TODO handle the video
+        #self.clip = "{}{}".format(
+        #    self.urls.base_url, values['video'])
         new_thumbnail = "{}{}.jpg".format(
             self.urls.base_url, values['thumbnail'])
-        self._battery_string = values['battery']
-        self.notifications = values['notifications']
+        self._battery_string = values['battery_state']
 
         update_cached_image = False
         if new_thumbnail != self.thumbnail or self._cached_image is None:
@@ -167,7 +165,6 @@ class BlinkCamera():
         except KeyError:
             _LOGGER.warning("Could not extract clip info from camera %s",
                             self.name)
-
         if not skip_cache:
             if update_cached_image or force_cache:
                 self._cached_image = self.sync.http_get(
@@ -178,11 +175,9 @@ class BlinkCamera():
 
     def image_refresh(self):
         """Refresh current thumbnail."""
-        url = self.urls.home_url
-        response = self.sync.http_get(url)['devices']
-        for element in response:
+        for element in self.sync.blink.get_cameras(self.network_id):
             try:
-                if str(element['device_id']) == self.id:
+                if str(element['camera_id']) == self.id:
                     self.thumbnail = (
                         "{}{}.jpg".format(
                             self.urls.base_url, element['thumbnail'])

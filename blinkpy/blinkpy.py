@@ -50,7 +50,7 @@ class Blink():
         self._events = []
         self._last_summary = None
         self._last_events = None
-        self.network_id = None
+        self.network_id = [] 
         self.account_id = None
         self.urls = None
         self.sync = None
@@ -81,6 +81,7 @@ class Blink():
         self.get_ids()
         self.sync = BlinkSyncModule(self, self._auth_header)
         self.sync.get_videos()
+
         if self.sync.video_count > 0:
             self.sync.get_cameras()
         self.sync.set_links()
@@ -141,7 +142,7 @@ class Blink():
     def get_ids(self):
         """Set the network ID and Account ID."""
         response = self._network_request()
-        self.network_id = str(response['networks'][0]['id'])
+        self.network_id = [str(net['id']) for net in response['networks']]
         self.account_id = str(response['networks'][0]['account_id'])
 
     def _network_request(self):
@@ -152,14 +153,33 @@ class Blink():
             raise BlinkException(ERROR.AUTH_TOKEN)
         return http_req(self, url=url, headers=headers, reqtype='get')
 
+    def get_cameras(self, network):
+        response = self._camera_request(network)
+
+        return response['devicestatus']
+
+    def _camera_request(self, network):
+        """Get camera information."""
+        url = "{}/{}/cameras".format(self.urls.network_url, network)
+        headers = self._auth_header
+        if headers is None:
+            raise BlinkException(ERROR.AUTH_TOKEN)
+        return http_req(self, url=url, headers=headers, reqtype='get')
+
     def events_request(self, skip_throttle=False):
         """Get events on server."""
-        url = "{}/{}".format(self.urls.event_url, self.network_id)
-        headers = self._auth_header
-        if self.check_if_ok_to_update() or skip_throttle:
-            self._last_events = http_req(self, url=url,
-                                         headers=headers,
-                                         reqtype='get')
+        self._last_events = []
+        for network in self.network_id:
+            url = "{}/{}".format(self.urls.event_url, network)
+            headers = self._auth_header
+            if self.check_if_ok_to_update() or skip_throttle:
+                try:
+                    self._last_events += http_req(self, url=url,
+                                             headers=headers,
+                                             reqtype='get')
+                except BlinkException:
+                    """No events for network."""
+                    pass
         return self._last_events
 
     def summary_request(self, skip_throttle=False):
