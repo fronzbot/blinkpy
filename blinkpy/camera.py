@@ -24,7 +24,7 @@ class BlinkCamera():
                                            config['thumbnail'])
         self.clip = "{}/network/{}/camera/{}/clip".format(self.urls.base_url,config["network_id"], config["camera_id"])
         self.temperature = config['temperature']
-        self._battery_string = config['battery_state']
+        self._battery_string = config['battery_voltage']
         self.motion = dict()
         self.header = None
         self.image_link = None
