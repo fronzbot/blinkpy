@@ -19,7 +19,6 @@ def attempt_reauthorization(blink):
     """Attempt to refresh auth token and links."""
     _LOGGER.debug("Auth token expired, attempting reauthorization.")
     headers = blink.get_auth_token()
-    blink.sync.set_links()
     return headers
 
 

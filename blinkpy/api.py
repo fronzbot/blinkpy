@@ -2,7 +2,8 @@
 
 import logging
 from json import dumps
-from blinkpy.helpers.util import http_req
+import blinkpy.helpers.errors as ERROR
+from blinkpy.helpers.util import http_req, BlinkException
 from blinkpy.helpers.constants import DEFAULT_URL
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ def request_networks(blink):
 
 def request_syncmodule(blink, network):
     """Request sync module info."""
-    url = "{}/network/{}/syncmodule".format(blink.urls.base_url, network)
+    url = "{}/network/{}/syncmodules".format(blink.urls.base_url, network)
     return http_get(blink, url)
 
 
@@ -41,7 +42,7 @@ def request_system_arm(blink, network):
     return http_post(blink, url)
 
 
-def request_system_disarm(blink, headers, network):
+def request_system_disarm(blink, network):
     """Disarm system."""
     url = "{}/network/{}/disarm".format(blink.urls.base_url, network)
     return http_post(blink, url)
@@ -141,6 +142,8 @@ def http_get(blink, url, stream=False, json=True):
     :param stream: Stream response? True/FALSE
     :param json: Return json response? TRUE/False
     """
+    if blink.auth_header is None:
+        raise BlinkException(ERROR.AUTH_TOKEN)
     return http_req(blink, url=url, headers=blink.auth_header, reqtype='get',
                     stream=stream, json_resp=json)
 
@@ -151,4 +154,6 @@ def http_post(blink, url):
 
     :param url: URL to perfom post request.
     """
+    if blink.auth_header is None:
+        raise BlinkException(ERROR.AUTH_TOKEN)
     return http_req(blink, url=url, headers=blink.auth_header, reqtype='post')
