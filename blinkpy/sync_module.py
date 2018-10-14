@@ -29,7 +29,6 @@ class BlinkSyncModule():
         self._host = None
         self._events = []
         self.cameras = CaseInsensitiveDict({})
-        self._idlookup = {}
         self._video_count = 0
         self._all_videos = {}
         self._summary = None
@@ -44,7 +43,8 @@ class BlinkSyncModule():
     @property
     def network_id(self):
         """Return the network id."""
-        return self.blink.network_id
+        #TODO this must return a list, check who's calling this
+        return self.blink.network_id[0]
 
     @property
     def camera_thumbs(self):
@@ -52,14 +52,9 @@ class BlinkSyncModule():
         self.blink.refresh()
         data = {}
         for name, camera in self.cameras.items():
-            data[name] = camera.thumbnail
+            data[camera.name] = camera.thumbnail
 
         return data
-
-    @property
-    def id_table(self):
-        """Return id/camera pairs."""
-        return self._idlookup
 
     @property
     def video_count(self):
@@ -91,6 +86,7 @@ class BlinkSyncModule():
     @property
     def arm(self):
         """Return status of sync module: armed/disarmed."""
+        #TODO this is not reliable
         return self._summary['network']['armed']
 
     @arm.setter
@@ -107,22 +103,16 @@ class BlinkSyncModule():
 
     def refresh(self, force_cache=False):
         """Get all blink cameras and pulls their most recent status."""
-        summary = self._summary_request()
         events = self._events_request()
-        response = summary['devices']
         self.get_videos()
-        for name in self.cameras:
-            camera = self.cameras[name]
-            for element in response:
+        for network in self.blink.network_id:
+            for element in self.blink.get_cameras(network):
                 try:
-                    if str(element['device_id']) == camera.id:
-                        element['video'] = self.videos[name][0]['clip']
-                        thumb = self.videos[name][0]['thumb']
-                        element['thumbnail'] = thumb
-                        camera.update(element, force_cache=force_cache)
-                except KeyError:
+                    if str(element['camera_id']) in self.cameras:
+                        self.cameras[str(element['camera_id'])].update(element, force_cache=force_cache)
+                except KeyError as e:
+                    _LOGGER.debug("Key missing: {}".format(e))
                     pass
-        self._summary = summary
         self._events = events
 
     def get_videos(self, start_page=0, end_page=1):
@@ -171,30 +161,16 @@ class BlinkSyncModule():
 
     def get_cameras(self):
         """Find and creates cameras."""
-        self._summary = self._summary_request()
-        response = self._summary['devices']
-        for element in response:
-            if ('device_type' in element and
-                    element['device_type'] == 'camera'):
-                # Add region to config
-                element['region_id'] = self.region_id
-                try:
-                    name = element['name']
-                    element['video'] = self.videos[name][0]['clip']
-                    element['thumbnail'] = self.videos[name][0]['thumb']
-                except KeyError:
-                    element['video'] = None
-                    element['thumbnail'] = None
-                device = BlinkCamera(element, self)
-                self.cameras[device.name] = device
-                self._idlookup[device.id] = device.name
+        for network in self.blink.network_id:
+            for camera in self.blink.get_cameras(network):
+                device = BlinkCamera(camera, self)
+                self.cameras[device.id] = device
         self.blink.refresh(force_cache=self.first_init)
         self.first_init = False
 
     def set_links(self):
         """Set access links and required headers for each camera in system."""
-        for name in self.cameras:
-            camera = self.cameras[name]
+        for _id, camera in self.cameras.items():
             network_id_url = "{}/{}".format(self.urls.network_url,
                                             self.network_id)
             image_url = "{}/camera/{}/thumbnail".format(network_id_url,
