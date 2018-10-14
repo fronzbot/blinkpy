@@ -11,8 +11,7 @@ from unittest import mock
 from blinkpy import blinkpy
 from blinkpy.helpers.util import create_session, BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
-from blinkpy.camera import BlinkCamera
-from blinkpy.helpers.constants import BLINK_URL
+from blinkpy.camera import BlinkCamera, MAX_CLIPS
 import tests.mock_responses as mresp
 
 USERNAME = 'foobar'
@@ -39,177 +38,82 @@ class TestBlinkCameraSetup(unittest.TestCase):
         """Set up Blink module."""
         self.blink = blinkpy.Blink(username=USERNAME,
                                    password=PASSWORD)
-        self.camera_config = {
-            'device_id': 1111,
-            'name': 'foobar',
-            'armed': False,
-            'active': 'disarmed',
-            'thumbnail': '/test/image',
-            'video': '/test/clip/clip.mp4',
-            'temp': 70,
-            'battery': 3,
-            'notifications': 2,
-            'region_id': 'test'
-        }
-
         header = {
             'Host': 'abc.zxc',
             'TOKEN_AUTH': mresp.LOGIN_RESPONSE['authtoken']['authtoken']
         }
+        # pylint: disable=protected-access
+        self.blink._auth_header = header
         self.blink.session = create_session()
         self.blink.urls = BlinkURLHandler('test')
-        self.blink.network_id = '0000'
-        self.sync = BlinkSyncModule(self.blink, header, self.blink.urls)
+        self.blink.sync = BlinkSyncModule(self.blink)
+        self.camera = BlinkCamera(self.blink.sync)
+        self.camera.name = 'foobar'
+        self.blink.sync.cameras['foobar'] = self.camera
 
     def tearDown(self):
         """Clean up after test."""
         self.blink = None
 
-    @mock.patch('blinkpy.sync_module.BlinkSyncModule.camera_config_request',
-                return_value=CAMERA_CFG)
-    def test_camera_properties(self, mock_cfg, mock_sess):
-        """Tests all property set/recall."""
-        self.blink.urls = BlinkURLHandler('test')
+    def test_check_for_motion(self, mock_sess):
+        """Test check for motion function."""
+        self.assertEqual(self.camera.last_record, [])
+        self.assertEqual(self.camera.motion_detected, None)
+        self.camera.sync.record_dates = {'foobar': [1, 3, 2, 4]}
+        self.camera.check_for_motion()
+        self.assertEqual(self.camera.last_record, [4])
+        self.assertEqual(self.camera.motion_detected, False)
+        self.camera.sync.record_dates = {'foobar': [7, 1, 3, 4]}
+        self.camera.check_for_motion()
+        self.assertEqual(self.camera.last_record, [7, 4])
+        self.assertEqual(self.camera.motion_detected, True)
+        self.camera.check_for_motion()
+        self.assertEqual(self.camera.last_record, [7, 4])
+        self.assertEqual(self.camera.motion_detected, False)
 
-        self.sync.cameras = {
-            'foobar': BlinkCamera(self.camera_config, self.sync)
+    def test_max_motion_clips(self, mock_sess):
+        """Test that we only maintain certain number of records."""
+        for i in range(0, MAX_CLIPS):
+            self.camera.last_record.append(i)
+        self.camera.sync.record_dates['foobar'] = [MAX_CLIPS+2]
+        self.assertEqual(len(self.camera.last_record), MAX_CLIPS)
+        self.camera.check_for_motion()
+        self.assertEqual(self.camera.motion_detected, True)
+        self.assertEqual(len(self.camera.last_record), MAX_CLIPS)
+
+    def test_camera_update(self, mock_sess):
+        """Test that we can properly update camera properties."""
+        config = {
+            'name': 'new',
+            'camera_id': 1234,
+            'network_id': 5678,
+            'serial': '12345678',
+            'enabled': False,
+            'battery_voltage': 90,
+            'battery_state': 'ok',
+            'temperature': 68,
+            'wifi_strength': 4,
+            'thumbnail': '/thumb',
         }
-
-        for name in self.sync.cameras:
-            camera = self.sync.cameras[name]
-            camera.update(self.camera_config, skip_cache=True)
-            self.assertEqual(camera.id, '1111')
-            self.assertEqual(camera.name, 'foobar')
-            self.assertEqual(camera.armed, False)
-            self.assertEqual(
-                camera.thumbnail,
-                "https://rest.test.{}/test/image.jpg".format(BLINK_URL)
-            )
-            self.assertEqual(
-                camera.clip,
-                "https://rest.test.{}/test/clip/clip.mp4".format(BLINK_URL)
-            )
-            self.assertEqual(camera.temperature, 68)
-            self.assertEqual(camera.temperature_c, 20.0)
-            self.assertEqual(camera.battery, 50)
-            self.assertEqual(camera.battery_string, "OK")
-            self.assertEqual(camera.notifications, 2)
-            self.assertEqual(camera.region_id, 'test')
-            self.assertEqual(camera.motion_enabled, True)
-            self.assertEqual(camera.wifi_strength, -30)
-
-        camera_config = self.camera_config
-        camera_config['active'] = 'armed'
-        camera_config['thumbnail'] = '/test2/image'
-        camera_config['video'] = '/test2/clip.mp4'
-        camera_config['temp'] = 60
-        camera_config['battery'] = 0
-        camera_config['notifications'] = 4
-        for name in self.sync.cameras:
-            camera = self.sync.cameras[name]
-            camera.update(camera_config, skip_cache=True)
-            self.assertEqual(camera.armed, True)
-            self.assertEqual(
-                camera.thumbnail,
-                "https://rest.test.{}/test2/image.jpg".format(BLINK_URL)
-            )
-            self.assertEqual(
-                camera.clip,
-                "https://rest.test.{}/test2/clip.mp4".format(BLINK_URL)
-            )
-            self.assertEqual(camera.temperature, 68)
-            self.assertEqual(camera.battery, 50)
-            self.assertEqual(camera.battery_string, "Low")
-            self.assertEqual(camera.notifications, 4)
-            camera_config['battery'] = -10
-            camera.update(camera_config, skip_cache=True)
-            self.assertEqual(camera.battery_string, "Unknown")
-
-    def test_camera_case(self, mock_sess):
-        """Tests camera case sensitivity."""
-        camera_object = BlinkCamera(self.camera_config, self.sync)
-        self.sync.cameras['foobar'] = camera_object
-        self.assertEqual(camera_object, self.sync.cameras['fOoBaR'])
-
-    @mock.patch('blinkpy.sync_module.BlinkSyncModule.camera_config_request',
-                return_value=CAMERA_CFG)
-    def test_camera_attributes(self, mock_cfg, mock_sess):
-        """Tests camera attributes."""
-        self.blink.urls = BlinkURLHandler('test')
-
-        self.sync.cameras = {
-            'foobar': BlinkCamera(self.camera_config, self.sync)
-        }
-
-        for name in self.sync.cameras:
-            camera = self.sync.cameras[name]
-            camera.update(self.camera_config, skip_cache=True)
-            camera_attr = camera.attributes
-            self.assertEqual(camera_attr['device_id'], '1111')
-            self.assertEqual(camera_attr['name'], 'foobar')
-            self.assertEqual(camera_attr['armed'], False)
-            self.assertEqual(
-                camera_attr['thumbnail'],
-                "https://rest.test.{}/test/image.jpg".format(BLINK_URL)
-            )
-            self.assertEqual(
-                camera_attr['video'],
-                "https://rest.test.{}/test/clip/clip.mp4".format(BLINK_URL)
-            )
-            self.assertEqual(camera_attr['temperature'], 68)
-            self.assertEqual(camera_attr['temperature_c'], 20.0)
-            self.assertEqual(camera_attr['battery'], 50)
-            self.assertEqual(camera_attr['notifications'], 2)
-            self.assertEqual(camera_attr['network_id'], '0000')
-            self.assertEqual(camera_attr['motion_enabled'], True)
-            self.assertEqual(camera_attr['wifi_strength'], -30)
-
-    @mock.patch('blinkpy.camera.BlinkCamera.image_refresh',
-                return_value='https://fake.url')
-    def test_camera_cache(self, img_refresh, mock_sess):
-        """Tests camera cache."""
-        update_vals = {
-            'name': 'foobar',
-            'active': 'disabled',
-            'video': '/clip.mp4',
-            'thumbnail': '/image',
-            'battery': 3,
-            'notifications': 1,
-        }
-        self.sync.cameras = {
-            'foobar': BlinkCamera(self.camera_config, self.sync)
-        }
-
-        test_image = 'https://rest.test.immedia-semi.com/image.jpg'
-        test_clip = 'https://rest.test.immedia-semi.com/clip.mp4'
-
-        for name, camera in self.sync.cameras.items():
-            # Check that no cache returns None
-            self.assertEqual(camera.name, name)
-            self.assertEqual(camera.image_from_cache, None)
-            self.assertEqual(camera.video_from_cache, None)
-
-            # Now, call an update with a new thumbnail to see if we update
-            self.sync.records = []
-            # pylint: disable=protected-access
-            camera.update(update_vals)
-            self.assertEqual(camera.thumbnail, test_image)
-            self.assertEqual(camera.image_from_cache.status_code, 200)
-
-            # Now update the clip
-            self.sync.record_dates = {camera.name: ['7', '1', '4', '3']}
-            self.assertEqual(camera.last_record, list())
-            camera.update(update_vals)
-            self.assertEqual(camera.clip, test_clip)
-            self.assertEqual(camera.last_record, list('7'))
-            # First update should be false
-            self.assertEqual(camera.motion_detected, False)
-            self.sync.record_dates[camera.name].append('88')
-            camera.update(update_vals)
-            self.assertEqual(camera.last_record, ['88', '7'])
-            self.assertEqual(camera.motion_detected, True)
-            self.assertEqual(camera.video_from_cache.status_code, 200)
-            # Next update shouldn't change records, and motion_dected=False
-            camera.update(update_vals)
-            self.assertEqual(camera.motion_detected, False)
-            self.assertEqual(camera.video_from_cache.status_code, 200)
+        self.camera.last_record = ['1']
+        self.camera.sync.all_clips = {'new': {'1': '/test.mp4'}}
+        mock_sess.side_effect = [
+            'test',
+            'foobar'
+        ]
+        self.camera.update(config)
+        self.assertEqual(self.camera.name, 'new')
+        self.assertEqual(self.camera.camera_id, '1234')
+        self.assertEqual(self.camera.network_id, '5678')
+        self.assertEqual(self.camera.serial, '12345678')
+        self.assertEqual(self.camera.motion_enabled, False)
+        self.assertEqual(self.camera.battery, 50)
+        self.assertEqual(self.camera.temperature, 68)
+        self.assertEqual(self.camera.temperature_c, 20)
+        self.assertEqual(self.camera.wifi_strength, 4)
+        self.assertEqual(self.camera.thumbnail,
+                         'https://rest.test.immedia-semi.com/thumb.jpg')
+        self.assertEqual(self.camera.clip,
+                         'https://rest.test.immedia-semi.com/test.mp4')
+        self.assertEqual(self.camera.image_from_cache, 'test')
+        self.assertEqual(self.camera.video_from_cache, 'foobar')

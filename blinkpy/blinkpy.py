@@ -76,6 +76,7 @@ class Blink():
 
         self.get_ids()
         self.sync = BlinkSyncModule(self)
+        self.sync.start()
 
     def login(self):
         """Prompt user for username and password."""

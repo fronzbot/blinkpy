@@ -37,8 +37,6 @@ class BlinkSyncModule():
         self.cameras = CaseInsensitiveDict({})
         self.all_clips = {}
 
-        self.start()
-
     @property
     def attributes(self):
         """Return sync attributes."""
@@ -98,7 +96,8 @@ class BlinkSyncModule():
         self.videos = self.get_videos()
         for camera_config in camera_info:
             name = camera_config['name']
-            self.cameras[name].update(camera_config, force_cache=True)
+            if name in self.cameras:
+                self.cameras[name].update(camera_config, force_cache=True)
 
     def get_events(self):
         """Retrieve events from server."""
@@ -130,8 +129,6 @@ class BlinkSyncModule():
         """
         videos = list()
         all_dates = dict()
-        for camera in self.cameras:
-            self.all_clips[camera] = {}
 
         for page_num in range(start_page, end_page + 1):
             this_page = api.request_videos(self.blink, page=page_num)
@@ -148,7 +145,11 @@ class BlinkSyncModule():
                 clip_date = clip_addr.split('_')[-6:]
                 clip_date = '_'.join(clip_date)
                 clip_date = clip_date.split('.')[0]
-                self.all_clips[camera_name][clip_date] = clip_addr
+                try:
+                    self.all_clips[camera_name][clip_date] = clip_addr
+                except KeyError:
+                    self.all_clips[camera_name] = {clip_date: clip_addr}
+
                 if camera_name not in all_dates:
                     all_dates[camera_name] = list()
                 all_dates[camera_name].append(clip_date)

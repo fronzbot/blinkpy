@@ -8,7 +8,8 @@ any communication related errors at startup.
 
 import unittest
 from unittest import mock
-from blinkpy import blinkpy
+from blinkpy import api
+from blinkpy.blinkpy import Blink
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers.util import (
     http_req, create_session, BlinkAuthenticationException,
@@ -26,10 +27,10 @@ class TestBlinkSetup(unittest.TestCase):
 
     def setUp(self):
         """Set up Blink module."""
-        self.blink_no_cred = blinkpy.Blink()
-        self.blink = blinkpy.Blink(username=USERNAME,
-                                   password=PASSWORD)
-        self.blink.sync = BlinkSyncModule(self.blink, dict(), self.blink.urls)
+        self.blink_no_cred = Blink()
+        self.blink = Blink(username=USERNAME,
+                           password=PASSWORD)
+        self.blink.sync = BlinkSyncModule(self.blink)
 
     def tearDown(self):
         """Clean up after test."""
@@ -59,8 +60,6 @@ class TestBlinkSetup(unittest.TestCase):
         self.blink.urls = BlinkURLHandler(region_id)
         with self.assertRaises(BlinkException):
             self.blink.get_ids()
-        with self.assertRaises(BlinkException):
-            self.blink.summary_request()
 
     @mock.patch('blinkpy.blinkpy.getpass.getpass')
     def test_manual_login(self, getpwd, mock_sess):
@@ -95,8 +94,18 @@ class TestBlinkSetup(unittest.TestCase):
         bad_header = {'Host': self.blink._host, 'TOKEN_AUTH': 'BADTOKEN'}
         # pylint: disable=protected-access
         self.blink._auth_header = bad_header
-        # pylint: disable=protected-access
-        self.assertEqual(self.blink._auth_header, bad_header)
-        self.blink.summary_request()
-        # pylint: disable=protected-access
-        self.assertEqual(self.blink._auth_header, original_header)
+        self.assertEqual(self.blink.auth_header, bad_header)
+        api.request_homescreen(self.blink, '1234')
+        self.assertEqual(self.blink.auth_header, original_header)
+
+    @mock.patch('blinkpy.blinkpy.time.time')
+    def test_throttle(self, mock_time, mock_sess):
+        """Check throttling functionality."""
+        now = self.blink.refresh_rate + 1
+        mock_time.return_value = now
+        self.assertEqual(self.blink.last_refresh, None)
+        result = self.blink.check_if_ok_to_update()
+        self.assertEqual(self.blink.last_refresh, now)
+        self.assertEqual(result, True)
+        self.assertEqual(self.blink.check_if_ok_to_update(), False)
+        self.assertEqual(self.blink.last_refresh, now)
