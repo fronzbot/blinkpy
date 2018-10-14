@@ -3,8 +3,35 @@ Changelog
 
 A list of changes between each release
 
-0.9.0.dev (Development Version)
+0.10.0.dev (Development Version)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+0.9.0 (2018-09-27)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Complete code refactoring to enable future multi-sync module support
+- Add image and video caching to the cameras
+- Add internal throttling of system refresh
+- Use session for http requests
+
+**Breaking change:**
+- Cameras now accessed through sync module Blink.sync.cameras
+
+
+0.8.1 (2018-09-24)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Update requirements_test.txt
+- Update linter versions
+- Fix pylint warnings
+  - Remove object from class declarations
+  - Remove useless returns from functions
+- Fix pylint errors
+  - change if comparison to fix (consider-using-in)
+  - Disabled no else-if-return check
+- Fix useless-import-alias
+- Disable no-else-return
+- Fix motion detection
+  - Use an array of recent video clips to determine if motion has been detected.
+  - Reset the value every system refresh
 
 0.8.0 (2018-05-21)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
