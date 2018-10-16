@@ -177,3 +177,25 @@ class TestBlinkCameraSetup(unittest.TestCase):
             logrecord.output,
             ["ERROR:blinkpy.camera:Could not find thumbnail for camera new"]
         )
+
+    def test_no_video_clips(self, mock_sess):
+        """Tests that we still proceed with camera setup with no videos."""
+        mock_sess.return_value = 'foobar'
+        config = {
+            'name': 'new',
+            'camera_id': 1234,
+            'network_id': 5678,
+            'serial': '12345678',
+            'enabled': False,
+            'battery_voltage': 90,
+            'battery_state': 'ok',
+            'temperature': 68,
+            'wifi_strength': 4,
+            'thumbnail': '/foobar',
+        }
+        self.camera.sync.homescreen = {
+            'devices': []
+        }
+        self.camera.update(config, force_cache=True)
+        self.assertEqual(self.camera.clip, None)
+        self.assertEqual(self.camera.video_from_cache, None)
