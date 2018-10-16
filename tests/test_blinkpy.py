@@ -31,6 +31,8 @@ class TestBlinkSetup(unittest.TestCase):
         self.blink = Blink(username=USERNAME,
                            password=PASSWORD)
         self.blink.sync = BlinkSyncModule(self.blink)
+        self.blink.urls = BlinkURLHandler('test')
+        self.blink.session = create_session()
 
     def tearDown(self):
         """Clean up after test."""
@@ -97,6 +99,16 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(self.blink.auth_header, bad_header)
         api.request_homescreen(self.blink)
         self.assertEqual(self.blink.auth_header, original_header)
+
+    @mock.patch('blinkpy.api.request_networks')
+    def test_multiple_networks(self, mock_net, mock_sess):
+        """Check that we handle multiple networks appropriately."""
+        mock_net.return_value = {
+            'networks': [{'account_id': 1111, 'id': 1234},
+                         {'account_id': 1111, 'id': 5678}]
+            }
+        self.blink.get_ids()
+        self.assertEqual(self.blink.network_id, [1234, 5678])
 
     @mock.patch('blinkpy.blinkpy.time.time')
     def test_throttle(self, mock_time, mock_sess):

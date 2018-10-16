@@ -132,8 +132,21 @@ class Blink():
     def get_ids(self):
         """Set the network ID and Account ID."""
         response = api.request_networks(self)
-        self.network_id = str(response['networks'][0]['id'])
-        self.account_id = str(response['networks'][0]['account_id'])
+        # Look for only onboarded network, flag warning if multiple
+        # since it's unexpected
+        all_networks = []
+        network_data = {}
+        for network in response['networks']:
+            if network['onboarded']:
+                all_networks.append(network['id'])
+                network_data[str(network['id'])] = network
+        self.network_id = all_networks.pop(0)
+        self.account_id = network_data[str(self.network_id)]
+        if not all_networks:
+            _LOGGER.error(("More than one unboarded network. "
+                           "Platform may not work as intended. "
+                           "Please open an issue on "
+                           "https://github.com/fronzbot/blinkpy."))
 
     def refresh(self, force_cache=False):
         """
