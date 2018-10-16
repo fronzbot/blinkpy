@@ -62,7 +62,8 @@ class TestBlinkFunctions(unittest.TestCase):
         fake_req = Request('POST', 'http://wrong.url').prepare()
         req.side_effect = [
             mresp.mocked_session_send(fake_req),
-            {'authtoken': {'authtoken': 'foobar123'}}
+            {'authtoken': {'authtoken': 'foobar123'},
+             'networks': {'1234': {'name': 'foobar', 'onboarded': True}}}
         ]
         self.blink.get_auth_token()
         self.assertEqual(self.blink.region_id, 'piri')
