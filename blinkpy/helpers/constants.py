@@ -8,7 +8,7 @@ PATCH_VERSION = 0
 
 __version__ = '{}.{}.{}'.format(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION)
 
-REQUIRED_PYTHON_VER = (3, 5, 3) 
+REQUIRED_PYTHON_VER = (3, 5, 3)
 
 PROJECT_NAME = 'blinkpy'
 PROJECT_PACKAGE_NAME = 'blinkpy'
