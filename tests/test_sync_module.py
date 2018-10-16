@@ -10,28 +10,7 @@ USERNAME = 'foobar'
 PASSWORD = 'deadbeef'
 
 
-class MockSyncModule(BlinkSyncModule):
-    """Mock http requests from sync module."""
-
-    def __init__(self, blink, header):
-        """Create mock sync module instance."""
-        super().__init__(blink, header)
-        self.blink = blink
-        self.header = header
-        self.return_value = None
-        self.return_value2 = None
-
-    def http_get(self, url, stream=False, json=True):
-        """Mock get request."""
-        if stream and self.return_value2 is not None:
-            return self.return_value2
-        return self.return_value
-
-    def http_post(self, url):
-        """Mock post request."""
-        return self.return_value
-
-
+@mock.patch('blinkpy.api.http_req')
 class TestBlinkSyncModule(unittest.TestCase):
     """Test BlinkSyncModule functions in blinkpy."""
 
@@ -45,63 +24,77 @@ class TestBlinkSyncModule(unittest.TestCase):
             'TOKEN_AUTH': 'foobar123'
         }
         self.blink.urls = blinkpy.BlinkURLHandler('test')
-        self.config = {
-            'device_id': 1111,
-            'name': 'foobar',
-            'armed': False,
-            'active': 'disabled',
-            'thumbnail': '/test',
-            'video': '/test.mp4',
-            'temp': 80,
-            'battery': 3,
-            'notifications': 2,
-            'region_id': 'test',
-            'device_type': 'camera'
-        }
-        self.blink.sync = MockSyncModule(
-            self.blink, self.blink._auth_header)
-
-        self.camera = BlinkCamera(self.config, self.blink.sync)
+        self.blink.sync = BlinkSyncModule(self.blink)
+        self.camera = BlinkCamera(self.blink.sync)
 
     def tearDown(self):
         """Clean up after test."""
         self.blink = None
-        self.config = {}
         self.camera = None
 
-    def test_get_videos(self):
+    def test_get_events(self, mock_resp):
+        """Test get events function."""
+        mock_resp.return_value = {'event': True}
+        self.assertEqual(self.blink.sync.get_events(), True)
+
+    def test_get_camera_info(self, mock_resp):
+        """Test get camera info function."""
+        mock_resp.return_value = {'devicestatus': True}
+        self.assertEqual(self.blink.sync.get_camera_info(), True)
+
+    def test_get_videos_one_page(self, mock_resp):
         """Test video access."""
-        self.blink.sync.return_value = [
+        mock_resp.return_value = [
             {
                 'camera_name': 'foobar',
-                'address': '/new/test.mp4',
+                'address': '/test/clip_1900_01_01_12_00_00AM.mp4',
                 'thumbnail': '/test/thumb'
             }
         ]
-        self.blink.sync.get_videos()
-        self.assertEqual(self.blink.sync.videos['foobar'][0]['clip'],
-                         '/new/test.mp4')
-        self.assertEqual(self.blink.sync.videos['foobar'][0]['thumb'],
-                         '/test/thumb')
+        expected_videos = {'foobar': [
+            {'clip': '/test/clip_1900_01_01_12_00_00AM.mp4',
+             'thumb': '/test/thumb'}]}
+        expected_records = {'foobar': ['1900_01_01_12_00_00AM']}
+        expected_clips = {'foobar': {
+            '1900_01_01_12_00_00AM': '/test/clip_1900_01_01_12_00_00AM.mp4'}}
+        self.blink.sync.get_videos(start_page=0, end_page=0)
+        self.assertEqual(self.blink.sync.videos, expected_videos)
+        self.assertEqual(self.blink.sync.record_dates, expected_records)
+        self.assertEqual(self.blink.sync.all_clips, expected_clips)
 
-    @mock.patch('blinkpy.blinkpy.Blink.refresh')
-    @mock.patch('blinkpy.sync_module.BlinkSyncModule._summary_request')
-    @mock.patch('blinkpy.sync_module.BlinkSyncModule._video_request')
-    def test_get_cameras(self, vid_req, req, refresh):
-        """Test camera extraction."""
-        refresh.return_value = True
-        req.return_value = {'devices': [self.config]}
-        vid_req.return_value = [
+    def test_get_videos_multi_page(self, mock_resp):
+        """Test video access with multiple pages."""
+        mock_resp.return_value = [
             {
-                'camera_name': 'foobar',
-                'address': '/new.mp4',
-                'thumbnail': '/new'
+                'camera_name': 'test',
+                'address': '/foo/bar_1900_01_01_12_00_00AM.mp4',
+                'thumbnail': '/foobar'
             }
         ]
-        self.blink.sync.get_cameras()
-        self.assertTrue('foobar' in self.blink.sync.cameras)
+        self.blink.sync.get_videos()
+        self.assertEqual(mock_resp.call_count, 2)
+        mock_resp.reset_mock()
+        self.blink.sync.get_videos(start_page=0, end_page=9)
+        self.assertEqual(mock_resp.call_count, 10)
 
-    def test_video_count(self):
-        """Test video count function."""
-        self.blink.sync.return_value = {'count': 1}
-        self.assertEqual(self.blink.sync.video_count, 1)
+    def test_sync_start(self, mock_resp):
+        """Test sync start function."""
+        mock_resp.side_effect = [
+            {'syncmodule': {
+                'name': 'test',
+                'id': 1234,
+                'network_id': 5678,
+                'serial': '12345678',
+                'status': 'foobar'}},
+            {'event': True},
+            {},
+            {'devicestatus': {}},
+            None,
+            None
+        ]
+        self.blink.sync.start()
+        self.assertEqual(self.blink.sync.name, 'test')
+        self.assertEqual(self.blink.sync.sync_id, 1234)
+        self.assertEqual(self.blink.sync.network_id, 5678)
+        self.assertEqual(self.blink.sync.serial, '12345678')
+        self.assertEqual(self.blink.sync.status, 'foobar')

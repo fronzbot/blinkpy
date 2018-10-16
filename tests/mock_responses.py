@@ -6,15 +6,7 @@ import blinkpy.helpers.constants as const
 LOGIN_RESPONSE = {
     'region': {'mock': 'Test'},
     'networks': {
-        'summary': {'name': 'TestNetwork'},
-        'networks': [{
-            'name': 'TestNetwork',
-            'account_id': 1111,
-            'id': 2222,
-            'active': 'armed',
-            'armed': True,
-            'arm_string': 'Armed'
-        }]
+        '1234': {'name': 'test', 'onboarded': True}
     },
     'authtoken': {'authtoken': 'foobar123', 'message': 'auth'}
 }

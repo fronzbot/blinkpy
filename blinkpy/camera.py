@@ -2,7 +2,7 @@
 
 from shutil import copyfileobj
 import logging
-from requests.exceptions import RequestException
+from blinkpy import api
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -12,30 +12,22 @@ MAX_CLIPS = 5
 class BlinkCamera():
     """Class to initialize individual camera."""
 
-    def __init__(self, config, sync):
+    def __init__(self, sync):
         """Initiailize BlinkCamera."""
         self.sync = sync
-        self.urls = self.sync.urls
-        self.id = str(config['device_id'])  # pylint: disable=invalid-name
-        self.name = config['name']
-        self._status = config['active']
-        self.thumbnail = "{}{}.jpg".format(self.urls.base_url,
-                                           config['thumbnail'])
-        self.clip = "{}{}".format(self.urls.base_url, config['video'])
-        self.temperature = config['temp']
-        self._battery_string = config['battery']
-        self.notifications = config['notifications']
-        self.motion = dict()
-        self.header = None
-        self.image_link = None
-        self.arm_link = None
-        self.region_id = config['region_id']
-        self.battery_voltage = -180
+        self.name = None
+        self.camera_id = None
+        self.network_id = None
+        self.thumbnail = None
+        self.serial = None
+        self.motion_enabled = None
+        self.battery_voltage = None
+        self.clip = None
+        self.temperature = None
+        self.battery_state = None
         self.motion_detected = None
         self.wifi_strength = None
-        self.camera_config = dict()
-        self.motion_enabled = None
-        self.last_record = list()
+        self.last_record = []
         self._cached_image = None
         self._cached_video = None
 
@@ -44,16 +36,14 @@ class BlinkCamera():
         """Return dictionary of all camera attributes."""
         attributes = {
             'name': self.name,
-            'device_id': self.id,
-            'status': self._status,
-            'armed': self.armed,
+            'camera_id': self.camera_id,
+            'serial': self.serial,
             'temperature': self.temperature,
             'temperature_c': self.temperature_c,
             'battery': self.battery,
             'thumbnail': self.thumbnail,
             'video': self.clip,
             'motion_enabled': self.motion_enabled,
-            'notifications': self.notifications,
             'motion_detected': self.motion_detected,
             'wifi_strength': self.wifi_strength,
             'network_id': self.sync.network_id,
@@ -62,29 +52,9 @@ class BlinkCamera():
         return attributes
 
     @property
-    def status(self):
-        """Return camera status."""
-        return self._status
-
-    @property
-    def armed(self):
-        """Return camera arm status."""
-        return True if self._status == 'armed' else False
-
-    @property
     def battery(self):
         """Return battery level as percentage."""
         return round(self.battery_voltage / 180 * 100)
-
-    @property
-    def battery_string(self):
-        """Return string indicating battery status."""
-        status = "Unknown"
-        if self._battery_string > 1 and self._battery_string <= 3:
-            status = "OK"
-        elif self._battery_string >= 0:
-            status = "Low"
-        return status
 
     @property
     def temperature_c(self):
@@ -107,50 +77,77 @@ class BlinkCamera():
 
     def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
-        self.sync.http_post(self.image_link)
+        return api.request_new_image(self.sync.blink,
+                                     self.network_id,
+                                     self.camera_id)
 
     def set_motion_detect(self, enable):
         """Set motion detection."""
-        url = self.arm_link
         if enable:
-            self.sync.http_post("{}{}".format(url, 'enable'))
+            return api.request_motion_detection_enable(self.sync.blink,
+                                                       self.network_id,
+                                                       self.camera_id)
+        return api.request_motion_detection_disable(self.sync.blink,
+                                                    self.network_id,
+                                                    self.camera_id)
+
+    def update(self, config, force_cache=False):
+        """Update camera info."""
+        self.name = config['name']
+        self.camera_id = str(config['camera_id'])
+        self.network_id = str(config['network_id'])
+        self.serial = config['serial']
+        self.motion_enabled = config['enabled']
+        self.battery_voltage = config['battery_voltage']
+        self.battery_state = config['battery_state']
+        self.temperature = config['temperature']
+        self.wifi_strength = config['wifi_strength']
+
+        # Check if thumbnail exists in config, if not try to
+        # get it from the homescreen info in teh sync module
+        # otherwise set it to None and log an error
+        new_thumbnail = None
+        if config['thumbnail']:
+            thumb_addr = config['thumbnail']
         else:
-            self.sync.http_post("{}{}".format(url, 'disable'))
+            thumb_addr = self.get_thumb_from_homescreen()
 
-    def update(self, values, force_cache=False, skip_cache=False):
-        """Update camera information."""
-        self.name = values['name']
-        self._status = values['active']
-        self.clip = "{}{}".format(
-            self.urls.base_url, values['video'])
-        new_thumbnail = "{}{}.jpg".format(
-            self.urls.base_url, values['thumbnail'])
-        self._battery_string = values['battery']
-        self.notifications = values['notifications']
+        if thumb_addr is not None:
+            new_thumbnail = "{}{}.jpg".format(self.sync.urls.base_url,
+                                              thumb_addr)
 
+        # Check if a new motion clip has been recorded
+        # check_for_motion_method sets motion_detected variable
+        self.check_for_motion()
+        clip_addr = None
+        if self.last_record:
+            clip_addr = self.sync.all_clips[self.name][self.last_record[0]]
+            self.clip = "{}{}".format(self.sync.urls.base_url,
+                                      clip_addr)
+
+        # If the thumbnail or clip have changed, update the cache
         update_cached_image = False
         if new_thumbnail != self.thumbnail or self._cached_image is None:
             update_cached_image = True
         self.thumbnail = new_thumbnail
-        try:
-            cfg = self.sync.camera_config_request(self.id)
-            self.camera_config = cfg
-        except RequestException as err:
-            _LOGGER.warning("Could not get config for %s with id %s",
-                            self.name, self.id)
-            _LOGGER.warning("Exception raised: %s", err)
 
-        try:
-            self.battery_voltage = cfg['camera'][0]['battery_voltage']
-            self.motion_enabled = cfg['camera'][0]['motion_alert']
-            self.wifi_strength = cfg['camera'][0]['wifi_strength']
-            self.temperature = cfg['camera'][0]['temperature']
-        except KeyError:
-            _LOGGER.warning("Problem extracting config for camera %s",
-                            self.name)
+        update_cached_video = False
+        if self._cached_video is None or self.motion_detected:
+            update_cached_video = True
 
-        # Check if the most recent clip is included in the last_record list
-        # and that the last_record list is populated
+        if new_thumbnail is not None and (update_cached_image or force_cache):
+            self._cached_image = api.http_get(self.sync.blink,
+                                              url=self.thumbnail,
+                                              stream=True,
+                                              json=False)
+        if clip_addr is not None and (update_cached_video or force_cache):
+            self._cached_video = api.http_get(self.sync.blink,
+                                              url=self.clip,
+                                              stream=True,
+                                              json=False)
+
+    def check_for_motion(self):
+        """Check if motion detected.."""
         try:
             records = sorted(self.sync.record_dates[self.name])
             new_clip = records.pop()
@@ -167,30 +164,6 @@ class BlinkCamera():
         except KeyError:
             _LOGGER.warning("Could not extract clip info from camera %s",
                             self.name)
-
-        if not skip_cache:
-            if update_cached_image or force_cache:
-                self._cached_image = self.sync.http_get(
-                    self.image_refresh(), stream=True, json=False)
-            if (self.clip is None) or self.motion_detected or force_cache:
-                self._cached_video = self.sync.http_get(
-                    self.clip, stream=True, json=False)
-
-    def image_refresh(self):
-        """Refresh current thumbnail."""
-        url = self.urls.home_url
-        response = self.sync.http_get(url)['devices']
-        for element in response:
-            try:
-                if str(element['device_id']) == self.id:
-                    self.thumbnail = (
-                        "{}{}.jpg".format(
-                            self.urls.base_url, element['thumbnail'])
-                    )
-                    return self.thumbnail
-            except KeyError:
-                pass
-        return None
 
     def image_to_file(self, path):
         """
@@ -216,3 +189,17 @@ class BlinkCamera():
         response = self._cached_video
         with open(path, 'wb') as vidfile:
             copyfileobj(response.raw, vidfile)
+
+    def get_thumb_from_homescreen(self):
+        """Retrieve thumbnail from homescreen."""
+        for device in self.sync.homescreen['devices']:
+            try:
+                device_type = device['device_type']
+                device_name = device['name']
+                device_thumb = device['thumbnail']
+                if device_type == 'camera' and device_name == self.name:
+                    return device_thumb
+            except KeyError:
+                pass
+        _LOGGER.error("Could not find thumbnail for camera %s", self.name)
+        return None

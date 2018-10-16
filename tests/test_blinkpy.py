@@ -8,7 +8,8 @@ any communication related errors at startup.
 
 import unittest
 from unittest import mock
-from blinkpy import blinkpy
+from blinkpy import api
+from blinkpy.blinkpy import Blink
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers.util import (
     http_req, create_session, BlinkAuthenticationException,
@@ -26,10 +27,12 @@ class TestBlinkSetup(unittest.TestCase):
 
     def setUp(self):
         """Set up Blink module."""
-        self.blink_no_cred = blinkpy.Blink()
-        self.blink = blinkpy.Blink(username=USERNAME,
-                                   password=PASSWORD)
-        self.blink.sync = BlinkSyncModule(self.blink, dict(), self.blink.urls)
+        self.blink_no_cred = Blink()
+        self.blink = Blink(username=USERNAME,
+                           password=PASSWORD)
+        self.blink.sync = BlinkSyncModule(self.blink)
+        self.blink.urls = BlinkURLHandler('test')
+        self.blink.session = create_session()
 
     def tearDown(self):
         """Clean up after test."""
@@ -59,8 +62,6 @@ class TestBlinkSetup(unittest.TestCase):
         self.blink.urls = BlinkURLHandler(region_id)
         with self.assertRaises(BlinkException):
             self.blink.get_ids()
-        with self.assertRaises(BlinkException):
-            self.blink.summary_request()
 
     @mock.patch('blinkpy.blinkpy.getpass.getpass')
     def test_manual_login(self, getpwd, mock_sess):
@@ -95,8 +96,32 @@ class TestBlinkSetup(unittest.TestCase):
         bad_header = {'Host': self.blink._host, 'TOKEN_AUTH': 'BADTOKEN'}
         # pylint: disable=protected-access
         self.blink._auth_header = bad_header
-        # pylint: disable=protected-access
-        self.assertEqual(self.blink._auth_header, bad_header)
-        self.blink.summary_request()
-        # pylint: disable=protected-access
-        self.assertEqual(self.blink._auth_header, original_header)
+        self.assertEqual(self.blink.auth_header, bad_header)
+        api.request_homescreen(self.blink)
+        self.assertEqual(self.blink.auth_header, original_header)
+
+    @mock.patch('blinkpy.api.request_networks')
+    def test_multiple_networks(self, mock_net, mock_sess):
+        """Check that we handle multiple networks appropriately."""
+        mock_net.return_value = {
+            'networks': [{'id': 1234, 'account_id': 1111},
+                         {'id': 5678, 'account_id': 2222}]
+        }
+        self.blink.networks = {'0000': {'onboarded': False},
+                               '5678': {'onboarded': True},
+                               '1234': {'onboarded': False}}
+        self.blink.get_ids()
+        self.assertEqual(self.blink.network_id, '5678')
+        self.assertEqual(self.blink.account_id, 2222)
+
+    @mock.patch('blinkpy.blinkpy.time.time')
+    def test_throttle(self, mock_time, mock_sess):
+        """Check throttling functionality."""
+        now = self.blink.refresh_rate + 1
+        mock_time.return_value = now
+        self.assertEqual(self.blink.last_refresh, None)
+        result = self.blink.check_if_ok_to_update()
+        self.assertEqual(self.blink.last_refresh, now)
+        self.assertEqual(result, True)
+        self.assertEqual(self.blink.check_if_ok_to_update(), False)
+        self.assertEqual(self.blink.last_refresh, now)
