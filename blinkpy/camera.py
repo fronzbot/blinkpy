@@ -102,16 +102,29 @@ class BlinkCamera():
         self.battery_state = config['battery_state']
         self.temperature = config['temperature']
         self.wifi_strength = config['wifi_strength']
-        if config['thumbnail']:
-            new_thumbnail = "{}{}.jpg".format(self.sync.urls.base_url,
-                                              config['thumbnail'])
 
+        # Check if thumbnail exists in config, if not try to
+        # get it from the homescreen info in teh sync module
+        # otherwise set it to None and log an error
+        new_thumbnail = None
+        if config['thumbnail']:
+            thumb_addr = config['thumbnail']
+        else:
+            thumb_addr = self.get_thumb_from_homescreen()
+
+        if thumb_addr is not None:
+            new_thumbnail = "{}{}.jpg".format(self.sync.urls.base_url,
+                                              thumb_addr)
+
+        # Check if a new motion clip has been recorded
+        # check_for_motion_method sets motion_detected variable
         self.check_for_motion()
         if self.last_record:
             clip_addr = self.sync.all_clips[self.name][self.last_record[0]]
             self.clip = "{}{}".format(self.sync.urls.base_url,
                                       clip_addr)
 
+        # If the thumbnail or clip have changed, update the cache
         update_cached_image = False
         if new_thumbnail != self.thumbnail or self._cached_image is None:
             update_cached_image = True
@@ -121,7 +134,7 @@ class BlinkCamera():
         if self._cached_video is None or self.motion_detected:
             update_cached_video = True
 
-        if update_cached_image or force_cache:
+        if new_thumbnail is not None and (update_cached_image or force_cache):
             self._cached_image = api.http_get(self.sync.blink,
                                               url=self.thumbnail,
                                               stream=True,
@@ -175,3 +188,17 @@ class BlinkCamera():
         response = self._cached_video
         with open(path, 'wb') as vidfile:
             copyfileobj(response.raw, vidfile)
+
+    def get_thumb_from_homescreen(self):
+        """Retrieve thumbnail from homescreen."""
+        for device in self.sync.homescreen['devices']:
+            try:
+                device_type = device['device_type']
+                device_name = device['name']
+                device_thumb = device['thumbnail']
+                if device_type == 'camera' and device_name == self.name:
+                    return device_thumb
+            except KeyError:
+                pass
+        _LOGGER.error("Could not find thumbnail for camera %s", self.name)
+        return None

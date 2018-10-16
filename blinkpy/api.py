@@ -56,7 +56,7 @@ def request_command_status(blink, network, command_id):
     return http_get(blink, url)
 
 
-def request_homescreen(blink, network):
+def request_homescreen(blink):
     """Request homescreen info."""
     url = "{}/homescreen".format(blink.urls.base_url)
     return http_get(blink, url)
@@ -144,8 +144,8 @@ def http_get(blink, url, stream=False, json=True):
     """
     if blink.auth_header is None:
         raise BlinkException(ERROR.AUTH_TOKEN)
-    return http_req(blink, url=url, headers=blink.auth_header, reqtype='get',
-                    stream=stream, json_resp=json)
+    return http_req(blink, url=url, headers=blink.auth_header,
+                    reqtype='get', stream=stream, json_resp=json)
 
 
 def http_post(blink, url):

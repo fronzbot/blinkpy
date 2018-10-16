@@ -95,7 +95,7 @@ class TestBlinkSetup(unittest.TestCase):
         # pylint: disable=protected-access
         self.blink._auth_header = bad_header
         self.assertEqual(self.blink.auth_header, bad_header)
-        api.request_homescreen(self.blink, '1234')
+        api.request_homescreen(self.blink)
         self.assertEqual(self.blink.auth_header, original_header)
 
     @mock.patch('blinkpy.blinkpy.time.time')

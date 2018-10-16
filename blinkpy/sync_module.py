@@ -86,7 +86,7 @@ class BlinkSyncModule():
 
         self.events = self.get_events()
 
-        self.homescreen = api.request_homescreen(self.blink, self.network_id)
+        self.homescreen = api.request_homescreen(self.blink)
 
         camera_info = self.get_camera_info()
         for camera_config in camera_info:
@@ -113,7 +113,7 @@ class BlinkSyncModule():
         """Get all blink cameras and pulls their most recent status."""
         self.events = self.get_events()
         self.videos = self.get_videos()
-        self.homescreen = api.request_homescreen(self.blink, self.network_id)
+        self.homescreen = api.request_homescreen(self.blink)
         camera_info = self.get_camera_info()
         for camera_config in camera_info:
             name = camera_config['name']

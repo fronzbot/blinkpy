@@ -1,9 +1,9 @@
 """Useful functions for blinkpy."""
 
 import logging
-from requests import Request, Session
-import blinkpy.helpers.errors as ERROR
+from requests import Request, Session, exceptions
 from blinkpy.helpers.constants import BLINK_URL
+import blinkpy.helpers.errors as ERROR
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -41,13 +41,20 @@ def http_req(blink, url='http://example.com', data=None, headers=None,
     elif reqtype == 'get':
         req = Request('GET', url, headers=headers)
     else:
+        _LOGGER.error("Invalid request type: %s", reqtype)
         raise BlinkException(ERROR.REQUEST)
 
     prepped = req.prepare()
-    response = blink.session.send(prepped, stream=stream)
+
+    try:
+        response = blink.session.send(prepped, stream=stream)
+    except (exceptions.ConnectionError, exceptions.Timeout):
+        _LOGGER.error("Cannot connect to server. Possible outage.")
+        return None
 
     if json_resp and 'code' in response.json():
         if is_retry:
+            _LOGGER.error("Cannot authenticate with server.")
             raise BlinkAuthenticationException(
                 (response.json()['code'], response.json()['message']))
         else:

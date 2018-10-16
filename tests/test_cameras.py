@@ -117,3 +117,63 @@ class TestBlinkCameraSetup(unittest.TestCase):
                          'https://rest.test.immedia-semi.com/test.mp4')
         self.assertEqual(self.camera.image_from_cache, 'test')
         self.assertEqual(self.camera.video_from_cache, 'foobar')
+
+    def test_thumbnail_not_in_info(self, mock_sess):
+        """Test that we grab thumbanil if not in camera_info."""
+        mock_sess.side_effect = ['foobar', 'barfoo']
+        self.camera.last_record = ['1']
+        self.camera.sync.record_dates['new'] = ['1']
+        self.camera.sync.all_clips = {'new': {'1': '/test.mp4'}}
+        config = {
+            'name': 'new',
+            'camera_id': 1234,
+            'network_id': 5678,
+            'serial': '12345678',
+            'enabled': False,
+            'battery_voltage': 90,
+            'battery_state': 'ok',
+            'temperature': 68,
+            'wifi_strength': 4,
+            'thumbnail': '',
+        }
+        self.camera.sync.homescreen = {
+            'devices': [
+                {'foo': 'bar'},
+                {'device_type': 'foobar'},
+                {'device_type': 'camera',
+                 'name': 'new',
+                 'thumbnail': '/new/thumb'}
+            ]
+        }
+        self.camera.update(config)
+        self.assertEqual(self.camera.thumbnail,
+                         'https://rest.test.immedia-semi.com/new/thumb.jpg')
+
+    def test_no_thumbnails(self, mock_sess):
+        """Tests that thumbnail is 'None' if none found."""
+        mock_sess.return_value = 'foobar'
+        self.camera.last_record = ['1']
+        self.camera.sync.record_dates['new'] = ['1']
+        self.camera.sync.all_clips = {'new': {'1': '/test.mp4'}}
+        config = {
+            'name': 'new',
+            'camera_id': 1234,
+            'network_id': 5678,
+            'serial': '12345678',
+            'enabled': False,
+            'battery_voltage': 90,
+            'battery_state': 'ok',
+            'temperature': 68,
+            'wifi_strength': 4,
+            'thumbnail': '',
+        }
+        self.camera.sync.homescreen = {
+            'devices': []
+        }
+        with self.assertLogs() as logrecord:
+            self.camera.update(config)
+        self.assertEqual(self.camera.thumbnail, None)
+        self.assertEqual(
+            logrecord.output,
+            ["ERROR:blinkpy.camera:Could not find thumbnail for camera new"]
+        )
