@@ -5,6 +5,13 @@ A list of changes between each release
 
 0.10.0.dev (Development Version)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Moved all API calls to own module for easier maintainability
+- Added network ids to sync module and cameras to allow for multi-network use
+- Removed dependency on video existance prior to camera setup (fixes `#93<https://github.com/fronzbot/blinkpy/issues/#93>`_)
+- Camera wifi_strength now reported in wifi "bars" rather than dBm due to API endpoint change
+- Use homescreen thumbnail as fallback in case it's not in the camera endpoint
+- Removed "armed" and "status" attributes from camera (status of camera only reported by "motion_enabled" now)
+- Added serial number attributes to sync module and cameras
 
 0.9.0 (2018-09-27)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
