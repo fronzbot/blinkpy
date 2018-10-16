@@ -3,7 +3,7 @@ Changelog
 
 A list of changes between each release
 
-0.10.0.dev (Development Version)
+0.10.0 (2018-10-16)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Moved all API calls to own module for easier maintainability
 - Added network ids to sync module and cameras to allow for multi-network use
@@ -12,6 +12,8 @@ A list of changes between each release
 - Use homescreen thumbnail as fallback in case it's not in the camera endpoint
 - Removed "armed" and "status" attributes from camera (status of camera only reported by "motion_enabled" now)
 - Added serial number attributes to sync module and cameras
+- Check network_id from login response and verify that network is onboarded (fixes `#90 <https://github.com/fronzbot/#90>`_)
+- Check if retrieved clip is "None" prior to storing in cache
 
 0.9.0 (2018-09-27)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
