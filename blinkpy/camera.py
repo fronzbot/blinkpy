@@ -119,6 +119,7 @@ class BlinkCamera():
         # Check if a new motion clip has been recorded
         # check_for_motion_method sets motion_detected variable
         self.check_for_motion()
+        clip_addr = None
         if self.last_record:
             clip_addr = self.sync.all_clips[self.name][self.last_record[0]]
             self.clip = "{}{}".format(self.sync.urls.base_url,
@@ -139,7 +140,7 @@ class BlinkCamera():
                                               url=self.thumbnail,
                                               stream=True,
                                               json=False)
-        if update_cached_video or force_cache:
+        if clip_addr is not None and (update_cached_video or force_cache):
             self._cached_video = api.http_get(self.sync.blink,
                                               url=self.clip,
                                               stream=True,
