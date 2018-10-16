@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """
 blinkpy by Kevin Fronczak - A Blink camera Python library.
@@ -13,16 +12,16 @@ I am in no way affiliated with Blink, nor Immedia Inc.
 """
 
 import time
-import json
 import getpass
 import logging
 import blinkpy.helpers.errors as ERROR
+from blinkpy import api
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers.util import (
-    http_req, create_session, BlinkURLHandler,
-    BlinkException, BlinkAuthenticationException)
+    create_session, BlinkURLHandler,
+    BlinkAuthenticationException)
 from blinkpy.helpers.constants import (
-    DEFAULT_URL, BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
+    BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
 
 REFRESH_RATE = 30
 
@@ -47,9 +46,6 @@ class Blink():
         self._token = None
         self._auth_header = None
         self._host = None
-        self._events = []
-        self._last_summary = None
-        self._last_events = None
         self.network_id = None
         self.account_id = None
         self.urls = None
@@ -62,9 +58,9 @@ class Blink():
         self._login_url = LOGIN_URL
 
     @property
-    def events(self):
-        """Get all events on server."""
-        return self._events
+    def auth_header(self):
+        """Return the authentication header."""
+        return self._auth_header
 
     def start(self):
         """
@@ -79,12 +75,8 @@ class Blink():
             self.get_auth_token()
 
         self.get_ids()
-        self.sync = BlinkSyncModule(self, self._auth_header)
-        self.sync.get_videos()
-        if self.sync.video_count > 0:
-            self.sync.get_cameras()
-        self.sync.set_links()
-        self._events = self.events_request()
+        self.sync = BlinkSyncModule(self)
+        self.sync.start()
 
     def login(self):
         """Prompt user for username and password."""
@@ -103,16 +95,13 @@ class Blink():
         if not isinstance(self._password, str):
             raise BlinkAuthenticationException(ERROR.PASSWORD)
 
-        headers = {'Host': DEFAULT_URL,
-                   'Content-Type': 'application/json'}
-        data = json.dumps({
-            "email": self._username,
-            "password": self._password,
-            "client_specifier": "iPhone 9.2 | 2.2 | 222"
-        })
+        login_url = LOGIN_URL
         self.session = create_session()
-        response = http_req(self, url=self._login_url, headers=headers,
-                            data=data, json_resp=False, reqtype='post')
+        response = api.request_login(self,
+                                     login_url,
+                                     self._username,
+                                     self._password)
+
         if response.status_code == 200:
             response = response.json()
             (self.region_id, self.region), = response['region'].items()
@@ -122,56 +111,29 @@ class Blink():
                  "when authenticating, "
                  "trying new url"), response.status_code
             )
-            self._login_url = LOGIN_BACKUP_URL
-            response = http_req(self, url=self._login_url, headers=headers,
-                                data=data, reqtype='post')
+            login_url = LOGIN_BACKUP_URL
+            response = api.request_login(self,
+                                         login_url,
+                                         self._username,
+                                         self._password)
             self.region_id = 'piri'
             self.region = "UNKNOWN"
 
         self._host = "{}.{}".format(self.region_id, BLINK_URL)
         self._token = response['authtoken']['authtoken']
-
         self._auth_header = {'Host': self._host,
                              'TOKEN_AUTH': self._token}
 
         self.urls = BlinkURLHandler(self.region_id)
+        self._login_url = login_url
 
         return self._auth_header
 
     def get_ids(self):
         """Set the network ID and Account ID."""
-        response = self._network_request()
+        response = api.request_networks(self)
         self.network_id = str(response['networks'][0]['id'])
         self.account_id = str(response['networks'][0]['account_id'])
-
-    def _network_request(self):
-        """Get network and account information."""
-        url = self.urls.networks_url
-        headers = self._auth_header
-        if headers is None:
-            raise BlinkException(ERROR.AUTH_TOKEN)
-        return http_req(self, url=url, headers=headers, reqtype='get')
-
-    def events_request(self, skip_throttle=False):
-        """Get events on server."""
-        url = "{}/{}".format(self.urls.event_url, self.network_id)
-        headers = self._auth_header
-        if self.check_if_ok_to_update() or skip_throttle:
-            self._last_events = http_req(self, url=url,
-                                         headers=headers,
-                                         reqtype='get')
-        return self._last_events
-
-    def summary_request(self, skip_throttle=False):
-        """Get blink summary."""
-        url = self.urls.home_url
-        headers = self._auth_header
-        if headers is None:
-            raise BlinkException(ERROR.AUTH_TOKEN)
-        if self.check_if_ok_to_update() or skip_throttle:
-            self._last_summary = http_req(
-                self, url=url, headers=headers, reqtype='get')
-        return self._last_summary
 
     def refresh(self, force_cache=False):
         """
@@ -181,8 +143,6 @@ class Blink():
         """
         if self.check_if_ok_to_update() or force_cache:
             _LOGGER.debug("Attempting refresh of cameras.")
-            self._last_events = self.events_request(skip_throttle=True)
-            self._last_summary = self.summary_request(skip_throttle=True)
             self.sync.refresh(force_cache=force_cache)
 
     def check_if_ok_to_update(self):
