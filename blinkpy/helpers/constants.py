@@ -4,11 +4,11 @@ import os
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 10
-PATCH_VERSION = '0.dev'
+PATCH_VERSION = 0
 
 __version__ = '{}.{}.{}'.format(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION)
 
-REQUIRED_PYTHON_VER = (3, 4, 2)
+REQUIRED_PYTHON_VER = (3, 5, 3)
 
 PROJECT_NAME = 'blinkpy'
 PROJECT_PACKAGE_NAME = 'blinkpy'
@@ -30,7 +30,9 @@ PROJECT_CLASSIFIERS = [
     'Intended Audience :: Developers',
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
-    'Programming Language :: Python :: 3.4',
+    'Programming Language :: Python :: 3.5',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
     'Topic :: Home Automation'
 ]
 
