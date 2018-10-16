@@ -55,6 +55,7 @@ class Blink():
         self.last_refresh = None
         self.refresh_rate = refresh_rate
         self.session = None
+        self.networks = []
         self._login_url = LOGIN_URL
 
     @property
@@ -123,7 +124,7 @@ class Blink():
         self._token = response['authtoken']['authtoken']
         self._auth_header = {'Host': self._host,
                              'TOKEN_AUTH': self._token}
-
+        self.networks = response['networks']
         self.urls = BlinkURLHandler(self.region_id)
         self._login_url = login_url
 
@@ -135,14 +136,14 @@ class Blink():
         # Look for only onboarded network, flag warning if multiple
         # since it's unexpected
         all_networks = []
-        network_data = {}
-        for network in response['networks']:
-            if network['onboarded']:
-                all_networks.append(network['id'])
-                network_data[str(network['id'])] = network
+        for network, status in self.networks.items():
+            if status['onboarded']:
+                all_networks.append(network)
         self.network_id = all_networks.pop(0)
-        self.account_id = network_data[str(self.network_id)]
-        if not all_networks:
+        for resp in response['networks']:
+            if str(resp['id']) == self.network_id:
+                self.account_id = resp['account_id']
+        if all_networks:
             _LOGGER.error(("More than one unboarded network. "
                            "Platform may not work as intended. "
                            "Please open an issue on "

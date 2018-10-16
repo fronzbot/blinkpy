@@ -104,11 +104,15 @@ class TestBlinkSetup(unittest.TestCase):
     def test_multiple_networks(self, mock_net, mock_sess):
         """Check that we handle multiple networks appropriately."""
         mock_net.return_value = {
-            'networks': [{'account_id': 1111, 'id': 1234},
-                         {'account_id': 1111, 'id': 5678}]
-            }
+            'networks': [{'id': 1234, 'account_id': 1111},
+                         {'id': 5678, 'account_id': 2222}]
+        }
+        self.blink.networks = {'0000': {'onboarded': False},
+                               '5678': {'onboarded': True},
+                               '1234': {'onboarded': False}}
         self.blink.get_ids()
-        self.assertEqual(self.blink.network_id, [1234, 5678])
+        self.assertEqual(self.blink.network_id, '5678')
+        self.assertEqual(self.blink.account_id, 2222)
 
     @mock.patch('blinkpy.blinkpy.time.time')
     def test_throttle(self, mock_time, mock_sess):
