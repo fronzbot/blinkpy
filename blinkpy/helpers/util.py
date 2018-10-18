@@ -59,7 +59,13 @@ def http_req(blink, url='http://example.com', data=None, headers=None,
                                 reqtype=reqtype, stream=stream,
                                 json_resp=json_resp, is_retry=True)
     except (exceptions.ConnectionError, exceptions.Timeout):
-        _LOGGER.error("Cannot connect to server. Possible outage.")
+        _LOGGER.error("Cannot connect to server with url %s.", url)
+        if not is_retry:
+            headers = attempt_reauthorization(blink)
+            return http_req(blink, url=url, data=data, headers=headers,
+                            reqtype=reqtype, stream=stream,
+                            json_resp=json_resp, is_retry=True)
+        _LOGGER.error("Possible issue with Blink servers.")
         return None
 
     if json_resp:
