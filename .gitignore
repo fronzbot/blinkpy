@@ -10,3 +10,4 @@ dist/*
 .sh
 build/*
 docs/_build
+*.log

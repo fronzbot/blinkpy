@@ -2,7 +2,7 @@
 
 import logging
 from requests import Request, Session, exceptions
-from blinkpy.helpers.constants import BLINK_URL
+from blinkpy.helpers.constants import BLINK_URL, PROJECT_URL
 import blinkpy.helpers.errors as ERROR
 
 
@@ -17,7 +17,7 @@ def create_session():
 
 def attempt_reauthorization(blink):
     """Attempt to refresh auth token and links."""
-    _LOGGER.debug("Auth token expired, attempting reauthorization.")
+    _LOGGER.info("Auth token expired, attempting reauthorization.")
     headers = blink.get_auth_token()
     return headers
 
@@ -48,20 +48,19 @@ def http_req(blink, url='http://example.com', data=None, headers=None,
 
     try:
         response = blink.session.send(prepped, stream=stream)
+        if json_resp and 'code' in response.json():
+            if is_retry:
+                _LOGGER.error(("Cannot obtain new token for server auth. "
+                               "Please report this issue on %s"), PROJECT_URL)
+                return None
+            else:
+                headers = attempt_reauthorization(blink)
+                return http_req(blink, url=url, data=data, headers=headers,
+                                reqtype=reqtype, stream=stream,
+                                json_resp=json_resp, is_retry=True)
     except (exceptions.ConnectionError, exceptions.Timeout):
         _LOGGER.error("Cannot connect to server. Possible outage.")
         return None
-
-    if json_resp and 'code' in response.json():
-        if is_retry:
-            _LOGGER.error("Cannot authenticate with server.")
-            raise BlinkAuthenticationException(
-                (response.json()['code'], response.json()['message']))
-        else:
-            headers = attempt_reauthorization(blink)
-            return http_req(blink, url=url, data=data, headers=headers,
-                            reqtype=reqtype, stream=stream,
-                            json_resp=json_resp, is_retry=True)
 
     if json_resp:
         return response.json()
