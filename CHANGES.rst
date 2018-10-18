@@ -3,6 +3,11 @@ Changelog
 
 A list of changes between each release
 
+0.10.1 (2018-10-18)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Fix re-authorization bug (fixes `#101 <https://github.com/fronzbot/blinkpy/issues/#101>`_)
+- Log an error if saving video that doesn't exist
+
 0.10.0 (2018-10-16)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Moved all API calls to own module for easier maintainability

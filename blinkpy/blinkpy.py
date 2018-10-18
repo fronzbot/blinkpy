@@ -21,7 +21,7 @@ from blinkpy.helpers.util import (
     create_session, BlinkURLHandler,
     BlinkAuthenticationException)
 from blinkpy.helpers.constants import (
-    BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
+    BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL, PROJECT_URL)
 
 REFRESH_RATE = 30
 
@@ -146,8 +146,7 @@ class Blink():
         if all_networks:
             _LOGGER.error(("More than one unboarded network. "
                            "Platform may not work as intended. "
-                           "Please open an issue on "
-                           "https://github.com/fronzbot/blinkpy."))
+                           "Please open an issue on %s"), PROJECT_URL)
 
     def refresh(self, force_cache=False):
         """

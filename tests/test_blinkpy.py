@@ -14,6 +14,7 @@ from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers.util import (
     http_req, create_session, BlinkAuthenticationException,
     BlinkException, BlinkURLHandler)
+from blinkpy.helpers.constants import PROJECT_URL
 import tests.mock_responses as mresp
 
 USERNAME = 'foobar'
@@ -77,11 +78,15 @@ class TestBlinkSetup(unittest.TestCase):
     def test_bad_request(self, mock_sess):
         """Check that we raise an Exception with a bad request."""
         self.blink.session = create_session()
+        explog = ("ERROR:blinkpy.helpers.util:"
+                  "Cannot obtain new token for server auth. "
+                  "Please report this issue on {}").format(PROJECT_URL)
         with self.assertRaises(BlinkException):
             http_req(self.blink, reqtype='bad')
 
-        with self.assertRaises(BlinkAuthenticationException):
+        with self.assertLogs() as logrecord:
             http_req(self.blink, reqtype='post', is_retry=True)
+        self.assertEqual(logrecord.output, [explog])
 
     def test_authentication(self, mock_sess):
         """Check that we can authenticate Blink up properly."""
