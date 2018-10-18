@@ -162,8 +162,8 @@ class BlinkCamera():
             else:
                 self.motion_detected = False
         except KeyError:
-            _LOGGER.warning("Could not extract clip info from camera %s",
-                            self.name)
+            _LOGGER.info("Could not extract clip info from camera %s",
+                         self.name)
 
     def image_to_file(self, path):
         """
@@ -187,6 +187,9 @@ class BlinkCamera():
         """
         _LOGGER.debug("Writing video from %s to %s", self.name, path)
         response = self._cached_video
+        if response is None:
+            _LOGGER.error("No saved video exist for %s.", self.name)
+            return
         with open(path, 'wb') as vidfile:
             copyfileobj(response.raw, vidfile)
 
