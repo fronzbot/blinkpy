@@ -1,6 +1,7 @@
 """Test various api functions."""
 
 import unittest
+from unittest import mock
 from blinkpy import api
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import create_session
@@ -20,13 +21,21 @@ class TestBlinkAPI(unittest.TestCase):
         """Tear down blink module."""
         self.blink = None
 
-    def test_http_req_connect_error(self):
+    @mock.patch('blinkpy.blinkpy.Blink.get_auth_token')
+    def test_http_req_connect_error(self, mock_auth):
         """Test http_get error condition."""
-        expected = ("ERROR:blinkpy.helpers.util:"
-                    "Cannot connect to server. Possible outage.")
+        mock_auth.return_value = {'foo': 'bar'}
+        firstlog = ("ERROR:blinkpy.helpers.util:"
+                    "Cannot connect to server with url {}").format(
+                        'http://notreal.fake.')
+        nextlog = ("INFO:blinkpy.helpers.util:"
+                   "Auth token expired, attempting reauthorization.")
+        lastlog = ("ERROR:blinkpy.helpers.util:"
+                   "Possible issue with Blink servers.")
+        expected = [firstlog, nextlog, firstlog, lastlog]
         with self.assertLogs() as getlog:
             api.http_get(self.blink, 'http://notreal.fake')
         with self.assertLogs() as postlog:
             api.http_post(self.blink, 'http://notreal.fake')
-        self.assertEqual(getlog.output, [expected])
-        self.assertEqual(postlog.output, [expected])
+        self.assertEqual(getlog.output, expected)
+        self.assertEqual(postlog.output, expected)
