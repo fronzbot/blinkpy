@@ -1,5 +1,5 @@
 blinkpy |Build Status| |Coverage Status| |Docs| |PyPi Version| |Python Version|
-================================================================
+================================================================================
 A Python library for the Blink Camera system
 Only compatible with Python 3+
 
