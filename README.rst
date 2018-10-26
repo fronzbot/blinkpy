@@ -1,4 +1,4 @@
-blinkpy |Build Status| |Coverage Status| |Docs|  |PyPi Version|
+blinkpy |Build Status| |Coverage Status| |Docs| |PyPi Version| |Python Version|
 ================================================================
 A Python library for the Blink Camera system
 Only compatible with Python 3+
@@ -90,3 +90,5 @@ The ``blinkpy`` api also allows for saving images and videos to a file and snapp
     :target: https://pypi.python.org/pypi/blinkpy
 .. |Docs| image:: https://readthedocs.org/projects/blinkpy/badge/?version=latest
    :target: http://blinkpy.readthedocs.io/en/latest/?badge=latest
+.. |Python Version| image:: https://img.shields.io/pypi/pyversions/blinkpy.svg
+   :target: https://img.shields.io/pypi/pyversions/blinkpy.svg
