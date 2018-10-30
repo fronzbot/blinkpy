@@ -147,7 +147,7 @@ class Blink():
             _LOGGER.warning(("More than one onboarded network. "
                              "Platform may not work as intended. "
                              "If you experience problems, please "
-                             "open an issue on {}".format(PROJECT_URL)))
+                             "open an issue on %s"), PROJECT_URL)
 
     def refresh(self, force_cache=False):
         """
