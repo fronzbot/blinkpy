@@ -3,6 +3,12 @@ Changelog
 
 A list of changes between each release
 
+0.10.2 (2018-10-30)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Set minimum required version of the requests library to 2.20.0 due to vulnerability in earlier releases.
+- When multiple networks detected, changed log level to 'warning' from 'error' 
+
+
 0.10.1 (2018-10-18)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Fix re-authorization bug (fixes `#101 <https://github.com/fronzbot/blinkpy/issues/#101>`_)
