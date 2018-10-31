@@ -1,2 +1,2 @@
-requests>=2.12.4
-testtools
+requests>=2.20.0
+testtools==2.3.0
