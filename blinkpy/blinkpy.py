@@ -144,9 +144,10 @@ class Blink():
             if str(resp['id']) == self.network_id:
                 self.account_id = resp['account_id']
         if all_networks:
-            _LOGGER.error(("More than one unboarded network. "
-                           "Platform may not work as intended. "
-                           "Please open an issue on %s"), PROJECT_URL)
+            _LOGGER.warning(("More than one onboarded network. "
+                             "Platform may not work as intended. "
+                             "If you experience problems, please "
+                             "open an issue on %s"), PROJECT_URL)
 
     def refresh(self, force_cache=False):
         """
