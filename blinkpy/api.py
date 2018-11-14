@@ -25,8 +25,14 @@ def request_login(blink, url, username, password):
 
 
 def request_networks(blink):
-    """Request network information."""
+    """Request all networks information."""
     url = "{}/networks".format(blink.urls.base_url)
+    return http_get(blink, url)
+
+
+def request_network_status(blink, network):
+    """Request network information."""
+    url = "{}/network/{}".format(blink.urls.base_url, network)
     return http_get(blink, url)
 
 
@@ -50,9 +56,9 @@ def request_system_disarm(blink, network):
 
 def request_command_status(blink, network, command_id):
     """Request command status."""
-    url = "{}/network/{}/command_id/{}".format(blink.urls.base_url,
-                                               network,
-                                               command_id)
+    url = "{}/network/{}/command/{}".format(blink.urls.base_url,
+                                            network,
+                                            command_id)
     return http_get(blink, url)
 
 
