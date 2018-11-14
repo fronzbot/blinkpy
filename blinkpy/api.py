@@ -25,7 +25,7 @@ def request_login(blink, url, username, password):
 
 
 def request_networks(blink):
-    """Request network information."""
+    """Request all networks information."""
     url = "{}/networks".format(blink.urls.base_url)
     return http_get(blink, url)
 
