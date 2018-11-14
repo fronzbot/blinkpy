@@ -50,7 +50,7 @@ def request_system_disarm(blink, network):
 
 def request_command_status(blink, network, command_id):
     """Request command status."""
-    url = "{}/network/{}/command_id/{}".format(blink.urls.base_url,
+    url = "{}/network/{}/command/{}".format(blink.urls.base_url,
                                                network,
                                                command_id)
     return http_get(blink, url)
