@@ -29,6 +29,11 @@ def request_networks(blink):
     url = "{}/networks".format(blink.urls.base_url)
     return http_get(blink, url)
 
+def request_network_status(blink, network):
+    """Request network information."""
+    url = "{}/network/{}".format(blink.urls.base_url, network)
+    return http_get(blink, url)
+
 
 def request_syncmodule(blink, network):
     """Request sync module info."""
