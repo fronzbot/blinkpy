@@ -89,7 +89,8 @@ class BlinkSyncModule():
 
         self.homescreen = api.request_homescreen(self.blink)
 
-        self.network_info = api.request_network_status(self.blink, self.network_id)
+        self.network_info = api.request_network_status(self.blink,
+                                                       self.network_id)
 
         camera_info = self.get_camera_info()
         for camera_config in camera_info:
