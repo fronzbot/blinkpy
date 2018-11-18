@@ -90,6 +90,7 @@ class TestBlinkSyncModule(unittest.TestCase):
             {},
             {'devicestatus': {}},
             None,
+            None,
             None
         ]
         self.blink.sync.start()
