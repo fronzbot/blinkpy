@@ -88,8 +88,8 @@ class TestBlinkSyncModule(unittest.TestCase):
                 'status': 'foobar'}},
             {'event': True},
             {},
+            {},
             {'devicestatus': {}},
-            None,
             None,
             None
         ]
