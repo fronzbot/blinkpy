@@ -175,5 +175,5 @@ class BlinkSyncModule():
                         }
                     ]
         self.record_dates = all_dates
-        _LOGGER.debug("Retrieved a total of %s records".format(len(all_dates)))
+        _LOGGER.debug("Retrieved a total of %s records", len(all_dates))
         return self.videos
