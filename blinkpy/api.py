@@ -150,6 +150,7 @@ def http_get(blink, url, stream=False, json=True):
     """
     if blink.auth_header is None:
         raise BlinkException(ERROR.AUTH_TOKEN)
+    _LOGGER.debug("Making GET request to %s", url)
     return http_req(blink, url=url, headers=blink.auth_header,
                     reqtype='get', stream=stream, json_resp=json)
 
@@ -162,4 +163,5 @@ def http_post(blink, url):
     """
     if blink.auth_header is None:
         raise BlinkException(ERROR.AUTH_TOKEN)
+    _LOGGER.debug("Making POST request to %s", url)
     return http_req(blink, url=url, headers=blink.auth_header, reqtype='post')
