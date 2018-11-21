@@ -79,8 +79,7 @@ class TestBlinkSetup(unittest.TestCase):
         """Check that we raise an Exception with a bad request."""
         self.blink.session = create_session()
         explog = ("ERROR:blinkpy.helpers.util:"
-                  "Cannot obtain new token for server auth. "
-                  "Please report this issue on {}").format(PROJECT_URL)
+                  "Cannot obtain new token for server auth.")
         with self.assertRaises(BlinkException):
             http_req(self.blink, reqtype='bad')
 
