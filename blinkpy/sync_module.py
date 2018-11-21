@@ -31,6 +31,7 @@ class BlinkSyncModule():
         self.host = None
         self.summary = None
         self.homescreen = None
+        self.network_info = None
         self.record_dates = {}
         self.videos = {}
         self.events = []
@@ -64,7 +65,7 @@ class BlinkSyncModule():
     @property
     def arm(self):
         """Return status of sync module: armed/disarmed."""
-        return self.homescreen['network']['armed']
+        return self.network_info['network']['armed']
 
     @arm.setter
     def arm(self, value):
@@ -87,6 +88,9 @@ class BlinkSyncModule():
         self.events = self.get_events()
 
         self.homescreen = api.request_homescreen(self.blink)
+
+        self.network_info = api.request_network_status(self.blink,
+                                                       self.network_id)
 
         camera_info = self.get_camera_info()
         for camera_config in camera_info:
@@ -114,6 +118,8 @@ class BlinkSyncModule():
         self.events = self.get_events()
         self.videos = self.get_videos()
         self.homescreen = api.request_homescreen(self.blink)
+        self.network_info = api.request_network_status(self.blink,
+                                                       self.network_id)
         camera_info = self.get_camera_info()
         for camera_config in camera_info:
             name = camera_config['name']
@@ -135,9 +141,10 @@ class BlinkSyncModule():
             if not this_page:
                 break
             videos.append(this_page)
-
+        _LOGGER.debug("Getting videos from page %s through %s",
+                      start_page,
+                      end_page)
         for page in videos:
-            _LOGGER.debug("Retrieved video page %s", page)
             for entry in page:
                 camera_name = entry['camera_name']
                 clip_addr = entry['address']
@@ -168,5 +175,5 @@ class BlinkSyncModule():
                         }
                     ]
         self.record_dates = all_dates
-
+        _LOGGER.debug("Retrieved a total of %s records", len(all_dates))
         return self.videos

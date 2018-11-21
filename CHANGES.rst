@@ -3,6 +3,14 @@ Changelog
 
 A list of changes between each release
 
+0.10.3 (2018-11-18)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Use networks endpoint rather than homecreen to retrieve arm/disarm status (`@md-reddevil <https://github.com/fronzbot/blinkpy/pull/119>`__)
+- Fix incorrect command status endpoint (`@md-reddevil <https://github.com/fronzbot/blinkpy/pull/118>`__)
+- Add extra debug logging
+- Remove error prior to re-authorization (only log error when re-auth failed)
+
+
 0.10.2 (2018-10-30)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Set minimum required version of the requests library to 2.20.0 due to vulnerability in earlier releases.
@@ -11,19 +19,19 @@ A list of changes between each release
 
 0.10.1 (2018-10-18)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- Fix re-authorization bug (fixes `#101 <https://github.com/fronzbot/blinkpy/issues/#101>`_)
+- Fix re-authorization bug (fixes `#101 <https://github.com/fronzbot/blinkpy/issues/#101>`__)
 - Log an error if saving video that doesn't exist
 
 0.10.0 (2018-10-16)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Moved all API calls to own module for easier maintainability
 - Added network ids to sync module and cameras to allow for multi-network use
-- Removed dependency on video existance prior to camera setup (fixes `#93 <https://github.com/fronzbot/blinkpy/issues/#93>`_)
+- Removed dependency on video existance prior to camera setup (fixes `#93 <https://github.com/fronzbot/blinkpy/issues/#93>`__)
 - Camera wifi_strength now reported in wifi "bars" rather than dBm due to API endpoint change
 - Use homescreen thumbnail as fallback in case it's not in the camera endpoint
 - Removed "armed" and "status" attributes from camera (status of camera only reported by "motion_enabled" now)
 - Added serial number attributes to sync module and cameras
-- Check network_id from login response and verify that network is onboarded (fixes `#90 <https://github.com/fronzbot/#90>`_)
+- Check network_id from login response and verify that network is onboarded (fixes `#90 <https://github.com/fronzbot/#90>`__)
 - Check if retrieved clip is "None" prior to storing in cache
 
 0.9.0 (2018-09-27)
@@ -55,26 +63,26 @@ A list of changes between each release
 
 0.8.0 (2018-05-21)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- Added support for battery voltage level (fixes `#64 <https://github.com/fronzbot/blinkpy/issues/64>`_)
+- Added support for battery voltage level (fixes `#64 <https://github.com/fronzbot/blinkpy/issues/64>`__)
 - Added motion detection per camera
 - Added fully accessible camera configuration dict
-- Added celcius property to camera (fixes `#60 <https://github.com/fronzbot/blinkpy/issues/60>`_)
+- Added celcius property to camera (fixes `#60 <https://github.com/fronzbot/blinkpy/issues/60>`__)
 
 0.7.1 (2018-05-09)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- Fixed pip 10 import issue during setup (`@fronzbot <https://github.com/fronzbot/blinkpy/pull/61>`_)
+- Fixed pip 10 import issue during setup (`@fronzbot <https://github.com/fronzbot/blinkpy/pull/61>`__)
 
 0.7.0 (2018-02-08)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Fixed style errors for bumped pydocstring and pylint versions
-- Changed Blink.cameras dictionary to be case-insensitive (fixes `#35 <https://github.com/fronzbot/blinkpy/issues/35>`_)
-- Changed api endpoint for video extraction (fixes `#35 <https://github.com/fronzbot/blinkpy/issues/35>`_ and `#41 <https://github.com/fronzbot/blinkpy/issues/41>`_)
+- Changed Blink.cameras dictionary to be case-insensitive (fixes `#35 <https://github.com/fronzbot/blinkpy/issues/35>`__)
+- Changed api endpoint for video extraction (fixes `#35 <https://github.com/fronzbot/blinkpy/issues/35>`__ and `#41 <https://github.com/fronzbot/blinkpy/issues/41>`__)
 - Removed last_motion() function from Blink class
 - Refactored code for better organization
 - Moved some request calls out of @property methods (enables future CLI support)
 - Renamed get_summary() method to summary and changed to @property
 - Added ability to download most recent video clip
-- Improved camera arm/disarm handling (`@b10m <https://github.com/fronzbot/blinkpy/pull/50>`_)
+- Improved camera arm/disarm handling (`@b10m <https://github.com/fronzbot/blinkpy/pull/50>`__)
 - Added authentication to ``login()`` function and deprecated ``setup_system()`` in favor of ``start()``
 - Added ``attributes`` dictionary to camera object
 
@@ -83,7 +91,7 @@ A list of changes between each release
 - Removed redundent properties that only called hidden variables
 - Revised request wrapper function to be more intelligent
 - Added tests to ensure exceptions are caught and handled (100% coverage!)
-- Added auto-reauthorization (token refresh) when a request fails due to an expired token (`@tySwift93 <https://github.com/fronzbot/blinkpy/pull/24>`_)
+- Added auto-reauthorization (token refresh) when a request fails due to an expired token (`@tySwift93 <https://github.com/fronzbot/blinkpy/pull/24>`__)
 - Added battery level string to reduce confusion with the way Blink reports battery level as integer from 0 to 3
 
 0.5.2 (2017-03-12)

@@ -25,13 +25,14 @@ class TestBlinkAPI(unittest.TestCase):
     def test_http_req_connect_error(self, mock_auth):
         """Test http_get error condition."""
         mock_auth.return_value = {'foo': 'bar'}
-        firstlog = ("ERROR:blinkpy.helpers.util:"
-                    "Cannot connect to server with url {}").format(
-                        'http://notreal.fake.')
+        firstlog = ("INFO:blinkpy.helpers.util:"
+                    "Cannot connect to server with url {}.").format(
+                        'http://notreal.fake')
         nextlog = ("INFO:blinkpy.helpers.util:"
                    "Auth token expired, attempting reauthorization.")
         lastlog = ("ERROR:blinkpy.helpers.util:"
-                   "Possible issue with Blink servers.")
+                   "Endpoint {} failed. Possible issue with "
+                   "Blink servers.").format('http://notreal.fake')
         expected = [firstlog, nextlog, firstlog, lastlog]
         with self.assertLogs() as getlog:
             api.http_get(self.blink, 'http://notreal.fake')

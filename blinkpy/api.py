@@ -25,8 +25,14 @@ def request_login(blink, url, username, password):
 
 
 def request_networks(blink):
-    """Request network information."""
+    """Request all networks information."""
     url = "{}/networks".format(blink.urls.base_url)
+    return http_get(blink, url)
+
+
+def request_network_status(blink, network):
+    """Request network information."""
+    url = "{}/network/{}".format(blink.urls.base_url, network)
     return http_get(blink, url)
 
 
@@ -50,9 +56,9 @@ def request_system_disarm(blink, network):
 
 def request_command_status(blink, network, command_id):
     """Request command status."""
-    url = "{}/network/{}/command_id/{}".format(blink.urls.base_url,
-                                               network,
-                                               command_id)
+    url = "{}/network/{}/command/{}".format(blink.urls.base_url,
+                                            network,
+                                            command_id)
     return http_get(blink, url)
 
 
@@ -144,6 +150,7 @@ def http_get(blink, url, stream=False, json=True):
     """
     if blink.auth_header is None:
         raise BlinkException(ERROR.AUTH_TOKEN)
+    _LOGGER.debug("Making GET request to %s", url)
     return http_req(blink, url=url, headers=blink.auth_header,
                     reqtype='get', stream=stream, json_resp=json)
 
@@ -156,4 +163,5 @@ def http_post(blink, url):
     """
     if blink.auth_header is None:
         raise BlinkException(ERROR.AUTH_TOKEN)
+    _LOGGER.debug("Making POST request to %s", url)
     return http_req(blink, url=url, headers=blink.auth_header, reqtype='post')
