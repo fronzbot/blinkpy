@@ -2,7 +2,7 @@
 
 import logging
 from requests import Request, Session, exceptions
-from blinkpy.helpers.constants import BLINK_URL, PROJECT_URL
+from blinkpy.helpers.constants import BLINK_URL
 import blinkpy.helpers.errors as ERROR
 
 

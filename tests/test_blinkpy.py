@@ -14,7 +14,6 @@ from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers.util import (
     http_req, create_session, BlinkAuthenticationException,
     BlinkException, BlinkURLHandler)
-from blinkpy.helpers.constants import PROJECT_URL
 import tests.mock_responses as mresp
 
 USERNAME = 'foobar'

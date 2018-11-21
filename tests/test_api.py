@@ -32,8 +32,7 @@ class TestBlinkAPI(unittest.TestCase):
                    "Auth token expired, attempting reauthorization.")
         lastlog = ("ERROR:blinkpy.helpers.util:"
                    "Endpoint {} failed. Possible issue with "
-                   "Blink servers.").format(
-                        'http://notreal.fake')
+                   "Blink servers.").format('http://notreal.fake')
         expected = [firstlog, nextlog, firstlog, lastlog]
         with self.assertLogs() as getlog:
             api.http_get(self.blink, 'http://notreal.fake')
