@@ -37,7 +37,7 @@ For more information on how to use this library, please `read the docs <https://
 
 Purpose
 ===========
-This library was built with the intention of allowing easy communication with Blink camera systems, specifically to support the Blink component in `homeassistant <https://home-assistant.io/components/blink`__.
+This library was built with the intention of allowing easy communication with Blink camera systems, specifically to support the Blink component in `homeassistant <https://home-assistant.io/components/blink>`__.
 
 Quick Start
 =============
