@@ -1,7 +1,6 @@
 blinkpy |Build Status| |Coverage Status| |Docs| |PyPi Version| |Python Version|
 ================================================================================
 A Python library for the Blink Camera system
-Only compatible with Python 3+
 
 Disclaimer:
 ~~~~~~~~~~~~~~~
@@ -32,12 +31,16 @@ To install the current development version, perform the following steps.  Note t
     $ pip3 install --upgrade dist/*.whl
 
 
+If you'd like to contribute to this library, please read the `contributing instructions <https://github.com/fronzbot/blinkpy/blob/dev/CONTRIBUTING.md>`__.
+
+For more information on how to use this library, please `read the docs <https://blinkpy.readthedocs.io/en/latest/>`__.
+
 Purpose
 ===========
-This library was built with the intention of allowing easy communication with Blink camera systems, specifically so I can add a module into homeassistant https://home-assistant.io
+This library was built with the intention of allowing easy communication with Blink camera systems, specifically to support the `Blink component <https://home-assistant.io/components/blink>`__ in `homeassistant <https://home-assistant.io/>`__.
 
-Usage
-=========
+Quick Start
+=============
 The simplest way to use this package from a terminal is to call ``Blink.start()`` which will prompt for your Blink username and password and then log you in.  Alternatively, you can instantiate the Blink class with a username and password, and call ``Blink.start()`` to login and setup without prompt, as shown below.  In addition, http requests are throttled internally via use of the ``Blink.refresh_rate`` variable, which can be set at initialization and defaults to 30 seconds.
 
 .. code:: python
