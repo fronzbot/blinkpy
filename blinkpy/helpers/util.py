@@ -2,7 +2,7 @@
 
 import logging
 from requests import Request, Session, exceptions
-from blinkpy.helpers.constants import BLINK_URL, PROJECT_URL
+from blinkpy.helpers.constants import BLINK_URL
 import blinkpy.helpers.errors as ERROR
 
 
@@ -50,8 +50,7 @@ def http_req(blink, url='http://example.com', data=None, headers=None,
         response = blink.session.send(prepped, stream=stream)
         if json_resp and 'code' in response.json():
             if is_retry:
-                _LOGGER.error(("Cannot obtain new token for server auth. "
-                               "Please report this issue on %s"), PROJECT_URL)
+                _LOGGER.error("Cannot obtain new token for server auth.")
                 return None
             else:
                 headers = attempt_reauthorization(blink)
@@ -59,13 +58,14 @@ def http_req(blink, url='http://example.com', data=None, headers=None,
                                 reqtype=reqtype, stream=stream,
                                 json_resp=json_resp, is_retry=True)
     except (exceptions.ConnectionError, exceptions.Timeout):
-        _LOGGER.error("Cannot connect to server with url %s.", url)
+        _LOGGER.info("Cannot connect to server with url %s.", url)
         if not is_retry:
             headers = attempt_reauthorization(blink)
             return http_req(blink, url=url, data=data, headers=headers,
                             reqtype=reqtype, stream=stream,
                             json_resp=json_resp, is_retry=True)
-        _LOGGER.error("Possible issue with Blink servers.")
+        _LOGGER.error("Endpoint %s failed. Possible issue with Blink servers.",
+                      url)
         return None
 
     if json_resp:

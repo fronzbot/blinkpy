@@ -141,9 +141,10 @@ class BlinkSyncModule():
             if not this_page:
                 break
             videos.append(this_page)
-
+        _LOGGER.debug("Getting videos from page %s through %s",
+                      start_page,
+                      end_page)
         for page in videos:
-            _LOGGER.debug("Retrieved video page %s", page)
             for entry in page:
                 camera_name = entry['camera_name']
                 clip_addr = entry['address']
@@ -174,5 +175,5 @@ class BlinkSyncModule():
                         }
                     ]
         self.record_dates = all_dates
-
+        _LOGGER.debug("Retrieved a total of %s records", len(all_dates))
         return self.videos
