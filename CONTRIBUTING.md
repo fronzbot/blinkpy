@@ -4,41 +4,55 @@ Everyone is welcome to contribute to blinkpy! The process to get started is desc
 
 ## Fork the Repository
 
-You can do this right in gituhb: just click the 'fork' button at the top right.
+You can do this right in github: just click the 'fork' button at the top right.
 
-## Setup Local Repository
+## Start Developing
 
-```shell
-$ git clone https://github.com/<YOUR_GIT_USERNAME>/blinkpy.git
-$ cd blinkpy
-$ git remote add upstream https://github.com/fronzbot/blinkpy.git
-```
+1. Setup Local Repository
+   ```shell
+   $ git clone https://github.com/<YOUR_GIT_USERNAME>/blinkpy.git
+   $ cd blinkpy
+   $ git remote add upstream https://github.com/fronzbot/blinkpy.git
+   ```
 
-## Create a Local Branch
+2. Create a Local Branch
+   
+   First, you will want to create a new branch to hold your changes:
+   ``git checkout -b <your-branch-name>``
 
-First, you will want to create a new branch to hold your changes:
-``git checkout -b <your-branch-name>``
-Next, you need to make sure you pull from the 'dev' branch:
-``git pull origin dev``
 
-## Make changes
+3. Make changes
+   
+   Now you can make changes to your code.  It is worthwhile to test your code as you progress (see the **Testing** section)
 
-Now you can make changes to your code.  It is worthwhile to test your code as you progress (see the **Testing** section)
+4. Commit Your Changes
+   
+   To commit changes to your branch, simply add the files you want and the commit them to the branch.  After that, you can push to your fork on GitHub:
+   ```shell
+   $ git add .
+   $ git commit -m "Put your commit text here.  Please be concise, but descriptive."
+   $ git push origin HEAD
+   ```
+   
+5. Submit your pull request on GitHub
+   
+   - On GitHub, navigate to the [blinkpy](https://github.com/fronzbot/blinkpy) repository.
+   - In the "Branch" menu, choose the branch that contains your commits (from your fork).
+   - To the right of the Branch menu, click New pull request.
+   - The base branch dropdown menu should read `dev`. Use the compare branch drop-down menu to choose the branch you made your changes        in.
+   - Type a title and complete the provided description for your pull request.
+   - Click Create pull request.
+   - More detailed instructions can be found here: [Creating a Pull Request](https://help.github.com/articles/creating-a-pull-request/)
+   
+6. Prior to merge approval
+   
+   Finally, the `blinkpy` repository uses continuous integration tools to run tests prior to merging. If there are any problems, you      will see a red 'X' next to your pull request. To see what's wrong, you can find your pull request [here](https://travis-       ci.org/fronzbot/blinkpy/pull_requests) and click on the failing test to see the logs.  Those logs will indicate, as best as they can, what is causing that test to fail.
 
-## Commit Your Changes
-
-To commit changes to your branch, simply add the files you want and the commit them to the branch.  After that, you can push to your fork on GitHub:
-
-```shell
-$ git add .
-$ git commit -m "Put your commit text here.  Please be concise, but descriptive."
-$ git push origin HEAD
-```
 
 ## Testing
 
 It is important to test the code to make sure your changes don't break anything major and that they pass PEP8 style conventions.
-FIrst, you need to locally install ``tox``
+First, you need to locally install ``tox``
 
 ```shell
 $ pip3 install tox
@@ -52,11 +66,11 @@ $ tox
 
 ### Tips
 
-If you only want to see if you can pass the local tests, you can run ``tox -e py34``.  If you just want to check for style violations, you can run ``tox -e lint``.  Regardless, when you submit a pull request, your code MUST pass both the unit tests, and the linters.
+If you only want to see if you can pass the local tests, you can run `tox -e py35` (or whatever python version you have installed.  Only `py35`, `py36`, and `py37` will be accepted).  If you just want to check for style violations, you can run `tox -e lint`.  Regardless, when you submit a pull request, your code MUST pass both the unit tests, and the linters.
 
-If you need to change anything in ``requirements.txt`` for any reason, you'll want to regenerate the virtual envrionments used by ``tox`` by running with the ``-r`` flag: ``tox -r``
+If you need to change anything in `requirements.txt` for any reason, you'll want to regenerate the virtual envrionments used by `tox` by running with the `-r` flag: `tox -r`
 
-Please do not locally disable any linter warnings within the ``blinkpy.py`` module itself (it's ok to do this in any of the ``test_*.py`` files)
+If you want to run a single test (perhaps you only changed a small thing in one file) you can run `tox -e py35 -- tests/<testname>.py -x`.  This will run the test `<testname>.py` and stop testing upon the first failure, making it easier to figure out why a particular test might be failing.  The test structure mimics the library structure, so if you changed something in `sync_module.py`, the associated test file would be in `test_sync_module.py` (ie. the filename is prepended with `test_`.
 
 # Catching Up With Reality
 
@@ -73,11 +87,3 @@ If rebase detects conflicts, repeat the following process until all changes have
 2. Add the modified file: ``git add <file>`` or ``git add .``.
 3. Continue rebase: ``git rebase --continue``.
 4. Repeat until all conflicts resolved.
-
-# Creating a Pull Request
-
-Please follow these steps to create a pull request against the ``dev`` branch: [Creating a Pull Request](https://help.github.com/articles/creating-a-pull-request/)
-
-# Monitor Build Status
-
-Once you create your PR, you can monitor the status of your build [here](https://travis-ci.org/fronzbot/blinkpy),  Your code will be tested to ensure it passes and won't cause any problems after merging.
