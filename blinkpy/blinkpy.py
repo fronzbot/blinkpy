@@ -14,6 +14,7 @@ I am in no way affiliated with Blink, nor Immedia Inc.
 import time
 import getpass
 import logging
+from requests.structures import CaseInsensitiveDict
 import blinkpy.helpers.errors as ERROR
 from blinkpy import api
 from blinkpy.sync_module import BlinkSyncModule
@@ -49,7 +50,7 @@ class Blink():
         self.account_id = None
         self.network_ids = []
         self.urls = None
-        self.sync = {}
+        self.sync = CaseInsensitiveDict({})
         self.region = None
         self.region_id = None
         self.last_refresh = None
@@ -75,11 +76,11 @@ class Blink():
         else:
             self.get_auth_token()
 
-        self.get_ids()
-        for network_id in self.network_ids:
-            sync_module = BlinkSyncModule(self)
+        networks = self.get_ids()
+        for network_name, network_id in networks.items():
+            sync_module = BlinkSyncModule(self, network_name, network_id)
             sync_module.start()
-            self.sync[network_id] = sync_module
+            self.sync[network_name] = sync_module
 
     def login(self):
         """Prompt user for username and password."""
@@ -138,9 +139,11 @@ class Blink():
         # Look for only onboarded network, flag warning if multiple
         # since it's unexpected
         all_networks = []
+        network_dict = {}
         for network, status in self.networks.items():
             if status['onboarded']:
                 all_networks.append('{}'.format(network))
+                network_dict[status['name']] = network
 
         # For the first onboarded network we find, grab the account id
         for resp in response['networks']:
@@ -149,6 +152,7 @@ class Blink():
                 break
 
         self.network_ids = all_networks
+        return network_dict
 
     def refresh(self, force_cache=False):
         """

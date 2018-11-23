@@ -46,10 +46,10 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.blink._auth_header = header
         self.blink.session = create_session()
         self.blink.urls = BlinkURLHandler('test')
-        self.blink.sync = BlinkSyncModule(self.blink)
-        self.camera = BlinkCamera(self.blink.sync)
+        self.blink.sync['test'] = BlinkSyncModule(self.blink, 'test', 1234)
+        self.camera = BlinkCamera(self.blink.sync['test'])
         self.camera.name = 'foobar'
-        self.blink.sync.cameras['foobar'] = self.camera
+        self.blink.sync['test'].cameras['foobar'] = self.camera
 
     def tearDown(self):
         """Clean up after test."""
