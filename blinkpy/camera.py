@@ -47,6 +47,7 @@ class BlinkCamera():
             'motion_detected': self.motion_detected,
             'wifi_strength': self.wifi_strength,
             'network_id': self.sync.network_id,
+            'sync_module': self.sync.name,
             'last_record': self.last_record
         }
         return attributes
