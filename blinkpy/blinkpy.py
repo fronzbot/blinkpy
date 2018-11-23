@@ -77,7 +77,7 @@ class Blink():
 
         self.get_ids()
         for network_id in self.network_ids:
-            sync_module = BlinkSyncModule(self)
+            sync_module = BlinkSyncModule(self, network_id)
             sync_module.start()
             self.sync[network_id] = sync_module
 
