@@ -30,7 +30,7 @@ class TestBlinkSetup(unittest.TestCase):
         self.blink_no_cred = Blink()
         self.blink = Blink(username=USERNAME,
                            password=PASSWORD)
-        self.blink.sync = BlinkSyncModule(self.blink)
+        self.blink.sync['test'] = BlinkSyncModule(self.blink, 'test', '1234')
         self.blink.urls = BlinkURLHandler('test')
         self.blink.session = create_session()
 
@@ -110,12 +110,27 @@ class TestBlinkSetup(unittest.TestCase):
             'networks': [{'id': 1234, 'account_id': 1111},
                          {'id': 5678, 'account_id': 2222}]
         }
-        self.blink.networks = {'0000': {'onboarded': False},
-                               '5678': {'onboarded': True},
-                               '1234': {'onboarded': False}}
+        self.blink.networks = {'0000': {'onboarded': False, 'name': 'foo'},
+                               '5678': {'onboarded': True, 'name': 'bar'},
+                               '1234': {'onboarded': False, 'name': 'test'}}
         self.blink.get_ids()
-        self.assertEqual(self.blink.network_id, '5678')
+        self.assertTrue('5678' in self.blink.network_ids)
         self.assertEqual(self.blink.account_id, 2222)
+
+    @mock.patch('blinkpy.api.request_networks')
+    def test_multiple_onboarded_networks(self, mock_net, mock_sess):
+        """Check that we handle multiple networks appropriately."""
+        mock_net.return_value = {
+            'networks': [{'id': 0000, 'account_id': 2222},
+                         {'id': 5678, 'account_id': 1111}]
+        }
+        self.blink.networks = {'0000': {'onboarded': False, 'name': 'foo'},
+                               '5678': {'onboarded': True, 'name': 'bar'},
+                               '1234': {'onboarded': True, 'name': 'test'}}
+        self.blink.get_ids()
+        self.assertTrue('5678' in self.blink.network_ids)
+        self.assertTrue('1234' in self.blink.network_ids)
+        self.assertEqual(self.blink.account_id, 1111)
 
     @mock.patch('blinkpy.blinkpy.time.time')
     def test_throttle(self, mock_time, mock_sess):
@@ -128,3 +143,8 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(result, True)
         self.assertEqual(self.blink.check_if_ok_to_update(), False)
         self.assertEqual(self.blink.last_refresh, now)
+
+    def test_sync_case_insensitive_dict(self, mock_sess):
+        """Check that we can access sync modules ignoring case."""
+        self.assertEqual(self.blink.sync['test'].name, 'test')
+        self.assertEqual(self.blink.sync['TEST'].name, 'test')

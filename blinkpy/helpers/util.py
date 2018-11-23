@@ -9,6 +9,15 @@ import blinkpy.helpers.errors as ERROR
 _LOGGER = logging.getLogger(__name__)
 
 
+def merge_dicts(dict_a, dict_b):
+    """Merge two dictionaries into one."""
+    duplicates = [val for val in dict_a if val in dict_b]
+    if duplicates:
+        _LOGGER.warning(("Duplicates found during merge: %s. "
+                         "Renaming is recommended."), duplicates)
+    return {**dict_a, **dict_b}
+
+
 def create_session():
     """Create a session for blink communication."""
     sess = Session()
