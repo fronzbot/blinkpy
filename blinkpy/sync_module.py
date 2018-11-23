@@ -21,7 +21,7 @@ class BlinkSyncModule():
         """
         self.blink = blink
         self._auth_header = blink.auth_header
-        self.network_id = blink.network_id
+        self.network_id = None
         self.region = blink.region
         self.region_id = blink.region_id
         self.name = 'sync'

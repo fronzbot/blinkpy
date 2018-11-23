@@ -21,7 +21,7 @@ from blinkpy.helpers.util import (
     create_session, BlinkURLHandler,
     BlinkAuthenticationException)
 from blinkpy.helpers.constants import (
-    BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL, PROJECT_URL)
+    BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
 
 REFRESH_RATE = 30
 
@@ -46,10 +46,10 @@ class Blink():
         self._token = None
         self._auth_header = None
         self._host = None
-        self.network_id = None
         self.account_id = None
+        self.network_ids = []
         self.urls = None
-        self.sync = None
+        self.sync = {}
         self.region = None
         self.region_id = None
         self.last_refresh = None
@@ -76,8 +76,10 @@ class Blink():
             self.get_auth_token()
 
         self.get_ids()
-        self.sync = BlinkSyncModule(self)
-        self.sync.start()
+        for network_id in self.network_ids:
+            sync_module = BlinkSyncModule(self)
+            sync_module.start()
+            self.sync[network_id] = sync_module
 
     def login(self):
         """Prompt user for username and password."""
@@ -138,16 +140,15 @@ class Blink():
         all_networks = []
         for network, status in self.networks.items():
             if status['onboarded']:
-                all_networks.append(network)
-        self.network_id = all_networks.pop(0)
+                all_networks.append('{}'.format(network))
+
+        # For the first onboarded network we find, grab the account id
         for resp in response['networks']:
-            if str(resp['id']) == self.network_id:
+            if str(resp['id']) in all_networks:
                 self.account_id = resp['account_id']
-        if all_networks:
-            _LOGGER.warning(("More than one onboarded network. "
-                             "Platform may not work as intended. "
-                             "If you experience problems, please "
-                             "open an issue on %s"), PROJECT_URL)
+                break
+
+        self.network_ids = all_networks
 
     def refresh(self, force_cache=False):
         """
@@ -157,7 +158,8 @@ class Blink():
         """
         if self.check_if_ok_to_update() or force_cache:
             _LOGGER.debug("Attempting refresh of cameras.")
-            self.sync.refresh(force_cache=force_cache)
+            for sync_module in self.sync:
+                sync_module.refresh(force_cache=force_cache)
 
     def check_if_ok_to_update(self):
         """Check if it is ok to perform an http request."""
