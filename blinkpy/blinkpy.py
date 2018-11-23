@@ -181,6 +181,6 @@ class Blink():
     def merge_cameras(self):
         """Merge all sync camera dicts into one."""
         combined = CaseInsensitiveDict({})
-        for sync_name, sync in self.sync.items():
-            combined = merge_dicts(combined, sync.cameras)
+        for sync in self.sync:
+            combined = merge_dicts(combined, self.sync[sync].cameras)
         return combined
