@@ -13,7 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 class BlinkSyncModule():
     """Class to initialize sync module."""
 
-    def __init__(self, blink):
+    def __init__(self, blink, network_id):
         """
         Initialize Blink sync module.
 
@@ -21,7 +21,7 @@ class BlinkSyncModule():
         """
         self.blink = blink
         self._auth_header = blink.auth_header
-        self.network_id = None
+        self.network_id = network_id
         self.region = blink.region
         self.region_id = blink.region_id
         self.name = 'sync'
