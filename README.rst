@@ -62,16 +62,15 @@ The below code will display cameras and their available attributes:
     blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD')
     blink.start()
 
-    for sync_name, sync in blink.sync.items():
-      for name, camera in blink.sync[sync_name].cameras.items():
-        print(name)                   # Name of the camera
-        print(camera.attributes)      # Print available attributes of camera
+    for name, camera in blink.cameras.items():
+      print(name)                   # Name of the camera
+      print(camera.attributes)      # Print available attributes of camera
 
 The most recent images and videos can be accessed as a bytes-object via internal variables.  These can be updated with calls to ``Blink.refresh()`` but will only make a request if motion has been detected or other changes have been found.  This can be overridden with the ``force_cache`` flag, but this should be used for debugging only since it overrides the internal request throttling.
 
 .. code:: python
     
-    camera = blink.sync['SYNC NAME'].camera['SOME CAMERA NAME']
+    camera = blink.cameras['SOME CAMERA NAME']
     blink.refresh(force_cache=True)  # force a cache update USE WITH CAUTION
     camera.image_from_cache.raw  # bytes-like image object (jpg)
     camera.video_from_cache.raw  # bytes-like video object (mp4)
@@ -80,7 +79,7 @@ The ``blinkpy`` api also allows for saving images and videos to a file and snapp
 
 .. code:: python
 
-    camera = blink.sync['SYNC NAME'].camera['SOME CAMERA NAME']
+    camera = blink.cameras['SOME CAMERA NAME']
     camera.snap_picture()       # Take a new picture with the camera
     blink.refresh()             # Get new information from server
     camera.image_to_file('/local/path/for/image.jpg')

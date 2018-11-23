@@ -19,7 +19,7 @@ import blinkpy.helpers.errors as ERROR
 from blinkpy import api
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers.util import (
-    create_session, BlinkURLHandler,
+    create_session, merge_dicts, BlinkURLHandler,
     BlinkAuthenticationException)
 from blinkpy.helpers.constants import (
     BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
@@ -57,6 +57,7 @@ class Blink():
         self.refresh_rate = refresh_rate
         self.session = None
         self.networks = []
+        self.cameras = CaseInsensitiveDict({})
         self._login_url = LOGIN_URL
 
     @property
@@ -81,6 +82,7 @@ class Blink():
             sync_module = BlinkSyncModule(self, network_name, network_id)
             sync_module.start()
             self.sync[network_name] = sync_module
+        self.cameras = self.merge_cameras()
 
     def login(self):
         """Prompt user for username and password."""
@@ -175,3 +177,10 @@ class Blink():
             self.last_refresh = current_time
             return True
         return False
+
+    def merge_cameras(self):
+        """Merge all sync camera dicts into one."""
+        combined = CaseInsensitiveDict({})
+        for sync_name, sync in self.sync.items():
+            combined = merge_dicts(combined, sync.cameras)
+        return combined
