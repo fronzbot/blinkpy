@@ -51,7 +51,7 @@ The simplest way to use this package from a terminal is to call ``Blink.start()`
 
 If you would like to log in without setting up the cameras or system, you can simply call the ``Blink.login()`` function which will prompt for a username and password and then authenticate with the server.  This is useful if you want to avoid use of the ``start()`` function which simply acts as a wrapper for more targeted API methods.
 
-Cameras are instantiated as individual ``BlinkCamera`` classes within a ``BlinkSyncModule`` instance.  Note: currently the API only supports one sync module, but multiple sync modules are planned to be supported in the future.
+Cameras are instantiated as individual ``BlinkCamera`` classes within a ``BlinkSyncModule`` instance.  All of your sync modules are stored within the ``Blink.sync`` dictionary and can be accessed using the name of the sync module as the key (this is the name of your sync module in the Blink App).
 
 The below code will display cameras and their available attributes:
 
@@ -62,7 +62,8 @@ The below code will display cameras and their available attributes:
     blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD')
     blink.start()
 
-    for name, camera in blink.sync.cameras.items():
+    for sync_name, sync in blink.sync.items():
+      for name, camera in blink.sync[sync_name].cameras.items():
         print(name)                   # Name of the camera
         print(camera.attributes)      # Print available attributes of camera
 
@@ -70,7 +71,7 @@ The most recent images and videos can be accessed as a bytes-object via internal
 
 .. code:: python
     
-    camera = blink.sync.camera['SOME CAMERA NAME']
+    camera = blink.sync['SYNC NAME'].camera['SOME CAMERA NAME']
     blink.refresh(force_cache=True)  # force a cache update USE WITH CAUTION
     camera.image_from_cache.raw  # bytes-like image object (jpg)
     camera.video_from_cache.raw  # bytes-like video object (mp4)
@@ -79,7 +80,7 @@ The ``blinkpy`` api also allows for saving images and videos to a file and snapp
 
 .. code:: python
 
-    camera = blink.sync.camera['SOME CAMERA NAME']
+    camera = blink.sync['SYNC NAME'].camera['SOME CAMERA NAME']
     camera.snap_picture()       # Take a new picture with the camera
     blink.refresh()             # Get new information from server
     camera.image_to_file('/local/path/for/image.jpg')
