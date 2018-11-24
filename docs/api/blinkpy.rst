@@ -4,19 +4,14 @@
 ----------------------
 
 .. automodule:: blinkpy.blinkpy
-   :members:
 
 .. automodule:: blinkpy.sync_module
-   :members:
 
 .. automodule:: blinkpy.camera
-   :members:
 
 .. automodule:: blinkpy.api
-   :members:
 
 .. automodule:: blinkpy.helpers.util
-   :members:
 
 .. autoclass:: blinkpy.blinkpy.Blink
     :members:
