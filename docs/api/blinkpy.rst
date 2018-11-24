@@ -1,32 +1,17 @@
 .. _core_module:
 
-:mod: API Reference
+Blinkpy
 ----------------------
 
 .. automodule:: blinkpy.blinkpy
+    :members:
 
 .. automodule:: blinkpy.sync_module
+    :members:
 
 .. automodule:: blinkpy.camera
-
-.. automodule:: blinkpy.api
+    :members:
 
 .. automodule:: blinkpy.helpers.util
-
-.. autoclass:: blinkpy.blinkpy.Blink
     :members:
 
-.. autoclass:: blinkpy.sync_module.BlinkSyncModule
-    :members:
-
-.. autoclass:: blinkpy.camera.BlinkCamera
-    :members:
-
-.. autoclass:: blinkpy.helpers.util.BlinkURLHandler
-    :members:
-
-.. autofunction:: blinkpy.helpers.util.create_session
-
-.. autofunction:: blinkpy.helpers.util.http_req
-
-.. autofunction:: blinkpy.helpers.util.attempt_reauthorization
