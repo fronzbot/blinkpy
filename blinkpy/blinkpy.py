@@ -14,14 +14,15 @@ I am in no way affiliated with Blink, nor Immedia Inc.
 import time
 import getpass
 import logging
+from requests.structures import CaseInsensitiveDict
 import blinkpy.helpers.errors as ERROR
 from blinkpy import api
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers.util import (
-    create_session, BlinkURLHandler,
+    create_session, merge_dicts, BlinkURLHandler,
     BlinkAuthenticationException)
 from blinkpy.helpers.constants import (
-    BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL, PROJECT_URL)
+    BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
 
 REFRESH_RATE = 30
 
@@ -46,16 +47,17 @@ class Blink():
         self._token = None
         self._auth_header = None
         self._host = None
-        self.network_id = None
         self.account_id = None
+        self.network_ids = []
         self.urls = None
-        self.sync = None
+        self.sync = CaseInsensitiveDict({})
         self.region = None
         self.region_id = None
         self.last_refresh = None
         self.refresh_rate = refresh_rate
         self.session = None
         self.networks = []
+        self.cameras = CaseInsensitiveDict({})
         self._login_url = LOGIN_URL
 
     @property
@@ -75,9 +77,12 @@ class Blink():
         else:
             self.get_auth_token()
 
-        self.get_ids()
-        self.sync = BlinkSyncModule(self)
-        self.sync.start()
+        networks = self.get_ids()
+        for network_name, network_id in networks.items():
+            sync_module = BlinkSyncModule(self, network_name, network_id)
+            sync_module.start()
+            self.sync[network_name] = sync_module
+        self.cameras = self.merge_cameras()
 
     def login(self):
         """Prompt user for username and password."""
@@ -136,18 +141,20 @@ class Blink():
         # Look for only onboarded network, flag warning if multiple
         # since it's unexpected
         all_networks = []
+        network_dict = {}
         for network, status in self.networks.items():
             if status['onboarded']:
-                all_networks.append(network)
-        self.network_id = all_networks.pop(0)
+                all_networks.append('{}'.format(network))
+                network_dict[status['name']] = network
+
+        # For the first onboarded network we find, grab the account id
         for resp in response['networks']:
-            if str(resp['id']) == self.network_id:
+            if str(resp['id']) in all_networks:
                 self.account_id = resp['account_id']
-        if all_networks:
-            _LOGGER.warning(("More than one onboarded network. "
-                             "Platform may not work as intended. "
-                             "If you experience problems, please "
-                             "open an issue on %s"), PROJECT_URL)
+                break
+
+        self.network_ids = all_networks
+        return network_dict
 
     def refresh(self, force_cache=False):
         """
@@ -156,8 +163,9 @@ class Blink():
         :param force_cache: Force an update of the camera cache
         """
         if self.check_if_ok_to_update() or force_cache:
-            _LOGGER.debug("Attempting refresh of cameras.")
-            self.sync.refresh(force_cache=force_cache)
+            for sync_name, sync_module in self.sync.items():
+                _LOGGER.debug("Attempting refresh of sync %s", sync_name)
+                sync_module.refresh(force_cache=force_cache)
 
     def check_if_ok_to_update(self):
         """Check if it is ok to perform an http request."""
@@ -169,3 +177,10 @@ class Blink():
             self.last_refresh = current_time
             return True
         return False
+
+    def merge_cameras(self):
+        """Merge all sync camera dicts into one."""
+        combined = CaseInsensitiveDict({})
+        for sync in self.sync:
+            combined = merge_dicts(combined, self.sync[sync].cameras)
+        return combined
