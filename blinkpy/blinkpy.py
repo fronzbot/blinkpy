@@ -163,8 +163,8 @@ class Blink():
         :param force_cache: Force an update of the camera cache
         """
         if self.check_if_ok_to_update() or force_cache:
-            _LOGGER.debug("Attempting refresh of cameras.")
-            for sync_module in self.sync:
+            for sync_name, sync_module in self.sync.items():
+                _LOGGER.debug("Attempting refresh of sync %s", sync_name)
                 sync_module.refresh(force_cache=force_cache)
 
     def check_if_ok_to_update(self):
