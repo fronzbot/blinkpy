@@ -1,6 +1,6 @@
 .. _core_module:
 
-:mod: blinkpy
+:mod: API Reference
 ----------------------
 
 .. automodule:: blinkpy.blinkpy
