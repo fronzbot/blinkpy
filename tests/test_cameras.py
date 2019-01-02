@@ -98,6 +98,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.camera.last_record = ['1']
         self.camera.sync.all_clips = {'new': {'1': '/test.mp4'}}
         mock_sess.side_effect = [
+            mresp.MockResponse({'temp': 71}, 200),
             'test',
             'foobar'
         ]
@@ -110,6 +111,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.assertEqual(self.camera.battery, 50)
         self.assertEqual(self.camera.temperature, 68)
         self.assertEqual(self.camera.temperature_c, 20)
+        self.assertEqual(self.camera.temperature_calibrated, 71)
         self.assertEqual(self.camera.wifi_strength, 4)
         self.assertEqual(self.camera.thumbnail,
                          'https://rest.test.immedia-semi.com/thumb.jpg')
@@ -120,7 +122,11 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
     def test_thumbnail_not_in_info(self, mock_sess):
         """Test that we grab thumbanil if not in camera_info."""
-        mock_sess.side_effect = ['foobar', 'barfoo']
+        mock_sess.side_effect = [
+            mresp.MockResponse({'temp': 71}, 200),
+            'foobar',
+            'barfoo'
+        ]
         self.camera.last_record = ['1']
         self.camera.sync.record_dates['new'] = ['1']
         self.camera.sync.all_clips = {'new': {'1': '/test.mp4'}}
@@ -175,7 +181,8 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.assertEqual(self.camera.thumbnail, None)
         self.assertEqual(
             logrecord.output,
-            ["ERROR:blinkpy.camera:Could not find thumbnail for camera new"]
+            ["ERROR:blinkpy.camera:Could not retrieve calibrated temperature.",
+             "ERROR:blinkpy.camera:Could not find thumbnail for camera new"]
         )
 
     def test_no_video_clips(self, mock_sess):
