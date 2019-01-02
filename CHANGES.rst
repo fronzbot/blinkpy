@@ -3,6 +3,16 @@ Changelog
 
 A list of changes between each release
 
+0.11.1 (2019-01-02)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Fixed incorrect backup login url
+- Added calibrated temperature property for cameras
+
+
+0.11.0 (2018-11-23)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Added support for multiple sync modules
+
 0.10.3 (2018-11-18)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Use networks endpoint rather than homecreen to retrieve arm/disarm status (`@md-reddevil <https://github.com/fronzbot/blinkpy/pull/119>`__)

@@ -24,6 +24,7 @@ class BlinkCamera():
         self.battery_voltage = None
         self.clip = None
         self.temperature = None
+        self.temperature_calibrated = None
         self.battery_state = None
         self.motion_detected = None
         self.wifi_strength = None
@@ -40,6 +41,7 @@ class BlinkCamera():
             'serial': self.serial,
             'temperature': self.temperature,
             'temperature_c': self.temperature_c,
+            'temperature_calibrated': self.temperature_calibrated,
             'battery': self.battery,
             'thumbnail': self.thumbnail,
             'video': self.clip,
@@ -103,6 +105,15 @@ class BlinkCamera():
         self.battery_state = config['battery_state']
         self.temperature = config['temperature']
         self.wifi_strength = config['wifi_strength']
+
+        # Retrieve calibrated temperature from special endpoint
+        resp = api.request_camera_sensors(self.sync.blink,
+                                          self.network_id,
+                                          self.camera_id)
+        try:
+            self.temperature_calibrated = resp['temp']
+        except KeyError:
+            _LOGGER.error("Could not retrieve calibrated temperature.")
 
         # Check if thumbnail exists in config, if not try to
         # get it from the homescreen info in teh sync module
