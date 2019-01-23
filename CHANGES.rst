@@ -3,6 +3,11 @@ Changelog
 
 A list of changes between each release
 
+0.11.2 (2019-01-23)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Hotfix to prevent platform from stalling due to API change
+- Motion detection and video recovery broken until new API endpoint discovered
+
 0.11.1 (2019-01-02)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Fixed incorrect backup login url
