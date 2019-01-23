@@ -139,15 +139,24 @@ class BlinkSyncModule():
             this_page = api.request_videos(self.blink, page=page_num)
             if not this_page:
                 break
+            elif 'message' in this_page:
+                _LOGGER.warning("Could not retrieve videos. Message: %s",
+                                this_page['message'])
+                break
+
             videos.append(this_page)
         _LOGGER.debug("Getting videos from page %s through %s",
                       start_page,
                       end_page)
         for page in videos:
             for entry in page:
-                camera_name = entry['camera_name']
-                clip_addr = entry['address']
-                thumb_addr = entry['thumbnail']
+                try:
+                    camera_name = entry['camera_name']
+                    clip_addr = entry['address']
+                    thumb_addr = entry['thumbnail']
+                except TypeError:
+                    _LOGGER.warning("Could not extract video information.")
+                    break
                 clip_date = clip_addr.split('_')[-6:]
                 clip_date = '_'.join(clip_date)
                 clip_date = clip_date.split('.')[0]
