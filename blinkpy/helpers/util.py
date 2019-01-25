@@ -1,12 +1,20 @@
 """Useful functions for blinkpy."""
 
 import logging
+import time
 from requests import Request, Session, exceptions
-from blinkpy.helpers.constants import BLINK_URL
+from blinkpy.helpers.constants import BLINK_URL, TIMESTAMP_FORMAT
 import blinkpy.helpers.errors as ERROR
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def get_time(time_to_convert=None):
+    """Create blink-compatible timestamp."""
+    if time_to_convert is None:
+        time_to_convert = time.time()
+    return time.strftime(TIMESTAMP_FORMAT, time.localtime(time_to_convert))
 
 
 def merge_dicts(dict_a, dict_b):

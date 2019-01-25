@@ -124,19 +124,21 @@ class BlinkSyncModule():
             name = camera_config['name']
             self.cameras[name].update(camera_config, force_cache=force_cache)
 
-    def get_videos(self, start_page=0, end_page=1):
+    def get_videos(self, start_page=0, end_page=0):
         """
         Retrieve last recorded videos per camera.
 
         :param start_page: Page to start reading from on blink servers
                            (defaults to 0)
-        :param end_page: Page to stop reading from (defaults to 1)
+        :param end_page: Page to stop reading from (defaults to 0)
         """
         videos = list()
         all_dates = dict()
 
         for page_num in range(start_page, end_page + 1):
-            this_page = api.request_videos(self.blink, page=page_num)
+            this_page = api.request_videos(self.blink,
+                                           time=self.blink.last_refresh,
+                                           page=page_num)
             if not this_page:
                 break
             elif 'message' in this_page:
@@ -148,18 +150,17 @@ class BlinkSyncModule():
         _LOGGER.debug("Getting videos from page %s through %s",
                       start_page,
                       end_page)
+
         for page in videos:
-            for entry in page:
+            for entry in page['videos']:
                 try:
                     camera_name = entry['camera_name']
                     clip_addr = entry['address']
                     thumb_addr = entry['thumbnail']
                 except TypeError:
-                    _LOGGER.warning("Could not extract video information.")
+                    _LOGGER.info("No videos since last refresh.")
                     break
-                clip_date = clip_addr.split('_')[-6:]
-                clip_date = '_'.join(clip_date)
-                clip_date = clip_date.split('.')[0]
+                clip_date = entry['created_at']
                 try:
                     self.all_clips[camera_name][clip_date] = clip_addr
                 except KeyError:

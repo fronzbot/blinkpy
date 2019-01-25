@@ -54,3 +54,8 @@ LOGIN_BACKUP_URL = "https://{}.{}/login".format('rest.piri', BLINK_URL)
 Dictionaries
 '''
 ONLINE = {'online': True, 'offline': False}
+
+'''
+OTHER
+'''
+TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S%Z'
