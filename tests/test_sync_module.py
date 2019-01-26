@@ -1,7 +1,7 @@
 """Tests camera and system functions."""
 import unittest
-import pytest
 from unittest import mock
+import pytest
 
 from blinkpy import blinkpy
 from blinkpy.sync_module import BlinkSyncModule

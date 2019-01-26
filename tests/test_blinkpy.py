@@ -141,7 +141,7 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(self.blink.check_if_ok_to_update(), True)
         self.assertEqual(self.blink.last_refresh, None)
         with mock.patch('blinkpy.sync_module.BlinkSyncModule.refresh',
-                return_value=True):
+                        return_value=True):
             self.blink.refresh()
 
         self.assertEqual(self.blink.last_refresh, now)
