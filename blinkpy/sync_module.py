@@ -32,11 +32,10 @@ class BlinkSyncModule():
         self.summary = None
         self.homescreen = None
         self.network_info = None
-        self.record_dates = {}
-        self.videos = {}
         self.events = []
         self.cameras = CaseInsensitiveDict({})
-        self.all_clips = {}
+        self.motion = {}
+        self.last_record = {}
 
     @property
     def attributes(self):
@@ -85,22 +84,17 @@ class BlinkSyncModule():
         self.status = self.summary['status']
 
         self.events = self.get_events()
-
         self.homescreen = api.request_homescreen(self.blink)
-
         self.network_info = api.request_network_status(self.blink,
                                                        self.network_id)
 
+        self.check_new_videos()
         camera_info = self.get_camera_info()
         for camera_config in camera_info:
             name = camera_config['name']
             self.cameras[name] = BlinkCamera(self)
-
-        self.videos = self.get_videos()
-        for camera_config in camera_info:
-            name = camera_config['name']
-            if name in self.cameras:
-                self.cameras[name].update(camera_config, force_cache=True)
+            self.motion[name] = False
+            self.cameras[name].update(camera_config, force_cache=True)
 
     def get_events(self):
         """Retrieve events from server."""
@@ -115,74 +109,38 @@ class BlinkSyncModule():
     def refresh(self, force_cache=False):
         """Get all blink cameras and pulls their most recent status."""
         self.events = self.get_events()
-        self.videos = self.get_videos()
         self.homescreen = api.request_homescreen(self.blink)
         self.network_info = api.request_network_status(self.blink,
                                                        self.network_id)
         camera_info = self.get_camera_info()
+        self.check_new_videos()
         for camera_config in camera_info:
             name = camera_config['name']
             self.cameras[name].update(camera_config, force_cache=force_cache)
 
-    def get_videos(self, start_page=0, end_page=0):
-        """
-        Retrieve last recorded videos per camera.
 
-        :param start_page: Page to start reading from on blink servers
-                           (defaults to 0)
-        :param end_page: Page to stop reading from (defaults to 0)
-        """
-        videos = list()
-        all_dates = dict()
+    def check_new_videos(self):
+        """Check if new videos since last refresh."""
+        resp = api.request_videos(self.blink,
+                                  time=self.blink.last_refresh,
+                                  page=0)
+        try:
+            info = resp['videos']
+        except (KeyError, TypeError):
+            _LOGGER.warning("Could not check for motion. Response: %s", resp)
+            return False
 
-        for page_num in range(start_page, end_page + 1):
-            this_page = api.request_videos(self.blink,
-                                           time=self.blink.last_refresh,
-                                           page=page_num)
-            if not this_page:
-                break
-            elif 'message' in this_page:
-                _LOGGER.warning("Could not retrieve videos. Message: %s",
-                                this_page['message'])
-                break
+        for camera in self.cameras.keys():
+            self.motion[camera] = False
 
-            videos.append(this_page)
-        _LOGGER.debug("Getting videos from page %s through %s",
-                      start_page,
-                      end_page)
+        for entry in info:
+            try:
+                name = entry['camera_name']
+                clip = entry['address']
+                timestamp = entry['created_at']
+                self.motion[name] = True
+                self.last_record[name] = {'clip': clip, 'time': timestamp}
+            except KeyError:
+                _LOGGER.info("Could not extract info from video entry.")
 
-        for page in videos:
-            for entry in page['videos']:
-                try:
-                    camera_name = entry['camera_name']
-                    clip_addr = entry['address']
-                    thumb_addr = entry['thumbnail']
-                except TypeError:
-                    _LOGGER.info("No videos since last refresh.")
-                    break
-                clip_date = entry['created_at']
-                try:
-                    self.all_clips[camera_name][clip_date] = clip_addr
-                except KeyError:
-                    self.all_clips[camera_name] = {clip_date: clip_addr}
-
-                if camera_name not in all_dates:
-                    all_dates[camera_name] = list()
-                all_dates[camera_name].append(clip_date)
-                try:
-                    self.videos[camera_name].append(
-                        {
-                            'clip': clip_addr,
-                            'thumb': thumb_addr,
-                        }
-                    )
-                except KeyError:
-                    self.videos[camera_name] = [
-                        {
-                            'clip': clip_addr,
-                            'thumb': thumb_addr,
-                        }
-                    ]
-        self.record_dates = all_dates
-        _LOGGER.debug("Retrieved a total of %s records", len(all_dates))
-        return self.videos
+        return True
