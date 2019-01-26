@@ -6,8 +6,6 @@ from blinkpy import api
 
 _LOGGER = logging.getLogger(__name__)
 
-MAX_CLIPS = 5
-
 
 class BlinkCamera():
     """Class to initialize individual camera."""

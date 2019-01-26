@@ -118,7 +118,6 @@ class BlinkSyncModule():
             name = camera_config['name']
             self.cameras[name].update(camera_config, force_cache=force_cache)
 
-
     def check_new_videos(self):
         """Check if new videos since last refresh."""
         resp = api.request_videos(self.blink,
