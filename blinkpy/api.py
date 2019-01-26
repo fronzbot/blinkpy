@@ -10,7 +10,14 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def request_login(blink, url, username, password):
-    """Login request."""
+    """
+    Login request.
+
+    :param blink: Blink instance.
+    :param url: Login url.
+    :param username: Blink username.
+    :param password: Blink password.
+    """
     headers = {
         'Host': DEFAULT_URL,
         'Content-Type': 'application/json'
@@ -31,31 +38,57 @@ def request_networks(blink):
 
 
 def request_network_status(blink, network):
-    """Request network information."""
+    """
+    Request network information.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    """
     url = "{}/network/{}".format(blink.urls.base_url, network)
     return http_get(blink, url)
 
 
 def request_syncmodule(blink, network):
-    """Request sync module info."""
+    """
+    Request sync module info.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    """
     url = "{}/network/{}/syncmodules".format(blink.urls.base_url, network)
     return http_get(blink, url)
 
 
 def request_system_arm(blink, network):
-    """Arm system."""
+    """
+    Arm system.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    """
     url = "{}/network/{}/arm".format(blink.urls.base_url, network)
     return http_post(blink, url)
 
 
 def request_system_disarm(blink, network):
-    """Disarm system."""
+    """
+    Disarm system.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    """
     url = "{}/network/{}/disarm".format(blink.urls.base_url, network)
     return http_post(blink, url)
 
 
 def request_command_status(blink, network, command_id):
-    """Request command status."""
+    """
+    Request command status.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param command_id: Command id to check.
+    """
     url = "{}/network/{}/command/{}".format(blink.urls.base_url,
                                             network,
                                             command_id)
@@ -69,13 +102,24 @@ def request_homescreen(blink):
 
 
 def request_sync_events(blink, network):
-    """Request events from sync module."""
+    """
+    Request events from sync module.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    """
     url = "{}/events/network/{}".format(blink.urls.base_url, network)
     return http_get(blink, url)
 
 
 def request_new_image(blink, network, camera_id):
-    """Request to capture new thumbnail for camera."""
+    """
+    Request to capture new thumbnail for camera.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: Camera ID of camera to request new image from.
+    """
     url = "{}/network/{}/camera/{}/thumbnail".format(blink.urls.base_url,
                                                      network,
                                                      camera_id)
@@ -83,14 +127,20 @@ def request_new_image(blink, network, camera_id):
 
 
 def request_new_video(blink, network, camera_id):
-    """Request to capture new video clip."""
+    """
+    Request to capture new video clip.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: Camera ID of camera to request new video from.
+    """
     url = "{}/network/{}/camera/{}/clip".format(blink.urls.base_url,
                                                 network,
                                                 camera_id)
     return http_post(blink, url)
 
 
-def request_video_count(blink, headers):
+def request_video_count(blink):
     """Request total video count."""
     url = "{}/api/v2/videos/count".format(blink.urls.base_url)
     return http_get(blink, url)
