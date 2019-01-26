@@ -23,6 +23,7 @@ from blinkpy.helpers.util import (
     BlinkAuthenticationException)
 from blinkpy.helpers.constants import (
     BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
+from blinkpy.helpers.constants import __version__
 
 REFRESH_RATE = 30
 
@@ -59,6 +60,7 @@ class Blink():
         self.networks = []
         self.cameras = CaseInsensitiveDict({})
         self._login_url = LOGIN_URL
+        self.version = __version__
 
     @property
     def auth_header(self):

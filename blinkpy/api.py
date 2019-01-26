@@ -147,7 +147,13 @@ def request_video_count(blink):
 
 
 def request_videos(blink, time=None, page=0):
-    """Perform a request for videos."""
+    """
+    Perform a request for videos.
+
+    :param blink: Blink instance.
+    :param time: Get videos since this time.  In epoch seconds.
+    :param page: Page number to get videos from.
+    """
     timestamp = get_time(time)
     url = "{}/api/v2/videos/changed?since={}&page/{}".format(
         blink.urls.base_url, timestamp, page)
@@ -155,13 +161,24 @@ def request_videos(blink, time=None, page=0):
 
 
 def request_cameras(blink, network):
-    """Request all camera information."""
+    """
+    Request all camera information.
+
+    :param Blink: Blink instance.
+    :param network: Sync module network id.
+    """
     url = "{}/network/{}/cameras".format(blink.urls.base_url, network)
     return http_get(blink, url)
 
 
 def request_camera_info(blink, network, camera_id):
-    """Request camera info for one camera."""
+    """
+    Request camera info for one camera.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: Camera ID of camera to request info from.
+    """
     url = "{}/network/{}/camera/{}".format(blink.urls.base_url,
                                            network,
                                            camera_id)
@@ -169,7 +186,13 @@ def request_camera_info(blink, network, camera_id):
 
 
 def request_camera_sensors(blink, network, camera_id):
-    """Request camera sensor info for one camera."""
+    """
+    Request camera sensor info for one camera.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: Camera ID of camera to request sesnor info from.
+    """
     url = "{}/network/{}/camera/{}/signals".format(blink.urls.base_url,
                                                    network,
                                                    camera_id)
@@ -177,7 +200,13 @@ def request_camera_sensors(blink, network, camera_id):
 
 
 def request_motion_detection_enable(blink, network, camera_id):
-    """Enable motion detection for a camera."""
+    """
+    Enable motion detection for a camera.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: Camera ID of camera to enable.
+    """
     url = "{}/network/{}/camera/{}/enable".format(blink.urls.base_url,
                                                   network,
                                                   camera_id)
@@ -185,7 +214,12 @@ def request_motion_detection_enable(blink, network, camera_id):
 
 
 def request_motion_detection_disable(blink, network, camera_id):
-    """Disable motion detection for a camera."""
+    """Disable motion detection for a camera.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: Camera ID of camera to disable.
+    """
     url = "{}/network/{}/camera/{}/disable".format(blink.urls.base_url,
                                                    network,
                                                    camera_id)
