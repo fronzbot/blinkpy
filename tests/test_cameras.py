@@ -11,7 +11,7 @@ from unittest import mock
 from blinkpy import blinkpy
 from blinkpy.helpers.util import create_session, BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
-from blinkpy.camera import BlinkCamera, MAX_CLIPS
+from blinkpy.camera import BlinkCamera
 import tests.mock_responses as mresp
 
 USERNAME = 'foobar'
@@ -55,32 +55,6 @@ class TestBlinkCameraSetup(unittest.TestCase):
         """Clean up after test."""
         self.blink = None
 
-    def test_check_for_motion(self, mock_sess):
-        """Test check for motion function."""
-        self.assertEqual(self.camera.last_record, [])
-        self.assertEqual(self.camera.motion_detected, None)
-        self.camera.sync.record_dates = {'foobar': [1, 3, 2, 4]}
-        self.camera.check_for_motion()
-        self.assertEqual(self.camera.last_record, [4])
-        self.assertEqual(self.camera.motion_detected, False)
-        self.camera.sync.record_dates = {'foobar': [7, 1, 3, 4]}
-        self.camera.check_for_motion()
-        self.assertEqual(self.camera.last_record, [7, 4])
-        self.assertEqual(self.camera.motion_detected, True)
-        self.camera.check_for_motion()
-        self.assertEqual(self.camera.last_record, [7, 4])
-        self.assertEqual(self.camera.motion_detected, False)
-
-    def test_max_motion_clips(self, mock_sess):
-        """Test that we only maintain certain number of records."""
-        for i in range(0, MAX_CLIPS):
-            self.camera.last_record.append(i)
-        self.camera.sync.record_dates['foobar'] = [MAX_CLIPS+2]
-        self.assertEqual(len(self.camera.last_record), MAX_CLIPS)
-        self.camera.check_for_motion()
-        self.assertEqual(self.camera.motion_detected, True)
-        self.assertEqual(len(self.camera.last_record), MAX_CLIPS)
-
     def test_camera_update(self, mock_sess):
         """Test that we can properly update camera properties."""
         config = {
@@ -96,7 +70,12 @@ class TestBlinkCameraSetup(unittest.TestCase):
             'thumbnail': '/thumb',
         }
         self.camera.last_record = ['1']
-        self.camera.sync.all_clips = {'new': {'1': '/test.mp4'}}
+        self.camera.sync.last_record = {
+            'new': {
+                'clip': '/test.mp4',
+                'time': '1970-01-01T00:00:00'
+            }
+        }
         mock_sess.side_effect = [
             mresp.MockResponse({'temp': 71}, 200),
             'test',
@@ -128,8 +107,12 @@ class TestBlinkCameraSetup(unittest.TestCase):
             'barfoo'
         ]
         self.camera.last_record = ['1']
-        self.camera.sync.record_dates['new'] = ['1']
-        self.camera.sync.all_clips = {'new': {'1': '/test.mp4'}}
+        self.camera.sync.last_record = {
+            'new': {
+                'clip': '/test.mp4',
+                'time': '1970-01-01T00:00:00'
+            }
+        }
         config = {
             'name': 'new',
             'camera_id': 1234,
@@ -159,8 +142,6 @@ class TestBlinkCameraSetup(unittest.TestCase):
         """Tests that thumbnail is 'None' if none found."""
         mock_sess.return_value = 'foobar'
         self.camera.last_record = ['1']
-        self.camera.sync.record_dates['new'] = ['1']
-        self.camera.sync.all_clips = {'new': {'1': '/test.mp4'}}
         config = {
             'name': 'new',
             'camera_id': 1234,
@@ -179,6 +160,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         with self.assertLogs() as logrecord:
             self.camera.update(config)
         self.assertEqual(self.camera.thumbnail, None)
+        self.assertEqual(self.camera.last_record, ['1'])
         self.assertEqual(
             logrecord.output,
             ["ERROR:blinkpy.camera:Could not retrieve calibrated temperature.",

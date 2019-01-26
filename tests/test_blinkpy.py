@@ -138,9 +138,13 @@ class TestBlinkSetup(unittest.TestCase):
         now = self.blink.refresh_rate + 1
         mock_time.return_value = now
         self.assertEqual(self.blink.last_refresh, None)
-        result = self.blink.check_if_ok_to_update()
+        self.assertEqual(self.blink.check_if_ok_to_update(), True)
+        self.assertEqual(self.blink.last_refresh, None)
+        with mock.patch('blinkpy.sync_module.BlinkSyncModule.refresh',
+                        return_value=True):
+            self.blink.refresh()
+
         self.assertEqual(self.blink.last_refresh, now)
-        self.assertEqual(result, True)
         self.assertEqual(self.blink.check_if_ok_to_update(), False)
         self.assertEqual(self.blink.last_refresh, now)
 

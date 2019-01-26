@@ -166,6 +166,9 @@ class Blink():
             for sync_name, sync_module in self.sync.items():
                 _LOGGER.debug("Attempting refresh of sync %s", sync_name)
                 sync_module.refresh(force_cache=force_cache)
+            if not force_cache:
+                # Prevents rapid clearing of motion detect property
+                self.last_refresh = int(time.time())
 
     def check_if_ok_to_update(self):
         """Check if it is ok to perform an http request."""
@@ -174,7 +177,6 @@ class Blink():
         if last_refresh is None:
             last_refresh = 0
         if current_time >= (last_refresh + self.refresh_rate):
-            self.last_refresh = current_time
             return True
         return False
 

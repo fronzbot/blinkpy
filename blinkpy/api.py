@@ -3,7 +3,7 @@
 import logging
 from json import dumps
 import blinkpy.helpers.errors as ERROR
-from blinkpy.helpers.util import http_req, BlinkException
+from blinkpy.helpers.util import http_req, get_time, BlinkException
 from blinkpy.helpers.constants import DEFAULT_URL
 
 _LOGGER = logging.getLogger(__name__)
@@ -96,9 +96,11 @@ def request_video_count(blink, headers):
     return http_get(blink, url)
 
 
-def request_videos(blink, page=0):
+def request_videos(blink, time=None, page=0):
     """Perform a request for videos."""
-    url = "{}/api/v2/videos/page/{}".format(blink.urls.base_url, page)
+    timestamp = get_time(time)
+    url = "{}/api/v2/videos/changed?since={}&page/{}".format(
+        blink.urls.base_url, timestamp, page)
     return http_get(blink, url)
 
 
