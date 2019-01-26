@@ -1,5 +1,6 @@
 """Tests camera and system functions."""
 import unittest
+import pytest
 from unittest import mock
 
 from blinkpy import blinkpy
@@ -42,6 +43,7 @@ class TestBlinkSyncModule(unittest.TestCase):
         mock_resp.return_value = {'devicestatus': True}
         self.assertEqual(self.blink.sync['test'].get_camera_info(), True)
 
+    @pytest.mark.skip(reason="Method removed.")
     def test_get_videos_one_page(self, mock_resp):
         """Test video access."""
         mock_resp.return_value = [
@@ -62,6 +64,7 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertEqual(self.blink.sync['test'].record_dates, expected_recs)
         self.assertEqual(self.blink.sync['test'].all_clips, expected_clips)
 
+    @pytest.mark.skip(reason="Method removed.")
     def test_get_videos_multi_page(self, mock_resp):
         """Test video access with multiple pages."""
         mock_resp.return_value = [
@@ -88,9 +91,8 @@ class TestBlinkSyncModule(unittest.TestCase):
             {'event': True},
             {},
             {},
-            {'devicestatus': {}},
             None,
-            None
+            {'devicestatus': {}},
         ]
         self.blink.sync['test'].start()
         self.assertEqual(self.blink.sync['test'].name, 'test')
