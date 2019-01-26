@@ -14,6 +14,7 @@ from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers.util import (
     http_req, create_session, BlinkAuthenticationException,
     BlinkException, BlinkURLHandler)
+from blinkpy.helpers.constants import __version__
 import tests.mock_responses as mresp
 
 USERNAME = 'foobar'
@@ -41,6 +42,7 @@ class TestBlinkSetup(unittest.TestCase):
 
     def test_initialization(self, mock_sess):
         """Verify we can initialize blink."""
+        self.assertEqual(self.blink.version, __version__)
         # pylint: disable=protected-access
         self.assertEqual(self.blink._username, USERNAME)
         # pylint: disable=protected-access
