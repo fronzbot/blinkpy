@@ -1,7 +1,6 @@
 """Tests camera and system functions."""
 import unittest
 from unittest import mock
-import pytest
 
 from blinkpy import blinkpy
 from blinkpy.sync_module import BlinkSyncModule
@@ -43,42 +42,47 @@ class TestBlinkSyncModule(unittest.TestCase):
         mock_resp.return_value = {'devicestatus': True}
         self.assertEqual(self.blink.sync['test'].get_camera_info(), True)
 
-    @pytest.mark.skip(reason="Method removed.")
-    def test_get_videos_one_page(self, mock_resp):
-        """Test video access."""
-        mock_resp.return_value = [
-            {
-                'camera_name': 'foobar',
-                'address': '/test/clip_1900_01_01_12_00_00AM.mp4',
-                'thumbnail': '/test/thumb'
-            }
-        ]
-        expected_videos = {'foobar': [
-            {'clip': '/test/clip_1900_01_01_12_00_00AM.mp4',
-             'thumb': '/test/thumb'}]}
-        expected_recs = {'foobar': ['1900_01_01_12_00_00AM']}
-        expected_clips = {'foobar': {
-            '1900_01_01_12_00_00AM': '/test/clip_1900_01_01_12_00_00AM.mp4'}}
-        self.blink.sync['test'].get_videos(start_page=0, end_page=0)
-        self.assertEqual(self.blink.sync['test'].videos, expected_videos)
-        self.assertEqual(self.blink.sync['test'].record_dates, expected_recs)
-        self.assertEqual(self.blink.sync['test'].all_clips, expected_clips)
+    def test_check_new_videos(self, mock_resp):
+        """Test recent video response."""
+        mock_resp.return_value = {
+            'videos': [{
+                'camera_name': 'foo',
+                'address': '/foo/bar.mp4',
+                'created_at': '1970-01-01T00:00:00+0:00'
+            }]
+        }
+        sync_module = self.blink.sync['test']
+        sync_module.cameras = {'foo': None}
+        self.assertEqual(sync_module.motion, {})
+        self.assertTrue(sync_module.check_new_videos())
+        self.assertEqual(sync_module.last_record['foo'],
+                         {'clip': '/foo/bar.mp4',
+                          'time': '1970-01-01T00:00:00+0:00'})
+        self.assertEqual(sync_module.motion, {'foo': True})
+        mock_resp.return_value = {'videos': []}
+        self.assertTrue(sync_module.check_new_videos())
+        self.assertEqual(sync_module.motion, {'foo': False})
+        self.assertEqual(sync_module.last_record['foo'],
+                         {'clip': '/foo/bar.mp4',
+                          'time': '1970-01-01T00:00:00+0:00'})
 
-    @pytest.mark.skip(reason="Method removed.")
-    def test_get_videos_multi_page(self, mock_resp):
-        """Test video access with multiple pages."""
-        mock_resp.return_value = [
-            {
-                'camera_name': 'test',
-                'address': '/foo/bar_1900_01_01_12_00_00AM.mp4',
-                'thumbnail': '/foobar'
-            }
-        ]
-        self.blink.sync['test'].get_videos()
-        self.assertEqual(mock_resp.call_count, 2)
-        mock_resp.reset_mock()
-        self.blink.sync['test'].get_videos(start_page=0, end_page=9)
-        self.assertEqual(mock_resp.call_count, 10)
+    def test_check_new_videos_failed(self, mock_resp):
+        """Test method when response is unexpected."""
+        mock_resp.side_effect = [None, 'just a string', {}]
+        sync_module = self.blink.sync['test']
+        sync_module.cameras = {'foo': None}
+
+        sync_module.motion['foo'] = True
+        self.assertFalse(sync_module.check_new_videos())
+        self.assertFalse(sync_module.motion['foo'])
+
+        sync_module.motion['foo'] = True
+        self.assertFalse(sync_module.check_new_videos())
+        self.assertFalse(sync_module.motion['foo'])
+
+        sync_module.motion['foo'] = True
+        self.assertFalse(sync_module.check_new_videos())
+        self.assertFalse(sync_module.motion['foo'])
 
     def test_sync_start(self, mock_resp):
         """Test sync start function."""
