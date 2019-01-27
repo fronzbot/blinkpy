@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-blinkpy by Kevin Fronczak - A Blink camera Python library.
-
+blinkpy is an unofficial api for the Blink security camera system.
 https://github.com/fronzbot/blinkpy
+
 Original protocol hacking by MattTW :
 https://github.com/MattTW/BlinkMonitorProtocol
+
 Published under the MIT license - See LICENSE file for more details.
 "Blink Wire-Free HS Home Monitoring & Alert Systems" is a trademark
 owned by Immedia Inc., see www.blinkforhome.com for more information.
-I am in no way affiliated with Blink, nor Immedia Inc.
+blinkpy is in no way affiliated with Blink, nor Immedia Inc.
 """
 
 import time
@@ -34,7 +35,7 @@ class Blink():
     """Class to initialize communication."""
 
     def __init__(self, username=None, password=None,
-                 refresh_rate=REFRESH_RATE):
+                 refresh_rate=REFRESH_RATE, loglevel=logging.INFO):
         """
         Initialize Blink system.
 
@@ -56,11 +57,21 @@ class Blink():
         self.region_id = None
         self.last_refresh = None
         self.refresh_rate = refresh_rate
-        self.session = None
+        self.session = create_session()
         self.networks = []
         self.cameras = CaseInsensitiveDict({})
         self._login_url = LOGIN_URL
         self.version = __version__
+        self._loglevel = loglevel
+
+    @property
+    def loglevel(self):
+        return self._loglevel
+
+    @loglevel.setter
+    def loglevel(self, value):
+        """Sets the logging level."""
+        _LOGGER.setLevel(value)
 
     @property
     def auth_header(self):
@@ -104,7 +115,6 @@ class Blink():
             raise BlinkAuthenticationException(ERROR.PASSWORD)
 
         login_url = LOGIN_URL
-        self.session = create_session()
         response = api.request_login(self,
                                      login_url,
                                      self._username,
