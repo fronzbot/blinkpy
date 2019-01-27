@@ -60,10 +60,14 @@ class TestBlinkFunctions(unittest.TestCase):
     def test_backup_url(self, req, mock_sess):
         """Test backup login method."""
         fake_req = Request('POST', 'http://wrong.url').prepare()
+        json_resp = {
+            'authtoken': {'authtoken': 'foobar123'},
+            'networks': {'1234': {'name': 'foobar', 'onboarded': True}}
+        }
+        new_req = mresp.MockResponse(json_resp, 200)
         req.side_effect = [
             mresp.mocked_session_send(fake_req),
-            {'authtoken': {'authtoken': 'foobar123'},
-             'networks': {'1234': {'name': 'foobar', 'onboarded': True}}}
+            new_req
         ]
         self.blink.get_auth_token()
         self.assertEqual(self.blink.region_id, 'piri')

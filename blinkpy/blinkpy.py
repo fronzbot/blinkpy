@@ -76,8 +76,8 @@ class Blink():
         """
         if self._username is None or self._password is None:
             self.login()
-        else:
-            self.get_auth_token()
+        elif not self.get_auth_token():
+            return
 
         networks = self.get_ids()
         for network_name, network_id in networks.items():
@@ -109,29 +109,31 @@ class Blink():
                                      login_url,
                                      self._username,
                                      self._password)
-
-        if response.status_code == 200:
+        try:
+            if response.status_code != 200:
+                _LOGGER.debug("Received response code %s during login.",
+                              response.status_code)
+                login_url = LOGIN_BACKUP_URL
+                response = api.request_login(self,
+                                             login_url,
+                                             self._username,
+                                             self._password)
             response = response.json()
             (self.region_id, self.region), = response['region'].items()
-        else:
-            _LOGGER.debug(
-                ("Received response code %s "
-                 "when authenticating, "
-                 "trying new url"), response.status_code
-            )
-            login_url = LOGIN_BACKUP_URL
-            response = api.request_login(self,
-                                         login_url,
-                                         self._username,
-                                         self._password)
+        except AttributeError:
+            _LOGGER.error("Login API endpoint failed with response %s",
+                          response)
+            return False
+        except KeyError:
+            _LOGGER.warning("Could not extract region info.")
             self.region_id = 'piri'
-            self.region = "UNKNOWN"
+            self.region = 'UNKNOWN'
 
         self._host = "{}.{}".format(self.region_id, BLINK_URL)
         self._token = response['authtoken']['authtoken']
+        self.networks = response['networks']
         self._auth_header = {'Host': self._host,
                              'TOKEN_AUTH': self._token}
-        self.networks = response['networks']
         self.urls = BlinkURLHandler(self.region_id)
         self._login_url = login_url
 
@@ -140,8 +142,6 @@ class Blink():
     def get_ids(self):
         """Set the network ID and Account ID."""
         response = api.request_networks(self)
-        # Look for only onboarded network, flag warning if multiple
-        # since it's unexpected
         all_networks = []
         network_dict = {}
         for network, status in self.networks.items():

@@ -77,11 +77,21 @@ class BlinkSyncModule():
     def start(self):
         """Initialize the system."""
         response = api.request_syncmodule(self.blink, self.network_id)
-        self.summary = response['syncmodule']
-        self.sync_id = self.summary['id']
-        self.network_id = self.summary['network_id']
-        self.serial = self.summary['serial']
-        self.status = self.summary['status']
+        try:
+            self.summary = response['syncmodule']
+            self.network_id = self.summary['network_id']
+        except (TypeError, KeyError):
+            _LOGGER.error(("Could not retrieve sync module information "
+                           "with response: %s"), response)
+            return False
+
+        try:
+            self.sync_id = self.summary['id']
+            self.serial = self.summary['serial']
+            self.status = self.summary['status']
+        except KeyError:
+            _LOGGER.error("Could not extract some sync module info: %s",
+                          response)
 
         self.events = self.get_events()
         self.homescreen = api.request_homescreen(self.blink)
@@ -96,15 +106,25 @@ class BlinkSyncModule():
             self.motion[name] = False
             self.cameras[name].update(camera_config, force_cache=True)
 
+        return True
+
     def get_events(self):
         """Retrieve events from server."""
         response = api.request_sync_events(self.blink, self.network_id)
-        return response['event']
+        try:
+            return response['event']
+        except (TypeError, KeyError):
+            _LOGGER.error("Could not extract events: %s", response)
+            return False
 
     def get_camera_info(self):
         """Retrieve camera information."""
         response = api.request_cameras(self.blink, self.network_id)
-        return response['devicestatus']
+        try:
+            return response['devicestatus']
+        except (TypeError, KeyError):
+            _LOGGER.error("Could not extract camera info: %s", response)
+            return []
 
     def refresh(self, force_cache=False):
         """Get all blink cameras and pulls their most recent status."""
