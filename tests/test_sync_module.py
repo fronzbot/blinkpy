@@ -26,11 +26,24 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.blink.urls = blinkpy.BlinkURLHandler('test')
         self.blink.sync['test'] = BlinkSyncModule(self.blink, 'test', '1234')
         self.camera = BlinkCamera(self.blink.sync)
+        self.mock_start = [
+            {'syncmodule': {
+                'id': 1234,
+                'network_id': 5678,
+                'serial': '12345678',
+                'status': 'foobar'}},
+            {'event': True},
+            {},
+            {},
+            None,
+            {'devicestatus': {}},
+        ]
 
     def tearDown(self):
         """Clean up after test."""
         self.blink = None
         self.camera = None
+        self.mock_start = None
 
     def test_get_events(self, mock_resp):
         """Test get events function."""
@@ -86,21 +99,58 @@ class TestBlinkSyncModule(unittest.TestCase):
 
     def test_sync_start(self, mock_resp):
         """Test sync start function."""
-        mock_resp.side_effect = [
-            {'syncmodule': {
-                'id': 1234,
-                'network_id': 5678,
-                'serial': '12345678',
-                'status': 'foobar'}},
-            {'event': True},
-            {},
-            {},
-            None,
-            {'devicestatus': {}},
-        ]
+        mock_resp.side_effect = self.mock_start
         self.blink.sync['test'].start()
         self.assertEqual(self.blink.sync['test'].name, 'test')
         self.assertEqual(self.blink.sync['test'].sync_id, 1234)
         self.assertEqual(self.blink.sync['test'].network_id, 5678)
         self.assertEqual(self.blink.sync['test'].serial, '12345678')
         self.assertEqual(self.blink.sync['test'].status, 'foobar')
+
+    def test_unexpected_summary(self, mock_resp):
+        """Test unexpected summary response."""
+        self.mock_start[0] = None
+        mock_resp.side_effect = self.mock_start
+        self.assertFalse(self.blink.sync['test'].start())
+
+    def test_summary_with_no_network_id(self, mock_resp):
+        """Test handling of bad summary."""
+        self.mock_start[0]['syncmodule'] = None
+        mock_resp.side_effect = self.mock_start
+        self.assertFalse(self.blink.sync['test'].start())
+
+    def test_summary_with_only_network_id(self, mock_resp):
+        """Test handling of sparse summary."""
+        self.mock_start[0]['syncmodule'] = {'network_id': 8675309}
+        mock_resp.side_effect = self.mock_start
+        self.blink.sync['test'].start()
+        self.assertEqual(self.blink.sync['test'].network_id, 8675309)
+
+    def test_unexpected_events(self, mock_resp):
+        """Test unexpected events response."""
+        self.mock_start[1] = None
+        mock_resp.side_effect = self.mock_start
+        self.blink.sync['test'].start()
+        self.assertEqual(self.blink.sync['test'].events, False)
+
+    def test_missing_events(self, mock_resp):
+        """Test missing events key from response."""
+        self.mock_start[1] = {}
+        mock_resp.side_effect = self.mock_start
+        self.blink.sync['test'].start()
+        self.assertEqual(self.blink.sync['test'].events, False)
+
+    def test_unexpected_camera_info(self, mock_resp):
+        """Test unexpected camera info response."""
+        self.blink.sync['test'].cameras['foo'] = None
+        self.mock_start[5] = None
+        mock_resp.side_effect = self.mock_start
+        self.blink.sync['test'].start()
+        self.assertEqual(self.blink.sync['test'].cameras, {'foo': None})
+
+    def test_missing_camera_info(self, mock_resp):
+        """Test missing key from camera info response."""
+        self.blink.sync['test'].cameras['foo'] = None
+        self.mock_start[5] = {}
+        self.blink.sync['test'].start()
+        self.assertEqual(self.blink.sync['test'].cameras, {'foo': None})

@@ -154,3 +154,9 @@ class TestBlinkSetup(unittest.TestCase):
         """Check that we can access sync modules ignoring case."""
         self.assertEqual(self.blink.sync['test'].name, 'test')
         self.assertEqual(self.blink.sync['TEST'].name, 'test')
+
+    @mock.patch('blinkpy.api.request_login')
+    def test_unexpected_login(self, mock_login, mock_sess):
+        """Check that we appropriately handle unexpected login info."""
+        mock_login.return_value = None
+        self.assertFalse(self.blink.get_auth_token())

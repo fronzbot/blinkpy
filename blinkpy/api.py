@@ -9,7 +9,7 @@ from blinkpy.helpers.constants import DEFAULT_URL
 _LOGGER = logging.getLogger(__name__)
 
 
-def request_login(blink, url, username, password):
+def request_login(blink, url, username, password, is_retry=False):
     """
     Login request.
 
@@ -17,6 +17,7 @@ def request_login(blink, url, username, password):
     :param url: Login url.
     :param username: Blink username.
     :param password: Blink password.
+    :param is_retry: Is this part of a re-authorization attempt?
     """
     headers = {
         'Host': DEFAULT_URL,
@@ -28,7 +29,7 @@ def request_login(blink, url, username, password):
         'client_specifier': 'iPhone 9.2 | 2.2 | 222'
     })
     return http_req(blink, url=url, headers=headers, data=data,
-                    json_resp=False, reqtype='post')
+                    json_resp=False, reqtype='post', is_retry=is_retry)
 
 
 def request_networks(blink):
@@ -226,28 +227,32 @@ def request_motion_detection_disable(blink, network, camera_id):
     return http_post(blink, url)
 
 
-def http_get(blink, url, stream=False, json=True):
+def http_get(blink, url, stream=False, json=True, is_retry=False):
     """
     Perform an http get request.
 
     :param url: URL to perform get request.
     :param stream: Stream response? True/FALSE
     :param json: Return json response? TRUE/False
+    :param is_retry: Is this part of a re-auth attempt?
     """
     if blink.auth_header is None:
         raise BlinkException(ERROR.AUTH_TOKEN)
     _LOGGER.debug("Making GET request to %s", url)
     return http_req(blink, url=url, headers=blink.auth_header,
-                    reqtype='get', stream=stream, json_resp=json)
+                    reqtype='get', stream=stream, json_resp=json,
+                    is_retry=is_retry)
 
 
-def http_post(blink, url):
+def http_post(blink, url, is_retry=False):
     """
     Perform an http post request.
 
     :param url: URL to perfom post request.
+    :param is_retry: Is this part of a re-auth attempt?
     """
     if blink.auth_header is None:
         raise BlinkException(ERROR.AUTH_TOKEN)
     _LOGGER.debug("Making POST request to %s", url)
-    return http_req(blink, url=url, headers=blink.auth_header, reqtype='post')
+    return http_req(blink, url=url, headers=blink.auth_header,
+                    reqtype='post', is_retry=is_retry)
