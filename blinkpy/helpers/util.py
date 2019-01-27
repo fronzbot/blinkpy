@@ -35,7 +35,7 @@ def create_session():
 def attempt_reauthorization(blink):
     """Attempt to refresh auth token and links."""
     _LOGGER.info("Auth token expired, attempting reauthorization.")
-    headers = blink.get_auth_token()
+    headers = blink.get_auth_token(is_retry=True)
     return headers
 
 
@@ -64,7 +64,7 @@ def http_req(blink, url='http://example.com', data=None, headers=None,
     prepped = req.prepare()
 
     try:
-        response = blink.session.send(prepped, stream=stream, timeout=0.1)
+        response = blink.session.send(prepped, stream=stream, timeout=10)
         if json_resp and 'code' in response.json():
             if is_retry:
                 _LOGGER.error("Cannot obtain new token for server auth.")
@@ -72,7 +72,7 @@ def http_req(blink, url='http://example.com', data=None, headers=None,
             else:
                 headers = attempt_reauthorization(blink)
                 if not headers:
-                    raise exception.ConnectionError
+                    raise exceptions.ConnectionError
                 return http_req(blink, url=url, data=data, headers=headers,
                                 reqtype=reqtype, stream=stream,
                                 json_resp=json_resp, is_retry=True)

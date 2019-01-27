@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 blinkpy is an unofficial api for the Blink security camera system.
-https://github.com/fronzbot/blinkpy
+
+repo url: https://github.com/fronzbot/blinkpy
 
 Original protocol hacking by MattTW :
 https://github.com/MattTW/BlinkMonitorProtocol
@@ -35,7 +36,7 @@ class Blink():
     """Class to initialize communication."""
 
     def __init__(self, username=None, password=None,
-                 refresh_rate=REFRESH_RATE, loglevel=logging.INFO):
+                 refresh_rate=REFRESH_RATE):
         """
         Initialize Blink system.
 
@@ -62,16 +63,6 @@ class Blink():
         self.cameras = CaseInsensitiveDict({})
         self._login_url = LOGIN_URL
         self.version = __version__
-        self._loglevel = loglevel
-
-    @property
-    def loglevel(self):
-        return self._loglevel
-
-    @loglevel.setter
-    def loglevel(self, value):
-        """Sets the logging level."""
-        _LOGGER.setLevel(value)
 
     @property
     def auth_header(self):
@@ -86,7 +77,8 @@ class Blink():
         Essentially this is just a wrapper function for ease of use.
         """
         if self._username is None or self._password is None:
-            self.login()
+            if not self.login():
+                return
         elif not self.get_auth_token():
             return
 
@@ -107,7 +99,7 @@ class Blink():
         _LOGGER.warning("Unable to login with %s.", self._username)
         return False
 
-    def get_auth_token(self):
+    def get_auth_token(self, is_retry=False):
         """Retrieve the authentication token from Blink."""
         if not isinstance(self._username, str):
             raise BlinkAuthenticationException(ERROR.USERNAME)
@@ -118,7 +110,8 @@ class Blink():
         response = api.request_login(self,
                                      login_url,
                                      self._username,
-                                     self._password)
+                                     self._password,
+                                     is_retry=is_retry)
         try:
             if response.status_code != 200:
                 _LOGGER.debug("Received response code %s during login.",
@@ -127,7 +120,8 @@ class Blink():
                 response = api.request_login(self,
                                              login_url,
                                              self._username,
-                                             self._password)
+                                             self._password,
+                                             is_retry=is_retry)
             response = response.json()
             (self.region_id, self.region), = response['region'].items()
         except AttributeError:
