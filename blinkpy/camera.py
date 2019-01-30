@@ -111,6 +111,7 @@ class BlinkCamera():
         try:
             self.temperature_calibrated = resp['temp']
         except KeyError:
+            self.temperature_calibrated = self.temperature
             _LOGGER.error("Could not retrieve calibrated temperature.")
 
         # Check if thumbnail exists in config, if not try to
