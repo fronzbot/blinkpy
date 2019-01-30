@@ -22,7 +22,7 @@ from blinkpy import api
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers.util import (
     create_session, merge_dicts, BlinkURLHandler,
-    BlinkAuthenticationException)
+    BlinkAuthenticationException, RepeatLogHandler)
 from blinkpy.helpers.constants import (
     BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
 from blinkpy.helpers.constants import __version__
@@ -63,6 +63,7 @@ class Blink():
         self.cameras = CaseInsensitiveDict({})
         self._login_url = LOGIN_URL
         self.version = __version__
+        _LOGGER.addHandler(RepeatLogHandler())
 
     @property
     def auth_header(self):
@@ -76,6 +77,8 @@ class Blink():
         Method logs in and sets auth token, urls, and ids for future requests.
         Essentially this is just a wrapper function for ease of use.
         """
+        _LOGGER.handlers.pop()
+        _LOGGER.addHandler(RepeatLogHandler())
         if self._username is None or self._password is None:
             if not self.login():
                 return
@@ -126,7 +129,8 @@ class Blink():
             (self.region_id, self.region), = response['region'].items()
         except AttributeError:
             _LOGGER.error("Login API endpoint failed with response %s",
-                          response)
+                          response,
+                          exc_info=True)
             return False
         except KeyError:
             _LOGGER.warning("Could not extract region info.")
@@ -136,6 +140,7 @@ class Blink():
         self._host = "{}.{}".format(self.region_id, BLINK_URL)
         self._token = response['authtoken']['authtoken']
         self.networks = response['networks']
+
         self._auth_header = {'Host': self._host,
                              'TOKEN_AUTH': self._token}
         self.urls = BlinkURLHandler(self.region_id)
