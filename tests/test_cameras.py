@@ -165,8 +165,10 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.assertEqual(self.camera.temperature_calibrated, 68)
         self.assertEqual(
             logrecord.output,
-            ["ERROR:blinkpy.camera:Could not retrieve calibrated temperature.",
-             "ERROR:blinkpy.camera:Could not find thumbnail for camera new"]
+            [("WARNING:blinkpy.camera:Could not retrieve calibrated "
+              "temperature."),
+             ("ERROR:blinkpy.camera:Could not find thumbnail for camera new"
+              "\nNoneType: None")]
         )
 
     def test_no_video_clips(self, mock_sess):

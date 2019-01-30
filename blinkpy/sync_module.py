@@ -82,7 +82,7 @@ class BlinkSyncModule():
             self.network_id = self.summary['network_id']
         except (TypeError, KeyError):
             _LOGGER.error(("Could not retrieve sync module information "
-                           "with response: %s"), response)
+                           "with response: %s"), response, exc_info=True)
             return False
 
         try:
@@ -91,7 +91,8 @@ class BlinkSyncModule():
             self.status = self.summary['status']
         except KeyError:
             _LOGGER.error("Could not extract some sync module info: %s",
-                          response)
+                          response,
+                          exc_info=True)
 
         self.events = self.get_events()
         self.homescreen = api.request_homescreen(self.blink)
@@ -114,7 +115,9 @@ class BlinkSyncModule():
         try:
             return response['event']
         except (TypeError, KeyError):
-            _LOGGER.error("Could not extract events: %s", response)
+            _LOGGER.error("Could not extract events: %s",
+                          response,
+                          exc_info=True)
             return False
 
     def get_camera_info(self):
@@ -123,7 +126,9 @@ class BlinkSyncModule():
         try:
             return response['devicestatus']
         except (TypeError, KeyError):
-            _LOGGER.error("Could not extract camera info: %s", response)
+            _LOGGER.error("Could not extract camera info: %s",
+                          response,
+                          exc_info=True)
             return []
 
     def refresh(self, force_cache=False):
