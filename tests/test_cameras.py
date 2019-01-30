@@ -157,10 +157,12 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.camera.sync.homescreen = {
             'devices': []
         }
+        self.assertEqual(self.camera.temperature_calibrated, None)
         with self.assertLogs() as logrecord:
             self.camera.update(config)
         self.assertEqual(self.camera.thumbnail, None)
         self.assertEqual(self.camera.last_record, ['1'])
+        self.assertEqual(self.camera.temperature_calibrated, 68)
         self.assertEqual(
             logrecord.output,
             [("WARNING:blinkpy.camera:Could not retrieve calibrated "
