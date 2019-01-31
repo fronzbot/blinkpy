@@ -92,6 +92,7 @@ class Blink():
         Essentially this is just a wrapper function for ease of use.
         """
         self._reset_logger()
+
         if self._username is None or self._password is None:
             if not self.login():
                 return
@@ -285,6 +286,7 @@ class Blink():
 
             _LOGGER.info("Downloaded video to %s", filename)
 
+    # pylint: disable=no-self-use
     def _reset_logger(self):
         """Reset the log handler."""
         for handler in _LOGGER.handlers:

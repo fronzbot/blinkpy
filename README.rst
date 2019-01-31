@@ -51,6 +51,23 @@ The simplest way to use this package from a terminal is to call ``Blink.start()`
 
 If you would like to log in without setting up the cameras or system, you can simply call the ``Blink.login()`` function which will prompt for a username and password and then authenticate with the server.  This is useful if you want to avoid use of the ``start()`` function which simply acts as a wrapper for more targeted API methods.
 
+At initialization, you may also set the logging level of the ``blinkpy`` library like so (default is ``INFO``:
+
+.. code:: python
+
+    import logging
+    from blinkpy import blinkpy
+    blink = blinkpy.Blink(..., loglevel=logging.<LEVEL>)
+    blink.start()
+    
+You can also disable logging of duplicate entries via the ``allow_duplicate_logs`` flag (default is ``True``):
+
+.. code:: python
+
+    from blinkpy import blinkpy
+    blink = blinkpy.Blink(..., allow_duplicate_logs=False)
+    blink.start()
+    
 Cameras are instantiated as individual ``BlinkCamera`` classes within a ``BlinkSyncModule`` instance.  All of your sync modules are stored within the ``Blink.sync`` dictionary and can be accessed using the name of the sync module as the key (this is the name of your sync module in the Blink App).
 
 The below code will display cameras and their available attributes:
@@ -84,6 +101,17 @@ The ``blinkpy`` api also allows for saving images and videos to a file and snapp
     blink.refresh()             # Get new information from server
     camera.image_to_file('/local/path/for/image.jpg')
     camera.video_to_file('/local/path/for/video.mp4')
+    
+You can also use this library to download all videos from the server.  In order to do this, you must specify a ``path``.  You may also specifiy a how far back in time to go to retrieve videos via the ``since=`` variable (a simple string such as ``"2017/09/21"`` is sufficient), as well as how many pages to traverse via the ``page=`` variable.  Note that by default, the library will search the first ten pages which is sufficient in most use cases.  Additionally, you can specidy one or more cameras via the ``camera=`` property.  This can be a single string indicating the name of the camera, or a list of camera names.  By default, it is set to the string ``'all'`` to grab videos from all cameras.
+
+Example usage, which downloads all videos recorded since July 4th, 2018 at 9:34am to the ``/home/blink`` directory:
+
+.. code:: python
+
+    blink = blinkpy.Blink(username="YOUR USER NAME", password="YOUR PASSWORD")
+    blink.start()
+    blink.download_videos('/home/blink', since='2018/07/04 09:34')
+
 
 .. |Build Status| image:: https://travis-ci.org/fronzbot/blinkpy.svg?branch=dev
    :target: https://travis-ci.org/fronzbot/blinkpy
