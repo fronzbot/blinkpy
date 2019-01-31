@@ -13,15 +13,20 @@ owned by Immedia Inc., see www.blinkforhome.com for more information.
 blinkpy is in no way affiliated with Blink, nor Immedia Inc.
 """
 
+import os.path
 import time
 import getpass
 import logging
+from shutil import copyfileobj
+
 from requests.structures import CaseInsensitiveDict
-import blinkpy.helpers.errors as ERROR
+from dateutil.parser import parse
+
 from blinkpy import api
 from blinkpy.sync_module import BlinkSyncModule
+from blinkpy.helpers import errors as ERROR
 from blinkpy.helpers.util import (
-    create_session, merge_dicts, BlinkURLHandler,
+    create_session, merge_dicts, get_time, BlinkURLHandler,
     BlinkAuthenticationException, RepeatLogHandler)
 from blinkpy.helpers.constants import (
     BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
@@ -36,7 +41,8 @@ class Blink():
     """Class to initialize communication."""
 
     def __init__(self, username=None, password=None,
-                 refresh_rate=REFRESH_RATE):
+                 refresh_rate=REFRESH_RATE, loglevel=logging.INFO,
+                 allow_duplicate_logs=True):
         """
         Initialize Blink system.
 
@@ -44,6 +50,9 @@ class Blink():
         :param password: Blink password
         :param refresh_rate: Refresh rate of blink information.
                              Defaults to 15 (seconds)
+        :param loglevel: Sets the log level for the logger.
+        :param allow_duplicate_logs: Set to 'False' to only allow a log
+                                     message to be logged once.
         """
         self._username = username
         self._password = password
@@ -61,9 +70,13 @@ class Blink():
         self.session = create_session()
         self.networks = []
         self.cameras = CaseInsensitiveDict({})
+        self.video_list = CaseInsensitiveDict({})
         self._login_url = LOGIN_URL
         self.version = __version__
+        self.allow_duplicate_logs = allow_duplicate_logs
+
         _LOGGER.addHandler(RepeatLogHandler())
+        _LOGGER.setLevel(loglevel)
 
     @property
     def auth_header(self):
@@ -77,8 +90,8 @@ class Blink():
         Method logs in and sets auth token, urls, and ids for future requests.
         Essentially this is just a wrapper function for ease of use.
         """
-        _LOGGER.handlers.pop()
-        _LOGGER.addHandler(RepeatLogHandler())
+        if not self.allow_duplicate_logs:
+            self._reset_logger()
         if self._username is None or self._password is None:
             if not self.login():
                 return
@@ -197,3 +210,89 @@ class Blink():
         for sync in self.sync:
             combined = merge_dicts(combined, self.sync[sync].cameras)
         return combined
+
+    def download_videos(self, path, since=None, camera='all', stop=10):
+        """
+        Download all videos from server since specified time.
+
+        :param path: Path to write files.  /path/<cameraname>_<recorddate>.mp4
+        :param since: Date and time to get videos from.
+                      Ex: "2018/07/28 12:33:00" to retrieve videos since
+                           July 28th 2018 at 12:33:00
+        :param camera: Camera name to retrieve.  Defaults to "all".
+                       Use a list for multiple cameras.
+        :param stop: Page to stop on (~25 items per page. Default page 10).
+        """
+        # Reset the handler so we don't filter out messages during this method.
+        if not self.allow_duplicate_logs:
+            self._reset_logger()
+
+        if since is None:
+            since_epochs = self.last_refresh
+        else:
+            parsed_datetime = parse(since, fuzzy=True)
+            since_epochs = parsed_datetime.timestamp()
+
+        formatted_date = get_time(time_to_convert=since_epochs)
+        _LOGGER.info("Retrieving videos since %s", formatted_date)
+
+        if not isinstance(camera, list):
+            camera = [camera]
+
+        for page in range(1, stop):
+            response = api.request_videos(self, time=since_epochs, page=page)
+            _LOGGER.debug("Processing page %s", page)
+            try:
+                result = response['videos']
+                if not result:
+                    raise IndexError
+            except (KeyError, IndexError):
+                _LOGGER.info("No videos found on page %s. Exiting.", page)
+                break
+
+            self._parse_downloaded_items(result, camera, path)
+
+    def _parse_downloaded_items(self, result, camera, path):
+        """Parse downloaded videos."""
+        for item in result:
+            try:
+                created_at = item['created_at']
+                camera_name = item['camera_name']
+                is_deleted = item['deleted']
+                address = item['address']
+            except KeyError:
+                _LOGGER.info("Missing clip information, skipping...")
+                continue
+
+            if camera_name not in camera and 'all' not in camera:
+                _LOGGER.debug("Skipping videos for %s.", camera_name)
+                continue
+
+            if is_deleted:
+                _LOGGER.debug("%s: %s is marked as deleted.",
+                              camera_name,
+                              address)
+                continue
+
+            clip_address = "{}{}".format(self.urls.base_url, address)
+            filename = "{}_{}.mp4".format(camera_name, created_at)
+            filename = os.path.join(path, filename)
+
+            if os.path.isfile(filename):
+                _LOGGER.info("%s already exists, skipping...", filename)
+                continue
+
+            response = api.http_get(self, url=clip_address,
+                                    stream=True, json=False)
+            with open(filename, 'wb') as vidfile:
+                copyfileobj(response.raw, vidfile)
+
+            _LOGGER.info("Downloaded video to %s", filename)
+
+    # pylint: disable=no-self-use
+    def _reset_logger(self):
+        """Reset the log handler."""
+        for handler in _LOGGER.handlers:
+            handler.close()
+            _LOGGER.removeHandler(handler)
+        _LOGGER.addHandler(RepeatLogHandler())
