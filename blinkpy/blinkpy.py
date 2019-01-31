@@ -25,16 +25,17 @@ from dateutil.parser import parse
 from blinkpy import api
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers import errors as ERROR
+from blinkpy.helpers import log
 from blinkpy.helpers.util import (
     create_session, merge_dicts, get_time, BlinkURLHandler,
-    BlinkAuthenticationException, RepeatLogHandler)
+    BlinkAuthenticationException)
 from blinkpy.helpers.constants import (
     BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
 from blinkpy.helpers.constants import __version__
 
 REFRESH_RATE = 30
 
-_LOGGER = logging.getLogger('blinkpy')
+_LOGGER = log.create_logger('blinkpy')
 
 
 class Blink():
@@ -75,8 +76,8 @@ class Blink():
         self.version = __version__
         self.allow_duplicate_logs = allow_duplicate_logs
 
-        _LOGGER.addHandler(RepeatLogHandler())
-        _LOGGER.setLevel(loglevel)
+        self.loglevel = loglevel
+        self._reset_logger()
 
     @property
     def auth_header(self):
@@ -90,8 +91,7 @@ class Blink():
         Method logs in and sets auth token, urls, and ids for future requests.
         Essentially this is just a wrapper function for ease of use.
         """
-        if not self.allow_duplicate_logs:
-            self._reset_handler()
+        self._reset_logger()
         if self._username is None or self._password is None:
             if not self.login():
                 return
@@ -223,10 +223,6 @@ class Blink():
                        Use a list for multiple cameras.
         :param stop: Page to stop on (~25 items per page. Default page 10).
         """
-        # Reset the handler so we don't filter out messages during this method.
-        if not self.allow_duplicate_logs:
-            self._reset_logger()
-
         if since is None:
             since_epochs = self.last_refresh
         else:
@@ -292,6 +288,10 @@ class Blink():
     def _reset_logger(self):
         """Reset the log handler."""
         for handler in _LOGGER.handlers:
-            handler.close()
             _LOGGER.removeHandler(handler)
-        _LOGGER.addHandler(RepeatLogHandler())
+            handler.close()
+        _LOGGER.setLevel(self.loglevel)
+        if self.allow_duplicate_logs:
+            _LOGGER.addHandler(logging.StreamHandler())
+        else:
+            _LOGGER.addHandler(log.RepeatLogHandler())
