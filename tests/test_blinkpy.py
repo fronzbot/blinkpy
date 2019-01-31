@@ -8,6 +8,7 @@ any communication related errors at startup.
 
 import unittest
 from unittest import mock
+import logging
 from blinkpy import api
 from blinkpy.blinkpy import Blink
 from blinkpy.sync_module import BlinkSyncModule

@@ -1,2 +1,3 @@
+python-dateutil==2.7.5
 requests>=2.20.0
 testtools==2.3.0
