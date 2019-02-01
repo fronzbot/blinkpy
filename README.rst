@@ -51,23 +51,6 @@ The simplest way to use this package from a terminal is to call ``Blink.start()`
 
 If you would like to log in without setting up the cameras or system, you can simply call the ``Blink.login()`` function which will prompt for a username and password and then authenticate with the server.  This is useful if you want to avoid use of the ``start()`` function which simply acts as a wrapper for more targeted API methods.
 
-At initialization, you may also set the logging level of the ``blinkpy`` library like so (default is ``INFO``:
-
-.. code:: python
-
-    import logging
-    from blinkpy import blinkpy
-    blink = blinkpy.Blink(..., loglevel=logging.<LEVEL>)
-    blink.start()
-    
-You can also disable logging of duplicate entries via the ``allow_duplicate_logs`` flag (default is ``True``):
-
-.. code:: python
-
-    from blinkpy import blinkpy
-    blink = blinkpy.Blink(..., allow_duplicate_logs=False)
-    blink.start()
-    
 Cameras are instantiated as individual ``BlinkCamera`` classes within a ``BlinkSyncModule`` instance.  All of your sync modules are stored within the ``Blink.sync`` dictionary and can be accessed using the name of the sync module as the key (this is the name of your sync module in the Blink App).
 
 The below code will display cameras and their available attributes:
