@@ -1,12 +1,20 @@
 """Useful functions for blinkpy."""
 
 import logging
+import time
 from requests import Request, Session, exceptions
-from blinkpy.helpers.constants import BLINK_URL
+from blinkpy.helpers.constants import BLINK_URL, TIMESTAMP_FORMAT
 import blinkpy.helpers.errors as ERROR
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def get_time(time_to_convert=None):
+    """Create blink-compatible timestamp."""
+    if time_to_convert is None:
+        time_to_convert = time.time()
+    return time.strftime(TIMESTAMP_FORMAT, time.localtime(time_to_convert))
 
 
 def merge_dicts(dict_a, dict_b):
@@ -27,7 +35,7 @@ def create_session():
 def attempt_reauthorization(blink):
     """Attempt to refresh auth token and links."""
     _LOGGER.info("Auth token expired, attempting reauthorization.")
-    headers = blink.get_auth_token()
+    headers = blink.get_auth_token(is_retry=True)
     return headers
 
 
@@ -56,13 +64,15 @@ def http_req(blink, url='http://example.com', data=None, headers=None,
     prepped = req.prepare()
 
     try:
-        response = blink.session.send(prepped, stream=stream)
+        response = blink.session.send(prepped, stream=stream, timeout=10)
         if json_resp and 'code' in response.json():
             if is_retry:
                 _LOGGER.error("Cannot obtain new token for server auth.")
                 return None
             else:
                 headers = attempt_reauthorization(blink)
+                if not headers:
+                    raise exceptions.ConnectionError
                 return http_req(blink, url=url, data=data, headers=headers,
                                 reqtype=reqtype, stream=stream,
                                 json_resp=json_resp, is_retry=True)

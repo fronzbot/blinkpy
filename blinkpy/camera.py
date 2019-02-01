@@ -6,8 +6,6 @@ from blinkpy import api
 
 _LOGGER = logging.getLogger(__name__)
 
-MAX_CLIPS = 5
-
 
 class BlinkCamera():
     """Class to initialize individual camera."""
@@ -28,7 +26,7 @@ class BlinkCamera():
         self.battery_state = None
         self.motion_detected = None
         self.wifi_strength = None
-        self.last_record = []
+        self.last_record = None
         self._cached_image = None
         self._cached_video = None
 
@@ -113,7 +111,8 @@ class BlinkCamera():
         try:
             self.temperature_calibrated = resp['temp']
         except KeyError:
-            _LOGGER.error("Could not retrieve calibrated temperature.")
+            self.temperature_calibrated = self.temperature
+            _LOGGER.warning("Could not retrieve calibrated temperature.")
 
         # Check if thumbnail exists in config, if not try to
         # get it from the homescreen info in teh sync module
@@ -128,12 +127,15 @@ class BlinkCamera():
             new_thumbnail = "{}{}.jpg".format(self.sync.urls.base_url,
                                               thumb_addr)
 
-        # Check if a new motion clip has been recorded
-        # check_for_motion_method sets motion_detected variable
-        self.check_for_motion()
+        try:
+            self.motion_detected = self.sync.motion[self.name]
+        except KeyError:
+            self.motion_detected = False
+
         clip_addr = None
-        if self.last_record:
-            clip_addr = self.sync.all_clips[self.name][self.last_record[0]]
+        if self.name in self.sync.last_record:
+            clip_addr = self.sync.last_record[self.name]['clip']
+            self.last_record = self.sync.last_record[self.name]['time']
             self.clip = "{}{}".format(self.sync.urls.base_url,
                                       clip_addr)
 
@@ -158,25 +160,6 @@ class BlinkCamera():
                                               stream=True,
                                               json=False)
 
-    def check_for_motion(self):
-        """Check if motion detected.."""
-        try:
-            records = sorted(self.sync.record_dates[self.name])
-            new_clip = records.pop()
-            if new_clip not in self.last_record and self.last_record:
-                self.motion_detected = True
-                self.last_record.insert(0, new_clip)
-                if len(self.last_record) > MAX_CLIPS:
-                    self.last_record.pop()
-            elif not self.last_record:
-                self.last_record.insert(0, new_clip)
-                self.motion_detected = False
-            else:
-                self.motion_detected = False
-        except KeyError:
-            _LOGGER.info("Could not extract clip info from camera %s",
-                         self.name)
-
     def image_to_file(self, path):
         """
         Write image to file.
@@ -190,7 +173,8 @@ class BlinkCamera():
                 copyfileobj(response.raw, imgfile)
         else:
             _LOGGER.error("Cannot write image to file, response %s",
-                          response.status_code)
+                          response.status_code,
+                          exc_info=True)
 
     def video_to_file(self, path):
         """Write video to file.
@@ -200,7 +184,9 @@ class BlinkCamera():
         _LOGGER.debug("Writing video from %s to %s", self.name, path)
         response = self._cached_video
         if response is None:
-            _LOGGER.error("No saved video exist for %s.", self.name)
+            _LOGGER.error("No saved video exist for %s.",
+                          self.name,
+                          exc_info=True)
             return
         with open(path, 'wb') as vidfile:
             copyfileobj(response.raw, vidfile)
@@ -216,5 +202,7 @@ class BlinkCamera():
                     return device_thumb
             except KeyError:
                 pass
-        _LOGGER.error("Could not find thumbnail for camera %s", self.name)
+        _LOGGER.error("Could not find thumbnail for camera %s",
+                      self.name,
+                      exc_info=True)
         return None

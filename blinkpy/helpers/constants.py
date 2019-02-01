@@ -3,8 +3,8 @@
 import os
 
 MAJOR_VERSION = 0
-MINOR_VERSION = 11
-PATCH_VERSION = 2
+MINOR_VERSION = 12
+PATCH_VERSION = 0
 
 __version__ = '{}.{}.{}'.format(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION)
 
@@ -54,3 +54,8 @@ LOGIN_BACKUP_URL = "https://{}.{}/login".format('rest.piri', BLINK_URL)
 Dictionaries
 '''
 ONLINE = {'online': True, 'offline': False}
+
+'''
+OTHER
+'''
+TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S%Z'

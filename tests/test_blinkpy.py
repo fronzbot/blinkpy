@@ -14,6 +14,7 @@ from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers.util import (
     http_req, create_session, BlinkAuthenticationException,
     BlinkException, BlinkURLHandler)
+from blinkpy.helpers.constants import __version__
 import tests.mock_responses as mresp
 
 USERNAME = 'foobar'
@@ -41,6 +42,7 @@ class TestBlinkSetup(unittest.TestCase):
 
     def test_initialization(self, mock_sess):
         """Verify we can initialize blink."""
+        self.assertEqual(self.blink.version, __version__)
         # pylint: disable=protected-access
         self.assertEqual(self.blink._username, USERNAME)
         # pylint: disable=protected-access
@@ -138,9 +140,13 @@ class TestBlinkSetup(unittest.TestCase):
         now = self.blink.refresh_rate + 1
         mock_time.return_value = now
         self.assertEqual(self.blink.last_refresh, None)
-        result = self.blink.check_if_ok_to_update()
+        self.assertEqual(self.blink.check_if_ok_to_update(), True)
+        self.assertEqual(self.blink.last_refresh, None)
+        with mock.patch('blinkpy.sync_module.BlinkSyncModule.refresh',
+                        return_value=True):
+            self.blink.refresh()
+
         self.assertEqual(self.blink.last_refresh, now)
-        self.assertEqual(result, True)
         self.assertEqual(self.blink.check_if_ok_to_update(), False)
         self.assertEqual(self.blink.last_refresh, now)
 
@@ -148,3 +154,9 @@ class TestBlinkSetup(unittest.TestCase):
         """Check that we can access sync modules ignoring case."""
         self.assertEqual(self.blink.sync['test'].name, 'test')
         self.assertEqual(self.blink.sync['TEST'].name, 'test')
+
+    @mock.patch('blinkpy.api.request_login')
+    def test_unexpected_login(self, mock_login, mock_sess):
+        """Check that we appropriately handle unexpected login info."""
+        mock_login.return_value = None
+        self.assertFalse(self.blink.get_auth_token())

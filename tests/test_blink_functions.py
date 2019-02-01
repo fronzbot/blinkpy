@@ -1,12 +1,12 @@
 """Tests camera and system functions."""
 import unittest
 from unittest import mock
-
+import logging
 from requests import Request
 
 from blinkpy import blinkpy
 from blinkpy.sync_module import BlinkSyncModule
-from blinkpy.helpers.util import create_session
+from blinkpy.helpers.util import create_session, get_time
 import tests.mock_responses as mresp
 
 USERNAME = 'foobar'
@@ -60,10 +60,14 @@ class TestBlinkFunctions(unittest.TestCase):
     def test_backup_url(self, req, mock_sess):
         """Test backup login method."""
         fake_req = Request('POST', 'http://wrong.url').prepare()
+        json_resp = {
+            'authtoken': {'authtoken': 'foobar123'},
+            'networks': {'1234': {'name': 'foobar', 'onboarded': True}}
+        }
+        new_req = mresp.MockResponse(json_resp, 200)
         req.side_effect = [
             mresp.mocked_session_send(fake_req),
-            {'authtoken': {'authtoken': 'foobar123'},
-             'networks': {'1234': {'name': 'foobar', 'onboarded': True}}}
+            new_req
         ]
         self.blink.get_auth_token()
         self.assertEqual(self.blink.region_id, 'piri')
@@ -82,3 +86,65 @@ class TestBlinkFunctions(unittest.TestCase):
         result = self.blink.merge_cameras()
         expected = {'foo': 'bar', 'test': 123, 'foobar': 456, 'bar': 'foo'}
         self.assertEqual(expected, result)
+
+    @mock.patch('blinkpy.blinkpy.api.request_videos')
+    def test_download_video_exit(self, mock_req, mock_sess):
+        """Test we exit method when provided bad response."""
+        blink = blinkpy.Blink(loglevel=logging.DEBUG)
+        blink.last_refresh = 0
+        mock_req.return_value = {}
+        formatted_date = get_time(blink.last_refresh)
+        expected_log = [
+            "INFO:blinkpy:Retrieving videos since {}".format(formatted_date),
+            "DEBUG:blinkpy:Processing page 1",
+            "INFO:blinkpy:No videos found on page 1. Exiting."
+        ]
+        with self.assertLogs() as dl_log:
+            blink.download_videos('/tmp')
+        self.assertEqual(dl_log.output, expected_log)
+
+    @mock.patch('blinkpy.blinkpy.api.request_videos')
+    def test_parse_downloaded_items(self, mock_req, mock_sess):
+        """Test ability to parse downloaded items list."""
+        blink = blinkpy.Blink(loglevel=logging.DEBUG)
+        generic_entry = {
+            'created_at': '1970',
+            'camera_name': 'foo',
+            'deleted': True,
+            'address': '/bar.mp4'
+        }
+        result = [generic_entry]
+        mock_req.return_value = {'videos': result}
+        blink.last_refresh = 0
+        formatted_date = get_time(blink.last_refresh)
+        expected_log = [
+            "INFO:blinkpy:Retrieving videos since {}".format(formatted_date),
+            "DEBUG:blinkpy:Processing page 1",
+            "DEBUG:blinkpy:foo: /bar.mp4 is marked as deleted."
+        ]
+        with self.assertLogs() as dl_log:
+            blink.download_videos('/tmp', stop=2)
+        self.assertEqual(dl_log.output, expected_log)
+
+    @mock.patch('blinkpy.blinkpy.api.request_videos')
+    def test_parse_camera_not_in_list(self, mock_req, mock_sess):
+        """Test ability to parse downloaded items list."""
+        blink = blinkpy.Blink(loglevel=logging.DEBUG)
+        generic_entry = {
+            'created_at': '1970',
+            'camera_name': 'foo',
+            'deleted': True,
+            'address': '/bar.mp4'
+        }
+        result = [generic_entry]
+        mock_req.return_value = {'videos': result}
+        blink.last_refresh = 0
+        formatted_date = get_time(blink.last_refresh)
+        expected_log = [
+            "INFO:blinkpy:Retrieving videos since {}".format(formatted_date),
+            "DEBUG:blinkpy:Processing page 1",
+            "DEBUG:blinkpy:Skipping videos for foo."
+        ]
+        with self.assertLogs() as dl_log:
+            blink.download_videos('/tmp', camera='bar', stop=2)
+        self.assertEqual(dl_log.output, expected_log)
