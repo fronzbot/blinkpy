@@ -3,6 +3,14 @@ Changelog
 
 A list of changes between each release
 
+0.12.0 (2019-01-31)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Fix video api endpoint, re-enables motion detection
+- Add improved logging capability
+- Add download video method
+- Prevent blinkpy from failing at setup due to api error
+
+
 0.11.2 (2019-01-23)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Hotfix to prevent platform from stalling due to API change
