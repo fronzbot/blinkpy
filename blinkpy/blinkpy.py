@@ -294,6 +294,10 @@ class Blink():
             handler.close()
         _LOGGER.setLevel(self.loglevel)
         if self.allow_duplicate_logs:
-            _LOGGER.addHandler(logging.StreamHandler())
+            handler = logging.StreamHandler()
+            handler.setFormatter(log.log_formatter())
         else:
-            _LOGGER.addHandler(log.RepeatLogHandler())
+            handler = log.RepeatLogHandler()
+            handler.setFormatter(log.log_formatter())
+
+        _LOGGER.addHandler(handler)
