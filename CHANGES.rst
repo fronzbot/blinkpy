@@ -3,6 +3,10 @@ Changelog
 
 A list of changes between each release
 
+0.12.1 (2019-01-31)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Remove logging improvements since they were incompatible with home-assistant logging
+
 0.12.0 (2019-01-31)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Fix video api endpoint, re-enables motion detection
