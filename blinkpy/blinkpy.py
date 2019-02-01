@@ -25,7 +25,6 @@ from dateutil.parser import parse
 from blinkpy import api
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers import errors as ERROR
-from blinkpy.helpers import log
 from blinkpy.helpers.util import (
     create_session, merge_dicts, get_time, BlinkURLHandler,
     BlinkAuthenticationException)
@@ -35,15 +34,14 @@ from blinkpy.helpers.constants import __version__
 
 REFRESH_RATE = 30
 
-_LOGGER = log.create_logger('blinkpy')
+_LOGGER = logging.getLogger(__name__)
 
 
 class Blink():
     """Class to initialize communication."""
 
     def __init__(self, username=None, password=None,
-                 refresh_rate=REFRESH_RATE, loglevel=logging.INFO,
-                 allow_duplicate_logs=True):
+                 refresh_rate=REFRESH_RATE):
         """
         Initialize Blink system.
 
@@ -51,9 +49,6 @@ class Blink():
         :param password: Blink password
         :param refresh_rate: Refresh rate of blink information.
                              Defaults to 15 (seconds)
-        :param loglevel: Sets the log level for the logger.
-        :param allow_duplicate_logs: Set to 'False' to only allow a log
-                                     message to be logged once.
         """
         self._username = username
         self._password = password
@@ -74,10 +69,6 @@ class Blink():
         self.video_list = CaseInsensitiveDict({})
         self._login_url = LOGIN_URL
         self.version = __version__
-        self.allow_duplicate_logs = allow_duplicate_logs
-
-        self.loglevel = loglevel
-        self._reset_logger()
 
     @property
     def auth_header(self):
@@ -91,8 +82,6 @@ class Blink():
         Method logs in and sets auth token, urls, and ids for future requests.
         Essentially this is just a wrapper function for ease of use.
         """
-        self._reset_logger()
-
         if self._username is None or self._password is None:
             if not self.login():
                 return
@@ -111,7 +100,7 @@ class Blink():
         self._username = input("Username:")
         self._password = getpass.getpass("Password:")
         if self.get_auth_token():
-            _LOGGER.info("Login successful!")
+            _LOGGER.debug("Login successful!")
             return True
         _LOGGER.warning("Unable to login with %s.", self._username)
         return False
@@ -285,19 +274,3 @@ class Blink():
                 copyfileobj(response.raw, vidfile)
 
             _LOGGER.info("Downloaded video to %s", filename)
-
-    # pylint: disable=no-self-use
-    def _reset_logger(self):
-        """Reset the log handler."""
-        for handler in _LOGGER.handlers:
-            _LOGGER.removeHandler(handler)
-            handler.close()
-        _LOGGER.setLevel(self.loglevel)
-        if self.allow_duplicate_logs:
-            handler = logging.StreamHandler()
-            handler.setFormatter(log.log_formatter())
-        else:
-            handler = log.RepeatLogHandler()
-            handler.setFormatter(log.log_formatter())
-
-        _LOGGER.addHandler(handler)
