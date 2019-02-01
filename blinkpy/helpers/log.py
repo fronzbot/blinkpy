@@ -5,10 +5,17 @@ import logging
 def create_logger(name):
     """Create a logger instance."""
     handler = RepeatLogHandler()
+    handler.setFormatter(log_formatter())
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
     logger.addHandler(handler)
     return logger
+
+
+def log_formatter():
+    """Create log formatter."""
+    fmt = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
+    return logging.Formatter(fmt)
 
 
 class RepeatLogHandler(logging.StreamHandler):
