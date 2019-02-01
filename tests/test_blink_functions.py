@@ -91,6 +91,7 @@ class TestBlinkFunctions(unittest.TestCase):
     def test_download_video_exit(self, mock_req, mock_sess):
         """Test we exit method when provided bad response."""
         blink = blinkpy.Blink()
+        # pylint: disable=protected-access
         blinkpy._LOGGER.setLevel(logging.DEBUG)
         blink.last_refresh = 0
         mock_req.return_value = {}
@@ -109,6 +110,7 @@ class TestBlinkFunctions(unittest.TestCase):
     def test_parse_downloaded_items(self, mock_req, mock_sess):
         """Test ability to parse downloaded items list."""
         blink = blinkpy.Blink()
+        # pylint: disable=protected-access
         blinkpy._LOGGER.setLevel(logging.DEBUG)
         generic_entry = {
             'created_at': '1970',
@@ -134,6 +136,7 @@ class TestBlinkFunctions(unittest.TestCase):
     def test_parse_camera_not_in_list(self, mock_req, mock_sess):
         """Test ability to parse downloaded items list."""
         blink = blinkpy.Blink()
+        # pylint: disable=protected-access
         blinkpy._LOGGER.setLevel(logging.DEBUG)
         generic_entry = {
             'created_at': '1970',
