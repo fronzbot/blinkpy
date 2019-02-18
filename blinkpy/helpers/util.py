@@ -2,6 +2,7 @@
 
 import logging
 import time
+from functools import wraps
 from requests import Request, Session, exceptions
 from blinkpy.helpers.constants import BLINK_URL, TIMESTAMP_FORMAT
 import blinkpy.helpers.errors as ERROR
@@ -121,3 +122,33 @@ class BlinkURLHandler():
         self.networks_url = "{}/networks".format(self.base_url)
         self.video_url = "{}/api/v2/videos".format(self.base_url)
         _LOGGER.debug("Setting base url to %s.", self.base_url)
+
+
+class Throttle():
+    """Class for throttling api calls."""
+
+    def __init__(self, seconds=10):
+        """Initialize throttle class."""
+        self.throttle_time = seconds
+        self.last_call = 0
+
+    def __call__(self, method):
+        """Throttle caller method."""
+        def throttle_method():
+            """Call when method is throttled."""
+            return None
+
+        @wraps(method)
+        def wrapper(*args, **kwargs):
+            """Wrap that checks for throttling."""
+            force = kwargs.pop('force', False)
+            now = int(time.time())
+            last_call_delta = now - self.last_call
+            if force or last_call_delta > self.throttle_time:
+                result = method(*args, *kwargs)
+                self.last_call = now
+                return result
+
+            return throttle_method()
+
+        return wrapper
