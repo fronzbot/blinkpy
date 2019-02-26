@@ -76,7 +76,9 @@ class BlinkSyncModule():
 
     def start(self):
         """Initialize the system."""
-        response = api.request_syncmodule(self.blink, self.network_id)
+        response = api.request_syncmodule(self.blink,
+                                          self.network_id,
+                                          force=True)
         try:
             self.summary = response['syncmodule']
             self.network_id = self.summary['network_id']
@@ -94,7 +96,7 @@ class BlinkSyncModule():
                           response,
                           exc_info=True)
 
-        self.events = self.get_events()
+        self.events = self.get_events(force=True)
         self.homescreen = api.request_homescreen(self.blink)
         self.network_info = api.request_network_status(self.blink,
                                                        self.network_id)
@@ -105,13 +107,18 @@ class BlinkSyncModule():
             name = camera_config['name']
             self.cameras[name] = BlinkCamera(self)
             self.motion[name] = False
-            self.cameras[name].update(camera_config, force_cache=True)
+            self.cameras[name].update(camera_config,
+                                      force_cache=True,
+                                      force=True)
 
         return True
 
-    def get_events(self):
+    def get_events(self, **kwargs):
         """Retrieve events from server."""
-        response = api.request_sync_events(self.blink, self.network_id)
+        force = kwargs.pop('force', False)
+        response = api.request_sync_events(self.blink,
+                                           self.network_id,
+                                           force=force)
         try:
             return response['event']
         except (TypeError, KeyError):
@@ -120,9 +127,12 @@ class BlinkSyncModule():
                           exc_info=True)
             return False
 
-    def get_camera_info(self):
+    def get_camera_info(self, **kwargs):
         """Retrieve camera information."""
-        response = api.request_cameras(self.blink, self.network_id)
+        force = kwargs.pop('force', False)
+        response = api.request_cameras(self.blink,
+                                       self.network_id,
+                                       force=force)
         try:
             return response['devicestatus']
         except (TypeError, KeyError):
