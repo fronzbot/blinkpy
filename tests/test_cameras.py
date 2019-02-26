@@ -159,7 +159,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         }
         self.assertEqual(self.camera.temperature_calibrated, None)
         with self.assertLogs() as logrecord:
-            self.camera.update(config)
+            self.camera.update(config, force=True)
         self.assertEqual(self.camera.thumbnail, None)
         self.assertEqual(self.camera.last_record, ['1'])
         self.assertEqual(self.camera.temperature_calibrated, 68)
