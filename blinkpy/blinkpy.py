@@ -181,16 +181,16 @@ class Blink():
         """Retrieve a camera list for each onboarded network."""
         response = api.request_homescreen(self)
         try:
-            all_cameras = response['cameras']
-            for camera in all_cameras:
-                camera_network = camera['network_id']
+            all_cameras = {}
+            for camera in response['cameras']:
+                camera_network = str(camera['network_id'])
                 camera_name = camera['name']
                 camera_id = camera['id']
                 camera_info = {'name': camera_name, 'id': camera_id}
-                if camera_network in all_cameras:
-                    all_cameras[camera_network].append(camera_info)
-                else:
-                    all_cameras[camera_network] = [camera_info]
+                if camera_network not in all_cameras:
+                    all_cameras[camera_network] = []
+
+                all_cameras[camera_network].append(camera_info)
             return all_cameras
         except KeyError:
             _LOGGER.error("Initialization failue. Could not retrieve cameras.")

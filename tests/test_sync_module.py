@@ -55,8 +55,9 @@ class TestBlinkSyncModule(unittest.TestCase):
 
     def test_get_camera_info(self, mock_resp):
         """Test get camera info function."""
-        mock_resp.return_value = {'devicestatus': True}
-        self.assertEqual(self.blink.sync['test'].get_camera_info(), True)
+        mock_resp.return_value = {'camera': ['foobar']}
+        self.assertEqual(self.blink.sync['test'].get_camera_info('1234'),
+                         'foobar')
 
     def test_check_new_videos(self, mock_resp):
         """Test recent video response."""
