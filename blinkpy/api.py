@@ -8,7 +8,7 @@ from blinkpy.helpers.constants import DEFAULT_URL
 
 _LOGGER = logging.getLogger(__name__)
 
-MIN_THROTTLE_TIME = 4
+MIN_THROTTLE_TIME = 2
 
 
 def request_login(blink, url, username, password, is_retry=False):
