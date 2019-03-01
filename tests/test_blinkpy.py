@@ -163,3 +163,24 @@ class TestBlinkSetup(unittest.TestCase):
         """Check that we appropriately handle unexpected login info."""
         mock_login.return_value = None
         self.assertFalse(self.blink.get_auth_token())
+
+    @mock.patch('blinkpy.api.request_homescreen')
+    def test_get_cameras(self, mock_home, mock_sess):
+        """Check retrieval of camera information."""
+        mock_home.return_value = {
+            'cameras': [{'name': 'foo', 'network_id': 1234, 'id': 5678},
+                        {'name': 'bar', 'network_id': 1234, 'id': 5679},
+                        {'name': 'test', 'network_id': 4321, 'id': 0000}]
+        }
+        result = self.blink.get_cameras()
+        self.assertEqual(result, {'1234': [{'name': 'foo', 'id': 5678},
+                                           {'name': 'bar', 'id': 5679}],
+                                  '4321': [{'name': 'test', 'id': 0000}]})
+
+    @mock.patch('blinkpy.api.request_homescreen')
+    def test_get_cameras_failure(self, mock_home, mock_sess):
+        """Check that on failure we initialize empty info and move on."""
+        mock_home.return_value = {}
+        result = self.blink.get_cameras()
+        self.assertEqual(result, {})
+                    
