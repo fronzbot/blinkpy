@@ -4,11 +4,12 @@ matrix:
   include:
     - python: "3.7"
       env: TOXENV=lint
+      dist: xenial
     - python: "3.5.3"
       env: TOXENV=py35
     - python: "3.6"
       env: TOXENV=py36
-    - python: "3.7"
+    - python: "3.6"
       env: TOXENV=build
     - python: "3.7"
       env: TOXENV=py37
