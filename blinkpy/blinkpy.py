@@ -27,12 +27,16 @@ from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers import errors as ERROR
 from blinkpy.helpers.util import (
     create_session, merge_dicts, get_time, BlinkURLHandler,
-    BlinkAuthenticationException)
+    BlinkAuthenticationException, Throttle)
 from blinkpy.helpers.constants import (
     BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
 from blinkpy.helpers.constants import __version__
 
 REFRESH_RATE = 30
+
+# Prevents rapid calls to blink.refresh()
+# with the force_cache flag set to True
+MIN_THROTTLE_TIME = 2
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -196,6 +200,7 @@ class Blink():
             _LOGGER.error("Initialization failue. Could not retrieve cameras.")
             return {}
 
+    @Throttle(seconds=MIN_THROTTLE_TIME)
     def refresh(self, force_cache=False):
         """
         Perform a system refresh.
@@ -209,6 +214,8 @@ class Blink():
             if not force_cache:
                 # Prevents rapid clearing of motion detect property
                 self.last_refresh = int(time.time())
+            return True
+        return False
 
     def check_if_ok_to_update(self):
         """Check if it is ok to perform an http request."""
