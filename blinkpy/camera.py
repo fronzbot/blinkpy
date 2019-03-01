@@ -94,7 +94,7 @@ class BlinkCamera():
 
     def update(self, config, force_cache=False, **kwargs):
         """Update camera info."""
-        force = kwargs.pop('force', False)
+        # force = kwargs.pop('force', False)
         self.name = config['name']
         self.camera_id = str(config['camera_id'])
         self.network_id = str(config['network_id'])
@@ -108,15 +108,12 @@ class BlinkCamera():
         # Retrieve calibrated temperature from special endpoint
         resp = api.request_camera_sensors(self.sync.blink,
                                           self.network_id,
-                                          self.camera_id,
-                                          force=force)
+                                          self.camera_id)
         try:
             self.temperature_calibrated = resp['temp']
         except KeyError:
             self.temperature_calibrated = self.temperature
             _LOGGER.warning("Could not retrieve calibrated temperature.")
-        except TypeError:
-            _LOGGER.debug("API call temporarily throttled.")
 
         # Check if thumbnail exists in config, if not try to
         # get it from the homescreen info in teh sync module

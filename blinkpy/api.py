@@ -102,9 +102,11 @@ def request_command_status(blink, network, command_id):
     return http_get(blink, url)
 
 
+@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_homescreen(blink):
     """Request homescreen info."""
-    url = "{}/homescreen".format(blink.urls.base_url)
+    url = "{}/api/v3/accounts/{}/homescreen".format(blink.urls.base_url,
+                                                    blink.account_id)
     return http_get(blink, url)
 
 
@@ -183,7 +185,6 @@ def request_cameras(blink, network):
     return http_get(blink, url)
 
 
-@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_camera_info(blink, network, camera_id):
     """
     Request camera info for one camera.
@@ -192,13 +193,12 @@ def request_camera_info(blink, network, camera_id):
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request info from.
     """
-    url = "{}/network/{}/camera/{}".format(blink.urls.base_url,
-                                           network,
-                                           camera_id)
+    url = "{}/network/{}/camera/{}/config".format(blink.urls.base_url,
+                                                  network,
+                                                  camera_id)
     return http_get(blink, url)
 
 
-@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_camera_sensors(blink, network, camera_id):
     """
     Request camera sensor info for one camera.

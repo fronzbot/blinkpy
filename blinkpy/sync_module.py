@@ -13,7 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 class BlinkSyncModule():
     """Class to initialize sync module."""
 
-    def __init__(self, blink, network_name, network_id):
+    def __init__(self, blink, network_name, network_id, camera_list):
         """
         Initialize Blink sync module.
 
@@ -36,6 +36,7 @@ class BlinkSyncModule():
         self.cameras = CaseInsensitiveDict({})
         self.motion = {}
         self.last_record = {}
+        self.camera_list = camera_list
 
     @property
     def attributes(self):
@@ -96,18 +97,20 @@ class BlinkSyncModule():
                           response,
                           exc_info=True)
 
-        self.events = self.get_events(force=True)
-        self.homescreen = api.request_homescreen(self.blink)
         self.network_info = api.request_network_status(self.blink,
                                                        self.network_id)
 
         self.check_new_videos()
-        camera_info = self.get_camera_info()
-        for camera_config in camera_info:
+        for camera_config in self.camera_list:
+            if 'name' not in camera_config:
+                break
             name = camera_config['name']
             self.cameras[name] = BlinkCamera(self)
             self.motion[name] = False
-            self.cameras[name].update(camera_config,
+            camera_info = api.request_camera_info(self.blink,
+                                                  self.network_id,
+                                                  camera_config['id'])
+            self.cameras[name].update(camera_info,
                                       force_cache=True,
                                       force=True)
 
@@ -143,7 +146,6 @@ class BlinkSyncModule():
 
     def refresh(self, force_cache=False):
         """Get all blink cameras and pulls their most recent status."""
-        self.events = self.get_events()
         self.homescreen = api.request_homescreen(self.blink)
         self.network_info = api.request_network_status(self.blink,
                                                        self.network_id)

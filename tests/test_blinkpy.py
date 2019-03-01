@@ -31,7 +31,10 @@ class TestBlinkSetup(unittest.TestCase):
         self.blink_no_cred = Blink()
         self.blink = Blink(username=USERNAME,
                            password=PASSWORD)
-        self.blink.sync['test'] = BlinkSyncModule(self.blink, 'test', '1234')
+        self.blink.sync['test'] = BlinkSyncModule(self.blink,
+                                                  'test',
+                                                  '1234',
+                                                  [])
         self.blink.urls = BlinkURLHandler('test')
         self.blink.session = create_session()
 

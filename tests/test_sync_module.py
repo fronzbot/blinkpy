@@ -24,7 +24,10 @@ class TestBlinkSyncModule(unittest.TestCase):
             'TOKEN_AUTH': 'foobar123'
         }
         self.blink.urls = blinkpy.BlinkURLHandler('test')
-        self.blink.sync['test'] = BlinkSyncModule(self.blink, 'test', '1234')
+        self.blink.sync['test'] = BlinkSyncModule(self.blink,
+                                                  'test',
+                                                  '1234',
+                                                  [])
         self.camera = BlinkCamera(self.blink.sync)
         self.mock_start = [
             {'syncmodule': {
@@ -125,20 +128,6 @@ class TestBlinkSyncModule(unittest.TestCase):
         mock_resp.side_effect = self.mock_start
         self.blink.sync['test'].start()
         self.assertEqual(self.blink.sync['test'].network_id, 8675309)
-
-    def test_unexpected_events(self, mock_resp):
-        """Test unexpected events response."""
-        self.mock_start[1] = None
-        mock_resp.side_effect = self.mock_start
-        self.blink.sync['test'].start()
-        self.assertEqual(self.blink.sync['test'].events, False)
-
-    def test_missing_events(self, mock_resp):
-        """Test missing events key from response."""
-        self.mock_start[1] = {}
-        mock_resp.side_effect = self.mock_start
-        self.blink.sync['test'].start()
-        self.assertEqual(self.blink.sync['test'].events, False)
 
     def test_unexpected_camera_info(self, mock_resp):
         """Test unexpected camera info response."""
