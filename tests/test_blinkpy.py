@@ -183,4 +183,3 @@ class TestBlinkSetup(unittest.TestCase):
         mock_home.return_value = {}
         result = self.blink.get_cameras()
         self.assertEqual(result, {})
-                    
