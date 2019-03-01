@@ -13,7 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 class BlinkSyncModule():
     """Class to initialize sync module."""
 
-    def __init__(self, blink, network_name, network_id):
+    def __init__(self, blink, network_name, network_id, camera_list):
         """
         Initialize Blink sync module.
 
@@ -30,12 +30,12 @@ class BlinkSyncModule():
         self.sync_id = None
         self.host = None
         self.summary = None
-        self.homescreen = None
         self.network_info = None
         self.events = []
         self.cameras = CaseInsensitiveDict({})
         self.motion = {}
         self.last_record = {}
+        self.camera_list = camera_list
 
     @property
     def attributes(self):
@@ -96,20 +96,26 @@ class BlinkSyncModule():
                           response,
                           exc_info=True)
 
-        self.events = self.get_events(force=True)
-        self.homescreen = api.request_homescreen(self.blink)
         self.network_info = api.request_network_status(self.blink,
                                                        self.network_id)
 
         self.check_new_videos()
-        camera_info = self.get_camera_info()
-        for camera_config in camera_info:
-            name = camera_config['name']
-            self.cameras[name] = BlinkCamera(self)
-            self.motion[name] = False
-            self.cameras[name].update(camera_config,
-                                      force_cache=True,
-                                      force=True)
+        try:
+            for camera_config in self.camera_list:
+                if 'name' not in camera_config:
+                    break
+                name = camera_config['name']
+                self.cameras[name] = BlinkCamera(self)
+                self.motion[name] = False
+                camera_info = self.get_camera_info(camera_config['id'])
+                self.cameras[name].update(camera_info,
+                                          force_cache=True,
+                                          force=True)
+        except KeyError:
+            _LOGGER.error("Could not create cameras instances for %s",
+                          self.name,
+                          exc_info=True)
+            return False
 
         return True
 
@@ -127,14 +133,13 @@ class BlinkSyncModule():
                           exc_info=True)
             return False
 
-    def get_camera_info(self, **kwargs):
+    def get_camera_info(self, camera_id):
         """Retrieve camera information."""
-        force = kwargs.pop('force', False)
-        response = api.request_cameras(self.blink,
-                                       self.network_id,
-                                       force=force)
+        response = api.request_camera_info(self.blink,
+                                           self.network_id,
+                                           camera_id)
         try:
-            return response['devicestatus']
+            return response['camera'][0]
         except (TypeError, KeyError):
             _LOGGER.error("Could not extract camera info: %s",
                           response,
@@ -143,15 +148,14 @@ class BlinkSyncModule():
 
     def refresh(self, force_cache=False):
         """Get all blink cameras and pulls their most recent status."""
-        self.events = self.get_events()
-        self.homescreen = api.request_homescreen(self.blink)
         self.network_info = api.request_network_status(self.blink,
                                                        self.network_id)
-        camera_info = self.get_camera_info()
         self.check_new_videos()
-        for camera_config in camera_info:
-            name = camera_config['name']
-            self.cameras[name].update(camera_config, force_cache=force_cache)
+        for camera_name in self.cameras.keys():
+            camera_id = self.cameras[camera_name].camera_id
+            camera_info = self.get_camera_info(camera_id)
+            self.cameras[camera_name].update(camera_info,
+                                             force_cache=force_cache)
 
     def check_new_videos(self):
         """Check if new videos since last refresh."""

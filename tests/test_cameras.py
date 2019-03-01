@@ -46,7 +46,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.blink._auth_header = header
         self.blink.session = create_session()
         self.blink.urls = BlinkURLHandler('test')
-        self.blink.sync['test'] = BlinkSyncModule(self.blink, 'test', 1234)
+        self.blink.sync['test'] = BlinkSyncModule(self.blink, 'test', 1234, [])
         self.camera = BlinkCamera(self.blink.sync['test'])
         self.camera.name = 'foobar'
         self.blink.sync['test'].cameras['foobar'] = self.camera
@@ -59,7 +59,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         """Test that we can properly update camera properties."""
         config = {
             'name': 'new',
-            'camera_id': 1234,
+            'id': 1234,
             'network_id': 5678,
             'serial': '12345678',
             'enabled': False,
@@ -115,7 +115,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         }
         config = {
             'name': 'new',
-            'camera_id': 1234,
+            'id': 1234,
             'network_id': 5678,
             'serial': '12345678',
             'enabled': False,
@@ -144,7 +144,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.camera.last_record = ['1']
         config = {
             'name': 'new',
-            'camera_id': 1234,
+            'id': 1234,
             'network_id': 5678,
             'serial': '12345678',
             'enabled': False,
@@ -176,7 +176,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         mock_sess.return_value = 'foobar'
         config = {
             'name': 'new',
-            'camera_id': 1234,
+            'id': 1234,
             'network_id': 5678,
             'serial': '12345678',
             'enabled': False,

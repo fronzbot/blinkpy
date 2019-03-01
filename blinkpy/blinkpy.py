@@ -88,9 +88,16 @@ class Blink():
         elif not self.get_auth_token():
             return
 
+        camera_list = self.get_cameras()
         networks = self.get_ids()
         for network_name, network_id in networks.items():
-            sync_module = BlinkSyncModule(self, network_name, network_id)
+            if network_id not in camera_list.keys():
+                camera_list[network_id] = {}
+                _LOGGER.warning("No cameras found for %s", network_name)
+            sync_module = BlinkSyncModule(self,
+                                          network_name,
+                                          network_id,
+                                          camera_list[network_id])
             sync_module.start()
             self.sync[network_name] = sync_module
         self.cameras = self.merge_cameras()
@@ -169,6 +176,25 @@ class Blink():
 
         self.network_ids = all_networks
         return network_dict
+
+    def get_cameras(self):
+        """Retrieve a camera list for each onboarded network."""
+        response = api.request_homescreen(self)
+        try:
+            all_cameras = {}
+            for camera in response['cameras']:
+                camera_network = str(camera['network_id'])
+                camera_name = camera['name']
+                camera_id = camera['id']
+                camera_info = {'name': camera_name, 'id': camera_id}
+                if camera_network not in all_cameras:
+                    all_cameras[camera_network] = []
+
+                all_cameras[camera_network].append(camera_info)
+            return all_cameras
+        except KeyError:
+            _LOGGER.error("Initialization failue. Could not retrieve cameras.")
+            return {}
 
     def refresh(self, force_cache=False):
         """

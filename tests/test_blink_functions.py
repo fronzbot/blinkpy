@@ -79,8 +79,8 @@ class TestBlinkFunctions(unittest.TestCase):
         """Test merge camera functionality."""
         first_dict = {'foo': 'bar', 'test': 123}
         next_dict = {'foobar': 456, 'bar': 'foo'}
-        self.blink.sync['foo'] = BlinkSyncModule(self.blink, 'foo', 1)
-        self.blink.sync['bar'] = BlinkSyncModule(self.blink, 'bar', 2)
+        self.blink.sync['foo'] = BlinkSyncModule(self.blink, 'foo', 1, [])
+        self.blink.sync['bar'] = BlinkSyncModule(self.blink, 'bar', 2, [])
         self.blink.sync['foo'].cameras = first_dict
         self.blink.sync['bar'].cameras = next_dict
         result = self.blink.merge_cameras()
