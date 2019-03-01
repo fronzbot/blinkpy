@@ -107,8 +107,6 @@ class BlinkException(Exception):
 class BlinkAuthenticationException(BlinkException):
     """Class to throw authentication exception."""
 
-    pass
-
 
 class BlinkURLHandler():
     """Class that handles Blink URLS."""
