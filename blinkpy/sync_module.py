@@ -64,7 +64,10 @@ class BlinkSyncModule():
     @property
     def arm(self):
         """Return status of sync module: armed/disarmed."""
-        return self.network_info['network']['armed']
+        try:
+            return self.network_info['network']['armed']
+        except (KeyError, TypeError):
+            return None
 
     @arm.setter
     def arm(self, value):
