@@ -3,6 +3,10 @@ Changelog
 
 A list of changes between each release
 
+0.13.1 (2019-03-01)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Remove throttle decorator from network status request
+
 0.13.0 (2019-03-01)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 **Breaking change:**
