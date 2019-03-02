@@ -29,7 +29,7 @@ from blinkpy.helpers.util import (
     create_session, merge_dicts, get_time, BlinkURLHandler,
     BlinkAuthenticationException, Throttle)
 from blinkpy.helpers.constants import (
-    BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
+    BLINK_URL, LOGIN_URL, OLD_LOGIN_URL, LOGIN_BACKUP_URL)
 from blinkpy.helpers.constants import __version__
 
 REFRESH_RATE = 30
@@ -123,33 +123,12 @@ class Blink():
         if not isinstance(self._password, str):
             raise BlinkAuthenticationException(ERROR.PASSWORD)
 
-        login_url = LOGIN_URL
-        response = api.request_login(self,
-                                     login_url,
-                                     self._username,
-                                     self._password,
-                                     is_retry=is_retry)
-        try:
-            if response.status_code != 200:
-                _LOGGER.debug("Received response code %s during login.",
-                              response.status_code)
-                login_url = LOGIN_BACKUP_URL
-                response = api.request_login(self,
-                                             login_url,
-                                             self._username,
-                                             self._password,
-                                             is_retry=is_retry)
-            response = response.json()
-            (self.region_id, self.region), = response['region'].items()
-        except AttributeError:
-            _LOGGER.error("Login API endpoint failed with response %s",
-                          response,
-                          exc_info=True)
+        login_urls = [LOGIN_URL, OLD_LOGIN_URL, LOGIN_BACKUP_URL]
+
+        response = self.login_request(login_urls, is_retry=is_retry)
+
+        if not response:
             return False
-        except KeyError:
-            _LOGGER.warning("Could not extract region info.")
-            self.region_id = 'piri'
-            self.region = 'UNKNOWN'
 
         self._host = "{}.{}".format(self.region_id, BLINK_URL)
         self._token = response['authtoken']['authtoken']
@@ -158,9 +137,43 @@ class Blink():
         self._auth_header = {'Host': self._host,
                              'TOKEN_AUTH': self._token}
         self.urls = BlinkURLHandler(self.region_id)
-        self._login_url = login_url
 
         return self._auth_header
+
+    def login_request(self, login_urls, is_retry=False):
+        """Make a login request."""
+        try:
+            login_url = login_urls.pop(0)
+        except IndexError:
+            _LOGGER.error("Could not login to blink servers.")
+            return False
+
+        _LOGGER.info("Attempting login with %s", login_url)
+
+        response = api.request_login(self,
+                                     login_url,
+                                     self._username,
+                                     self._password,
+                                     is_retry=is_retry)
+        try:
+            if response.status_code != 200:
+                response = self.login_request(login_urls)
+            response = response.json()
+            (self.region_id, self.region), = response['region'].items()
+
+        except AttributeError:
+            _LOGGER.error("Login API endpoint failed with response %s",
+                          response,
+                          exc_info=True)
+            return False
+
+        except KeyError:
+            _LOGGER.warning("Could not extract region info.")
+            self.region_id = 'piri'
+            self.region = 'UNKNOWN'
+
+        self._login_url = login_url
+        return response
 
     def get_ids(self):
         """Set the network ID and Account ID."""

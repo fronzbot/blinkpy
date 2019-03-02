@@ -47,7 +47,8 @@ URLS
 BLINK_URL = 'immedia-semi.com'
 DEFAULT_URL = "{}.{}".format('prod', BLINK_URL)
 BASE_URL = "https://{}".format(DEFAULT_URL)
-LOGIN_URL = "{}/login".format(BASE_URL)
+LOGIN_URL = "{}/api/v2/login".format(BASE_URL)
+OLD_LOGIN_URL = "{}/login".format(BASE_URL)
 LOGIN_BACKUP_URL = "https://{}.{}/login".format('rest.piri', BLINK_URL)
 
 '''
