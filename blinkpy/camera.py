@@ -92,10 +92,11 @@ class BlinkCamera():
                                                     self.network_id,
                                                     self.camera_id)
 
-    def update(self, config, force_cache=False):
+    def update(self, config, force_cache=False, **kwargs):
         """Update camera info."""
+        # force = kwargs.pop('force', False)
         self.name = config['name']
-        self.camera_id = str(config['camera_id'])
+        self.camera_id = str(config['id'])
         self.network_id = str(config['network_id'])
         self.serial = config['serial']
         self.motion_enabled = config['enabled']

@@ -3,10 +3,12 @@
 import logging
 from json import dumps
 import blinkpy.helpers.errors as ERROR
-from blinkpy.helpers.util import http_req, get_time, BlinkException
+from blinkpy.helpers.util import http_req, get_time, BlinkException, Throttle
 from blinkpy.helpers.constants import DEFAULT_URL
 
 _LOGGER = logging.getLogger(__name__)
+
+MIN_THROTTLE_TIME = 2
 
 
 def request_login(blink, url, username, password, is_retry=False):
@@ -38,6 +40,7 @@ def request_networks(blink):
     return http_get(blink, url)
 
 
+@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_network_status(blink, network):
     """
     Request network information.
@@ -49,6 +52,7 @@ def request_network_status(blink, network):
     return http_get(blink, url)
 
 
+@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_syncmodule(blink, network):
     """
     Request sync module info.
@@ -60,6 +64,7 @@ def request_syncmodule(blink, network):
     return http_get(blink, url)
 
 
+@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_system_arm(blink, network):
     """
     Arm system.
@@ -71,6 +76,7 @@ def request_system_arm(blink, network):
     return http_post(blink, url)
 
 
+@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_system_disarm(blink, network):
     """
     Disarm system.
@@ -96,12 +102,15 @@ def request_command_status(blink, network, command_id):
     return http_get(blink, url)
 
 
+@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_homescreen(blink):
     """Request homescreen info."""
-    url = "{}/homescreen".format(blink.urls.base_url)
+    url = "{}/api/v3/accounts/{}/homescreen".format(blink.urls.base_url,
+                                                    blink.account_id)
     return http_get(blink, url)
 
 
+@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_sync_events(blink, network):
     """
     Request events from sync module.
@@ -113,6 +122,7 @@ def request_sync_events(blink, network):
     return http_get(blink, url)
 
 
+@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_new_image(blink, network, camera_id):
     """
     Request to capture new thumbnail for camera.
@@ -127,6 +137,7 @@ def request_new_image(blink, network, camera_id):
     return http_post(blink, url)
 
 
+@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_new_video(blink, network, camera_id):
     """
     Request to capture new video clip.
@@ -141,6 +152,7 @@ def request_new_video(blink, network, camera_id):
     return http_post(blink, url)
 
 
+@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_video_count(blink):
     """Request total video count."""
     url = "{}/api/v2/videos/count".format(blink.urls.base_url)
@@ -161,6 +173,7 @@ def request_videos(blink, time=None, page=0):
     return http_get(blink, url)
 
 
+@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_cameras(blink, network):
     """
     Request all camera information.
@@ -180,9 +193,9 @@ def request_camera_info(blink, network, camera_id):
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request info from.
     """
-    url = "{}/network/{}/camera/{}".format(blink.urls.base_url,
-                                           network,
-                                           camera_id)
+    url = "{}/network/{}/camera/{}/config".format(blink.urls.base_url,
+                                                  network,
+                                                  camera_id)
     return http_get(blink, url)
 
 
@@ -200,6 +213,7 @@ def request_camera_sensors(blink, network, camera_id):
     return http_get(blink, url)
 
 
+@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_motion_detection_enable(blink, network, camera_id):
     """
     Enable motion detection for a camera.
@@ -214,6 +228,7 @@ def request_motion_detection_enable(blink, network, camera_id):
     return http_post(blink, url)
 
 
+@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_motion_detection_disable(blink, network, camera_id):
     """Disable motion detection for a camera.
 

@@ -3,6 +3,31 @@ Changelog
 
 A list of changes between each release
 
+0.13.0 (2019-03-01)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**Breaking change:**
+Wifi status reported in dBm again, instead of bars (which is great).  Also, the old `get_camera_info` method has changed and requires a `camera_id` parameter.
+
+- Adds throttle decorator
+- Decorate following functions with 4s throttle (call method with `force=True` to override):
+    - request_network_status
+    - request_syncmodule
+    - request_system_arm
+    - request_system_disarm
+    - request_sync_events
+    - request_new_image
+    - request_new_video
+    - request_video_count
+    - request_cameras
+    - request_camera_info
+    - request_camera_sensors
+    - request_motion_detection_enable
+    - request_motion_detection_disable
+- Use the updated homescreen api endpoint to retrieve camera information.  The old method to retrieve all cameras at once seems to not exist, and this was the only solution I could figure out and confirm to work.
+- Adds throttle decorator to refresh function to prevent too many frequent calls with `force_cache` flag set to `True`.  This additional throttle can be overridden with the `force=True` argument passed to the refresh function.
+- Add ability to cycle through login api endpoints to anticipate future endpoint deprecation
+
+
 0.12.1 (2019-01-31)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Remove logging improvements since they were incompatible with home-assistant logging

@@ -27,12 +27,16 @@ from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers import errors as ERROR
 from blinkpy.helpers.util import (
     create_session, merge_dicts, get_time, BlinkURLHandler,
-    BlinkAuthenticationException)
+    BlinkAuthenticationException, Throttle)
 from blinkpy.helpers.constants import (
-    BLINK_URL, LOGIN_URL, LOGIN_BACKUP_URL)
+    BLINK_URL, LOGIN_URL, OLD_LOGIN_URL, LOGIN_BACKUP_URL)
 from blinkpy.helpers.constants import __version__
 
 REFRESH_RATE = 30
+
+# Prevents rapid calls to blink.refresh()
+# with the force_cache flag set to True
+MIN_THROTTLE_TIME = 2
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -88,9 +92,16 @@ class Blink():
         elif not self.get_auth_token():
             return
 
+        camera_list = self.get_cameras()
         networks = self.get_ids()
         for network_name, network_id in networks.items():
-            sync_module = BlinkSyncModule(self, network_name, network_id)
+            if network_id not in camera_list.keys():
+                camera_list[network_id] = {}
+                _LOGGER.warning("No cameras found for %s", network_name)
+            sync_module = BlinkSyncModule(self,
+                                          network_name,
+                                          network_id,
+                                          camera_list[network_id])
             sync_module.start()
             self.sync[network_name] = sync_module
         self.cameras = self.merge_cameras()
@@ -112,33 +123,12 @@ class Blink():
         if not isinstance(self._password, str):
             raise BlinkAuthenticationException(ERROR.PASSWORD)
 
-        login_url = LOGIN_URL
-        response = api.request_login(self,
-                                     login_url,
-                                     self._username,
-                                     self._password,
-                                     is_retry=is_retry)
-        try:
-            if response.status_code != 200:
-                _LOGGER.debug("Received response code %s during login.",
-                              response.status_code)
-                login_url = LOGIN_BACKUP_URL
-                response = api.request_login(self,
-                                             login_url,
-                                             self._username,
-                                             self._password,
-                                             is_retry=is_retry)
-            response = response.json()
-            (self.region_id, self.region), = response['region'].items()
-        except AttributeError:
-            _LOGGER.error("Login API endpoint failed with response %s",
-                          response,
-                          exc_info=True)
+        login_urls = [LOGIN_URL, OLD_LOGIN_URL, LOGIN_BACKUP_URL]
+
+        response = self.login_request(login_urls, is_retry=is_retry)
+
+        if not response:
             return False
-        except KeyError:
-            _LOGGER.warning("Could not extract region info.")
-            self.region_id = 'piri'
-            self.region = 'UNKNOWN'
 
         self._host = "{}.{}".format(self.region_id, BLINK_URL)
         self._token = response['authtoken']['authtoken']
@@ -147,9 +137,43 @@ class Blink():
         self._auth_header = {'Host': self._host,
                              'TOKEN_AUTH': self._token}
         self.urls = BlinkURLHandler(self.region_id)
-        self._login_url = login_url
 
         return self._auth_header
+
+    def login_request(self, login_urls, is_retry=False):
+        """Make a login request."""
+        try:
+            login_url = login_urls.pop(0)
+        except IndexError:
+            _LOGGER.error("Could not login to blink servers.")
+            return False
+
+        _LOGGER.info("Attempting login with %s", login_url)
+
+        response = api.request_login(self,
+                                     login_url,
+                                     self._username,
+                                     self._password,
+                                     is_retry=is_retry)
+        try:
+            if response.status_code != 200:
+                response = self.login_request(login_urls)
+            response = response.json()
+            (self.region_id, self.region), = response['region'].items()
+
+        except AttributeError:
+            _LOGGER.error("Login API endpoint failed with response %s",
+                          response,
+                          exc_info=True)
+            return False
+
+        except KeyError:
+            _LOGGER.warning("Could not extract region info.")
+            self.region_id = 'piri'
+            self.region = 'UNKNOWN'
+
+        self._login_url = login_url
+        return response
 
     def get_ids(self):
         """Set the network ID and Account ID."""
@@ -170,6 +194,26 @@ class Blink():
         self.network_ids = all_networks
         return network_dict
 
+    def get_cameras(self):
+        """Retrieve a camera list for each onboarded network."""
+        response = api.request_homescreen(self)
+        try:
+            all_cameras = {}
+            for camera in response['cameras']:
+                camera_network = str(camera['network_id'])
+                camera_name = camera['name']
+                camera_id = camera['id']
+                camera_info = {'name': camera_name, 'id': camera_id}
+                if camera_network not in all_cameras:
+                    all_cameras[camera_network] = []
+
+                all_cameras[camera_network].append(camera_info)
+            return all_cameras
+        except KeyError:
+            _LOGGER.error("Initialization failue. Could not retrieve cameras.")
+            return {}
+
+    @Throttle(seconds=MIN_THROTTLE_TIME)
     def refresh(self, force_cache=False):
         """
         Perform a system refresh.
@@ -183,6 +227,8 @@ class Blink():
             if not force_cache:
                 # Prevents rapid clearing of motion detect property
                 self.last_refresh = int(time.time())
+            return True
+        return False
 
     def check_if_ok_to_update(self):
         """Check if it is ok to perform an http request."""

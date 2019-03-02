@@ -67,5 +67,3 @@ def mocked_session_send(*args, **kwargs):
 
 class MockURLHandler(BlinkURLHandler):
     """Mocks URL Handler in blinkpy module."""
-
-    pass
