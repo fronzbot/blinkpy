@@ -325,5 +325,5 @@ class Blink():
 
                 _LOGGER.info("Downloaded video to %s", filename)
             else:
-                _LOGGER.info("Camera: %s, Timestamp: %s, Address: %s",
-                             camera_name, created_at, address)
+                print("Camera: {}, Timestamp: {}, Address: {}".format(
+                      camera_name, created_at, address))
