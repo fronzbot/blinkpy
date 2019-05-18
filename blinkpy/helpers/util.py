@@ -113,7 +113,7 @@ class BlinkURLHandler():
 
     def __init__(self, region_id):
         """Initialize the urls."""
-        self.base_url = "https://rest.{}.{}".format(region_id, BLINK_URL)
+        self.base_url = "https://rest-{}.{}".format(region_id, BLINK_URL)
         self.home_url = "{}/homescreen".format(self.base_url)
         self.event_url = "{}/events/network".format(self.base_url)
         self.network_url = "{}/network".format(self.base_url)
