@@ -40,7 +40,6 @@ def request_networks(blink):
     return http_get(blink, url)
 
 
-@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_network_status(blink, network):
     """
     Request network information.
@@ -52,7 +51,6 @@ def request_network_status(blink, network):
     return http_get(blink, url)
 
 
-@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_syncmodule(blink, network):
     """
     Request sync module info.
@@ -173,7 +171,6 @@ def request_videos(blink, time=None, page=0):
     return http_get(blink, url)
 
 
-@Throttle(seconds=MIN_THROTTLE_TIME)
 def request_cameras(blink, network):
     """
     Request all camera information.
