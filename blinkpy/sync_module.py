@@ -80,8 +80,7 @@ class BlinkSyncModule():
     def start(self):
         """Initialize the system."""
         response = api.request_syncmodule(self.blink,
-                                          self.network_id,
-                                          force=True)
+                                          self.network_id)
         try:
             self.summary = response['syncmodule']
             self.network_id = self.summary['network_id']
