@@ -168,8 +168,8 @@ def request_videos(blink, time=None, page=0):
     :param page: Page number to get videos from.
     """
     timestamp = get_time(time)
-    url = "{}/api/v2/videos/changed?since={}&page={}".format(
-        blink.urls.base_url, timestamp, page)
+    url = "{}/api/v1/accounts/{}/media/changed?since={}&page={}".format(
+        blink.urls.base_url, blink.account_id, timestamp, page)
     return http_get(blink, url)
 
 

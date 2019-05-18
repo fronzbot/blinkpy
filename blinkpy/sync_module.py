@@ -164,21 +164,21 @@ class BlinkSyncModule():
         """Check if new videos since last refresh."""
         resp = api.request_videos(self.blink,
                                   time=self.blink.last_refresh,
-                                  page=0)
+                                  page=1)
 
         for camera in self.cameras.keys():
             self.motion[camera] = False
 
         try:
-            info = resp['videos']
+            info = resp['media']
         except (KeyError, TypeError):
             _LOGGER.warning("Could not check for motion. Response: %s", resp)
             return False
 
         for entry in info:
             try:
-                name = entry['camera_name']
-                clip = entry['address']
+                name = entry['device_name']
+                clip = entry['media']
                 timestamp = entry['created_at']
                 self.motion[name] = True
                 self.last_record[name] = {'clip': clip, 'time': timestamp}
