@@ -247,7 +247,8 @@ class Blink():
             combined = merge_dicts(combined, self.sync[sync].cameras)
         return combined
 
-    def download_videos(self, path, since=None, camera='all', stop=10):
+    def download_videos(self, path, since=None,
+                        camera='all', stop=10, debug=False):
         """
         Download all videos from server since specified time.
 
@@ -258,6 +259,8 @@ class Blink():
         :param camera: Camera name to retrieve.  Defaults to "all".
                        Use a list for multiple cameras.
         :param stop: Page to stop on (~25 items per page. Default page 10).
+        :param debug: Set to TRUE to prevent downloading of items.
+                      Instead of downloading, entries will be printed to log.
         """
         if since is None:
             since_epochs = self.last_refresh
@@ -275,23 +278,23 @@ class Blink():
             response = api.request_videos(self, time=since_epochs, page=page)
             _LOGGER.debug("Processing page %s", page)
             try:
-                result = response['videos']
+                result = response['media']
                 if not result:
                     raise IndexError
             except (KeyError, IndexError):
                 _LOGGER.info("No videos found on page %s. Exiting.", page)
                 break
 
-            self._parse_downloaded_items(result, camera, path)
+            self._parse_downloaded_items(result, camera, path, debug)
 
-    def _parse_downloaded_items(self, result, camera, path):
+    def _parse_downloaded_items(self, result, camera, path, debug):
         """Parse downloaded videos."""
         for item in result:
             try:
                 created_at = item['created_at']
-                camera_name = item['camera_name']
+                camera_name = item['device_name']
                 is_deleted = item['deleted']
-                address = item['address']
+                address = item['media']
             except KeyError:
                 _LOGGER.info("Missing clip information, skipping...")
                 continue
@@ -310,13 +313,17 @@ class Blink():
             filename = "{}_{}.mp4".format(camera_name, created_at)
             filename = os.path.join(path, filename)
 
-            if os.path.isfile(filename):
-                _LOGGER.info("%s already exists, skipping...", filename)
-                continue
+            if not debug:
+                if os.path.isfile(filename):
+                    _LOGGER.info("%s already exists, skipping...", filename)
+                    continue
 
-            response = api.http_get(self, url=clip_address,
-                                    stream=True, json=False)
-            with open(filename, 'wb') as vidfile:
-                copyfileobj(response.raw, vidfile)
+                response = api.http_get(self, url=clip_address,
+                                        stream=True, json=False)
+                with open(filename, 'wb') as vidfile:
+                    copyfileobj(response.raw, vidfile)
 
-            _LOGGER.info("Downloaded video to %s", filename)
+                _LOGGER.info("Downloaded video to %s", filename)
+            else:
+                _LOGGER.info("Camera: %s, Timestamp: %s, Address: %s",
+                             camera_name, created_at, address)
