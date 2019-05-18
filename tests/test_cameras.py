@@ -87,7 +87,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.assertEqual(self.camera.network_id, '5678')
         self.assertEqual(self.camera.serial, '12345678')
         self.assertEqual(self.camera.motion_enabled, False)
-        self.assertEqual(self.camera.battery, 50)
+        self.assertEqual(self.camera.battery, 'ok')
         self.assertEqual(self.camera.temperature, 68)
         self.assertEqual(self.camera.temperature_c, 20)
         self.assertEqual(self.camera.temperature_calibrated, 71)
