@@ -21,6 +21,7 @@ from shutil import copyfileobj
 
 from requests.structures import CaseInsensitiveDict
 from dateutil.parser import parse
+from slugify import slugify
 
 from blinkpy import api
 from blinkpy.sync_module import BlinkSyncModule
@@ -310,7 +311,8 @@ class Blink():
                 continue
 
             clip_address = "{}{}".format(self.urls.base_url, address)
-            filename = "{}_{}.mp4".format(camera_name, created_at)
+            filename = "{}-{}".format(camera_name, created_at)
+            filename = "{}.mp4".format(slugify(filename))
             filename = os.path.join(path, filename)
 
             if not debug:
@@ -325,5 +327,6 @@ class Blink():
 
                 _LOGGER.info("Downloaded video to %s", filename)
             else:
-                print("Camera: {}, Timestamp: {}, Address: {}".format(
-                    camera_name, created_at, address))
+                print(("Camera: {}, Timestamp: {}, "
+                       "Address: {}, Filename: {}").format(
+                           camera_name, created_at, address, filename))
