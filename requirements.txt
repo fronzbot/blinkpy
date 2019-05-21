@@ -1,3 +1,4 @@
 python-dateutil==2.7.5
 requests>=2.20.0
+python-slugify==3.0.2
 testtools==2.3.0
