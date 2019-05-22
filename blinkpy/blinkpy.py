@@ -30,14 +30,10 @@ from blinkpy.helpers.util import (
     create_session, merge_dicts, get_time, BlinkURLHandler,
     BlinkAuthenticationException, Throttle)
 from blinkpy.helpers.constants import (
-    BLINK_URL, LOGIN_URL, OLD_LOGIN_URL, LOGIN_BACKUP_URL)
+    BLINK_URL, LOGIN_URL, OLD_LOGIN_URL, LOGIN_BACKUP_URL,
+    DEFAULT_MOTION_INTERVAL, DEFAULT_REFRESH, MIN_THROTTLE_TIME)
 from blinkpy.helpers.constants import __version__
 
-REFRESH_RATE = 30
-
-# Prevents rapid calls to blink.refresh()
-# with the force_cache flag set to True
-MIN_THROTTLE_TIME = 2
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +42,8 @@ class Blink():
     """Class to initialize communication."""
 
     def __init__(self, username=None, password=None,
-                 refresh_rate=REFRESH_RATE):
+                 refresh_rate=DEFAULT_REFRESH,
+                 motion_interval=DEFAULT_MOTION_INTERVAL):
         """
         Initialize Blink system.
 
@@ -54,6 +51,10 @@ class Blink():
         :param password: Blink password
         :param refresh_rate: Refresh rate of blink information.
                              Defaults to 15 (seconds)
+        :param motion_interval: How far back to register motion in minutes.
+                             Defaults to last refresh time.
+                             Useful for preventing motion_detected property
+                             from de-asserting too quickly.
         """
         self._username = username
         self._password = password
@@ -73,6 +74,7 @@ class Blink():
         self.cameras = CaseInsensitiveDict({})
         self.video_list = CaseInsensitiveDict({})
         self._login_url = LOGIN_URL
+        self.motion_interval = DEFAULT_MOTION_INTERVAL
         self.version = __version__
 
     @property
