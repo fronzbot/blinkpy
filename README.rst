@@ -2,6 +2,10 @@ blinkpy |Build Status| |Coverage Status| |Docs| |PyPi Version| |Python Version|
 ================================================================================
 A Python library for the Blink Camera system
 
+Like the library? Consider buying me a cup of coffee!
+
+|Donate|
+
 Disclaimer:
 ~~~~~~~~~~~~~~~
 Published under the MIT license - See LICENSE file for more details.
@@ -106,3 +110,6 @@ Example usage, which downloads all videos recorded since July 4th, 2018 at 9:34a
    :target: http://blinkpy.readthedocs.io/en/latest/?badge=latest
 .. |Python Version| image:: https://img.shields.io/pypi/pyversions/blinkpy.svg
    :target: https://img.shields.io/pypi/pyversions/blinkpy.svg
+   
+.. |Donate| image:: https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif
+   :target: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=UR6Z2B8GXYUCC

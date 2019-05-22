@@ -17,12 +17,14 @@ class TestBlinkSyncModule(unittest.TestCase):
     def setUp(self):
         """Set up Blink module."""
         self.blink = blinkpy.Blink(username=USERNAME,
-                                   password=PASSWORD)
+                                   password=PASSWORD,
+                                   motion_interval=0)
         # pylint: disable=protected-access
         self.blink._auth_header = {
             'Host': 'test.url.tld',
             'TOKEN_AUTH': 'foobar123'
         }
+        self.blink.last_refresh = 0
         self.blink.urls = blinkpy.BlinkURLHandler('test')
         self.blink.sync['test'] = BlinkSyncModule(self.blink,
                                                   'test',
@@ -58,6 +60,12 @@ class TestBlinkSyncModule(unittest.TestCase):
         mock_resp.return_value = {'camera': ['foobar']}
         self.assertEqual(self.blink.sync['test'].get_camera_info('1234'),
                          'foobar')
+
+    def test_check_new_videos_startup(self, mock_resp):
+        """Test that check_new_videos does not block startup."""
+        sync_module = self.blink.sync['test']
+        self.blink.last_refresh = None
+        self.assertFalse(sync_module.check_new_videos())
 
     def test_check_new_videos(self, mock_resp):
         """Test recent video response."""
