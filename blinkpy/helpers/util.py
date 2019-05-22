@@ -15,7 +15,7 @@ def get_time(time_to_convert=None):
     """Create blink-compatible timestamp."""
     if time_to_convert is None:
         time_to_convert = time.time()
-    return time.strftime(TIMESTAMP_FORMAT, time.localtime(time_to_convert))
+    return time.strftime(TIMESTAMP_FORMAT, time.gmtime(time_to_convert))
 
 
 def merge_dicts(dict_a, dict_b):

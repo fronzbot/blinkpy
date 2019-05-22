@@ -33,6 +33,7 @@ class BlinkSyncModule():
         self.network_info = None
         self.events = []
         self.cameras = CaseInsensitiveDict({})
+        self.motion_interval = blink.motion_interval
         self.motion = {}
         self.last_record = {}
         self.camera_list = camera_list
@@ -161,8 +162,15 @@ class BlinkSyncModule():
 
     def check_new_videos(self):
         """Check if new videos since last refresh."""
+        try:
+            interval = self.blink.last_refresh - self.motion_interval*60
+        except TypeError:
+            # This is the first start, so refresh hasn't happened yet.
+            # No need to check for motion.
+            return False
+
         resp = api.request_videos(self.blink,
-                                  time=self.blink.last_refresh,
+                                  time=interval,
                                   page=1)
 
         for camera in self.cameras.keys():
