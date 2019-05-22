@@ -43,7 +43,8 @@ class Blink():
 
     def __init__(self, username=None, password=None,
                  refresh_rate=DEFAULT_REFRESH,
-                 motion_interval=DEFAULT_MOTION_INTERVAL):
+                 motion_interval=DEFAULT_MOTION_INTERVAL,
+                 legacy_subdomain=False):
         """
         Initialize Blink system.
 
@@ -55,6 +56,9 @@ class Blink():
                              Defaults to last refresh time.
                              Useful for preventing motion_detected property
                              from de-asserting too quickly.
+        :param legacy_subdomain: Set to TRUE to use old 'rest.region'
+                             endpoints (only use if you are having
+                             api issues).
         """
         self._username = username
         self._password = password
@@ -76,6 +80,7 @@ class Blink():
         self._login_url = LOGIN_URL
         self.motion_interval = DEFAULT_MOTION_INTERVAL
         self.version = __version__
+        self.legacy = legacy_subdomain
 
     @property
     def auth_header(self):
@@ -139,7 +144,7 @@ class Blink():
 
         self._auth_header = {'Host': self._host,
                              'TOKEN_AUTH': self._token}
-        self.urls = BlinkURLHandler(self.region_id)
+        self.urls = BlinkURLHandler(self.region_id, legacy=self.legacy)
 
         return self._auth_header
 
