@@ -35,7 +35,7 @@ A list of changes between each release
 Wifi status reported in dBm again, instead of bars (which is great).  Also, the old ``get_camera_info`` method has changed and requires a ``camera_id`` parameter.
 
 - Adds throttle decorator
-- Decorate following functions with 4s throttle (call method with ```force=True` to override):
+- Decorate following functions with 4s throttle (call method with ``force=True`` to override):
     - request_network_status
     - request_syncmodule
     - request_system_arm
