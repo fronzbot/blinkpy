@@ -78,7 +78,7 @@ class Blink():
         self.cameras = CaseInsensitiveDict({})
         self.video_list = CaseInsensitiveDict({})
         self._login_url = LOGIN_URL
-        self.motion_interval = DEFAULT_MOTION_INTERVAL
+        self.motion_interval = motion_interval
         self.version = __version__
         self.legacy = legacy_subdomain
 
