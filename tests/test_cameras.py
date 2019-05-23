@@ -87,15 +87,15 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.assertEqual(self.camera.network_id, '5678')
         self.assertEqual(self.camera.serial, '12345678')
         self.assertEqual(self.camera.motion_enabled, False)
-        self.assertEqual(self.camera.battery, 50)
+        self.assertEqual(self.camera.battery, 'ok')
         self.assertEqual(self.camera.temperature, 68)
         self.assertEqual(self.camera.temperature_c, 20)
         self.assertEqual(self.camera.temperature_calibrated, 71)
         self.assertEqual(self.camera.wifi_strength, 4)
         self.assertEqual(self.camera.thumbnail,
-                         'https://rest.test.immedia-semi.com/thumb.jpg')
+                         'https://rest-test.immedia-semi.com/thumb.jpg')
         self.assertEqual(self.camera.clip,
-                         'https://rest.test.immedia-semi.com/test.mp4')
+                         'https://rest-test.immedia-semi.com/test.mp4')
         self.assertEqual(self.camera.image_from_cache, 'test')
         self.assertEqual(self.camera.video_from_cache, 'foobar')
 
@@ -136,7 +136,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         }
         self.camera.update(config)
         self.assertEqual(self.camera.thumbnail,
-                         'https://rest.test.immedia-semi.com/new/thumb.jpg')
+                         'https://rest-test.immedia-semi.com/new/thumb.jpg')
 
     def test_no_thumbnails(self, mock_sess):
         """Tests that thumbnail is 'None' if none found."""

@@ -3,6 +3,28 @@ Changelog
 
 A list of changes between each release
 
+0.14.0 (2019-05-23)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**Breaking Changes:**
+
+- ``BlinkCamera.battery`` no longer reports a percentage, instead it returns a string representing the state of the battery.
+- Previous logic for calculating percentage was incorrect
+- raw battery voltage can be accessed via ``BlinkCamera.battery_voltage``
+
+**Bug Fixes:**
+
+- Updated video endpoint (fixes broken motion detection)
+- Removed throttling from critical api methods which prevented proper operation of multi-sync unit setups
+- Slugify downloaded video names to allow for OS interoperability
+- Added one minute offset (``Blink.motion_interval``) when checking for recent motion to allow time for events to propagate to server prior to refresh call.
+
+**Everything else:**
+
+- Changed all urls to use ``rest-region`` rather than ``rest.region``.  Ability to revert to old method is enabled by instantiating ``Blink()`` with the ``legacy_subdomain`` variable set to ``True``.
+- Added debug mode to ``blinkpy.download_videos`` routine to simply print the videos prepped for download, rather than actually saving them.
+- Use UTC for time conversions, rather than local timezone
+
+
 0.13.1 (2019-03-01)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Remove throttle decorator from network status request
@@ -10,10 +32,10 @@ A list of changes between each release
 0.13.0 (2019-03-01)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 **Breaking change:**
-Wifi status reported in dBm again, instead of bars (which is great).  Also, the old `get_camera_info` method has changed and requires a `camera_id` parameter.
+Wifi status reported in dBm again, instead of bars (which is great).  Also, the old ``get_camera_info`` method has changed and requires a ``camera_id`` parameter.
 
 - Adds throttle decorator
-- Decorate following functions with 4s throttle (call method with `force=True` to override):
+- Decorate following functions with 4s throttle (call method with ``force=True`` to override):
     - request_network_status
     - request_syncmodule
     - request_system_arm
@@ -28,7 +50,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
     - request_motion_detection_enable
     - request_motion_detection_disable
 - Use the updated homescreen api endpoint to retrieve camera information.  The old method to retrieve all cameras at once seems to not exist, and this was the only solution I could figure out and confirm to work.
-- Adds throttle decorator to refresh function to prevent too many frequent calls with `force_cache` flag set to `True`.  This additional throttle can be overridden with the `force=True` argument passed to the refresh function.
+- Adds throttle decorator to refresh function to prevent too many frequent calls with ``force_cache`` flag set to ``True``.  This additional throttle can be overridden with the ``force=True`` argument passed to the refresh function.
 - Add ability to cycle through login api endpoints to anticipate future endpoint deprecation
 
 
@@ -70,7 +92,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 0.10.2 (2018-10-30)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Set minimum required version of the requests library to 2.20.0 due to vulnerability in earlier releases.
-- When multiple networks detected, changed log level to 'warning' from 'error' 
+- When multiple networks detected, changed log level to ``warning`` from ``error`` 
 
 
 0.10.1 (2018-10-18)
@@ -98,7 +120,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 - Use session for http requests
 
 **Breaking change:**
-- Cameras now accessed through sync module Blink.sync.cameras
+- Cameras now accessed through sync module ``Blink.sync.cameras``
 
 
 0.8.1 (2018-09-24)

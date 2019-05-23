@@ -21,6 +21,7 @@ from shutil import copyfileobj
 
 from requests.structures import CaseInsensitiveDict
 from dateutil.parser import parse
+from slugify import slugify
 
 from blinkpy import api
 from blinkpy.sync_module import BlinkSyncModule
@@ -29,14 +30,10 @@ from blinkpy.helpers.util import (
     create_session, merge_dicts, get_time, BlinkURLHandler,
     BlinkAuthenticationException, Throttle)
 from blinkpy.helpers.constants import (
-    BLINK_URL, LOGIN_URL, OLD_LOGIN_URL, LOGIN_BACKUP_URL)
+    BLINK_URL, LOGIN_URL, OLD_LOGIN_URL, LOGIN_BACKUP_URL,
+    DEFAULT_MOTION_INTERVAL, DEFAULT_REFRESH, MIN_THROTTLE_TIME)
 from blinkpy.helpers.constants import __version__
 
-REFRESH_RATE = 30
-
-# Prevents rapid calls to blink.refresh()
-# with the force_cache flag set to True
-MIN_THROTTLE_TIME = 2
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,7 +42,9 @@ class Blink():
     """Class to initialize communication."""
 
     def __init__(self, username=None, password=None,
-                 refresh_rate=REFRESH_RATE):
+                 refresh_rate=DEFAULT_REFRESH,
+                 motion_interval=DEFAULT_MOTION_INTERVAL,
+                 legacy_subdomain=False):
         """
         Initialize Blink system.
 
@@ -53,6 +52,13 @@ class Blink():
         :param password: Blink password
         :param refresh_rate: Refresh rate of blink information.
                              Defaults to 15 (seconds)
+        :param motion_interval: How far back to register motion in minutes.
+                             Defaults to last refresh time.
+                             Useful for preventing motion_detected property
+                             from de-asserting too quickly.
+        :param legacy_subdomain: Set to TRUE to use old 'rest.region'
+                             endpoints (only use if you are having
+                             api issues).
         """
         self._username = username
         self._password = password
@@ -72,7 +78,9 @@ class Blink():
         self.cameras = CaseInsensitiveDict({})
         self.video_list = CaseInsensitiveDict({})
         self._login_url = LOGIN_URL
+        self.motion_interval = motion_interval
         self.version = __version__
+        self.legacy = legacy_subdomain
 
     @property
     def auth_header(self):
@@ -136,7 +144,7 @@ class Blink():
 
         self._auth_header = {'Host': self._host,
                              'TOKEN_AUTH': self._token}
-        self.urls = BlinkURLHandler(self.region_id)
+        self.urls = BlinkURLHandler(self.region_id, legacy=self.legacy)
 
         return self._auth_header
 
@@ -247,7 +255,8 @@ class Blink():
             combined = merge_dicts(combined, self.sync[sync].cameras)
         return combined
 
-    def download_videos(self, path, since=None, camera='all', stop=10):
+    def download_videos(self, path, since=None,
+                        camera='all', stop=10, debug=False):
         """
         Download all videos from server since specified time.
 
@@ -258,6 +267,8 @@ class Blink():
         :param camera: Camera name to retrieve.  Defaults to "all".
                        Use a list for multiple cameras.
         :param stop: Page to stop on (~25 items per page. Default page 10).
+        :param debug: Set to TRUE to prevent downloading of items.
+                      Instead of downloading, entries will be printed to log.
         """
         if since is None:
             since_epochs = self.last_refresh
@@ -275,23 +286,23 @@ class Blink():
             response = api.request_videos(self, time=since_epochs, page=page)
             _LOGGER.debug("Processing page %s", page)
             try:
-                result = response['videos']
+                result = response['media']
                 if not result:
                     raise IndexError
             except (KeyError, IndexError):
                 _LOGGER.info("No videos found on page %s. Exiting.", page)
                 break
 
-            self._parse_downloaded_items(result, camera, path)
+            self._parse_downloaded_items(result, camera, path, debug)
 
-    def _parse_downloaded_items(self, result, camera, path):
+    def _parse_downloaded_items(self, result, camera, path, debug):
         """Parse downloaded videos."""
         for item in result:
             try:
                 created_at = item['created_at']
-                camera_name = item['camera_name']
+                camera_name = item['device_name']
                 is_deleted = item['deleted']
-                address = item['address']
+                address = item['media']
             except KeyError:
                 _LOGGER.info("Missing clip information, skipping...")
                 continue
@@ -307,16 +318,22 @@ class Blink():
                 continue
 
             clip_address = "{}{}".format(self.urls.base_url, address)
-            filename = "{}_{}.mp4".format(camera_name, created_at)
+            filename = "{}-{}".format(camera_name, created_at)
+            filename = "{}.mp4".format(slugify(filename))
             filename = os.path.join(path, filename)
 
-            if os.path.isfile(filename):
-                _LOGGER.info("%s already exists, skipping...", filename)
-                continue
+            if not debug:
+                if os.path.isfile(filename):
+                    _LOGGER.info("%s already exists, skipping...", filename)
+                    continue
 
-            response = api.http_get(self, url=clip_address,
-                                    stream=True, json=False)
-            with open(filename, 'wb') as vidfile:
-                copyfileobj(response.raw, vidfile)
+                response = api.http_get(self, url=clip_address,
+                                        stream=True, json=False)
+                with open(filename, 'wb') as vidfile:
+                    copyfileobj(response.raw, vidfile)
 
-            _LOGGER.info("Downloaded video to %s", filename)
+                _LOGGER.info("Downloaded video to %s", filename)
+            else:
+                print(("Camera: {}, Timestamp: {}, "
+                       "Address: {}, Filename: {}").format(
+                           camera_name, created_at, address, filename))

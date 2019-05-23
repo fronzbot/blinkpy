@@ -41,6 +41,7 @@ class BlinkCamera():
             'temperature_c': self.temperature_c,
             'temperature_calibrated': self.temperature_calibrated,
             'battery': self.battery,
+            'battery_voltage': self.battery_voltage,
             'thumbnail': self.thumbnail,
             'video': self.clip,
             'motion_enabled': self.motion_enabled,
@@ -54,8 +55,8 @@ class BlinkCamera():
 
     @property
     def battery(self):
-        """Return battery level as percentage."""
-        return round(self.battery_voltage / 180 * 100)
+        """Return battery as string."""
+        return self.battery_state
 
     @property
     def temperature_c(self):

@@ -121,12 +121,12 @@ class TestBlinkFunctions(unittest.TestCase):
         blinkpy._LOGGER.setLevel(logging.DEBUG)
         generic_entry = {
             'created_at': '1970',
-            'camera_name': 'foo',
+            'device_name': 'foo',
             'deleted': True,
-            'address': '/bar.mp4'
+            'media': '/bar.mp4'
         }
         result = [generic_entry]
-        mock_req.return_value = {'videos': result}
+        mock_req.return_value = {'media': result}
         blink.last_refresh = 0
         formatted_date = get_time(blink.last_refresh)
         expected_log = [
@@ -147,12 +147,12 @@ class TestBlinkFunctions(unittest.TestCase):
         blinkpy._LOGGER.setLevel(logging.DEBUG)
         generic_entry = {
             'created_at': '1970',
-            'camera_name': 'foo',
+            'device_name': 'foo',
             'deleted': True,
-            'address': '/bar.mp4'
+            'media': '/bar.mp4'
         }
         result = [generic_entry]
-        mock_req.return_value = {'videos': result}
+        mock_req.return_value = {'media': result}
         blink.last_refresh = 0
         formatted_date = get_time(blink.last_refresh)
         expected_log = [

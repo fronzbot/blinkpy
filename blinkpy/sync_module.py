@@ -33,6 +33,7 @@ class BlinkSyncModule():
         self.network_info = None
         self.events = []
         self.cameras = CaseInsensitiveDict({})
+        self.motion_interval = blink.motion_interval
         self.motion = {}
         self.last_record = {}
         self.camera_list = camera_list
@@ -80,8 +81,7 @@ class BlinkSyncModule():
     def start(self):
         """Initialize the system."""
         response = api.request_syncmodule(self.blink,
-                                          self.network_id,
-                                          force=True)
+                                          self.network_id)
         try:
             self.summary = response['syncmodule']
             self.network_id = self.summary['network_id']
@@ -162,23 +162,30 @@ class BlinkSyncModule():
 
     def check_new_videos(self):
         """Check if new videos since last refresh."""
+        try:
+            interval = self.blink.last_refresh - self.motion_interval*60
+        except TypeError:
+            # This is the first start, so refresh hasn't happened yet.
+            # No need to check for motion.
+            return False
+
         resp = api.request_videos(self.blink,
-                                  time=self.blink.last_refresh,
-                                  page=0)
+                                  time=interval,
+                                  page=1)
 
         for camera in self.cameras.keys():
             self.motion[camera] = False
 
         try:
-            info = resp['videos']
+            info = resp['media']
         except (KeyError, TypeError):
             _LOGGER.warning("Could not check for motion. Response: %s", resp)
             return False
 
         for entry in info:
             try:
-                name = entry['camera_name']
-                clip = entry['address']
+                name = entry['device_name']
+                clip = entry['media']
                 timestamp = entry['created_at']
                 self.motion[name] = True
                 self.last_record[name] = {'clip': clip, 'time': timestamp}

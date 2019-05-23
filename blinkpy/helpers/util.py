@@ -15,7 +15,7 @@ def get_time(time_to_convert=None):
     """Create blink-compatible timestamp."""
     if time_to_convert is None:
         time_to_convert = time.time()
-    return time.strftime(TIMESTAMP_FORMAT, time.localtime(time_to_convert))
+    return time.strftime(TIMESTAMP_FORMAT, time.gmtime(time_to_convert))
 
 
 def merge_dicts(dict_a, dict_b):
@@ -111,9 +111,12 @@ class BlinkAuthenticationException(BlinkException):
 class BlinkURLHandler():
     """Class that handles Blink URLS."""
 
-    def __init__(self, region_id):
+    def __init__(self, region_id, legacy=False):
         """Initialize the urls."""
-        self.base_url = "https://rest.{}.{}".format(region_id, BLINK_URL)
+        self.subdomain = 'rest-{}'.format(region_id)
+        if legacy:
+            self.subdomain = 'rest.{}'.format(region_id)
+        self.base_url = "https://{}.{}".format(self.subdomain, BLINK_URL)
         self.home_url = "{}/homescreen".format(self.base_url)
         self.event_url = "{}/events/network".format(self.base_url)
         self.network_url = "{}/network".format(self.base_url)
