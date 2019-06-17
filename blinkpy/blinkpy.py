@@ -78,6 +78,7 @@ class Blink():
         self.cameras = CaseInsensitiveDict({})
         self.video_list = CaseInsensitiveDict({})
         self._login_url = LOGIN_URL
+        self.login_urls = []
         self.motion_interval = motion_interval
         self.version = __version__
         self.legacy = legacy_subdomain
@@ -131,9 +132,9 @@ class Blink():
         if not isinstance(self._password, str):
             raise BlinkAuthenticationException(ERROR.PASSWORD)
 
-        login_urls = [LOGIN_URL, OLD_LOGIN_URL, LOGIN_BACKUP_URL]
+        self.login_urls = [LOGIN_URL, OLD_LOGIN_URL, LOGIN_BACKUP_URL]
 
-        response = self.login_request(login_urls, is_retry=is_retry)
+        response = self.login_request(is_retry=is_retry)
 
         if not response:
             return False
@@ -148,10 +149,10 @@ class Blink():
 
         return self._auth_header
 
-    def login_request(self, login_urls, is_retry=False):
+    def login_request(self, is_retry=False):
         """Make a login request."""
         try:
-            login_url = login_urls.pop(0)
+            login_url = self.login_urls.pop(0)
         except IndexError:
             _LOGGER.error("Could not login to blink servers.")
             return False
@@ -165,14 +166,13 @@ class Blink():
                                      is_retry=is_retry)
         try:
             if response.status_code != 200:
-                response = self.login_request(login_urls)
+                response = self.login_request(is_retry=True)
             response = response.json()
             (self.region_id, self.region), = response['region'].items()
 
         except AttributeError:
             _LOGGER.error("Login API endpoint failed with response %s",
-                          response,
-                          exc_info=True)
+                          response)
             return False
 
         except KeyError:

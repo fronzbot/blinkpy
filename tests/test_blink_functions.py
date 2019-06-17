@@ -69,7 +69,8 @@ class TestBlinkFunctions(unittest.TestCase):
             bad_req,
             new_req
         ]
-        self.blink.login_request(['test1', 'test2', 'test3'])
+        self.blink.login_urls = ['test1', 'test2', 'test3']
+        self.blink.login_request()
         # pylint: disable=protected-access
         self.assertEqual(self.blink._login_url, 'test3')
 
@@ -78,7 +79,8 @@ class TestBlinkFunctions(unittest.TestCase):
             new_req,
             bad_req
         ]
-        self.blink.login_request(['test1', 'test2', 'test3'])
+        self.blink.login_urls = ['test1', 'test2', 'test3']
+        self.blink.login_request()
         # pylint: disable=protected-access
         self.assertEqual(self.blink._login_url, 'test2')
 

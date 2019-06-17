@@ -2,7 +2,7 @@
 
 import logging
 import time
-from functools import wraps
+from functools import partial, wraps
 from requests import Request, Session, exceptions
 from blinkpy.helpers.constants import BLINK_URL, TIMESTAMP_FORMAT
 import blinkpy.helpers.errors as ERROR
@@ -28,8 +28,14 @@ def merge_dicts(dict_a, dict_b):
 
 
 def create_session():
-    """Create a session for blink communication."""
+    """
+    Create a session for blink communication.
+
+    From @ericfrederich via
+    https://github.com/kennethreitz/requests/issues/2011
+    """
     sess = Session()
+    sess.get = partial(sess.get, timeout=5)
     return sess
 
 
@@ -65,7 +71,7 @@ def http_req(blink, url='http://example.com', data=None, headers=None,
     prepped = req.prepare()
 
     try:
-        response = blink.session.send(prepped, stream=stream, timeout=10)
+        response = blink.session.send(prepped, stream=stream)
         if json_resp and 'code' in response.json():
             if is_retry:
                 _LOGGER.error("Cannot obtain new token for server auth.")
