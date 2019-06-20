@@ -3,6 +3,12 @@ Changelog
 
 A list of changes between each release
 
+0.14.1 (2019-06-20)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Fix timeout problems blocking blinkpy startup
+- Updated login urls using ``rest-region`` subdomain
+- Removed deprecated thumbanil recovery from homescreen
+
 0.14.0 (2019-05-23)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 **Breaking Changes:**

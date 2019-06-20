@@ -117,13 +117,16 @@ class BlinkCamera():
             _LOGGER.warning("Could not retrieve calibrated temperature.")
 
         # Check if thumbnail exists in config, if not try to
-        # get it from the homescreen info in teh sync module
+        # get it from the homescreen info in the sync module
         # otherwise set it to None and log an error
         new_thumbnail = None
+        thumb_addr = None
         if config['thumbnail']:
             thumb_addr = config['thumbnail']
         else:
-            thumb_addr = self.get_thumb_from_homescreen()
+            _LOGGER.warning("Could not find thumbnail for camera %s",
+                            self.name,
+                            exc_info=True)
 
         if thumb_addr is not None:
             new_thumbnail = "{}{}.jpg".format(self.sync.urls.base_url,
@@ -192,19 +195,3 @@ class BlinkCamera():
             return
         with open(path, 'wb') as vidfile:
             copyfileobj(response.raw, vidfile)
-
-    def get_thumb_from_homescreen(self):
-        """Retrieve thumbnail from homescreen."""
-        for device in self.sync.homescreen['devices']:
-            try:
-                device_type = device['device_type']
-                device_name = device['name']
-                device_thumb = device['thumbnail']
-                if device_type == 'camera' and device_name == self.name:
-                    return device_thumb
-            except KeyError:
-                pass
-        _LOGGER.error("Could not find thumbnail for camera %s",
-                      self.name,
-                      exc_info=True)
-        return None
