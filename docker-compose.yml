@@ -1,0 +1,9 @@
+version: "3"
+services:
+  blinkpy:
+    image: 3ch01c/blinkpy
+    environment:
+      - USERNAME
+      - PASSWORD
+    volumes:
+      - ./media:/media/blinkpy
