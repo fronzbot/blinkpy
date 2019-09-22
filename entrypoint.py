@@ -1,10 +1,15 @@
-from blinkpy import blinkpy
+''' Download videos from Blink '''
 from os import environ
 from datetime import datetime, timedelta
+from blinkpy import blinkpy
 
-username = environ.get('USERNAME')
-password = environ.get('PASSWORD')
+USERNAME = environ.get('USERNAME')
+PASSWORD = environ.get('PASSWORD')
+TIMEDELTA = int(environ.get('TIMEDELTA', 1))
 
-blink = blinkpy.Blink(username=username, password=password)
+blink = blinkpy.Blink(username=USERNAME, password=PASSWORD)
 blink.start()
-blink.download_videos('/media/blinkpy', since=(datetime.now() - timedelta(days=1)).isoformat())
+blink.download_videos('/media/blinkpy', since=(datetime.now() -
+                                               timedelta(days=TIMEDELTA)
+                                              ).isoformat()
+                     )
