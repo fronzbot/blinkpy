@@ -3,6 +3,11 @@ Changelog
 
 A list of changes between each release
 
+0.14.2 (2019-10-12)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Update dependencies
+- Dockerize `(@3ch01c <https://github.com/fronzbot/blinkpy/pull/198>__)`
+
 0.14.1 (2019-06-20)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Fix timeout problems blocking blinkpy startup
