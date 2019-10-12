@@ -1,4 +1,4 @@
-""" Script to run blinkpy as an app."""
+"""Script to run blinkpy as an app."""
 from os import environ
 from datetime import datetime, timedelta
 from blinkpy import blinkpy
@@ -10,14 +10,13 @@ TIMEDELTA = timedelta(environ.get('TIMEDELTA', 1))
 
 
 def get_date():
-    """Returns now - timedelta for blinkpy."""
+    """Return now - timedelta for blinkpy."""
     return (datetime.now() - TIMEDELTA).isoformat()
 
 
 def download_videos(blink, save_dir='/media'):
-    """Method to download videos."""
+    """Make request to download videos."""
     blink.download_videos(save_dir, since=get_date())
-    return
 
 
 def start():
@@ -26,7 +25,7 @@ def start():
     blink.start()
     return blink
 
-if __name__ == '__main__':
-    blink = start()
-    download_videos(blink)
 
+if __name__ == '__main__':
+    BLINK = start()
+    download_videos(BLINK)
