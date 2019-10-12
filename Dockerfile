@@ -1,7 +1,12 @@
-FROM python:slim
+FROM python:3.7-alpine
+LABEL maintainer="Kevin Fronczak <kfronczak@gmail.com>"
 
+VOLUME /media
+
+RUN python -m pip install --upgrade pip
 RUN pip3 install blinkpy
 
-COPY entrypoint.py .
-ENTRYPOINT ["python3", "entrypoint.py"]
+COPY app/ .
+
+ENTRYPOINT ["python", "./app.py"]
 CMD []
