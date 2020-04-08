@@ -3,7 +3,7 @@
 import unittest
 from unittest import mock
 import time
-from blinkpy.helpers.util import Throttle, BlinkURLHandler
+from blinkpy.helpers.util import Throttle, BlinkURLHandler, time_to_seconds
 
 
 class TestUtil(unittest.TestCase):
@@ -105,3 +105,11 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(urls.subdomain, 'rest-test')
         urls = BlinkURLHandler('test', legacy=True)
         self.assertEqual(urls.subdomain, 'rest.test')
+
+    def test_time_to_seconds(self):
+        """Test time to seconds conversion."""
+        correct_time = '1970-01-01T00:00:05+00:00'
+        wrong_time = '1/1/1970 00:00:03'
+        self.assertEqual(time_to_seconds(correct_time), 5)
+        self.assertFalse(time_to_seconds(wrong_time))
+

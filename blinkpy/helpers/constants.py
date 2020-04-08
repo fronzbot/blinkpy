@@ -60,7 +60,7 @@ ONLINE = {'online': True, 'offline': False}
 '''
 OTHER
 '''
-TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S%Z'
+TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
 DEFAULT_MOTION_INTERVAL = 1
 DEFAULT_REFRESH = 30
