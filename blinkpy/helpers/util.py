@@ -3,9 +3,9 @@
 import logging
 import time
 from calendar import timegm
-from datetime import datetime
 from functools import partial, wraps
 from requests import Request, Session, exceptions
+import dateutil.parser
 from blinkpy.helpers.constants import BLINK_URL, TIMESTAMP_FORMAT
 import blinkpy.helpers.errors as ERROR
 
@@ -16,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 def time_to_seconds(timestamp):
     """Convert TIMESTAMP_FORMAT time to seconds."""
     try:
-        dtime = datetime.strptime(timestamp, TIMESTAMP_FORMAT)
+        dtime = dateutil.parser.isoparse(timestamp)
     except ValueError:
         _LOGGER.error("Incorrect timestamp format for conversion: %s.",
                       timestamp)

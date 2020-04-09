@@ -164,7 +164,7 @@ class BlinkSyncModule():
     def check_new_videos(self):
         """Check if new videos since last refresh."""
         try:
-            interval = self.blink.last_refresh - self.motion_interval*60
+            interval = self.blink.last_refresh - self.motion_interval * 60
         except TypeError:
             # This is the first start, so refresh hasn't happened yet.
             # No need to check for motion.
