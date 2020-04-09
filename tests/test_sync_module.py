@@ -73,7 +73,7 @@ class TestBlinkSyncModule(unittest.TestCase):
             'media': [{
                 'device_name': 'foo',
                 'media': '/foo/bar.mp4',
-                'created_at': '1990-01-01T00:00:00+0:00'
+                'created_at': '1990-01-01T00:00:00+00:00'
             }]
         }
 
@@ -84,14 +84,30 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertTrue(sync_module.check_new_videos())
         self.assertEqual(sync_module.last_record['foo'],
                          {'clip': '/foo/bar.mp4',
-                          'time': '1990-01-01T00:00:00+0:00'})
+                          'time': '1990-01-01T00:00:00+00:00'})
         self.assertEqual(sync_module.motion, {'foo': True})
         mock_resp.return_value = {'media': []}
         self.assertTrue(sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {'foo': False})
         self.assertEqual(sync_module.last_record['foo'],
                          {'clip': '/foo/bar.mp4',
-                          'time': '1990-01-01T00:00:00+0:00'})
+                          'time': '1990-01-01T00:00:00+00:00'})
+
+    def test_check_new_videos_old_date(self, mock_resp):
+        """Test videos return response with old date."""
+        mock_resp.return_value = {
+            'media': [{
+                'device_name': 'foo',
+                'media': '/foo/bar.mp4',
+                'created_at': '1970-01-01T00:00:00+00:00'
+            }]
+        }
+
+        sync_module = self.blink.sync['test']
+        sync_module.cameras = {'foo': None}
+        sync_module.blink.last_refresh = 1000
+        self.assertTrue(sync_module.check_new_videos())
+        self.assertEqual(sync_module.motion, {'foo': False})
 
     def test_check_new_videos_failed(self, mock_resp):
         """Test method when response is unexpected."""

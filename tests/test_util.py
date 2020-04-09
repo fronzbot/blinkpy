@@ -112,4 +112,3 @@ class TestUtil(unittest.TestCase):
         wrong_time = '1/1/1970 00:00:03'
         self.assertEqual(time_to_seconds(correct_time), 5)
         self.assertFalse(time_to_seconds(wrong_time))
-
