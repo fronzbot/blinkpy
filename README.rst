@@ -102,8 +102,8 @@ Example usage, which downloads all videos recorded since July 4th, 2018 at 9:34a
 
 .. |Build Status| image:: https://travis-ci.org/fronzbot/blinkpy.svg?branch=dev
    :target: https://travis-ci.org/fronzbot/blinkpy
-.. |Coverage Status| image:: https://coveralls.io/repos/github/fronzbot/blinkpy/badge.svg?branch=dev
-    :target: https://coveralls.io/github/fronzbot/blinkpy?branch=dev
+.. |Coverage Status| image:: https://codecov.io/gh/fronzbot/blinkpy/branch/dev/graph/badge.svg
+    :target: https://codecov.io/gh/fronzbot/blinkpy
 .. |PyPi Version| image:: https://img.shields.io/pypi/v/blinkpy.svg
     :target: https://pypi.python.org/pypi/blinkpy
 .. |Docs| image:: https://readthedocs.org/projects/blinkpy/badge/?version=latest
