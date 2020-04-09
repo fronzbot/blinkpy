@@ -1,5 +1,5 @@
 [run]
-omit = 
-    helpers/*
+parallel = true
+omit =
     tests/*
     setup.py
