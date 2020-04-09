@@ -20,7 +20,9 @@ matrix:
       env: TOXENV=py38
       dist: xenial
 
-install: pip install -U tox coveralls
+install:
+  - pip install -U tox coveralls
+  - pip install coverage==4.5.4
 language: python
 script: tox
 after_success: coveralls
