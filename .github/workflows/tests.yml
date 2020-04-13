@@ -33,4 +33,6 @@ jobs:
         tox -r
     - name: Codecov
       uses: codecov/codecov-action@v1.0.6
-      fail_ci_if_error: true
+      with:
+        flags: unittests
+        fail_ci_if_error: true
