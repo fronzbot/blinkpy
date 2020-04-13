@@ -55,6 +55,23 @@ The simplest way to use this package from a terminal is to call ``Blink.start()`
 
 If you would like to log in without setting up the cameras or system, you can simply call the ``Blink.login()`` function which will prompt for a username and password and then authenticate with the server.  This is useful if you want to avoid use of the ``start()`` function which simply acts as a wrapper for more targeted API methods.
 
+In addition, you can also save your credentials in a json file and initialize Blink with the credential file as follows:
+
+.. code:: python
+
+    from blinkpy import blinkpy
+    blink = blinkpy.Blink(cred_file="path/to/credentials.json")
+    blink.start()
+
+The credential file must be json formatted with a ``username`` and ``password`` key like follows:
+
+.. code:: json
+
+    {
+        'username': 'YOUR USER NAME',
+        'password': 'YOUR PASSWORD'
+    }
+
 Cameras are instantiated as individual ``BlinkCamera`` classes within a ``BlinkSyncModule`` instance.  All of your sync modules are stored within the ``Blink.sync`` dictionary and can be accessed using the name of the sync module as the key (this is the name of your sync module in the Blink App).
 
 The below code will display cameras and their available attributes:

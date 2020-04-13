@@ -17,6 +17,7 @@ import os.path
 import time
 import getpass
 import logging
+import json
 from shutil import copyfileobj
 
 from requests.structures import CaseInsensitiveDict
@@ -42,6 +43,7 @@ class Blink():
     """Class to initialize communication."""
 
     def __init__(self, username=None, password=None,
+                 cred_file=None,
                  refresh_rate=DEFAULT_REFRESH,
                  motion_interval=DEFAULT_MOTION_INTERVAL,
                  legacy_subdomain=False):
@@ -50,6 +52,10 @@ class Blink():
 
         :param username: Blink username (usually email address)
         :param password: Blink password
+        :param cred_file: JSON formatted file to store credentials.
+                          If username and password are given, file
+                          is ignored.  Otherwise, username and password
+                          are loaded from file.
         :param refresh_rate: Refresh rate of blink information.
                              Defaults to 15 (seconds)
         :param motion_interval: How far back to register motion in minutes.
@@ -62,6 +68,7 @@ class Blink():
         """
         self._username = username
         self._password = password
+        self._cred_file = cred_file
         self._token = None
         self._auth_header = None
         self._host = None
@@ -117,8 +124,25 @@ class Blink():
 
     def login(self):
         """Prompt user for username and password."""
-        self._username = input("Username:")
-        self._password = getpass.getpass("Password:")
+        if self._cred_file is not None and os.path.isfile(self._cred_file):
+            try:
+                with open(self._cred_file, 'r') as json_file:
+                    creds = json.load(json_file)
+                self._username = creds['username']
+                self._password = creds['password']
+            except ValueError:
+                _LOGGER.error("Improperly formated json file %s.",
+                              self._cred_file,
+                              exc_info=True)
+                return False
+            except KeyError:
+                _LOGGER.error("JSON file information incomplete %s.",
+                              exc_info=True)
+                return False
+        else:
+            self._username = input("Username:")
+            self._password = getpass.getpass("Password:")
+
         if self.get_auth_token():
             _LOGGER.debug("Login successful!")
             return True

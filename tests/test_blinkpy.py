@@ -79,6 +79,47 @@ class TestBlinkSetup(unittest.TestCase):
         # pylint: disable=protected-access
         self.assertEqual(self.blink_no_cred._password, PASSWORD)
 
+    @mock.patch('blinkpy.blinkpy.getpass.getpass')
+    @mock.patch('blinkpy.blinkpy.Blink.get_auth_token')
+    def test_no_cred_file(self, getpwd, getauth, mock_sess):
+        """Check that normal login occurs when cred file doesn't exist."""
+        # pylint: disable=protected-access
+        self.blink._cred_file = '/tmp/fake.file'
+        getpwd.return_value = PASSWORD
+        getauth.return_value = True
+        with mock.patch('builtins.input', return_value=USERNAME):
+            self.assertTrue(self.blink.login())
+
+    def test_exit_on_missing_json(self, mock_sess):
+        """Test that we fail on missing json data."""
+        # pylint: disable=protected-access
+        self.blink._cred_file = '/tmp/fake.file'
+        with mock.patch('os.path.isfile', return_value=True):
+            with mock.patch('builtins.open', mock.mock_open(read_data="{}")):
+                self.assertFalse(self.blink.login())
+
+    def test_exit_on_bad_json(self, mock_sess):
+        """Test that we fail on bad json format."""
+        # pylint: disable=protected-access
+        self.blink._cred_file = '/tmp/fake.file'
+        with mock.patch('os.path.isfile', return_value=True):
+            with mock.patch('builtins.open', mock.mock_open(read_data='{]')):
+                self.assertFalse(self.blink.login())
+
+    @mock.patch('blinkpy.blinkpy.json.load')
+    def test_cred_file(self, mockjson, mock_sess):
+        """Test that loading credential file works."""
+        # pylint: disable=protected-access
+        self.blink_no_cred._cred_file = '/tmp/fake.file'
+        mockjson.return_value = {'username': 'foo', 'password': 'bar'}
+        with mock.patch('os.path.isfile', return_value=True):
+            with mock.patch('builtins.open', mock.mock_open(read_data='')):
+                self.assertTrue(self.blink_no_cred.login())
+        # pylint: disable=protected-access
+        self.assertEqual(self.blink_no_cred._username, 'foo')
+        # pylint: disable=protected-access
+        self.assertEqual(self.blink_no_cred._password, 'bar')
+
     def test_bad_request(self, mock_sess):
         """Check that we raise an Exception with a bad request."""
         self.blink.session = create_session()
