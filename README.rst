@@ -100,7 +100,7 @@ Example usage, which downloads all videos recorded since July 4th, 2018 at 9:34a
     blink.download_videos('/home/blink', since='2018/07/04 09:34')
 
 
-.. |Build Status| image:: https://github.com/fronzbot/blinkpy/workflows/Test/badge.svg
+.. |Build Status| image:: https://github.com/fronzbot/blinkpy/workflows/build/badge.svg
    :target: https://github.com/fronzbot/blinkpy/actions?query=workflow%3Abuild
 .. |Coverage Status| image:: https://codecov.io/gh/fronzbot/blinkpy/branch/dev/graph/badge.svg
     :target: https://codecov.io/gh/fronzbot/blinkpy
