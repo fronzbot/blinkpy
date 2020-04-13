@@ -31,9 +31,11 @@ jobs:
         pip install codecov
     - name: Test
       run: |
-        tox -r -e py38
+        tox -r -e cov
     - name: Codecov
       uses: codecov/codecov-action@v1.0.6
       with:
         flags: unittests
+        file: ./coverage.xml
+        name: blinkpy
         fail_ci_if_error: true
