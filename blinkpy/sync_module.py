@@ -189,7 +189,7 @@ class BlinkSyncModule():
                 clip = entry['media']
                 timestamp = entry['created_at']
                 if self.check_new_video_time(timestamp):
-                    self.motion[name] = True
+                    self.motion[name] = True and self.arm
                     self.last_record[name] = {'clip': clip, 'time': timestamp}
             except KeyError:
                 _LOGGER.debug("No new videos since last refresh.")

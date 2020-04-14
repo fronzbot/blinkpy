@@ -43,6 +43,7 @@ class TestBlinkSyncModule(unittest.TestCase):
             None,
             {'devicestatus': {}},
         ]
+        self.blink.sync['test'].network_info = {'network': {'armed': True}}
 
     def tearDown(self):
         """Clean up after test."""
@@ -106,6 +107,24 @@ class TestBlinkSyncModule(unittest.TestCase):
         sync_module = self.blink.sync['test']
         sync_module.cameras = {'foo': None}
         sync_module.blink.last_refresh = 1000
+        self.assertTrue(sync_module.check_new_videos())
+        self.assertEqual(sync_module.motion, {'foo': False})
+
+    def test_check_no_motion_if_not_armed(self, mock_resp):
+        """Test that motion detection is not set if module unarmed."""
+        mock_resp.return_value = {
+            'media': [{
+                'device_name': 'foo',
+                'media': '/foo/bar.mp4',
+                'created_at': '1990-01-01T00:00:00+00:00'
+            }]
+        }
+        sync_module = self.blink.sync['test']
+        sync_module.cameras = {'foo': None}
+        sync_module.blink.last_refresh = 1000
+        self.assertTrue(sync_module.check_new_videos())
+        self.assertEqual(sync_module.motion, {'foo': True})
+        sync_module.network_info = {'network': {'armed': False}}
         self.assertTrue(sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {'foo': False})
 
