@@ -11,3 +11,5 @@ AUTH_TOKEN = (
     "Authentication header incorrect.  Are you sure you received your token?"
 )
 REQUEST = (4, "Cannot perform request (get/post type incorrect)")
+
+BLINK_ERRORS = [101, 400, 404]
