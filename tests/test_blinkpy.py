@@ -123,8 +123,8 @@ class TestBlinkSetup(unittest.TestCase):
     def test_bad_request(self, mock_sess):
         """Check that we raise an Exception with a bad request."""
         self.blink.session = create_session()
-        explog = ("ERROR:blinkpy.helpers.util:"
-                  "Cannot obtain new token for server auth.")
+        explog = ("WARNING:blinkpy.helpers.util:"
+                  "Response from server: 200 - foo")
         with self.assertRaises(BlinkException):
             http_req(self.blink, reqtype='bad')
 

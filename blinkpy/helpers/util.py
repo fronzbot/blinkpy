@@ -86,16 +86,21 @@ def http_req(blink, url='http://example.com', data=None, headers=None,
     try:
         response = blink.session.send(prepped, stream=stream)
         if json_resp and 'code' in response.json():
-            if is_retry:
+            resp_dict = response.json()
+            code = resp_dict['code']
+            message = resp_dict['message']
+            if is_retry and code in ERROR.BLINK_ERRORS:
                 _LOGGER.error("Cannot obtain new token for server auth.")
                 return None
-            else:
+            elif code in ERROR.BLINK_ERRORS:
                 headers = attempt_reauthorization(blink)
                 if not headers:
                     raise exceptions.ConnectionError
                 return http_req(blink, url=url, data=data, headers=headers,
                                 reqtype=reqtype, stream=stream,
                                 json_resp=json_resp, is_retry=True)
+            _LOGGER.warning("Response from server: %s - %s", code, message)
+
     except (exceptions.ConnectionError, exceptions.Timeout):
         _LOGGER.info("Cannot connect to server with url %s.", url)
         if not is_retry:
