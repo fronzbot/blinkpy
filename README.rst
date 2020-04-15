@@ -68,8 +68,8 @@ The credential file must be json formatted with a ``username`` and ``password`` 
 .. code:: json
 
     {
-        'username': 'YOUR USER NAME',
-        'password': 'YOUR PASSWORD'
+        "username": "YOUR USER NAME",
+        "password": "YOUR PASSWORD"
     }
 
 Cameras are instantiated as individual ``BlinkCamera`` classes within a ``BlinkSyncModule`` instance.  All of your sync modules are stored within the ``Blink.sync`` dictionary and can be accessed using the name of the sync module as the key (this is the name of your sync module in the Blink App).
