@@ -4,7 +4,7 @@ import os
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 14
-PATCH_VERSION = 2
+PATCH_VERSION = 3
 
 __version__ = '{}.{}.{}'.format(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION)
 
@@ -60,7 +60,7 @@ ONLINE = {'online': True, 'offline': False}
 '''
 OTHER
 '''
-TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S%Z'
+TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
 DEFAULT_MOTION_INTERVAL = 1
 DEFAULT_REFRESH = 30

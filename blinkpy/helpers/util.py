@@ -2,13 +2,26 @@
 
 import logging
 import time
+from calendar import timegm
 from functools import partial, wraps
 from requests import Request, Session, exceptions
+import dateutil.parser
 from blinkpy.helpers.constants import BLINK_URL, TIMESTAMP_FORMAT
 import blinkpy.helpers.errors as ERROR
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def time_to_seconds(timestamp):
+    """Convert TIMESTAMP_FORMAT time to seconds."""
+    try:
+        dtime = dateutil.parser.isoparse(timestamp)
+    except ValueError:
+        _LOGGER.error("Incorrect timestamp format for conversion: %s.",
+                      timestamp)
+        return False
+    return timegm(dtime.timetuple())
 
 
 def get_time(time_to_convert=None):
@@ -73,16 +86,21 @@ def http_req(blink, url='http://example.com', data=None, headers=None,
     try:
         response = blink.session.send(prepped, stream=stream)
         if json_resp and 'code' in response.json():
-            if is_retry:
+            resp_dict = response.json()
+            code = resp_dict['code']
+            message = resp_dict['message']
+            if is_retry and code in ERROR.BLINK_ERRORS:
                 _LOGGER.error("Cannot obtain new token for server auth.")
                 return None
-            else:
+            elif code in ERROR.BLINK_ERRORS:
                 headers = attempt_reauthorization(blink)
                 if not headers:
                     raise exceptions.ConnectionError
                 return http_req(blink, url=url, data=data, headers=headers,
                                 reqtype=reqtype, stream=stream,
                                 json_resp=json_resp, is_retry=True)
+            _LOGGER.warning("Response from server: %s - %s", code, message)
+
     except (exceptions.ConnectionError, exceptions.Timeout):
         _LOGGER.info("Cannot connect to server with url %s.", url)
         if not is_retry:

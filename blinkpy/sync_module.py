@@ -5,6 +5,7 @@ import logging
 from requests.structures import CaseInsensitiveDict
 from blinkpy import api
 from blinkpy.camera import BlinkCamera
+from blinkpy.helpers.util import time_to_seconds
 from blinkpy.helpers.constants import ONLINE
 
 _LOGGER = logging.getLogger(__name__)
@@ -163,7 +164,7 @@ class BlinkSyncModule():
     def check_new_videos(self):
         """Check if new videos since last refresh."""
         try:
-            interval = self.blink.last_refresh - self.motion_interval*60
+            interval = self.blink.last_refresh - self.motion_interval * 60
         except TypeError:
             # This is the first start, so refresh hasn't happened yet.
             # No need to check for motion.
@@ -187,9 +188,14 @@ class BlinkSyncModule():
                 name = entry['device_name']
                 clip = entry['media']
                 timestamp = entry['created_at']
-                self.motion[name] = True
-                self.last_record[name] = {'clip': clip, 'time': timestamp}
+                if self.check_new_video_time(timestamp):
+                    self.motion[name] = True and self.arm
+                    self.last_record[name] = {'clip': clip, 'time': timestamp}
             except KeyError:
                 _LOGGER.debug("No new videos since last refresh.")
 
         return True
+
+    def check_new_video_time(self, timestamp):
+        """Check if video has timestamp since last refresh."""
+        return time_to_seconds(timestamp) > self.blink.last_refresh

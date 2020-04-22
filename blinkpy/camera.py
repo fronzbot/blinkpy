@@ -178,8 +178,7 @@ class BlinkCamera():
                 copyfileobj(response.raw, imgfile)
         else:
             _LOGGER.error("Cannot write image to file, response %s",
-                          response.status_code,
-                          exc_info=True)
+                          response.status_code)
 
     def video_to_file(self, path):
         """Write video to file.
@@ -190,8 +189,7 @@ class BlinkCamera():
         response = self._cached_video
         if response is None:
             _LOGGER.error("No saved video exist for %s.",
-                          self.name,
-                          exc_info=True)
+                          self.name)
             return
         with open(path, 'wb') as vidfile:
             copyfileobj(response.raw, vidfile)

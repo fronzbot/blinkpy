@@ -43,6 +43,7 @@ class TestBlinkSyncModule(unittest.TestCase):
             None,
             {'devicestatus': {}},
         ]
+        self.blink.sync['test'].network_info = {'network': {'armed': True}}
 
     def tearDown(self):
         """Clean up after test."""
@@ -73,23 +74,93 @@ class TestBlinkSyncModule(unittest.TestCase):
             'media': [{
                 'device_name': 'foo',
                 'media': '/foo/bar.mp4',
-                'created_at': '1970-01-01T00:00:00+0:00'
+                'created_at': '1990-01-01T00:00:00+00:00'
             }]
         }
+
         sync_module = self.blink.sync['test']
         sync_module.cameras = {'foo': None}
+        sync_module.blink.last_refresh = 0
         self.assertEqual(sync_module.motion, {})
         self.assertTrue(sync_module.check_new_videos())
         self.assertEqual(sync_module.last_record['foo'],
                          {'clip': '/foo/bar.mp4',
-                          'time': '1970-01-01T00:00:00+0:00'})
+                          'time': '1990-01-01T00:00:00+00:00'})
         self.assertEqual(sync_module.motion, {'foo': True})
         mock_resp.return_value = {'media': []}
         self.assertTrue(sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {'foo': False})
         self.assertEqual(sync_module.last_record['foo'],
                          {'clip': '/foo/bar.mp4',
-                          'time': '1970-01-01T00:00:00+0:00'})
+                          'time': '1990-01-01T00:00:00+00:00'})
+
+    def test_check_new_videos_old_date(self, mock_resp):
+        """Test videos return response with old date."""
+        mock_resp.return_value = {
+            'media': [{
+                'device_name': 'foo',
+                'media': '/foo/bar.mp4',
+                'created_at': '1970-01-01T00:00:00+00:00'
+            }]
+        }
+
+        sync_module = self.blink.sync['test']
+        sync_module.cameras = {'foo': None}
+        sync_module.blink.last_refresh = 1000
+        self.assertTrue(sync_module.check_new_videos())
+        self.assertEqual(sync_module.motion, {'foo': False})
+
+    def test_check_no_motion_if_not_armed(self, mock_resp):
+        """Test that motion detection is not set if module unarmed."""
+        mock_resp.return_value = {
+            'media': [{
+                'device_name': 'foo',
+                'media': '/foo/bar.mp4',
+                'created_at': '1990-01-01T00:00:00+00:00'
+            }]
+        }
+        sync_module = self.blink.sync['test']
+        sync_module.cameras = {'foo': None}
+        sync_module.blink.last_refresh = 1000
+        self.assertTrue(sync_module.check_new_videos())
+        self.assertEqual(sync_module.motion, {'foo': True})
+        sync_module.network_info = {'network': {'armed': False}}
+        self.assertTrue(sync_module.check_new_videos())
+        self.assertEqual(sync_module.motion, {'foo': False})
+
+    def test_check_multiple_videos(self, mock_resp):
+        """Test motion found even with multiple videos."""
+        mock_resp.return_value = {
+            'media': [
+                {
+                    'device_name': 'foo',
+                    'media': '/foo/bar.mp4',
+                    'created_at': '1970-01-01T00:00:00+00:00'
+                },
+                {
+                    'device_name': 'foo',
+                    'media': '/bar/foo.mp4',
+                    'created_at': '1990-01-01T00:00:00+00:00'
+                },
+                {
+                    'device_name': 'foo',
+                    'media': '/foobar.mp4',
+                    'created_at': '1970-01-01T00:00:01+00:00'
+                }
+            ]
+        }
+        sync_module = self.blink.sync['test']
+        sync_module.cameras = {'foo': None}
+        sync_module.blink.last_refresh = 1000
+        self.assertTrue(sync_module.check_new_videos())
+        self.assertEqual(sync_module.motion, {'foo': True})
+        expected_result = {
+            'foo': {
+                'clip': '/bar/foo.mp4',
+                'time': '1990-01-01T00:00:00+00:00'
+            }
+        }
+        self.assertEqual(sync_module.last_record, expected_result)
 
     def test_check_new_videos_failed(self, mock_resp):
         """Test method when response is unexpected."""
