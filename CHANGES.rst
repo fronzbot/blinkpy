@@ -3,6 +3,14 @@ Changelog
 
 A list of changes between each release
 
+0.14.3 (2020-04-22)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Add time check on recorded videos before determining motion
+- Fix motion detection variable suck to ``True``
+- Add ability to load credentials from a json file
+- Only allow ``motion_detected`` variable to trigger if system was armed
+- Log response message from server if not attempting a re-authorization
+
 0.14.2 (2019-10-12)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Update dependencies
