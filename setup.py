@@ -14,7 +14,7 @@ THIS_DIR = abspath(dirname(__file__))
 REQUIRES = [
     "python-dateutil~=2.8.0",
     "requests~=2.23.0",
-    "python-slugify~=3.0.2",
+    "python-slugify~=4.0.0",
 ]
 
 PACKAGES = find_packages(exclude=['tests*', 'docs'])
