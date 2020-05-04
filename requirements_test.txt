@@ -1,4 +1,4 @@
-coverage==4.5.4
+coverage==5.1
 flake8==3.7.9
 flake8-docstrings==1.5.0
 pylint==2.4.4
