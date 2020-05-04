@@ -10,11 +10,11 @@ jobs:
   build:
     runs-on: ${{ matrix.platform }}
     strategy:
-      max-parallel: 4
+      max-parallel: 3
       matrix:
         platform:
           - ubuntu-latest
-        python-version: [3.5, 3.6, 3.7, 3.8]
+        python-version: [3.6, 3.7, 3.8]
 
     steps:
     - uses: actions/checkout@v2
