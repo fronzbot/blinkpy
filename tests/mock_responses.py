@@ -4,11 +4,9 @@ from blinkpy.helpers.util import BlinkURLHandler
 import blinkpy.helpers.constants as const
 
 LOGIN_RESPONSE = {
-    'region': {'mock': 'Test'},
-    'networks': {
-        '1234': {'name': 'test', 'onboarded': True}
-    },
-    'authtoken': {'authtoken': 'foobar123', 'message': 'auth'}
+    "region": {"mock": "Test"},
+    "networks": {"1234": {"name": "test", "onboarded": True}},
+    "authtoken": {"authtoken": "foobar123", "message": "auth"},
 }
 
 
@@ -37,29 +35,29 @@ def mocked_session_send(*args, **kwargs):
     url = prepped.url
     header = prepped.headers
     method = prepped.method
-    if method == 'GET':
-        expected_token = LOGIN_RESPONSE['authtoken']['authtoken']
-        if header['TOKEN_AUTH'] != expected_token:
-            response = {'message': 'Not Authorized', 'code': 400}
+    if method == "GET":
+        expected_token = LOGIN_RESPONSE["authtoken"]["authtoken"]
+        if header["TOKEN_AUTH"] != expected_token:
+            response = {"message": "Not Authorized", "code": 400}
             status = 400
-        elif url == 'use_bad_response':
-            response = {'foo': 'bar'}
+        elif url == "use_bad_response":
+            response = {"foo": "bar"}
             status = 200
-        elif url == 'reauth':
-            response = {'message': 'REAUTH', 'code': 777}
+        elif url == "reauth":
+            response = {"message": "REAUTH", "code": 777}
             status = 777
         else:
-            response = {'test': 'foo'}
+            response = {"test": "foo"}
             status = 200
-    elif method == 'POST':
+    elif method == "POST":
         if url in (const.LOGIN_URL, const.LOGIN_BACKUP_URL):
             response = LOGIN_RESPONSE
             status = 200
-        elif url == 'http://wrong.url/' or url is None:
-            response = {'message': 'Error', 'code': 404}
+        elif url == "http://wrong.url/" or url is None:
+            response = {"message": "Error", "code": 404}
             status = 404
         else:
-            response = {'message': 'foo', 'code': 200}
+            response = {"message": "foo", "code": 200}
             status = 200
 
     return MockResponse(response, status)
