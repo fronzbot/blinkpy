@@ -12,7 +12,7 @@ PROJECT_VERSION = __version__
 THIS_DIR = abspath(dirname(__file__))
 
 REQUIRES = [
-    "python-dateutil~=2.8.0",
+    "python-dateutil~=2.8.1",
     "requests~=2.23.0",
     "python-slugify~=4.0.0",
 ]
