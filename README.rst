@@ -1,5 +1,5 @@
-blinkpy |Build Status| |Coverage Status| |Docs| |PyPi Version| |Python Version|
-================================================================================
+blinkpy |Build Status| |Coverage Status| |Docs| |PyPi Version| |Python Version| |Codestyle|
+=============================================================================================
 A Python library for the Blink Camera system
 
 Like the library? Consider buying me a cup of coffee!
@@ -130,3 +130,5 @@ Example usage, which downloads all videos recorded since July 4th, 2018 at 9:34a
    
 .. |Donate| image:: https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif
    :target: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=UR6Z2B8GXYUCC
+.. |Codestyle| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/psf/black
