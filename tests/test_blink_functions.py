@@ -17,7 +17,7 @@ class MockSyncModule(BlinkSyncModule):
 
     def __init__(self, blink, header):
         """Create mock sync module instance."""
-        super().__init__(blink, header)
+        super().__init__(blink, header, network_id=None, camera_list=None)
         self.blink = blink
         self.header = header
         self.return_value = None
