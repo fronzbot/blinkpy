@@ -2,6 +2,7 @@
 
 import logging
 import time
+import secrets
 from calendar import timegm
 from functools import partial, wraps
 from requests import Request, Session, exceptions
@@ -11,6 +12,12 @@ import blinkpy.helpers.errors as ERROR
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def gen_uid(size):
+    """Create a random sring."""
+    full_token = secrets.token_hex(size)
+    return full_token[0:size]
 
 
 def time_to_seconds(timestamp):

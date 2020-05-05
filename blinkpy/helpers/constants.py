@@ -48,9 +48,10 @@ URLS
 BLINK_URL = "immedia-semi.com"
 DEFAULT_URL = "{}.{}".format("rest-prod", BLINK_URL)
 BASE_URL = "https://{}".format(DEFAULT_URL)
-LOGIN_URL = "{}/api/v2/login".format(BASE_URL)
-OLD_LOGIN_URL = "{}/login".format(BASE_URL)
-LOGIN_BACKUP_URL = "https://{}.{}/login".format("rest-piri", BLINK_URL)
+LOGIN_URLS = [
+    "{}/api/v4/login".format(BASE_URL),
+    "{}/api/v2/login".format(BASE_URL),
+]
 
 """
 Dictionaries
@@ -61,7 +62,8 @@ ONLINE = {"online": True, "offline": False}
 OTHER
 """
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
-
 DEFAULT_MOTION_INTERVAL = 1
 DEFAULT_REFRESH = 30
 MIN_THROTTLE_TIME = 2
+SIZE_NOTIFICATION_KEY = 152
+SIZE_UID = 16

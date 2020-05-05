@@ -50,7 +50,7 @@ class TestBlinkFunctions(unittest.TestCase):
         """Clean up after test."""
         self.blink = None
 
-    @mock.patch("blinkpy.blinkpy.api.request_login")
+    @mock.patch("blinkpy.login_handler.api.request_login")
     def test_backup_url(self, req, mock_sess):
         """Test backup login method."""
         json_resp = {
@@ -60,16 +60,14 @@ class TestBlinkFunctions(unittest.TestCase):
         bad_req = mresp.MockResponse({}, 404)
         new_req = mresp.MockResponse(json_resp, 200)
         req.side_effect = [bad_req, bad_req, new_req]
-        self.blink.login_urls = ["test1", "test2", "test3"]
-        self.blink.login_request()
-        # pylint: disable=protected-access
-        self.assertEqual(self.blink._login_url, "test3")
+        self.blink.login_handler.login_urls = ["test1", "test2", "test3"]
+        self.blink.login_handler.login(self.blink)
+        self.assertEqual(self.blink.login_handler.login_url, "test3")
 
         req.side_effect = [bad_req, new_req, bad_req]
-        self.blink.login_urls = ["test1", "test2", "test3"]
-        self.blink.login_request()
-        # pylint: disable=protected-access
-        self.assertEqual(self.blink._login_url, "test2")
+        self.blink.login_handler.login_urls = ["test1", "test2", "test3"]
+        self.blink.login_handler.login(self.blink)
+        self.assertEqual(self.blink.login_handler.login_url, "test2")
 
     def test_merge_cameras(self, mock_sess):
         """Test merge camera functionality."""
