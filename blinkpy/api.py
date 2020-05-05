@@ -21,6 +21,8 @@ def request_login(
     :param url: Login url.
     :param username: Blink username.
     :param password: Blink password.
+    :param notification_key: Randomly genereated key.
+    :param uid: Randomoly genreated unique id key.
     :param is_retry: Is this part of a re-authorization attempt?
     """
     headers = {"Host": DEFAULT_URL, "Content-Type": "application/json"}
@@ -51,10 +53,18 @@ def request_login(
 
 def request_verify(blink, verify_key):
     """Send verification key to blink servers."""
-    url = "api/v4/account/{}/client/{}/pin/verify".format(
-        blink.account_id, blink.client_id
+    url = "{}/api/v4/account/{}/client/{}/pin/verify".format(
+        blink.urls.base_url, blink.account_id, blink.client_id
     )
-    return http_post(blink, url)
+    data = dumps({"pin": verify_key})
+    return http_req(
+        blink,
+        url=url,
+        headers=blink.auth_header,
+        data=data,
+        json_resp=False,
+        reqtype="post",
+    )
 
 
 def request_networks(blink):

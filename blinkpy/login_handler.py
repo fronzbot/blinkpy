@@ -104,3 +104,27 @@ class LoginHandler:
 
         _LOGGER.error("Failed to login to Blink servers.  Last response: %s", response)
         return False
+
+    def send_auth_key(self, blink, key):
+        """Send 2FA key to blink servers."""
+        if key is not None:
+            response = api.request_verify(blink, key)
+            try:
+                json_resp = response.json()
+                blink.available = json_resp["valid"]
+            except KeyError:
+                blink.available = False
+                _LOGGER.error("Did not receive valid response from server.")
+        _LOGGER.error("Invalid key. Got %s", key)
+
+    def check_key_required(self, blink):
+        """Check if 2FA key is required."""
+        # No idea if this is the right end point. Placeholder for now.
+        try:
+            if blink.login_response["account"]["email_verification_required"]:
+                blink.available = False
+                return True
+        except KeyError:
+            pass
+        blink.available = True
+        return False

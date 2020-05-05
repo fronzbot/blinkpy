@@ -56,6 +56,7 @@ class Blink:
         refresh_rate=DEFAULT_REFRESH,
         motion_interval=DEFAULT_MOTION_INTERVAL,
         legacy_subdomain=False,
+        no_prompt=False,
     ):
         """
         Initialize Blink system.
@@ -75,6 +76,8 @@ class Blink:
         :param legacy_subdomain: Set to TRUE to use old 'rest.region'
                              endpoints (only use if you are having
                              api issues).
+        :param no_prompt: Set to TRUE if using an implementation that needs to
+                             suppress command-line output.
         """
         self.login_handler = LoginHandler(
             username=username, password=password, cred_file=cred_file
@@ -100,7 +103,10 @@ class Blink:
         self.motion_interval = motion_interval
         self.version = __version__
         self.legacy = legacy_subdomain
+        self.no_prompt = no_prompt
         self.available = False
+        self.key_required = False
+        self.login_response = {}
 
     @property
     def auth_header(self):
@@ -114,19 +120,27 @@ class Blink:
         Method logs in and sets auth token, urls, and ids for future requests.
         Essentially this is just a wrapper function for ease of use.
         """
-        self.get_auth_token()
-        camera_list = self.get_cameras()
-        networks = self.get_ids()
-        for network_name, network_id in networks.items():
-            if network_id not in camera_list.keys():
-                camera_list[network_id] = {}
-                _LOGGER.warning("No cameras found for %s", network_name)
-            sync_module = BlinkSyncModule(
-                self, network_name, network_id, camera_list[network_id]
-            )
-            sync_module.start()
-            self.sync[network_name] = sync_module
-        self.cameras = self.merge_cameras()
+        if not self.available:
+            self.get_auth_token()
+
+        if self.key_required and not self.no_prompt:
+            email = self.login_handler.data["username"]
+            key = input("Enter code sent to {}: ".format(email))
+            self.login_handler.send_auth_key(self, key)
+
+        if self.available:
+            camera_list = self.get_cameras()
+            networks = self.get_ids()
+            for network_name, network_id in networks.items():
+                if network_id not in camera_list.keys():
+                    camera_list[network_id] = {}
+                    _LOGGER.warning("No cameras found for %s", network_name)
+                    sync_module = BlinkSyncModule(
+                        self, network_name, network_id, camera_list[network_id]
+                    )
+                    sync_module.start()
+                    self.sync[network_name] = sync_module
+            self.cameras = self.merge_cameras()
 
     def login(self):
         """Login method. DEPRECATED."""
@@ -137,11 +151,16 @@ class Blink:
 
     def get_auth_token(self, is_retry=False):
         """Retrieve the authentication token from Blink."""
-        response = self.login_handler.login(self)
-
-        if not response:
+        self.login_response = self.login_handler.login(self)
+        if not self.login_response:
             return False
+        self.setup_params(self.login_response)
+        if self.login_handler.check_key_required(self):
+            self.key_required = True
+        return self._auth_header
 
+    def setup_params(self, response):
+        """Retrieve blink parameters from login response."""
         self.login_url = self.login_handler.login_url
         ((self.region_id, self.region),) = response["region"].items()
         self._host = "{}.{}".format(self.region_id, BLINK_URL)
@@ -151,8 +170,6 @@ class Blink:
         self.account_id = response["account"]["id"]
         self._auth_header = {"Host": self._host, "TOKEN_AUTH": self._token}
         self.urls = BlinkURLHandler(self.region_id, legacy=self.legacy)
-
-        return self._auth_header
 
     def get_ids(self):
         """Set the network ID and Account ID."""
