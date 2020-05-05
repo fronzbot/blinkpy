@@ -57,6 +57,7 @@ class Blink:
         motion_interval=DEFAULT_MOTION_INTERVAL,
         legacy_subdomain=False,
         no_prompt=False,
+        persist_key=None,
     ):
         """
         Initialize Blink system.
@@ -78,9 +79,13 @@ class Blink:
                              api issues).
         :param no_prompt: Set to TRUE if using an implementation that needs to
                              suppress command-line output.
+        :param persist_key: Location of persistant identifier.
         """
         self.login_handler = LoginHandler(
-            username=username, password=password, cred_file=cred_file
+            username=username,
+            password=password,
+            cred_file=cred_file,
+            persist_key=persist_key,
         )
         self._token = None
         self._auth_header = None
@@ -126,24 +131,29 @@ class Blink:
         if self.key_required and not self.no_prompt:
             email = self.login_handler.data["username"]
             key = input("Enter code sent to {}: ".format(email))
-            self.login_handler.send_auth_key(self, key)
+            result = self.login_handler.send_auth_key(self, key)
+            self.key_required = not result
+            self.setup_post_verify()
+        elif not self.key_required:
+            self.setup_post_verify()
 
-        if self.available:
-            camera_list = self.get_cameras()
-            networks = self.get_ids()
-            for network_name, network_id in networks.items():
-                if network_id not in camera_list.keys():
-                    camera_list[network_id] = {}
-                    _LOGGER.warning("No cameras found for %s", network_name)
-                    sync_module = BlinkSyncModule(
-                        self, network_name, network_id, camera_list[network_id]
-                    )
-                    sync_module.start()
-                    self.sync[network_name] = sync_module
+    def setup_post_verify(self):
+        """Initialize blink system after verification."""
+        camera_list = self.get_cameras()
+        networks = self.get_ids()
+        for network_name, network_id in networks.items():
+            if network_id not in camera_list.keys():
+                camera_list[network_id] = {}
+                _LOGGER.warning("No cameras found for %s", network_name)
+            sync_module = BlinkSyncModule(
+                self, network_name, network_id, camera_list[network_id]
+            )
+            sync_module.start()
+            self.sync[network_name] = sync_module
             self.cameras = self.merge_cameras()
 
     def login(self):
-        """Login method. DEPRECATED."""
+        """Perform server login. DEPRECATED."""
         _LOGGER.warning(
             "Method is deprecated and will be removed in a future version.  Please use the LoginHandler.login() method instead."
         )
@@ -165,11 +175,19 @@ class Blink:
         ((self.region_id, self.region),) = response["region"].items()
         self._host = "{}.{}".format(self.region_id, BLINK_URL)
         self._token = response["authtoken"]["authtoken"]
-        self.networks = response["networks"]
-        self.client_id = response["client"]["id"]
-        self.account_id = response["account"]["id"]
         self._auth_header = {"Host": self._host, "TOKEN_AUTH": self._token}
         self.urls = BlinkURLHandler(self.region_id, legacy=self.legacy)
+        self.networks = self.get_networks()
+        self.client_id = response["client"]["id"]
+        self.account_id = response["account"]["id"]
+
+    def get_networks(self):
+        """Get network information."""
+        response = api.request_networks(self)
+        try:
+            return response["summary"]
+        except KeyError:
+            return None
 
     def get_ids(self):
         """Set the network ID and Account ID."""

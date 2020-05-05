@@ -36,6 +36,7 @@ def request_login(
             "client_name": "Computer",
             "client_type": "android",
             "device_identifier": "Blinkpy",
+            "device_name": "Blinkpy",
             "os_version": "5.1.1",
             "reauth": "true",
         }

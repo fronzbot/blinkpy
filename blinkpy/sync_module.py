@@ -38,6 +38,7 @@ class BlinkSyncModule:
         self.motion = {}
         self.last_record = {}
         self.camera_list = camera_list
+        self.available = False
 
     @property
     def attributes(self):
@@ -102,8 +103,7 @@ class BlinkSyncModule:
                 "Could not extract some sync module info: %s", response, exc_info=True
             )
 
-        self.network_info = api.request_network_status(self.blink, self.network_id)
-
+        self.get_network_info()
         self.check_new_videos()
         try:
             for camera_config in self.camera_list:
@@ -120,6 +120,7 @@ class BlinkSyncModule:
             )
             return False
 
+        self.available = True
         return True
 
     def get_events(self, **kwargs):
@@ -141,9 +142,21 @@ class BlinkSyncModule:
             _LOGGER.error("Could not extract camera info: %s", response, exc_info=True)
             return []
 
+    def get_network_info(self):
+        """Retrieve network status."""
+        is_errored = False
+        self.network_info = api.request_network_status(self.blink, self.network_id)
+        try:
+            is_errored = self.network_info["network"]["sync_module_error"]
+        except KeyError:
+            is_errored = True
+
+        if is_errored:
+            self.available = False
+
     def refresh(self, force_cache=False):
         """Get all blink cameras and pulls their most recent status."""
-        self.network_info = api.request_network_status(self.blink, self.network_id)
+        self.get_network_info()
         self.check_new_videos()
         for camera_name in self.cameras.keys():
             camera_id = self.cameras[camera_name].camera_id
