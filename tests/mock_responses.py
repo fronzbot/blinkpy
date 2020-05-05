@@ -7,6 +7,8 @@ LOGIN_RESPONSE = {
     "region": {"mock": "Test"},
     "networks": {"1234": {"name": "test", "onboarded": True}},
     "authtoken": {"authtoken": "foobar123", "message": "auth"},
+    "client": {"id": "5678"},
+    "account": {"id": "1337"},
 }
 
 
@@ -50,7 +52,7 @@ def mocked_session_send(*args, **kwargs):
             response = {"test": "foo"}
             status = 200
     elif method == "POST":
-        if url in (const.LOGIN_URL, const.LOGIN_BACKUP_URL):
+        if url in const.LOGIN_URLS:
             response = LOGIN_RESPONSE
             status = 200
         elif url == "http://wrong.url/" or url is None:

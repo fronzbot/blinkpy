@@ -15,9 +15,7 @@ blinkpy is in no way affiliated with Blink, nor Immedia Inc.
 
 import os.path
 import time
-import getpass
 import logging
-import json
 from shutil import copyfileobj
 
 from requests.structures import CaseInsensitiveDict
@@ -26,25 +24,22 @@ from slugify import slugify
 
 from blinkpy import api
 from blinkpy.sync_module import BlinkSyncModule
-from blinkpy.helpers import errors as ERROR
 from blinkpy.helpers.util import (
     create_session,
     merge_dicts,
     get_time,
     BlinkURLHandler,
-    BlinkAuthenticationException,
     Throttle,
 )
 from blinkpy.helpers.constants import (
     BLINK_URL,
-    LOGIN_URL,
-    OLD_LOGIN_URL,
-    LOGIN_BACKUP_URL,
     DEFAULT_MOTION_INTERVAL,
     DEFAULT_REFRESH,
     MIN_THROTTLE_TIME,
+    LOGIN_URLS,
 )
 from blinkpy.helpers.constants import __version__
+from blinkpy.login_handler import LoginHandler
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -81,13 +76,14 @@ class Blink:
                              endpoints (only use if you are having
                              api issues).
         """
-        self._username = username
-        self._password = password
-        self._cred_file = cred_file
+        self.login_handler = LoginHandler(
+            username=username, password=password, cred_file=cred_file
+        )
         self._token = None
         self._auth_header = None
         self._host = None
         self.account_id = None
+        self.client_id = None
         self.network_ids = []
         self.urls = None
         self.sync = CaseInsensitiveDict({})
@@ -99,11 +95,12 @@ class Blink:
         self.networks = []
         self.cameras = CaseInsensitiveDict({})
         self.video_list = CaseInsensitiveDict({})
-        self._login_url = LOGIN_URL
+        self.login_url = LOGIN_URLS[0]
         self.login_urls = []
         self.motion_interval = motion_interval
         self.version = __version__
         self.legacy = legacy_subdomain
+        self.available = False
 
     @property
     def auth_header(self):
@@ -117,12 +114,7 @@ class Blink:
         Method logs in and sets auth token, urls, and ids for future requests.
         Essentially this is just a wrapper function for ease of use.
         """
-        if self._username is None or self._password is None:
-            if not self.login():
-                return
-        elif not self.get_auth_token():
-            return
-
+        self.get_auth_token()
         camera_list = self.get_cameras()
         networks = self.get_ids()
         for network_name, network_id in networks.items():
@@ -137,100 +129,39 @@ class Blink:
         self.cameras = self.merge_cameras()
 
     def login(self):
-        """Prompt user for username and password."""
-        if self._cred_file is not None and os.path.isfile(self._cred_file):
-            try:
-                with open(self._cred_file, "r") as json_file:
-                    creds = json.load(json_file)
-                self._username = creds["username"]
-                self._password = creds["password"]
-            except ValueError:
-                _LOGGER.error(
-                    "Improperly formated json file %s.", self._cred_file, exc_info=True
-                )
-                return False
-            except KeyError:
-                _LOGGER.error("JSON file information incomplete %s.", exc_info=True)
-                return False
-        else:
-            self._username = input("Username:")
-            self._password = getpass.getpass("Password:")
-
-        if self.get_auth_token():
-            _LOGGER.debug("Login successful!")
-            return True
-        _LOGGER.warning("Unable to login with %s.", self._username)
-        return False
+        """Login method. DEPRECATED."""
+        _LOGGER.warning(
+            "Method is deprecated and will be removed in a future version.  Please use the LoginHandler.login() method instead."
+        )
+        return self.login_handler.login(self)
 
     def get_auth_token(self, is_retry=False):
         """Retrieve the authentication token from Blink."""
-        if not isinstance(self._username, str):
-            raise BlinkAuthenticationException(ERROR.USERNAME)
-        if not isinstance(self._password, str):
-            raise BlinkAuthenticationException(ERROR.PASSWORD)
-
-        self.login_urls = [LOGIN_URL, OLD_LOGIN_URL, LOGIN_BACKUP_URL]
-
-        response = self.login_request(is_retry=is_retry)
+        response = self.login_handler.login(self)
 
         if not response:
             return False
 
+        self.login_url = self.login_handler.login_url
+        ((self.region_id, self.region),) = response["region"].items()
         self._host = "{}.{}".format(self.region_id, BLINK_URL)
         self._token = response["authtoken"]["authtoken"]
         self.networks = response["networks"]
-
+        self.client_id = response["client"]["id"]
+        self.account_id = response["account"]["id"]
         self._auth_header = {"Host": self._host, "TOKEN_AUTH": self._token}
         self.urls = BlinkURLHandler(self.region_id, legacy=self.legacy)
 
         return self._auth_header
 
-    def login_request(self, is_retry=False):
-        """Make a login request."""
-        try:
-            login_url = self.login_urls.pop(0)
-        except IndexError:
-            _LOGGER.error("Could not login to blink servers.")
-            return False
-
-        _LOGGER.info("Attempting login with %s", login_url)
-
-        response = api.request_login(
-            self, login_url, self._username, self._password, is_retry=is_retry
-        )
-        try:
-            if response.status_code != 200:
-                response = self.login_request(is_retry=True)
-            response = response.json()
-            ((self.region_id, self.region),) = response["region"].items()
-
-        except AttributeError:
-            _LOGGER.error("Login API endpoint failed with response %s", response)
-            return False
-
-        except KeyError:
-            _LOGGER.warning("Could not extract region info.")
-            self.region_id = "piri"
-            self.region = "UNKNOWN"
-
-        self._login_url = login_url
-        return response
-
     def get_ids(self):
         """Set the network ID and Account ID."""
-        response = api.request_networks(self)
         all_networks = []
         network_dict = {}
         for network, status in self.networks.items():
             if status["onboarded"]:
                 all_networks.append("{}".format(network))
                 network_dict[status["name"]] = network
-
-        # For the first onboarded network we find, grab the account id
-        for resp in response["networks"]:
-            if str(resp["id"]) in all_networks:
-                self.account_id = resp["account_id"]
-                break
 
         self.network_ids = all_networks
         return network_dict

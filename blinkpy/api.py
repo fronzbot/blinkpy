@@ -11,7 +11,9 @@ _LOGGER = logging.getLogger(__name__)
 MIN_THROTTLE_TIME = 2
 
 
-def request_login(blink, url, username, password, is_retry=False):
+def request_login(
+    blink, url, username, password, notification_key, uid, is_retry=False
+):
     """
     Login request.
 
@@ -26,7 +28,14 @@ def request_login(blink, url, username, password, is_retry=False):
         {
             "email": username,
             "password": password,
-            "client_specifier": "iPhone 9.2 | 2.2 | 222",
+            "notification_key": notification_key,
+            "unique_id": uid,
+            "app_version": "6.0.7 (520300) #afb0be72a",
+            "client_name": "Computer",
+            "client_type": "android",
+            "device_identifier": "Blinkpy",
+            "os_version": "5.1.1",
+            "reauth": "true",
         }
     )
     return http_req(
@@ -38,6 +47,14 @@ def request_login(blink, url, username, password, is_retry=False):
         reqtype="post",
         is_retry=is_retry,
     )
+
+
+def request_verify(blink, verify_key):
+    """Send verification key to blink servers."""
+    url = "api/v4/account/{}/client/{}/pin/verify".format(
+        blink.account_id, blink.client_id
+    )
+    return http_post(blink, url)
 
 
 def request_networks(blink):
