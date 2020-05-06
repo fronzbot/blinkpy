@@ -13,25 +13,42 @@ _LOGGER = logging.getLogger(__name__)
 class LoginHandler:
     """Class to handle login communication."""
 
-    def __init__(
-        self, username=None, password=None, cred_file=None,
-    ):
+    def __init__(self, username=None, password=None, cred_file=None, persist_key=None):
         """
         Initialize login handler.
 
         :param username: Blink username
         :param password: Blink password
         :param cred_file: JSON formatted credential file.
+        :param persist_key: File location of persistant key.
         """
         self.login_url = None
         self.login_urls = const.LOGIN_URLS
         self.cred_file = cred_file
+        self.persist_key = persist_key
         self.data = {
             "username": username,
             "password": password,
-            "uid": util.gen_uid(const.SIZE_UID),
-            "notification_key": util.gen_uid(const.SIZE_NOTIFICATION_KEY),
+            "uid": None,
+            "notification_key": None,
         }
+
+        self.check_keys()
+
+    def check_keys(self):
+        """Check if uid exists, if not create."""
+        uid = util.gen_uid(const.SIZE_UID)
+        notification_key = util.gen_uid(const.SIZE_NOTIFICATION_KEY)
+        data = {"uid": uid, "notification_key": notification_key}
+        if self.persist_key is None:
+            return data
+        if not isfile(self.persist_key):
+            with open(self.persist_key, "w") as json_file:
+                json.dump(data, json_file)
+        else:
+            with open(self.persist_key, "r") as json_file:
+                data = json.load(json_file)
+        return data
 
     def check_cred_file(self):
         """Check if credential file supplied and use if so."""
@@ -103,4 +120,25 @@ class LoginHandler:
                 return response.json()
 
         _LOGGER.error("Failed to login to Blink servers.  Last response: %s", response)
+        return False
+
+    def send_auth_key(self, blink, key):
+        """Send 2FA key to blink servers."""
+        if key is not None:
+            response = api.request_verify(blink, key)
+            try:
+                json_resp = response.json()
+                blink.available = json_resp["valid"]
+            except (KeyError, TypeError):
+                _LOGGER.error("Did not receive valid response from server.")
+                return False
+        return True
+
+    def check_key_required(self, blink):
+        """Check if 2FA key is required."""
+        try:
+            if blink.login_response["client"]["verification_required"]:
+                return True
+        except KeyError:
+            pass
         return False

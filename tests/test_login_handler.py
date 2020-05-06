@@ -68,3 +68,68 @@ class TestLoginHandler(unittest.TestCase):
         """Check good response code from server."""
         fake_resp = mresp.MockResponse(None, 200)
         self.assertTrue(self.login_handler.validate_response(None, fake_resp))
+
+    @mock.patch("blinkpy.login_handler.util.gen_uid")
+    def test_check_keys_no_persist(self, mock_uid, mock_sess):
+        """Check key generation."""
+        uid_value = "abc123"
+        mock_uid.return_value = "abc123"
+        self.login_handler.persist_key = None
+        data = self.login_handler.check_keys()
+        self.assertEqual(data["uid"], uid_value)
+        self.assertEqual(data["notification_key"], uid_value)
+
+    @mock.patch("blinkpy.login_handler.util.gen_uid")
+    @mock.patch("blinkpy.login_handler.json.load")
+    @mock.patch("blinkpy.login_handler.isfile")
+    def test_check_keys_persist(self, mockisfile, mockjson, mock_uid, mock_sess):
+        """Check key load from file."""
+        uid_value = "abc123"
+        mock_file = {"uid": "321cba", "notification_key": "foobar123"}
+        mock_uid.return_value = uid_value
+        mockjson.return_value = mock_file
+        mockisfile.return_value = True
+        self.login_handler.persist_key = True
+        data = self.login_handler.check_keys()
+        self.assertEqual(mock_file["uid"], data["uid"])
+        self.assertEqual(mock_file["notification_key"], data["notification_key"])
+
+    def test_check_key_required(self, mock_sess):
+        """Check key required method."""
+        response_true = {"client": {"verification_required": True}}
+        response_false = {"client": {"verification_required": False}}
+        response_nokey = {}
+
+        mock_blink = MockBlink(response_nokey)
+        self.assertFalse(self.login_handler.check_key_required(mock_blink))
+
+        mock_blink = MockBlink(response_false)
+        self.assertFalse(self.login_handler.check_key_required(mock_blink))
+
+        mock_blink = MockBlink(response_true)
+        self.assertTrue(self.login_handler.check_key_required(mock_blink))
+
+    @mock.patch("blinkpy.login_handler.api.request_verify")
+    def test_send_auth_key(self, mock_req, mock_sess):
+        """Check sending of auth key."""
+        mock_blink = MockBlink(None)
+        mock_req.return_value = mresp.MockResponse({"valid": True}, 200)
+        self.assertTrue(self.login_handler.send_auth_key(mock_blink, 1234))
+        self.assertTrue(mock_blink.available)
+
+        mock_req.return_value = mresp.MockResponse(None, 200)
+        self.assertFalse(self.login_handler.send_auth_key(mock_blink, 1234))
+
+        mock_req.return_value = mresp.MockResponse({}, 200)
+        self.assertFalse(self.login_handler.send_auth_key(mock_blink, 1234))
+
+        self.assertTrue(self.login_handler.send_auth_key(mock_blink, None))
+
+
+class MockBlink:
+    """Object to mock basic blink class."""
+
+    def __init__(self, login_response):
+        """Initialize mock blink class."""
+        self.available = False
+        self.login_response = login_response

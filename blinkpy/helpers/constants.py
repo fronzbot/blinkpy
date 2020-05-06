@@ -50,6 +50,7 @@ DEFAULT_URL = "{}.{}".format("rest-prod", BLINK_URL)
 BASE_URL = "https://{}".format(DEFAULT_URL)
 LOGIN_URLS = [
     "{}/api/v4/login".format(BASE_URL),
+    "{}/api/v3/login".format(BASE_URL),
     "{}/api/v2/login".format(BASE_URL),
 ]
 

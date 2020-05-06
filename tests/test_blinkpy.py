@@ -11,6 +11,7 @@ from unittest import mock
 from blinkpy import api
 from blinkpy.blinkpy import Blink
 from blinkpy.sync_module import BlinkSyncModule
+from blinkpy.login_handler import LoginHandler
 from blinkpy.helpers.util import (
     http_req,
     create_session,
@@ -148,3 +149,23 @@ class TestBlinkSetup(unittest.TestCase):
         mock_home.return_value = {}
         result = self.blink.get_cameras()
         self.assertEqual(result, {})
+
+    @mock.patch.object(LoginHandler, "send_auth_key")
+    @mock.patch.object(Blink, "setup_post_verify")
+    def test_startup_prompt(self, mock_send_key, mock_verify, mock_sess):
+        """Test startup logic with command-line prompt."""
+        mock_send_key.return_value = True
+        mock_verify.return_value = True
+        self.blink.no_prompt = False
+        self.blink.key_required = True
+        self.blink.available = True
+        with mock.patch("builtins.input", return_value="1234"):
+            self.blink.start()
+        self.assertFalse(self.blink.key_required)
+
+    def test_startup_no_prompt(self, mock_sess):
+        """Test startup with no_prompt flag set."""
+        self.blink.key_required = True
+        self.blink.no_prompt = True
+        self.blink.start()
+        self.assertTrue(self.blink.key_required)
