@@ -157,6 +157,8 @@ class Blink:
             sync_module.start()
             self.sync[network_name] = sync_module
             self.cameras = self.merge_cameras()
+        self.available = self.refresh()
+        self.key_required = False
 
     def login(self):
         """Perform server login. DEPRECATED."""
@@ -169,6 +171,7 @@ class Blink:
         """Retrieve the authentication token from Blink."""
         self.login_response = self.login_handler.login(self)
         if not self.login_response:
+            self.available = False
             return False
         self.setup_params(self.login_response)
         if self.login_handler.check_key_required(self):
