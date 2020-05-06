@@ -129,9 +129,9 @@ class LoginHandler:
             try:
                 json_resp = response.json()
                 blink.available = json_resp["valid"]
-            except KeyError:
-                return False
+            except (KeyError, TypeError):
                 _LOGGER.error("Did not receive valid response from server.")
+                return False
         return True
 
     def check_key_required(self, blink):
