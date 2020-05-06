@@ -12,7 +12,14 @@ MIN_THROTTLE_TIME = 2
 
 
 def request_login(
-    blink, url, username, password, notification_key, uid, is_retry=False
+    blink,
+    url,
+    username,
+    password,
+    notification_key,
+    uid,
+    is_retry=False,
+    device_id="Blinkpy",
 ):
     """
     Login request.
@@ -24,6 +31,7 @@ def request_login(
     :param notification_key: Randomly genereated key.
     :param uid: Randomly generated unique id key.
     :param is_retry: Is this part of a re-authorization attempt?
+    :param device_id: Name of application to send at login.
     """
     headers = {"Host": DEFAULT_URL, "Content-Type": "application/json"}
     data = dumps(
@@ -36,7 +44,7 @@ def request_login(
             "client_name": "Computer",
             "client_type": "android",
             "device_identifier": "Blinkpy",
-            "device_name": "Blinkpy",
+            "device_name": device_id,
             "os_version": "5.1.1",
             "reauth": "true",
         }

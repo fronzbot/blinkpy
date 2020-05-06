@@ -58,6 +58,7 @@ class Blink:
         legacy_subdomain=False,
         no_prompt=False,
         persist_key=None,
+        device_id="Blinkpy",
     ):
         """
         Initialize Blink system.
@@ -71,21 +72,26 @@ class Blink:
         :param refresh_rate: Refresh rate of blink information.
                              Defaults to 15 (seconds)
         :param motion_interval: How far back to register motion in minutes.
-                             Defaults to last refresh time.
-                             Useful for preventing motion_detected property
-                             from de-asserting too quickly.
+                                Defaults to last refresh time.
+                                Useful for preventing motion_detected property
+                                from de-asserting too quickly.
         :param legacy_subdomain: Set to TRUE to use old 'rest.region'
-                             endpoints (only use if you are having
-                             api issues).
+                                 endpoints (only use if you are having
+                                 api issues).
         :param no_prompt: Set to TRUE if using an implementation that needs to
-                             suppress command-line output.
+                          suppress command-line output.
         :param persist_key: Location of persistant identifier.
+        :param device_id: Identifier for the application.  Default is 'Blinkpy'.
+                          This is used when logging in and should be changed to
+                          fit the implementation (ie. "Home Assistant" in a
+                          Home Assistant integration).
         """
         self.login_handler = LoginHandler(
             username=username,
             password=password,
             cred_file=cred_file,
             persist_key=persist_key,
+            device_id=device_id,
         )
         self._token = None
         self._auth_header = None
