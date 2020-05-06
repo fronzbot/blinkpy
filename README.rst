@@ -1,6 +1,6 @@
-blinkpy |Build Status| |Coverage Status| |Docs| |PyPi Version| |Python Version| |Codestyle|
+blinkpy |Build Status| |Coverage Status| |Docs| |PyPi Version| |Codestyle|
 =============================================================================================
-A Python library for the Blink Camera system
+A Python library for the Blink Camera system (Python 3.6+)
 
 Like the library? Consider buying me a cup of coffee!
 
@@ -53,7 +53,7 @@ The simplest way to use this package from a terminal is to call ``Blink.start()`
     blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD', refresh_rate=30)
     blink.start()
 
-At startup, you may ne prompted for a verification key.  Just enter this in the command-line prompt.  If you just receive a verification email asking to validate access for your device, enter nothing at this prompt.  To avoid any command-line interaction, call the ``Blink`` class with the ``no_prompt=True`` flag.  Instead, once you receive the verification email, call the following functions:
+At startup, you may be prompted for a verification key.  Just enter this in the command-line prompt.  If you just receive a verification email asking to validate access for your device, enter nothing at this prompt.  To avoid any command-line interaction, call the ``Blink`` class with the ``no_prompt=True`` flag.  Instead, once you receive the verification email, call the following functions:
 
 .. code:: python
 
@@ -129,10 +129,7 @@ Example usage, which downloads all videos recorded since July 4th, 2018 at 9:34a
 .. |PyPi Version| image:: https://img.shields.io/pypi/v/blinkpy.svg
     :target: https://pypi.python.org/pypi/blinkpy
 .. |Docs| image:: https://readthedocs.org/projects/blinkpy/badge/?version=latest
-   :target: http://blinkpy.readthedocs.io/en/latest/?badge=latest
-.. |Python Version| image:: https://img.shields.io/pypi/pyversions/blinkpy.svg
-   :target: https://img.shields.io/pypi/pyversions/blinkpy.svg
-   
+   :target: http://blinkpy.readthedocs.io/en/latest/?badge=latest   
 .. |Donate| image:: https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif
    :target: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=UR6Z2B8GXYUCC
 .. |Codestyle| image:: https://img.shields.io/badge/code%20style-black-000000.svg
