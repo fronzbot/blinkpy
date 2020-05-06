@@ -22,7 +22,7 @@ def request_login(
     :param username: Blink username.
     :param password: Blink password.
     :param notification_key: Randomly genereated key.
-    :param uid: Randomoly genreated unique id key.
+    :param uid: Randomly generated unique id key.
     :param is_retry: Is this part of a re-authorization attempt?
     """
     headers = {"Host": DEFAULT_URL, "Content-Type": "application/json"}
