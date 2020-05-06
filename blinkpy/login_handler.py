@@ -13,7 +13,14 @@ _LOGGER = logging.getLogger(__name__)
 class LoginHandler:
     """Class to handle login communication."""
 
-    def __init__(self, username=None, password=None, cred_file=None, persist_key=None):
+    def __init__(
+        self,
+        username=None,
+        password=None,
+        cred_file=None,
+        persist_key=None,
+        device_id="Blinkpy",
+    ):
         """
         Initialize login handler.
 
@@ -21,11 +28,13 @@ class LoginHandler:
         :param password: Blink password
         :param cred_file: JSON formatted credential file.
         :param persist_key: File location of persistant key.
+        :param device_id: Name of application to send at login.
         """
         self.login_url = None
         self.login_urls = const.LOGIN_URLS
         self.cred_file = cred_file
         self.persist_key = persist_key
+        self.device_id = device_id
         self.data = {
             "username": username,
             "password": password,
@@ -113,6 +122,7 @@ class LoginHandler:
                 self.data["notification_key"],
                 self.data["uid"],
                 is_retry=False,
+                device_id=self.device_id,
             )
 
             if self.validate_response(url, response):
