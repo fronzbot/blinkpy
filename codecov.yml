@@ -4,7 +4,7 @@ coverage:
   status:
     project:
       default:
-        threshold: "2%"
+        threshold: 2%
 
 comment: true
 require_ci_to_pass: yes
