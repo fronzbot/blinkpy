@@ -21,8 +21,6 @@ def mock_get(blink, url, stream=False, json=True, is_retry=False):
     return mock_post(blink, url)
 
 
-@mock.patch("blinkpy.api.http_get", side_effect=mock_get)
-@mock.patch("blinkpy.api.http_post", side_effect=mock_post)
 class TestAPI(unittest.TestCase):
     """Test API calls."""
 
@@ -37,6 +35,8 @@ class TestAPI(unittest.TestCase):
         """Clean up after test."""
         self.blink = None
 
+    @mock.patch("__main__.api.http_get", side_effect=mock_get)
+    @mock.patch("__main__.api.http_post", side_effect=mock_post)
     def test_malformed_urls(self, mockpost, mockget):
         """Check request_networks function."""
         self.assertTrue(api.request_networks(self.blink))
