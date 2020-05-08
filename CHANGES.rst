@@ -3,6 +3,31 @@ Changelog
 
 A list of changes between each release
 
+0.15.0 (2020-05-08)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**Breaking Changes:**
+
+- Removed support for Python 3.5 (3.6 is now the minimum supported version)
+- Deprecated ``Blink.login()`` method.  Please only use the ``Blink.start()`` method for logging in.
+
+**New Functions**
+
+- Add ``device_id`` override when logging in (for debug and to differentiate applications) (`#245 <https://github.com/fronzbot/blinkpy/pull/245>`__)
+
+This can be used by instantiating the Blink class with the ``device_id`` parameter. 
+
+**All Changes:**
+
+- Fix setup.py use of internal pip structure (`#233 <https://github.com/fronzbot/blinkpy/pull/233>`__)
+- Update python-slugify requirement from ~=3.0.2 to ~=4.0.0 (`#234 <https://github.com/fronzbot/blinkpy/pull/234>`__)
+- Update python-dateutil requirement from ~=2.8.0 to ~=2.8.1 (`#230 <https://github.com/fronzbot/blinkpy/pull/230>`__)
+- Bump requests from 2.22.0 to 2.23.0 (`#231 <https://github.com/fronzbot/blinkpy/pull/231>`__)
+- Refactor login logic in preparation for 2FA (`#241 <https://github.com/fronzbot/blinkpy/pull/241>`__)
+- Add 2FA Support (`#242 <https://github.com/fronzbot/blinkpy/pull/242>`__) (fixes (`#210 <https://github.com/fronzbot/blinkpy/pull/210>`__))
+- Re-set key_required and available variables after setup (`#245 <https://github.com/fronzbot/blinkpy/pull/245>`__) 
+- Perform system refresh after setup (`#245 <https://github.com/fronzbot/blinkpy/pull/245>`__)
+- Fix typos (`#244 <https://github.com/fronzbot/blinkpy/pull/244>`__)
+
 0.14.3 (2020-04-22)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Add time check on recorded videos before determining motion
