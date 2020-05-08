@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 from blinkpy import blinkpy
 
 
-USERNAME = environ.get('USERNAME')
-PASSWORD = environ.get('PASSWORD')
-TIMEDELTA = timedelta(environ.get('TIMEDELTA', 1))
+USERNAME = environ.get("USERNAME")
+PASSWORD = environ.get("PASSWORD")
+TIMEDELTA = timedelta(environ.get("TIMEDELTA", 1))
 
 
 def get_date():
@@ -14,7 +14,7 @@ def get_date():
     return (datetime.now() - TIMEDELTA).isoformat()
 
 
-def download_videos(blink, save_dir='/media'):
+def download_videos(blink, save_dir="/media"):
     """Make request to download videos."""
     blink.download_videos(save_dir, since=get_date())
 
@@ -26,6 +26,6 @@ def start():
     return blink
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     BLINK = start()
     download_videos(BLINK)

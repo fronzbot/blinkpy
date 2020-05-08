@@ -12,9 +12,12 @@ reports=no
 # unexpected-keyword-arg - doesn't allow for use of **kwargs, which is dumb
 
 disable=
+  format,
+  bad-continuation,
   locally-disabled,
   unused-argument,
   duplicate-code,
+  implicit-str-concat,
   too-many-arguments,
   too-many-branches,
   too-many-instance-attributes,

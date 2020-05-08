@@ -3,7 +3,7 @@
 .tox/*
 __pycache__/*
 htmlcov/*
-.coverage
+.coverage.*
 coverage.xml
 *.pyc
 *.egg*/*

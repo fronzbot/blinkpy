@@ -43,17 +43,18 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(2, len(calls))
 
         # Fake time as 4 seconds from now
-        with mock.patch('time.time', return_value=now_plus_four):
+        with mock.patch("time.time", return_value=now_plus_four):
             test_throttle()
         self.assertEqual(2, len(calls))
 
         # Fake time as 6 seconds from now
-        with mock.patch('time.time', return_value=now_plus_six):
+        with mock.patch("time.time", return_value=now_plus_six):
             test_throttle()
         self.assertEqual(3, len(calls))
 
     def test_throttle_per_instance(self):
         """Test that throttle is done once per instance of class."""
+
         class Tester:
             """A tester class for throttling."""
 
@@ -68,6 +69,7 @@ class TestUtil(unittest.TestCase):
 
     def test_throttle_on_two_methods(self):
         """Test that throttle works for multiple methods."""
+
         class Tester:
             """A tester class for throttling."""
 
@@ -91,24 +93,24 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(tester.test1(), None)
         self.assertEqual(tester.test2(), None)
 
-        with mock.patch('time.time', return_value=now_plus_4):
+        with mock.patch("time.time", return_value=now_plus_4):
             self.assertEqual(tester.test1(), True)
             self.assertEqual(tester.test2(), None)
 
-        with mock.patch('time.time', return_value=now_plus_6):
+        with mock.patch("time.time", return_value=now_plus_6):
             self.assertEqual(tester.test1(), None)
             self.assertEqual(tester.test2(), True)
 
     def test_legacy_subdomains(self):
         """Test that subdomain can be set to legacy mode."""
-        urls = BlinkURLHandler('test')
-        self.assertEqual(urls.subdomain, 'rest-test')
-        urls = BlinkURLHandler('test', legacy=True)
-        self.assertEqual(urls.subdomain, 'rest.test')
+        urls = BlinkURLHandler("test")
+        self.assertEqual(urls.subdomain, "rest-test")
+        urls = BlinkURLHandler("test", legacy=True)
+        self.assertEqual(urls.subdomain, "rest.test")
 
     def test_time_to_seconds(self):
         """Test time to seconds conversion."""
-        correct_time = '1970-01-01T00:00:05+00:00'
-        wrong_time = '1/1/1970 00:00:03'
+        correct_time = "1970-01-01T00:00:05+00:00"
+        wrong_time = "1/1/1970 00:00:03"
         self.assertEqual(time_to_seconds(correct_time), 5)
         self.assertFalse(time_to_seconds(wrong_time))

@@ -15,9 +15,7 @@ blinkpy is in no way affiliated with Blink, nor Immedia Inc.
 
 import os.path
 import time
-import getpass
 import logging
-import json
 from shutil import copyfileobj
 
 from requests.structures import CaseInsensitiveDict
@@ -26,27 +24,42 @@ from slugify import slugify
 
 from blinkpy import api
 from blinkpy.sync_module import BlinkSyncModule
-from blinkpy.helpers import errors as ERROR
 from blinkpy.helpers.util import (
-    create_session, merge_dicts, get_time, BlinkURLHandler,
-    BlinkAuthenticationException, Throttle)
+    create_session,
+    merge_dicts,
+    get_time,
+    BlinkURLHandler,
+    Throttle,
+)
 from blinkpy.helpers.constants import (
-    BLINK_URL, LOGIN_URL, OLD_LOGIN_URL, LOGIN_BACKUP_URL,
-    DEFAULT_MOTION_INTERVAL, DEFAULT_REFRESH, MIN_THROTTLE_TIME)
+    BLINK_URL,
+    DEFAULT_MOTION_INTERVAL,
+    DEFAULT_REFRESH,
+    MIN_THROTTLE_TIME,
+    LOGIN_URLS,
+)
 from blinkpy.helpers.constants import __version__
+from blinkpy.login_handler import LoginHandler
 
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class Blink():
+class Blink:
     """Class to initialize communication."""
 
-    def __init__(self, username=None, password=None,
-                 cred_file=None,
-                 refresh_rate=DEFAULT_REFRESH,
-                 motion_interval=DEFAULT_MOTION_INTERVAL,
-                 legacy_subdomain=False):
+    def __init__(
+        self,
+        username=None,
+        password=None,
+        cred_file=None,
+        refresh_rate=DEFAULT_REFRESH,
+        motion_interval=DEFAULT_MOTION_INTERVAL,
+        legacy_subdomain=False,
+        no_prompt=False,
+        persist_key=None,
+        device_id="Blinkpy",
+    ):
         """
         Initialize Blink system.
 
@@ -59,20 +72,32 @@ class Blink():
         :param refresh_rate: Refresh rate of blink information.
                              Defaults to 15 (seconds)
         :param motion_interval: How far back to register motion in minutes.
-                             Defaults to last refresh time.
-                             Useful for preventing motion_detected property
-                             from de-asserting too quickly.
+                                Defaults to last refresh time.
+                                Useful for preventing motion_detected property
+                                from de-asserting too quickly.
         :param legacy_subdomain: Set to TRUE to use old 'rest.region'
-                             endpoints (only use if you are having
-                             api issues).
+                                 endpoints (only use if you are having
+                                 api issues).
+        :param no_prompt: Set to TRUE if using an implementation that needs to
+                          suppress command-line output.
+        :param persist_key: Location of persistant identifier.
+        :param device_id: Identifier for the application.  Default is 'Blinkpy'.
+                          This is used when logging in and should be changed to
+                          fit the implementation (ie. "Home Assistant" in a
+                          Home Assistant integration).
         """
-        self._username = username
-        self._password = password
-        self._cred_file = cred_file
+        self.login_handler = LoginHandler(
+            username=username,
+            password=password,
+            cred_file=cred_file,
+            persist_key=persist_key,
+            device_id=device_id,
+        )
         self._token = None
         self._auth_header = None
         self._host = None
         self.account_id = None
+        self.client_id = None
         self.network_ids = []
         self.urls = None
         self.sync = CaseInsensitiveDict({})
@@ -84,11 +109,15 @@ class Blink():
         self.networks = []
         self.cameras = CaseInsensitiveDict({})
         self.video_list = CaseInsensitiveDict({})
-        self._login_url = LOGIN_URL
+        self.login_url = LOGIN_URLS[0]
         self.login_urls = []
         self.motion_interval = motion_interval
         self.version = __version__
         self.legacy = legacy_subdomain
+        self.no_prompt = no_prompt
+        self.available = False
+        self.key_required = False
+        self.login_response = {}
 
     @property
     def auth_header(self):
@@ -102,126 +131,81 @@ class Blink():
         Method logs in and sets auth token, urls, and ids for future requests.
         Essentially this is just a wrapper function for ease of use.
         """
-        if self._username is None or self._password is None:
-            if not self.login():
-                return
-        elif not self.get_auth_token():
-            return
+        if not self.available:
+            self.get_auth_token()
 
+        if self.key_required and not self.no_prompt:
+            email = self.login_handler.data["username"]
+            key = input("Enter code sent to {}: ".format(email))
+            result = self.login_handler.send_auth_key(self, key)
+            self.key_required = not result
+            self.setup_post_verify()
+        elif not self.key_required:
+            self.setup_post_verify()
+
+    def setup_post_verify(self):
+        """Initialize blink system after verification."""
         camera_list = self.get_cameras()
         networks = self.get_ids()
         for network_name, network_id in networks.items():
             if network_id not in camera_list.keys():
                 camera_list[network_id] = {}
                 _LOGGER.warning("No cameras found for %s", network_name)
-            sync_module = BlinkSyncModule(self,
-                                          network_name,
-                                          network_id,
-                                          camera_list[network_id])
+            sync_module = BlinkSyncModule(
+                self, network_name, network_id, camera_list[network_id]
+            )
             sync_module.start()
             self.sync[network_name] = sync_module
-        self.cameras = self.merge_cameras()
+            self.cameras = self.merge_cameras()
+        self.available = self.refresh()
+        self.key_required = False
 
     def login(self):
-        """Prompt user for username and password."""
-        if self._cred_file is not None and os.path.isfile(self._cred_file):
-            try:
-                with open(self._cred_file, 'r') as json_file:
-                    creds = json.load(json_file)
-                self._username = creds['username']
-                self._password = creds['password']
-            except ValueError:
-                _LOGGER.error("Improperly formated json file %s.",
-                              self._cred_file,
-                              exc_info=True)
-                return False
-            except KeyError:
-                _LOGGER.error("JSON file information incomplete %s.",
-                              exc_info=True)
-                return False
-        else:
-            self._username = input("Username:")
-            self._password = getpass.getpass("Password:")
-
-        if self.get_auth_token():
-            _LOGGER.debug("Login successful!")
-            return True
-        _LOGGER.warning("Unable to login with %s.", self._username)
-        return False
+        """Perform server login. DEPRECATED."""
+        _LOGGER.warning(
+            "Method is deprecated and will be removed in a future version.  Please use the LoginHandler.login() method instead."
+        )
+        return self.login_handler.login(self)
 
     def get_auth_token(self, is_retry=False):
         """Retrieve the authentication token from Blink."""
-        if not isinstance(self._username, str):
-            raise BlinkAuthenticationException(ERROR.USERNAME)
-        if not isinstance(self._password, str):
-            raise BlinkAuthenticationException(ERROR.PASSWORD)
-
-        self.login_urls = [LOGIN_URL, OLD_LOGIN_URL, LOGIN_BACKUP_URL]
-
-        response = self.login_request(is_retry=is_retry)
-
-        if not response:
+        self.login_response = self.login_handler.login(self)
+        if not self.login_response:
+            self.available = False
             return False
-
-        self._host = "{}.{}".format(self.region_id, BLINK_URL)
-        self._token = response['authtoken']['authtoken']
-        self.networks = response['networks']
-
-        self._auth_header = {'Host': self._host,
-                             'TOKEN_AUTH': self._token}
-        self.urls = BlinkURLHandler(self.region_id, legacy=self.legacy)
-
+        self.setup_params(self.login_response)
+        if self.login_handler.check_key_required(self):
+            self.key_required = True
         return self._auth_header
 
-    def login_request(self, is_retry=False):
-        """Make a login request."""
+    def setup_params(self, response):
+        """Retrieve blink parameters from login response."""
+        self.login_url = self.login_handler.login_url
+        ((self.region_id, self.region),) = response["region"].items()
+        self._host = "{}.{}".format(self.region_id, BLINK_URL)
+        self._token = response["authtoken"]["authtoken"]
+        self._auth_header = {"Host": self._host, "TOKEN_AUTH": self._token}
+        self.urls = BlinkURLHandler(self.region_id, legacy=self.legacy)
+        self.networks = self.get_networks()
+        self.client_id = response["client"]["id"]
+        self.account_id = response["account"]["id"]
+
+    def get_networks(self):
+        """Get network information."""
+        response = api.request_networks(self)
         try:
-            login_url = self.login_urls.pop(0)
-        except IndexError:
-            _LOGGER.error("Could not login to blink servers.")
-            return False
-
-        _LOGGER.info("Attempting login with %s", login_url)
-
-        response = api.request_login(self,
-                                     login_url,
-                                     self._username,
-                                     self._password,
-                                     is_retry=is_retry)
-        try:
-            if response.status_code != 200:
-                response = self.login_request(is_retry=True)
-            response = response.json()
-            (self.region_id, self.region), = response['region'].items()
-
-        except AttributeError:
-            _LOGGER.error("Login API endpoint failed with response %s",
-                          response)
-            return False
-
+            return response["summary"]
         except KeyError:
-            _LOGGER.warning("Could not extract region info.")
-            self.region_id = 'piri'
-            self.region = 'UNKNOWN'
-
-        self._login_url = login_url
-        return response
+            return None
 
     def get_ids(self):
         """Set the network ID and Account ID."""
-        response = api.request_networks(self)
         all_networks = []
         network_dict = {}
         for network, status in self.networks.items():
-            if status['onboarded']:
-                all_networks.append('{}'.format(network))
-                network_dict[status['name']] = network
-
-        # For the first onboarded network we find, grab the account id
-        for resp in response['networks']:
-            if str(resp['id']) in all_networks:
-                self.account_id = resp['account_id']
-                break
+            if status["onboarded"]:
+                all_networks.append("{}".format(network))
+                network_dict[status["name"]] = network
 
         self.network_ids = all_networks
         return network_dict
@@ -231,11 +215,11 @@ class Blink():
         response = api.request_homescreen(self)
         try:
             all_cameras = {}
-            for camera in response['cameras']:
-                camera_network = str(camera['network_id'])
-                camera_name = camera['name']
-                camera_id = camera['id']
-                camera_info = {'name': camera_name, 'id': camera_id}
+            for camera in response["cameras"]:
+                camera_network = str(camera["network_id"])
+                camera_name = camera["name"]
+                camera_id = camera["id"]
+                camera_info = {"name": camera_name, "id": camera_id}
                 if camera_network not in all_cameras:
                     all_cameras[camera_network] = []
 
@@ -279,8 +263,7 @@ class Blink():
             combined = merge_dicts(combined, self.sync[sync].cameras)
         return combined
 
-    def download_videos(self, path, since=None,
-                        camera='all', stop=10, debug=False):
+    def download_videos(self, path, since=None, camera="all", stop=10, debug=False):
         """
         Download all videos from server since specified time.
 
@@ -310,7 +293,7 @@ class Blink():
             response = api.request_videos(self, time=since_epochs, page=page)
             _LOGGER.debug("Processing page %s", page)
             try:
-                result = response['media']
+                result = response["media"]
                 if not result:
                     raise IndexError
             except (KeyError, IndexError):
@@ -323,22 +306,20 @@ class Blink():
         """Parse downloaded videos."""
         for item in result:
             try:
-                created_at = item['created_at']
-                camera_name = item['device_name']
-                is_deleted = item['deleted']
-                address = item['media']
+                created_at = item["created_at"]
+                camera_name = item["device_name"]
+                is_deleted = item["deleted"]
+                address = item["media"]
             except KeyError:
                 _LOGGER.info("Missing clip information, skipping...")
                 continue
 
-            if camera_name not in camera and 'all' not in camera:
+            if camera_name not in camera and "all" not in camera:
                 _LOGGER.debug("Skipping videos for %s.", camera_name)
                 continue
 
             if is_deleted:
-                _LOGGER.debug("%s: %s is marked as deleted.",
-                              camera_name,
-                              address)
+                _LOGGER.debug("%s: %s is marked as deleted.", camera_name, address)
                 continue
 
             clip_address = "{}{}".format(self.urls.base_url, address)
@@ -351,13 +332,14 @@ class Blink():
                     _LOGGER.info("%s already exists, skipping...", filename)
                     continue
 
-                response = api.http_get(self, url=clip_address,
-                                        stream=True, json=False)
-                with open(filename, 'wb') as vidfile:
+                response = api.http_get(self, url=clip_address, stream=True, json=False)
+                with open(filename, "wb") as vidfile:
                     copyfileobj(response.raw, vidfile)
 
                 _LOGGER.info("Downloaded video to %s", filename)
             else:
-                print(("Camera: {}, Timestamp: {}, "
-                       "Address: {}, Filename: {}").format(
-                           camera_name, created_at, address, filename))
+                print(
+                    ("Camera: {}, Timestamp: {}, " "Address: {}, Filename: {}").format(
+                        camera_name, created_at, address, filename
+                    )
+                )
