@@ -15,17 +15,26 @@ You can do this right in github: just click the 'fork' button at the top right.
    $ git remote add upstream https://github.com/fronzbot/blinkpy.git
    ```
 
-2. Create a Local Branch
+2. Create virtualenv and install dependencies
+   ```shell
+   $ python -m venv venv
+   $ source venv/bin/activate
+   $ pip install -r requirements.txt
+   $ pip install -r requirements_test.txt
+   $ pre-commit install
+   ```
+
+3. Create a Local Branch
    
    First, you will want to create a new branch to hold your changes:
    ``git checkout -b <your-branch-name>``
 
 
-3. Make changes
+4. Make changes
    
    Now you can make changes to your code.  It is worthwhile to test your code as you progress (see the **Testing** section)
 
-4. Commit Your Changes
+5. Commit Your Changes
    
    To commit changes to your branch, simply add the files you want and the commit them to the branch.  After that, you can push to your fork on GitHub:
    ```shell
@@ -34,7 +43,7 @@ You can do this right in github: just click the 'fork' button at the top right.
    $ git push origin HEAD
    ```
    
-5. Submit your pull request on GitHub
+6. Submit your pull request on GitHub
    
    - On GitHub, navigate to the [blinkpy](https://github.com/fronzbot/blinkpy) repository.
    - In the "Branch" menu, choose the branch that contains your commits (from your fork).
@@ -44,7 +53,7 @@ You can do this right in github: just click the 'fork' button at the top right.
    - Click Create pull request.
    - More detailed instructions can be found here: [Creating a Pull Request](https://help.github.com/articles/creating-a-pull-request/)
    
-6. Prior to merge approval
+7. Prior to merge approval
    
    Finally, the `blinkpy` repository uses continuous integration tools to run tests prior to merging. If there are any problems, you      will see a red 'X' next to your pull request. To see what's wrong, you can find your pull request [here](https://travis-       ci.org/fronzbot/blinkpy/pull_requests) and click on the failing test to see the logs.  Those logs will indicate, as best as they can, what is causing that test to fail.
 
