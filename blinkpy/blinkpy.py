@@ -24,22 +24,15 @@ from slugify import slugify
 
 from blinkpy import api
 from blinkpy.sync_module import BlinkSyncModule
-from blinkpy.helpers.util import (
-    create_session,
-    merge_dicts,
-    get_time,
-    BlinkURLHandler,
-    Throttle,
-)
+from blinkpy.helpers import util
 from blinkpy.helpers.constants import (
-    BLINK_URL,
     DEFAULT_MOTION_INTERVAL,
     DEFAULT_REFRESH,
+    DEVICE_ID,
     MIN_THROTTLE_TIME,
-    LOGIN_URLS,
 )
 from blinkpy.helpers.constants import __version__
-from blinkpy.login_handler import LoginHandler
+from blinkpy.auth import Auth, TokenRefreshFailed, LoginError
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -50,25 +43,22 @@ class Blink:
 
     def __init__(
         self,
+        data=None,
         username=None,
         password=None,
-        cred_file=None,
         refresh_rate=DEFAULT_REFRESH,
         motion_interval=DEFAULT_MOTION_INTERVAL,
         legacy_subdomain=False,
         no_prompt=False,
-        persist_key=None,
-        device_id="Blinkpy",
+        device_id=DEVICE_ID,
     ):
         """
         Initialize Blink system.
 
+        :param data: Blink login data. Ignores username, password,
+                     and device_id if supplied.
         :param username: Blink username (usually email address)
         :param password: Blink password
-        :param cred_file: JSON formatted file to store credentials.
-                          If username and password are given, file
-                          is ignored.  Otherwise, username and password
-                          are loaded from file.
         :param refresh_rate: Refresh rate of blink information.
                              Defaults to 15 (seconds)
         :param motion_interval: How far back to register motion in minutes.
@@ -86,165 +76,160 @@ class Blink:
                           fit the implementation (ie. "Home Assistant" in a
                           Home Assistant integration).
         """
-        self.login_handler = LoginHandler(
-            username=username,
-            password=password,
-            cred_file=cred_file,
-            persist_key=persist_key,
-            device_id=device_id,
-        )
-        self._token = None
-        self._auth_header = None
-        self._host = None
+        if data is None:
+            data = {}
+            data["username"] = username
+            data["password"] = password
+            data["device_id"] = device_id
+
+        self.auth = Auth(login_data=data, no_prompt=no_prompt)
         self.account_id = None
         self.client_id = None
         self.network_ids = []
         self.urls = None
         self.sync = CaseInsensitiveDict({})
-        self.region = None
-        self.region_id = None
         self.last_refresh = None
         self.refresh_rate = refresh_rate
-        self.session = create_session()
         self.networks = []
         self.cameras = CaseInsensitiveDict({})
         self.video_list = CaseInsensitiveDict({})
-        self.login_url = LOGIN_URLS[0]
-        self.login_urls = []
         self.motion_interval = motion_interval
         self.version = __version__
-        self.legacy = legacy_subdomain
         self.no_prompt = no_prompt
         self.available = False
         self.key_required = False
-        self.login_response = {}
 
-    @property
-    def auth_header(self):
-        """Return the authentication header."""
-        return self._auth_header
-
-    def start(self):
-        """
-        Perform full system setup.
-
-        Method logs in and sets auth token, urls, and ids for future requests.
-        Essentially this is just a wrapper function for ease of use.
-        """
-        if not self.available:
-            self.get_auth_token()
-
-        if self.key_required and not self.no_prompt:
-            email = self.login_handler.data["username"]
-            key = input("Enter code sent to {}: ".format(email))
-            result = self.login_handler.send_auth_key(self, key)
-            self.key_required = not result
-            self.setup_post_verify()
-        elif not self.key_required:
-            self.setup_post_verify()
-
-    def setup_post_verify(self):
-        """Initialize blink system after verification."""
-        camera_list = self.get_cameras()
-        networks = self.get_ids()
-        for network_name, network_id in networks.items():
-            if network_id not in camera_list.keys():
-                camera_list[network_id] = {}
-                _LOGGER.warning("No cameras found for %s", network_name)
-            sync_module = BlinkSyncModule(
-                self, network_name, network_id, camera_list[network_id]
-            )
-            sync_module.start()
-            self.sync[network_name] = sync_module
-            self.cameras = self.merge_cameras()
-        self.available = self.refresh()
-        self.key_required = False
-
-    def login(self):
-        """Perform server login. DEPRECATED."""
-        _LOGGER.warning(
-            "Method is deprecated and will be removed in a future version.  Please use the LoginHandler.login() method instead."
-        )
-        return self.login_handler.login(self)
-
-    def get_auth_token(self, is_retry=False):
-        """Retrieve the authentication token from Blink."""
-        self.login_response = self.login_handler.login(self)
-        if not self.login_response:
-            self.available = False
-            return False
-        self.setup_params(self.login_response)
-        if self.login_handler.check_key_required(self):
-            self.key_required = True
-        return self._auth_header
-
-    def setup_params(self, response):
-        """Retrieve blink parameters from login response."""
-        self.login_url = self.login_handler.login_url
-        ((self.region_id, self.region),) = response["region"].items()
-        self._host = "{}.{}".format(self.region_id, BLINK_URL)
-        self._token = response["authtoken"]["authtoken"]
-        self._auth_header = {"Host": self._host, "TOKEN_AUTH": self._token}
-        self.urls = BlinkURLHandler(self.region_id, legacy=self.legacy)
-        self.networks = self.get_networks()
-        self.client_id = response["client"]["id"]
-        self.account_id = response["account"]["id"]
-
-    def get_networks(self):
-        """Get network information."""
-        response = api.request_networks(self)
-        try:
-            return response["summary"]
-        except KeyError:
-            return None
-
-    def get_ids(self):
-        """Set the network ID and Account ID."""
-        all_networks = []
-        network_dict = {}
-        for network, status in self.networks.items():
-            if status["onboarded"]:
-                all_networks.append("{}".format(network))
-                network_dict[status["name"]] = network
-
-        self.network_ids = all_networks
-        return network_dict
-
-    def get_cameras(self):
-        """Retrieve a camera list for each onboarded network."""
-        response = api.request_homescreen(self)
-        try:
-            all_cameras = {}
-            for camera in response["cameras"]:
-                camera_network = str(camera["network_id"])
-                camera_name = camera["name"]
-                camera_id = camera["id"]
-                camera_info = {"name": camera_name, "id": camera_id}
-                if camera_network not in all_cameras:
-                    all_cameras[camera_network] = []
-
-                all_cameras[camera_network].append(camera_info)
-            return all_cameras
-        except KeyError:
-            _LOGGER.error("Initialization failue. Could not retrieve cameras.")
-            return {}
-
-    @Throttle(seconds=MIN_THROTTLE_TIME)
-    def refresh(self, force_cache=False):
+    @util.Throttle(seconds=MIN_THROTTLE_TIME)
+    def refresh(self, force=False):
         """
         Perform a system refresh.
 
-        :param force_cache: Force an update of the camera cache
+        :param force: Force an update of the camera data
         """
-        if self.check_if_ok_to_update() or force_cache:
+        if self.check_if_ok_to_update() or force:
+            if not self.available:
+                self.auth.refresh_token()
+                self.setup_post_verify()
+
             for sync_name, sync_module in self.sync.items():
                 _LOGGER.debug("Attempting refresh of sync %s", sync_name)
-                sync_module.refresh(force_cache=force_cache)
-            if not force_cache:
+                sync_module.refresh(force_cache=force)
+            if not force:
                 # Prevents rapid clearing of motion detect property
                 self.last_refresh = int(time.time())
             return True
         return False
+
+    def start(self):
+        """Perform full system setup."""
+        try:
+            self.auth.refresh_token()
+            self.setup_login_ids()
+            self.setup_urls()
+        except (LoginError, TokenRefreshFailed, BlinkSetupError):
+            _LOGGER.error("Cannot setup Blink platform.")
+            self.available = False
+            return False
+
+        self.key_required = self.auth.check_key_required()
+        if self.key_required:
+            if self.no_prompt:
+                return True
+            self.setup_prompt_2fa()
+        return self.setup_post_verify()
+
+    def setup_prompt_2fa(self):
+        """Prompt for 2FA."""
+        email = self.auth.data["username"]
+        pin = input(f"Enter code sent to {email}: ")
+        result = self.auth.send_auth_key(self, pin)
+        self.key_required = not result
+
+    def setup_post_verify(self):
+        """Initialize blink system after verification."""
+        try:
+            self.setup_networks()
+            networks = self.setup_network_ids()
+            cameras = self.setup_camera_list()
+        except BlinkSetupError:
+            self.available = False
+            return False
+
+        for name, network_id in networks.items():
+            sync_cameras = cameras.get(network_id, {})
+            self.setup_sync_module(name, network_id, sync_cameras)
+            self.cameras = self.merge_cameras()
+
+        self.available = True
+        self.key_required = False
+        return True
+
+    def setup_sync_module(self, name, network_id, cameras):
+        """Initialize a sync module."""
+        self.sync[name] = BlinkSyncModule(self, name, network_id, cameras)
+        self.sync[name].start()
+
+    def setup_camera_list(self):
+        """Create camera list for onboarded networks."""
+        all_cameras = {}
+        response = api.request_homescreen(self)
+        try:
+            for camera in response["cameras"]:
+                camera_network = str(camera["network_id"])
+                if camera_network not in all_cameras:
+                    all_cameras[camera_network] = []
+                all_cameras[camera_network].append(
+                    {"name": camera["name"], "id": camera["id"]}
+                )
+            return all_cameras
+        except KeyError:
+            _LOGGER.error("Unable to retrieve cameras from response %s", response)
+            raise BlinkSetupError
+
+    def setup_login_ids(self):
+        """Retrieve login id numbers from login response."""
+        try:
+            self.client_id = self.auth.login_response["client"]["id"]
+            self.account_id = self.auth.login_response["account"]["id"]
+        except KeyError:
+            _LOGGER.error("Malformed login response of %s", self.auth.login_response)
+            raise BlinkSetupError
+
+    def setup_urls(self):
+        """Create urls for api."""
+        try:
+            self.urls = util.BlinkURLHandler(self.auth.region_id)
+        except TypeError:
+            _LOGGER.error(
+                "Unable to extract region is from response %s", self.auth.login_response
+            )
+            raise BlinkSetupError
+
+    def setup_networks(self):
+        """Get network information."""
+        response = api.request_networks(self)
+        try:
+            self.networks = response["summary"]
+        except KeyError:
+            raise BlinkSetupError
+
+    def setup_network_ids(self):
+        """Create the network ids for onboarded networks."""
+        all_networks = []
+        network_dict = {}
+        try:
+            for network, status in self.networks.items():
+                if status["onboarded"]:
+                    all_networks.append(f"{network}")
+                    network_dict[status["name"]] = network
+        except AttributeError:
+            _LOGGER.error(
+                "Unable to retrieve network information from %s", self.networks
+            )
+            raise BlinkSetupError
+
+        self.network_ids = all_networks
+        return network_dict
 
     def check_if_ok_to_update(self):
         """Check if it is ok to perform an http request."""
@@ -260,8 +245,12 @@ class Blink:
         """Merge all sync camera dicts into one."""
         combined = CaseInsensitiveDict({})
         for sync in self.sync:
-            combined = merge_dicts(combined, self.sync[sync].cameras)
+            combined = util.merge_dicts(combined, self.sync[sync].cameras)
         return combined
+
+    def save(self, file_name):
+        """Save login data to file."""
+        util.json_save(self.auth.login_attributes, file_name)
 
     def download_videos(self, path, since=None, camera="all", stop=10, debug=False):
         """
@@ -283,7 +272,7 @@ class Blink:
             parsed_datetime = parse(since, fuzzy=True)
             since_epochs = parsed_datetime.timestamp()
 
-        formatted_date = get_time(time_to_convert=since_epochs)
+        formatted_date = util.get_time(time_to_convert=since_epochs)
         _LOGGER.info("Retrieving videos since %s", formatted_date)
 
         if not isinstance(camera, list):
@@ -343,3 +332,7 @@ class Blink:
                         camera_name, created_at, address, filename
                     )
                 )
+
+
+class BlinkSetupError(Exception):
+    """Class to handle setup errors."""

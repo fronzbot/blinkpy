@@ -1,17 +1,36 @@
 """Useful functions for blinkpy."""
 
+import json
 import logging
 import time
 import secrets
 from calendar import timegm
-from functools import partial, wraps
-from requests import Request, Session, exceptions
+from functools import wraps
+from getpass import getpass
 import dateutil.parser
-from blinkpy.helpers.constants import BLINK_URL, TIMESTAMP_FORMAT
-import blinkpy.helpers.errors as ERROR
+from blinkpy.helpers import constants as const
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def json_load(file_name):
+    """Load json credentials from file."""
+    try:
+        with open(file_name, "r") as json_file:
+            data = json.load(json_file)
+        return data
+    except FileNotFoundError:
+        _LOGGER.error("Could not find %s", file_name)
+    except json.decoder.JSONDecodeError:
+        _LOGGER.error("File %s has improperly formatted json", file_name)
+    return None
+
+
+def json_save(data, file_name):
+    """Save data to file location."""
+    with open(file_name, "w") as json_file:
+        json.dump(data, json_file, indent=4)
 
 
 def gen_uid(size):
@@ -34,7 +53,7 @@ def get_time(time_to_convert=None):
     """Create blink-compatible timestamp."""
     if time_to_convert is None:
         time_to_convert = time.time()
-    return time.strftime(TIMESTAMP_FORMAT, time.gmtime(time_to_convert))
+    return time.strftime(const.TIMESTAMP_FORMAT, time.gmtime(time_to_convert))
 
 
 def merge_dicts(dict_a, dict_b):
@@ -48,103 +67,28 @@ def merge_dicts(dict_a, dict_b):
     return {**dict_a, **dict_b}
 
 
-def create_session():
-    """
-    Create a session for blink communication.
+def prompt_login_data(data):
+    """Prompt user for username and password."""
+    if data["username"] is None:
+        data["username"] = input("Username:")
+    if data["password"] is None:
+        data["password"] = getpass("Password:")
 
-    From @ericfrederich via
-    https://github.com/kennethreitz/requests/issues/2011
-    """
-    sess = Session()
-    sess.get = partial(sess.get, timeout=5)
-    return sess
+    return data
 
 
-def attempt_reauthorization(blink):
-    """Attempt to refresh auth token and links."""
-    _LOGGER.info("Auth token expired, attempting reauthorization.")
-    headers = blink.get_auth_token(is_retry=True)
-    return headers
+def validate_login_data(data):
+    """Check for missing keys."""
+    valid_keys = {
+        "uid": gen_uid(const.SIZE_UID),
+        "notification_key": gen_uid(const.SIZE_NOTIFICATION_KEY),
+        "device_id": const.DEVICE_ID,
+    }
+    for key in valid_keys:
+        if key not in data:
+            data[key] = valid_keys[key]
 
-
-def http_req(
-    blink,
-    url="http://example.com",
-    data=None,
-    headers=None,
-    reqtype="get",
-    stream=False,
-    json_resp=True,
-    is_retry=False,
-):
-    """
-    Perform server requests and check if reauthorization neccessary.
-
-    :param blink: Blink instance
-    :param url: URL to perform request
-    :param data: Data to send (default: None)
-    :param headers: Headers to send (default: None)
-    :param reqtype: Can be 'get' or 'post' (default: 'get')
-    :param stream: Stream response? True/FALSE
-    :param json_resp: Return JSON response? TRUE/False
-    :param is_retry: Is this a retry attempt? True/FALSE
-    """
-    if reqtype == "post":
-        req = Request("POST", url, headers=headers, data=data)
-    elif reqtype == "get":
-        req = Request("GET", url, headers=headers)
-    else:
-        _LOGGER.error("Invalid request type: %s", reqtype)
-        raise BlinkException(ERROR.REQUEST)
-
-    prepped = req.prepare()
-
-    try:
-        response = blink.session.send(prepped, stream=stream)
-        if json_resp and "code" in response.json():
-            resp_dict = response.json()
-            code = resp_dict["code"]
-            message = resp_dict["message"]
-            if is_retry and code in ERROR.BLINK_ERRORS:
-                _LOGGER.error("Cannot obtain new token for server auth.")
-                return None
-            elif code in ERROR.BLINK_ERRORS:
-                headers = attempt_reauthorization(blink)
-                if not headers:
-                    raise exceptions.ConnectionError
-                return http_req(
-                    blink,
-                    url=url,
-                    data=data,
-                    headers=headers,
-                    reqtype=reqtype,
-                    stream=stream,
-                    json_resp=json_resp,
-                    is_retry=True,
-                )
-            _LOGGER.warning("Response from server: %s - %s", code, message)
-
-    except (exceptions.ConnectionError, exceptions.Timeout):
-        _LOGGER.info("Cannot connect to server with url %s.", url)
-        if not is_retry:
-            headers = attempt_reauthorization(blink)
-            return http_req(
-                blink,
-                url=url,
-                data=data,
-                headers=headers,
-                reqtype=reqtype,
-                stream=stream,
-                json_resp=json_resp,
-                is_retry=True,
-            )
-        _LOGGER.error("Endpoint %s failed. Possible issue with Blink servers.", url)
-        return None
-
-    if json_resp:
-        return response.json()
-
-    return response
+    return data
 
 
 class BlinkException(Exception):
@@ -169,7 +113,7 @@ class BlinkURLHandler:
         self.subdomain = "rest-{}".format(region_id)
         if legacy:
             self.subdomain = "rest.{}".format(region_id)
-        self.base_url = "https://{}.{}".format(self.subdomain, BLINK_URL)
+        self.base_url = "https://{}.{}".format(self.subdomain, const.BLINK_URL)
         self.home_url = "{}/homescreen".format(self.base_url)
         self.event_url = "{}/events/network".format(self.base_url)
         self.network_url = "{}/network".format(self.base_url)

@@ -21,10 +21,8 @@ class BlinkSyncModule:
         :param blink: Blink class instantiation
         """
         self.blink = blink
-        self._auth_header = blink.auth_header
         self.network_id = network_id
-        self.region = blink.region
-        self.region_id = blink.region_id
+        self.region_id = blink.auth.region_id
         self.name = network_name
         self.serial = None
         self.status = None
@@ -49,7 +47,6 @@ class BlinkSyncModule:
             "network_id": self.network_id,
             "serial": self.serial,
             "status": self.status,
-            "region": self.region,
             "region_id": self.region_id,
         }
         return attr
