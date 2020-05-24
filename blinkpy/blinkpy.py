@@ -48,8 +48,8 @@ class Blink:
         password=None,
         refresh_rate=DEFAULT_REFRESH,
         motion_interval=DEFAULT_MOTION_INTERVAL,
-        legacy_subdomain=False,
         no_prompt=False,
+        cred_file=None,
         device_id=DEVICE_ID,
     ):
         """
@@ -65,22 +65,20 @@ class Blink:
                                 Defaults to last refresh time.
                                 Useful for preventing motion_detected property
                                 from de-asserting too quickly.
-        :param legacy_subdomain: Set to TRUE to use old 'rest.region'
-                                 endpoints (only use if you are having
-                                 api issues).
         :param no_prompt: Set to TRUE if using an implementation that needs to
                           suppress command-line output.
-        :param persist_key: Location of persistant identifier.
         :param device_id: Identifier for the application.  Default is 'Blinkpy'.
                           This is used when logging in and should be changed to
                           fit the implementation (ie. "Home Assistant" in a
                           Home Assistant integration).
+        :param cred_file: JSON formatted credential file (containing username and password).
         """
         if data is None:
             data = {}
             data["username"] = username
             data["password"] = password
             data["device_id"] = device_id
+            data = self.check_cred_file(cred_file, data)
 
         self.auth = Auth(login_data=data, no_prompt=no_prompt)
         self.account_id = None
@@ -247,6 +245,20 @@ class Blink:
         for sync in self.sync:
             combined = util.merge_dicts(combined, self.sync[sync].cameras)
         return combined
+
+    def check_cred_file(self, cred_file, data):
+        """Check if cred file is supplied and load data is so."""
+        if cred_file:
+            cred_data = util.json_load(cred_file)
+        try:
+            data["username"] = cred_data["username"]
+            data["password"] = cred_data["password"]
+        except KeyError:
+            _LOGGER.error(
+                "Supplied cred file must contain 'username' and 'password' keys."
+            )
+
+        return data
 
     def save(self, file_name):
         """Save login data to file."""

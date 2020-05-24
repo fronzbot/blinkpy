@@ -135,7 +135,6 @@ class Auth:
         :param json_resp: Return JSON response? TRUE/False
         :param is_retry: Is this a retry attempt? True/FALSE
         """
-
         req = self.prepare_request(url, headers, data, reqtype)
         try:
             response = self.session.send(req, stream=stream)
