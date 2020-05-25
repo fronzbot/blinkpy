@@ -79,14 +79,11 @@ def prompt_login_data(data):
 
 def validate_login_data(data):
     """Check for missing keys."""
-    valid_keys = {
-        "uid": gen_uid(const.SIZE_UID),
-        "notification_key": gen_uid(const.SIZE_NOTIFICATION_KEY),
-        "device_id": const.DEVICE_ID,
-    }
-    for key in valid_keys:
-        if key not in data:
-            data[key] = valid_keys[key]
+    data["uid"] = data.get("uid", gen_uid(const.SIZE_UID))
+    data["notification_key"] = data.get(
+        "notification_key", gen_uid(const.SIZE_NOTIFICATION_KEY)
+    )
+    data["device_id"] = data.get("device_id", const.DEVICE_ID)
 
     return data
 

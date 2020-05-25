@@ -28,7 +28,6 @@ from blinkpy.helpers import util
 from blinkpy.helpers.constants import (
     DEFAULT_MOTION_INTERVAL,
     DEFAULT_REFRESH,
-    DEVICE_ID,
     MIN_THROTTLE_TIME,
 )
 from blinkpy.helpers.constants import __version__
@@ -42,45 +41,19 @@ class Blink:
     """Class to initialize communication."""
 
     def __init__(
-        self,
-        data=None,
-        username=None,
-        password=None,
-        refresh_rate=DEFAULT_REFRESH,
-        motion_interval=DEFAULT_MOTION_INTERVAL,
-        no_prompt=False,
-        cred_file=None,
-        device_id=DEVICE_ID,
+        self, refresh_rate=DEFAULT_REFRESH, motion_interval=DEFAULT_MOTION_INTERVAL,
     ):
         """
         Initialize Blink system.
 
-        :param data: Blink login data. Ignores username, password,
-                     and device_id if supplied.
-        :param username: Blink username (usually email address)
-        :param password: Blink password
         :param refresh_rate: Refresh rate of blink information.
                              Defaults to 15 (seconds)
         :param motion_interval: How far back to register motion in minutes.
                                 Defaults to last refresh time.
                                 Useful for preventing motion_detected property
                                 from de-asserting too quickly.
-        :param no_prompt: Set to TRUE if using an implementation that needs to
-                          suppress command-line output.
-        :param device_id: Identifier for the application.  Default is 'Blinkpy'.
-                          This is used when logging in and should be changed to
-                          fit the implementation (ie. "Home Assistant" in a
-                          Home Assistant integration).
-        :param cred_file: JSON formatted credential file (containing username and password).
         """
-        if data is None:
-            data = {}
-            data["username"] = username
-            data["password"] = password
-            data["device_id"] = device_id
-            data = self.check_cred_file(cred_file, data)
-
-        self.auth = Auth(login_data=data, no_prompt=no_prompt)
+        self.auth = Auth()
         self.account_id = None
         self.client_id = None
         self.network_ids = []
@@ -93,7 +66,6 @@ class Blink:
         self.video_list = CaseInsensitiveDict({})
         self.motion_interval = motion_interval
         self.version = __version__
-        self.no_prompt = no_prompt
         self.available = False
         self.key_required = False
 
@@ -121,7 +93,7 @@ class Blink:
     def start(self):
         """Perform full system setup."""
         try:
-            self.auth.refresh_token()
+            self.auth.startup()
             self.setup_login_ids()
             self.setup_urls()
         except (LoginError, TokenRefreshFailed, BlinkSetupError):
@@ -131,7 +103,7 @@ class Blink:
 
         self.key_required = self.auth.check_key_required()
         if self.key_required:
-            if self.no_prompt:
+            if self.auth.no_prompt:
                 return True
             self.setup_prompt_2fa()
         return self.setup_post_verify()
@@ -186,12 +158,8 @@ class Blink:
 
     def setup_login_ids(self):
         """Retrieve login id numbers from login response."""
-        try:
-            self.client_id = self.auth.login_response["client"]["id"]
-            self.account_id = self.auth.login_response["account"]["id"]
-        except KeyError:
-            _LOGGER.error("Malformed login response of %s", self.auth.login_response)
-            raise BlinkSetupError
+        self.client_id = self.auth.client_id
+        self.account_id = self.auth.account_id
 
     def setup_urls(self):
         """Create urls for api."""
@@ -245,20 +213,6 @@ class Blink:
         for sync in self.sync:
             combined = util.merge_dicts(combined, self.sync[sync].cameras)
         return combined
-
-    def check_cred_file(self, cred_file, data):
-        """Check if cred file is supplied and load data is so."""
-        if cred_file:
-            cred_data = util.json_load(cred_file)
-        try:
-            data["username"] = cred_data["username"]
-            data["password"] = cred_data["password"]
-        except KeyError:
-            _LOGGER.error(
-                "Supplied cred file must contain 'username' and 'password' keys."
-            )
-
-        return data
 
     def save(self, file_name):
         """Save login data to file."""

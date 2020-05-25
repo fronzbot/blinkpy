@@ -18,33 +18,33 @@ class Auth:
         Initialize auth handler.
 
         :param login_data: dictionary for login data
-                           can contain the following:
+                           must contain the following:
                              - username
                              - password
-                             - device_id
-                             - uid
-                             - notification_key
         :param no_prompt: Should any user input prompts
                           be supressed? True/FALSE
         """
+        if login_data is None:
+            login_data = {}
         self.data = login_data
-        self.token = None
-        self.host = None
-        self.region_id = None
+        self.token = login_data.get("token", None)
+        self.host = login_data.get("host", None)
+        self.region_id = login_data.get("region_id", None)
+        self.client_id = login_data.get("client_id", None)
+        self.account_id = login_data.get("account_id", None)
         self.login_response = None
         self.no_prompt = no_prompt
         self.session = self.create_session()
-        self.validate_login()
 
     @property
     def login_attributes(self):
         """Return a dictionary of login attributes."""
-        attributes = {
-            "token": self.token,
-            "host": self.host,
-            "region_id": self.region_id,
-        }
-        return util.merge_dicts(attributes, self.data)
+        self.data["token"] = self.token
+        self.data["host"] = self.host
+        self.data["region_id"] = self.region_id
+        self.data["client_id"] = self.client_id
+        self.data["account_id"] = self.account_id
+        return self.data
 
     @property
     def header(self):
@@ -66,10 +66,8 @@ class Auth:
 
     def validate_login(self):
         """Check login information and prompt if not available."""
-        if "username" not in self.data:
-            self.data["username"] = None
-        if "password" not in self.data:
-            self.data["password"] = None
+        self.data["username"] = self.data.get("username", None)
+        self.data["password"] = self.data.get("password", None)
         if not self.no_prompt:
             self.data = util.prompt_login_data(self.data)
 
@@ -77,6 +75,7 @@ class Auth:
 
     def login(self, login_url=LOGIN_ENDPOINT):
         """Attempt login to blink servers."""
+        self.validate_login()
         _LOGGER.info("Attempting login with %s", login_url)
         response = api.request_login(self, login_url, self.data, is_retry=False,)
         try:
@@ -91,14 +90,21 @@ class Auth:
         try:
             _LOGGER.info("Token expired, attempting automatic refresh.")
             self.login_response = self.login()
-            region_ids = (*self.login_response["region"],)
-            self.region_id = region_ids[0]
+            self.region_id = self.login_response["region"]["tier"]
             self.host = f"{self.region_id}.{BLINK_URL}"
             self.token = self.login_response["authtoken"]["authtoken"]
+            self.client_id = self.login_response["client"]["id"]
+            self.account_id = self.login_response["account"]["id"]
         except KeyError:
             _LOGGER.error("Malformed login response: %s", self.login_response)
             raise TokenRefreshFailed
         return True
+
+    def startup(self):
+        """Initialize tokens for communication."""
+        self.validate_login()
+        if None in self.login_attributes.values():
+            self.refresh_token()
 
     def validate_response(self, response, json_resp):
         """Check for valid response."""
@@ -175,7 +181,7 @@ class Auth:
         try:
             if self.login_response["client"]["verification_required"]:
                 return True
-        except KeyError:
+        except (KeyError, TypeError):
             pass
         return False
 
