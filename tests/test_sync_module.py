@@ -2,27 +2,21 @@
 import unittest
 from unittest import mock
 
-from blinkpy import blinkpy
+from blinkpy.blinkpy import Blink
+from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera
 
-USERNAME = "foobar"
-PASSWORD = "deadbeef"
 
-
-@mock.patch("blinkpy.api.http_req")
+@mock.patch("blinkpy.auth.Auth.query")
 class TestBlinkSyncModule(unittest.TestCase):
     """Test BlinkSyncModule functions in blinkpy."""
 
     def setUp(self):
         """Set up Blink module."""
-        self.blink = blinkpy.Blink(
-            username=USERNAME, password=PASSWORD, motion_interval=0
-        )
-        # pylint: disable=protected-access
-        self.blink._auth_header = {"Host": "test.url.tld", "TOKEN_AUTH": "foobar123"}
+        self.blink = Blink(motion_interval=0)
         self.blink.last_refresh = 0
-        self.blink.urls = blinkpy.BlinkURLHandler("test")
+        self.blink.urls = BlinkURLHandler("test")
         self.blink.sync["test"] = BlinkSyncModule(self.blink, "test", "1234", [])
         self.camera = BlinkCamera(self.blink.sync)
         self.mock_start = [
@@ -48,15 +42,49 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.camera = None
         self.mock_start = None
 
+    def test_bad_status(self, mock_resp):
+        """Check that we mark module unavaiable on bad status."""
+        self.blink.sync["test"].status = None
+        self.blink.sync["test"].available = True
+        self.assertFalse(self.blink.sync["test"].online)
+        self.assertFalse(self.blink.sync["test"].available)
+
+    def test_bad_arm(self, mock_resp):
+        """Check that we mark module unavaiable if bad arm status."""
+        self.blink.sync["test"].network_info = None
+        self.blink.sync["test"].available = True
+        self.assertEqual(self.blink.sync["test"].arm, None)
+        self.assertFalse(self.blink.sync["test"].available)
+        self.blink.sync["test"].network_info = {}
+        self.blink.sync["test"].available = True
+        self.assertEqual(self.blink.sync["test"].arm, None)
+        self.assertFalse(self.blink.sync["test"].available)
+
     def test_get_events(self, mock_resp):
         """Test get events function."""
         mock_resp.return_value = {"event": True}
         self.assertEqual(self.blink.sync["test"].get_events(), True)
 
+    def test_get_events_fail(self, mock_resp):
+        """Test handling of failed get events function."""
+        mock_resp.return_value = None
+        self.assertFalse(self.blink.sync["test"].get_events())
+        mock_resp.return_value = {}
+        self.assertFalse(self.blink.sync["test"].get_events())
+
     def test_get_camera_info(self, mock_resp):
         """Test get camera info function."""
         mock_resp.return_value = {"camera": ["foobar"]}
         self.assertEqual(self.blink.sync["test"].get_camera_info("1234"), "foobar")
+
+    def test_get_camera_info_fail(self, mock_resp):
+        """Test hadnling of failed get camera info function."""
+        mock_resp.return_value = None
+        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), [])
+        mock_resp.return_value = {}
+        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), [])
+        mock_resp.return_value = {"camera": None}
+        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), [])
 
     def test_check_new_videos_startup(self, mock_resp):
         """Test that check_new_videos does not block startup."""
@@ -224,3 +252,8 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.mock_start[5] = {}
         self.blink.sync["test"].start()
         self.assertEqual(self.blink.sync["test"].cameras, {"foo": None})
+
+    def test_sync_attributes(self, mock_resp):
+        """Test sync attributes."""
+        self.assertEqual(self.blink.sync["test"].attributes["name"], "test")
+        self.assertEqual(self.blink.sync["test"].attributes["network_id"], "1234")

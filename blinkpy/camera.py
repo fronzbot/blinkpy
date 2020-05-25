@@ -110,7 +110,7 @@ class BlinkCamera:
         )
         try:
             self.temperature_calibrated = resp["temp"]
-        except KeyError:
+        except (TypeError, KeyError):
             self.temperature_calibrated = self.temperature
             _LOGGER.warning("Could not retrieve calibrated temperature.")
 
