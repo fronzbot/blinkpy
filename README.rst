@@ -45,59 +45,86 @@ This library was built with the intention of allowing easy communication with Bl
 
 Quick Start
 =============
-The simplest way to use this package from a terminal is to call ``Blink.start()`` which will prompt for your Blink username and password and then log you in.  Alternatively, you can instantiate the Blink class with a username and password, and call ``Blink.start()`` to login and setup without prompt, as shown below.  In addition, http requests are throttled internally via use of the ``Blink.refresh_rate`` variable, which can be set at initialization and defaults to 30 seconds.
+The simplest way to use this package from a terminal is to call ``Blink.start()`` which will prompt for your Blink username and password and then log you in.  In addition, http requests are throttled internally via use of the ``Blink.refresh_rate`` variable, which can be set at initialization and defaults to 30 seconds.
 
 .. code:: python
 
-    from blinkpy import blinkpy
-    blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD', refresh_rate=30)
+    from blinkpy.blinkpy import Blink
+   
+    blink = Blink()
     blink.start()
 
-At startup, you may be prompted for a verification key.  Just enter this in the command-line prompt.  If you just receive a verification email asking to validate access for your device, enter nothing at this prompt.  To avoid any command-line interaction, call the ``Blink`` class with the ``no_prompt=True`` flag.  Instead, once you receive the verification email, call the following functions:
+
+This flow will prompt you for your username and password.  Once entered, if you likely will need to send a 2FA key to the blink servers (this pin is sent to your email address).  When you receive this pin, enter at the prompt and the Blink library will proceed with setup.
+
+Starting blink without a prompt
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In some cases, having an interactive command-line session is not desired.  In this case, you will need to set the ``Blink.auth.no_prompt`` value to ``True``.  In addition, since you will not be prompted with a username and password, you must supply the login data to the blink authentication handler.  This is best done by instantiating your own auth handler with a dictionary containing at least your username and password.
 
 .. code:: python
 
-    blink.login_handler.send_auth_key(blink, VERIFICATION_KEY)
+    from blinkpy.blinkpy import Blink
+    from blinkpy.auth import Auth
+
+    blink = Blink()
+    # Can set no_prompt when initializing auth handler
+    auth = Auth({"username": <your username>, "password": <your password>}, no_prompt=True)
+    blink.auth = auth
+    blink.start()
+
+
+Since you will not be prompted for any 2FA pin, you must call the ``blink.auth.send_auth_key`` function.  There are two required parameters: the ``blink`` object as well as the ``key`` you received from Blink for 2FA:
+
+.. code:: python
+
+    auth.send_auth_key(blink, <your key>)
     blink.setup_post_verify()
 
-In addition, you can also save your credentials in a json file and initialize Blink with the credential file as follows:
+
+Supplying credentials from file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Other use cases may involved loading credentials from a file.  This file must be ``json`` formatted and contain a minimum of ``username`` and ``password``.  A built in function in the ``blinkpy.helpers.util`` module can aid in loading this file.  Note, if ``no_prompt`` is desired, a similar flow can be followed as above.
 
 .. code:: python
 
-    from blinkpy import blinkpy
-    blink = blinkpy.Blink(cred_file="path/to/credentials.json")
+    from blinkpy.blinkpy import Blink
+    from blinkpy.auth import Auth
+    from blinkpy.helpers.util import json_load
+
+    blink = Blink()
+    auth = Auth(json_load("<File Location>"))
+    blink.auth = auth
     blink.start()
 
-The credential file must be json formatted with a ``username`` and ``password`` key like follows:
 
-.. code:: json
+Saving credentials
+~~~~~~~~~~~~~~~~~~~
+This library also allows you to save your credentials to use in future sessions.  Saved information includes authentication tokens as well as unique ids which should allow for a more streamlined experience and limits the frequency of login requests.  This data can be saved as follows (it can then be loaded by following the instructions above for supplying credentials from a file):
 
-    {
-        "username": "YOUR USER NAME",
-        "password": "YOUR PASSWORD"
-    }
+.. code:: python
 
+    blink.save("<File location>")
+
+
+Getting cameras
+~~~~~~~~~~~~~~~~
 Cameras are instantiated as individual ``BlinkCamera`` classes within a ``BlinkSyncModule`` instance.  All of your sync modules are stored within the ``Blink.sync`` dictionary and can be accessed using the name of the sync module as the key (this is the name of your sync module in the Blink App).
 
 The below code will display cameras and their available attributes:
 
 .. code:: python
 
-    from blinkpy import blinkpy
-
-    blink = blinkpy.Blink(username='YOUR USER NAME', password='YOUR PASSWORD')
-    blink.start()
-
     for name, camera in blink.cameras.items():
       print(name)                   # Name of the camera
       print(camera.attributes)      # Print available attributes of camera
 
-The most recent images and videos can be accessed as a bytes-object via internal variables.  These can be updated with calls to ``Blink.refresh()`` but will only make a request if motion has been detected or other changes have been found.  This can be overridden with the ``force_cache`` flag, but this should be used for debugging only since it overrides the internal request throttling.
+
+The most recent images and videos can be accessed as a bytes-object via internal variables.  These can be updated with calls to ``Blink.refresh()`` but will only make a request if motion has been detected or other changes have been found.  This can be overridden with the ``force`` flag, but this should be used for debugging only since it overrides the internal request throttling.
 
 .. code:: python
     
     camera = blink.cameras['SOME CAMERA NAME']
-    blink.refresh(force_cache=True)  # force a cache update USE WITH CAUTION
+    blink.refresh(force=True)  # force a cache update USE WITH CAUTION
     camera.image_from_cache.raw  # bytes-like image object (jpg)
     camera.video_from_cache.raw  # bytes-like video object (mp4)
 
@@ -110,15 +137,15 @@ The ``blinkpy`` api also allows for saving images and videos to a file and snapp
     blink.refresh()             # Get new information from server
     camera.image_to_file('/local/path/for/image.jpg')
     camera.video_to_file('/local/path/for/video.mp4')
-    
+
+Download videos
+~~~~~~~~~~~~~~~~
 You can also use this library to download all videos from the server.  In order to do this, you must specify a ``path``.  You may also specifiy a how far back in time to go to retrieve videos via the ``since=`` variable (a simple string such as ``"2017/09/21"`` is sufficient), as well as how many pages to traverse via the ``page=`` variable.  Note that by default, the library will search the first ten pages which is sufficient in most use cases.  Additionally, you can specidy one or more cameras via the ``camera=`` property.  This can be a single string indicating the name of the camera, or a list of camera names.  By default, it is set to the string ``'all'`` to grab videos from all cameras.
 
 Example usage, which downloads all videos recorded since July 4th, 2018 at 9:34am to the ``/home/blink`` directory:
 
 .. code:: python
 
-    blink = blinkpy.Blink(username="YOUR USER NAME", password="YOUR PASSWORD")
-    blink.start()
     blink.download_videos('/home/blink', since='2018/07/04 09:34')
 
 

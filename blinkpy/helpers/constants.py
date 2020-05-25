@@ -4,7 +4,7 @@ import os
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 16
-PATCH_VERSION = "0-rc0"
+PATCH_VERSION = "0-rc1"
 
 __version__ = "{}.{}.{}".format(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION)
 
@@ -48,10 +48,10 @@ URLS
 BLINK_URL = "immedia-semi.com"
 DEFAULT_URL = "{}.{}".format("rest-prod", BLINK_URL)
 BASE_URL = "https://{}".format(DEFAULT_URL)
+LOGIN_ENDPOINT = "{}/api/v4/account/login".format(BASE_URL)
 LOGIN_URLS = [
-    "{}/api/v4/login".format(BASE_URL),
+    "{}/api/v4/account/login".format(BASE_URL),
     "{}/api/v3/login".format(BASE_URL),
-    "{}/api/v2/login".format(BASE_URL),
 ]
 
 """
@@ -62,6 +62,7 @@ ONLINE = {"online": True, "offline": False}
 """
 OTHER
 """
+DEVICE_ID = "Blinkpy"
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 DEFAULT_MOTION_INTERVAL = 1
 DEFAULT_REFRESH = 30
