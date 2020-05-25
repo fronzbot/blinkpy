@@ -3,7 +3,7 @@
 import unittest
 from unittest import mock
 import time
-from blinkpy.helpers.util import Throttle, time_to_seconds
+from blinkpy.helpers.util import json_load, Throttle, time_to_seconds
 
 
 class TestUtil(unittest.TestCase):
@@ -107,3 +107,9 @@ class TestUtil(unittest.TestCase):
         wrong_time = "1/1/1970 00:00:03"
         self.assertEqual(time_to_seconds(correct_time), 5)
         self.assertFalse(time_to_seconds(wrong_time))
+
+    def test_json_load_bad_data(self):
+        """Check that bad file is handled."""
+        self.assertEqual(json_load("fake.file"), None)
+        with mock.patch("builtins.open", mock.mock_open(read_data="")):
+            self.assertEqual(json_load("fake.file"), None)

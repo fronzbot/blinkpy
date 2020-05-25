@@ -65,10 +65,26 @@ class TestBlinkSyncModule(unittest.TestCase):
         mock_resp.return_value = {"event": True}
         self.assertEqual(self.blink.sync["test"].get_events(), True)
 
+    def test_get_events_fail(self, mock_resp):
+        """Test handling of failed get events function."""
+        mock_resp.return_value = None
+        self.assertFalse(self.blink.sync["test"].get_events())
+        mock_resp.return_value = {}
+        self.assertFalse(self.blink.sync["test"].get_events())
+
     def test_get_camera_info(self, mock_resp):
         """Test get camera info function."""
         mock_resp.return_value = {"camera": ["foobar"]}
         self.assertEqual(self.blink.sync["test"].get_camera_info("1234"), "foobar")
+
+    def test_get_camera_info_fail(self, mock_resp):
+        """Test hadnling of failed get camera info function."""
+        mock_resp.return_value = None
+        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), [])
+        mock_resp.return_value = {}
+        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), [])
+        mock_resp.return_value = {"camera": None}
+        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), [])
 
     def test_check_new_videos_startup(self, mock_resp):
         """Test that check_new_videos does not block startup."""
@@ -236,3 +252,8 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.mock_start[5] = {}
         self.blink.sync["test"].start()
         self.assertEqual(self.blink.sync["test"].cameras, {"foo": None})
+
+    def test_sync_attributes(self, mock_resp):
+        """Test sync attributes."""
+        self.assertEqual(self.blink.sync["test"].attributes["name"], "test")
+        self.assertEqual(self.blink.sync["test"].attributes["network_id"], "1234")

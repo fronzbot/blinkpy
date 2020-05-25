@@ -132,3 +132,59 @@ class TestBlinkSetup(unittest.TestCase):
         mock_networks.return_value = {}
         with self.assertRaises(BlinkSetupError):
             self.blink.setup_networks()
+
+    @mock.patch("blinkpy.blinkpy.Auth.send_auth_key")
+    def test_setup_prompt_2fa(self, mock_key):
+        """Test setup with 2fa prompt."""
+        self.blink.auth.data["username"] = "foobar"
+        self.blink.key_required = True
+        mock_key.return_value = True
+        with mock.patch("builtins.input", return_value="foo"):
+            self.blink.setup_prompt_2fa()
+        self.assertFalse(self.blink.key_required)
+        mock_key.return_value = False
+        with mock.patch("builtins.input", return_value="foo"):
+            self.blink.setup_prompt_2fa()
+        self.assertTrue(self.blink.key_required)
+
+    @mock.patch("blinkpy.blinkpy.Blink.setup_camera_list")
+    @mock.patch("blinkpy.api.request_networks")
+    def test_setup_post_verify(self, mock_networks, mock_camera):
+        """Test setup after verification."""
+        self.blink.available = False
+        self.blink.key_required = True
+        mock_networks.return_value = {
+            "summary": {"foo": {"onboarded": False, "name": "bar"}}
+        }
+        mock_camera.return_value = []
+        self.assertTrue(self.blink.setup_post_verify())
+        self.assertTrue(self.blink.available)
+        self.assertFalse(self.blink.key_required)
+
+    @mock.patch("blinkpy.api.request_networks")
+    def test_setup_post_verify_failure(self, mock_networks):
+        """Test failed setup after verification."""
+        self.blink.available = False
+        mock_networks.return_value = {}
+        self.assertFalse(self.blink.setup_post_verify())
+        self.assertFalse(self.blink.available)
+
+    def test_merge_cameras(self):
+        """Test merging of cameras."""
+        self.blink.sync = {
+            "foo": MockSync({"test": 123, "foo": "bar"}),
+            "bar": MockSync({"fizz": "buzz", "bar": "foo"}),
+        }
+        combined = self.blink.merge_cameras()
+        self.assertEqual(combined["test"], 123)
+        self.assertEqual(combined["foo"], "bar")
+        self.assertEqual(combined["fizz"], "buzz")
+        self.assertEqual(combined["bar"], "foo")
+
+
+class MockSync:
+    """Mock sync module class."""
+
+    def __init__(self, cameras):
+        """Initialize fake class."""
+        self.cameras = cameras
