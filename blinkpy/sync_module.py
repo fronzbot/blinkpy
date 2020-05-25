@@ -106,7 +106,7 @@ class BlinkSyncModule:
                 "Could not extract some sync module info: %s", response, exc_info=True
             )
 
-        self.get_network_info()
+        is_ok = self.get_network_info()
         self.check_new_videos()
         try:
             for camera_config in self.camera_list:
@@ -123,6 +123,8 @@ class BlinkSyncModule:
             )
             return False
 
+        if not is_ok:
+            return False
         self.available = True
         return True
 
@@ -156,10 +158,13 @@ class BlinkSyncModule:
 
         if is_errored:
             self.available = False
+            return False
+        return True
 
     def refresh(self, force_cache=False):
         """Get all blink cameras and pulls their most recent status."""
-        self.get_network_info()
+        if not self.get_network_info():
+            return
         self.check_new_videos()
         for camera_name in self.cameras.keys():
             camera_id = self.cameras[camera_name].camera_id
