@@ -4,7 +4,7 @@ import os
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 16
-PATCH_VERSION = "0-rc0"
+PATCH_VERSION = "0-rc1"
 
 __version__ = "{}.{}.{}".format(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION)
 
