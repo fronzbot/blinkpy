@@ -3,7 +3,7 @@
 import unittest
 from unittest import mock
 import time
-from blinkpy.helpers.util import Throttle, BlinkURLHandler, time_to_seconds
+from blinkpy.helpers.util import json_load, Throttle, time_to_seconds
 
 
 class TestUtil(unittest.TestCase):
@@ -101,16 +101,15 @@ class TestUtil(unittest.TestCase):
             self.assertEqual(tester.test1(), None)
             self.assertEqual(tester.test2(), True)
 
-    def test_legacy_subdomains(self):
-        """Test that subdomain can be set to legacy mode."""
-        urls = BlinkURLHandler("test")
-        self.assertEqual(urls.subdomain, "rest-test")
-        urls = BlinkURLHandler("test", legacy=True)
-        self.assertEqual(urls.subdomain, "rest.test")
-
     def test_time_to_seconds(self):
         """Test time to seconds conversion."""
         correct_time = "1970-01-01T00:00:05+00:00"
         wrong_time = "1/1/1970 00:00:03"
         self.assertEqual(time_to_seconds(correct_time), 5)
         self.assertFalse(time_to_seconds(wrong_time))
+
+    def test_json_load_bad_data(self):
+        """Check that bad file is handled."""
+        self.assertEqual(json_load("fake.file"), None)
+        with mock.patch("builtins.open", mock.mock_open(read_data="")):
+            self.assertEqual(json_load("fake.file"), None)

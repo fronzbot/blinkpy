@@ -21,13 +21,11 @@ class BlinkSyncModule:
         :param blink: Blink class instantiation
         """
         self.blink = blink
-        self._auth_header = blink.auth_header
         self.network_id = network_id
-        self.region = blink.region
-        self.region_id = blink.region_id
+        self.region_id = blink.auth.region_id
         self.name = network_name
         self.serial = None
-        self.status = None
+        self.status = "offline"
         self.sync_id = None
         self.host = None
         self.summary = None
@@ -49,7 +47,6 @@ class BlinkSyncModule:
             "network_id": self.network_id,
             "serial": self.serial,
             "status": self.status,
-            "region": self.region,
             "region_id": self.region_id,
         }
         return attr
@@ -62,7 +59,12 @@ class BlinkSyncModule:
     @property
     def online(self):
         """Return boolean system online status."""
-        return ONLINE[self.status]
+        try:
+            return ONLINE[self.status]
+        except KeyError:
+            _LOGGER.error("Unknown sync module status %s", self.status)
+            self.available = False
+            return False
 
     @property
     def arm(self):
@@ -70,6 +72,7 @@ class BlinkSyncModule:
         try:
             return self.network_info["network"]["armed"]
         except (KeyError, TypeError):
+            self.available = False
             return None
 
     @arm.setter
@@ -103,7 +106,7 @@ class BlinkSyncModule:
                 "Could not extract some sync module info: %s", response, exc_info=True
             )
 
-        self.get_network_info()
+        is_ok = self.get_network_info()
         self.check_new_videos()
         try:
             for camera_config in self.camera_list:
@@ -120,6 +123,8 @@ class BlinkSyncModule:
             )
             return False
 
+        if not is_ok:
+            return False
         self.available = True
         return True
 
@@ -153,15 +158,19 @@ class BlinkSyncModule:
 
         if is_errored:
             self.available = False
+            return False
+        return True
 
     def refresh(self, force_cache=False):
         """Get all blink cameras and pulls their most recent status."""
-        self.get_network_info()
+        if not self.get_network_info():
+            return
         self.check_new_videos()
         for camera_name in self.cameras.keys():
             camera_id = self.cameras[camera_name].camera_id
             camera_info = self.get_camera_info(camera_id)
             self.cameras[camera_name].update(camera_info, force_cache=force_cache)
+        self.available = True
 
     def check_new_videos(self):
         """Check if new videos since last refresh."""
