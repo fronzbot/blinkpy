@@ -3,7 +3,7 @@
 import unittest
 from unittest import mock
 import time
-from blinkpy.helpers.util import Throttle, BlinkURLHandler, time_to_seconds
+from blinkpy.helpers.util import Throttle, time_to_seconds
 
 
 class TestUtil(unittest.TestCase):
@@ -100,13 +100,6 @@ class TestUtil(unittest.TestCase):
         with mock.patch("time.time", return_value=now_plus_6):
             self.assertEqual(tester.test1(), None)
             self.assertEqual(tester.test2(), True)
-
-    def test_legacy_subdomains(self):
-        """Test that subdomain can be set to legacy mode."""
-        urls = BlinkURLHandler("test")
-        self.assertEqual(urls.subdomain, "rest-test")
-        urls = BlinkURLHandler("test", legacy=True)
-        self.assertEqual(urls.subdomain, "rest.test")
 
     def test_time_to_seconds(self):
         """Test time to seconds conversion."""

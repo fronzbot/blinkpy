@@ -25,7 +25,7 @@ class BlinkSyncModule:
         self.region_id = blink.auth.region_id
         self.name = network_name
         self.serial = None
-        self.status = None
+        self.status = "offline"
         self.sync_id = None
         self.host = None
         self.summary = None
@@ -59,7 +59,12 @@ class BlinkSyncModule:
     @property
     def online(self):
         """Return boolean system online status."""
-        return ONLINE[self.status]
+        try:
+            return ONLINE[self.status]
+        except KeyError:
+            _LOGGER.error("Unknown sync module status %s", self.status)
+            self.available = False
+            return False
 
     @property
     def arm(self):
@@ -67,6 +72,7 @@ class BlinkSyncModule:
         try:
             return self.network_info["network"]["armed"]
         except (KeyError, TypeError):
+            self.available = False
             return None
 
     @arm.setter
@@ -159,6 +165,7 @@ class BlinkSyncModule:
             camera_id = self.cameras[camera_name].camera_id
             camera_info = self.get_camera_info(camera_id)
             self.cameras[camera_name].update(camera_info, force_cache=force_cache)
+        self.available = True
 
     def check_new_videos(self):
         """Check if new videos since last refresh."""

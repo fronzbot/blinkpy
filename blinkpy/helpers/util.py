@@ -105,17 +105,17 @@ class BlinkAuthenticationException(BlinkException):
 class BlinkURLHandler:
     """Class that handles Blink URLS."""
 
-    def __init__(self, region_id, legacy=False):
+    def __init__(self, region_id):
         """Initialize the urls."""
-        self.subdomain = "rest-{}".format(region_id)
-        if legacy:
-            self.subdomain = "rest.{}".format(region_id)
-        self.base_url = "https://{}.{}".format(self.subdomain, const.BLINK_URL)
-        self.home_url = "{}/homescreen".format(self.base_url)
-        self.event_url = "{}/events/network".format(self.base_url)
-        self.network_url = "{}/network".format(self.base_url)
-        self.networks_url = "{}/networks".format(self.base_url)
-        self.video_url = "{}/api/v2/videos".format(self.base_url)
+        if region_id is None:
+            raise TypeError
+        self.subdomain = f"rest-{region_id}"
+        self.base_url = f"https://{self.subdomain}.{const.BLINK_URL}"
+        self.home_url = f"{self.base_url}/homescreen"
+        self.event_url = f"{self.base_url}/events/network"
+        self.network_url = f"{self.base_url}/network"
+        self.networks_url = f"{self.base_url}/networks"
+        self.video_url = f"{self.base_url}/api/v2/videos"
         _LOGGER.debug("Setting base url to %s.", self.base_url)
 
 
