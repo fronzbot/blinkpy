@@ -1,6 +1,6 @@
 black==19.10b0
 coverage==5.1
-flake8==3.8.1
+flake8==3.8.2
 flake8-docstrings==1.5.0
 pre-commit==2.4.0
 pylint==2.5.2
