@@ -3,7 +3,7 @@
 import unittest
 from unittest import mock
 from requests import exceptions
-from blinkpy.auth import Auth, LoginError, TokenRefreshFailed
+from blinkpy.auth import Auth, LoginError, TokenRefreshFailed, BlinkBadResponse
 import blinkpy.helpers.constants as const
 import tests.mock_responses as mresp
 
@@ -99,6 +99,11 @@ class TestAuth(unittest.TestCase):
         """Check response when not json."""
         fake_resp = "foobar"
         self.assertEqual(self.auth.validate_response(fake_resp, False), "foobar")
+
+    def test_response_bad_json(self):
+        """Check response when not json but expecting json."""
+        with self.assertRaises(BlinkBadResponse):
+            self.auth.validate_response(None, True)
 
     def test_header(self):
         """Test header data."""
