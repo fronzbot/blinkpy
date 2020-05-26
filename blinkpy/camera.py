@@ -127,7 +127,7 @@ class BlinkCamera:
             )
 
         if thumb_addr is not None:
-            new_thumbnail = "{}{}.jpg".format(self.sync.urls.base_url, thumb_addr)
+            new_thumbnail = f"{self.sync.urls.base_url}{thumb_addr}.jpg"
 
         try:
             self.motion_detected = self.sync.motion[self.name]
@@ -138,7 +138,7 @@ class BlinkCamera:
         if self.name in self.sync.last_record:
             clip_addr = self.sync.last_record[self.name]["clip"]
             self.last_record = self.sync.last_record[self.name]["time"]
-            self.clip = "{}{}".format(self.sync.urls.base_url, clip_addr)
+            self.clip = f"{self.sync.urls.base_url}{clip_addr}"
 
         # If the thumbnail or clip have changed, update the cache
         update_cached_image = False

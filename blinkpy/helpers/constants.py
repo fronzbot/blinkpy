@@ -6,7 +6,7 @@ MAJOR_VERSION = 0
 MINOR_VERSION = 16
 PATCH_VERSION = "0-rc1"
 
-__version__ = "{}.{}.{}".format(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION)
+__version__ = f"{MAJOR_VERSION}.{MINOR_VERSION}.{PATCH_VERSION}"
 
 REQUIRED_PYTHON_VER = (3, 6, 0)
 
@@ -14,7 +14,7 @@ PROJECT_NAME = "blinkpy"
 PROJECT_PACKAGE_NAME = "blinkpy"
 PROJECT_LICENSE = "MIT"
 PROJECT_AUTHOR = "Kevin Fronczak"
-PROJECT_COPYRIGHT = " 2017, {}".format(PROJECT_AUTHOR)
+PROJECT_COPYRIGHT = f" 2017, {PROJECT_AUTHOR}"
 PROJECT_URL = "https://github.com/fronzbot/blinkpy"
 PROJECT_EMAIL = "kfronczak@gmail.com"
 PROJECT_DESCRIPTION = "A Blink camera Python library " "running on Python 3."
@@ -40,19 +40,15 @@ PROJECT_CLASSIFIERS = [
 PROJECT_GITHUB_USERNAME = "fronzbot"
 PROJECT_GITHUB_REPOSITORY = "blinkpy"
 
-PYPI_URL = "https://pypi.python.org/pypi/{}".format(PROJECT_PACKAGE_NAME)
+PYPI_URL = f"https://pypi.python.org/pypi/{PROJECT_PACKAGE_NAME}"
 
 """
 URLS
 """
 BLINK_URL = "immedia-semi.com"
-DEFAULT_URL = "{}.{}".format("rest-prod", BLINK_URL)
-BASE_URL = "https://{}".format(DEFAULT_URL)
-LOGIN_ENDPOINT = "{}/api/v4/account/login".format(BASE_URL)
-LOGIN_URLS = [
-    "{}/api/v4/account/login".format(BASE_URL),
-    "{}/api/v3/login".format(BASE_URL),
-]
+DEFAULT_URL = f"rest-prod.{BLINK_URL}"
+BASE_URL = f"https://{DEFAULT_URL}"
+LOGIN_ENDPOINT = f"{BASE_URL}/api/v4/account/login"
 
 """
 Dictionaries

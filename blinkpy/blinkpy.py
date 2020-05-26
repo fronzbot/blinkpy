@@ -277,9 +277,9 @@ class Blink:
                 _LOGGER.debug("%s: %s is marked as deleted.", camera_name, address)
                 continue
 
-            clip_address = "{}{}".format(self.urls.base_url, address)
-            filename = "{}-{}".format(camera_name, created_at)
-            filename = "{}.mp4".format(slugify(filename))
+            clip_address = f"{self.urls.base_url}{address}"
+            filename = f"{camera_name}-{created_at}"
+            filename = f"{slugify(filename)}.mp4"
             filename = os.path.join(path, filename)
 
             if not debug:
@@ -294,8 +294,9 @@ class Blink:
                 _LOGGER.info("Downloaded video to %s", filename)
             else:
                 print(
-                    ("Camera: {}, Timestamp: {}, " "Address: {}, Filename: {}").format(
-                        camera_name, created_at, address, filename
+                    (
+                        f"Camera: {camera_name}, Timestamp: {created_at}, "
+                        "Address: {address}, Filename: {filename}"
                     )
                 )
 
