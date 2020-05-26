@@ -4,10 +4,8 @@ coverage:
   status:
     project:
       default:
-        threshold: 2%
+        target: 80
+        threshold: 0.02
 
 comment: true
 require_ci_to_pass: yes
-range: 65..90
-round: down
-precision: 1
