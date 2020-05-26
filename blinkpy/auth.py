@@ -111,12 +111,14 @@ class Auth:
         if not json_resp:
             return response
 
-        json_data = response.json()
         try:
+            json_data = response.json()
             if json_data["code"] in ERROR.BLINK_ERRORS:
                 raise exceptions.ConnectionError
         except KeyError:
             pass
+        except (AttributeError, ValueError):
+            raise BlinkBadResponse
 
         return json_data
 
@@ -161,6 +163,8 @@ class Auth:
                     )
             except (TokenRefreshFailed, LoginError):
                 _LOGGER.error("Endpoint %s failed. Unable to refresh login tokens", url)
+        except BlinkBadResponse:
+            _LOGGER.error("Expected json response, but received: %s", response)
         _LOGGER.error("Endpoint %s failed", url)
         return None
 
@@ -192,3 +196,7 @@ class TokenRefreshFailed(Exception):
 
 class LoginError(Exception):
     """Class to throw failed login exception."""
+
+
+class BlinkBadResponse(Exception):
+    """Class to throw bad json response exception."""
