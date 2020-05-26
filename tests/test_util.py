@@ -67,6 +67,25 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(throttled(), True)
         self.assertEqual(throttled(), None)
 
+    def test_throttle_multiple_objects(self):
+        """Test that function is throttled even if called by multiple objects."""
+
+        @Throttle(seconds=5)
+        def test_throttle_method():
+            return True
+
+        class Tester:
+            """A tester class for throttling."""
+
+            def test(self):
+                """Test function for throttle."""
+                return test_throttle_method()
+
+        tester1 = Tester()
+        tester2 = Tester()
+        self.assertEqual(tester1.test(), True)
+        self.assertEqual(tester2.test(), None)
+
     def test_throttle_on_two_methods(self):
         """Test that throttle works for multiple methods."""
 
