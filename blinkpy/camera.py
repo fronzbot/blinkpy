@@ -77,12 +77,31 @@ class BlinkCamera:
             return self._cached_video
         return None
 
+    @property
+    def arm(self):
+        """Return arm status of camera."""
+        return self.motion_enabled
+
+    @arm.setter
+    def arm(self, value):
+        """Set camera arm status."""
+        if value:
+            return api.request_motion_detection_enable(
+                self.sync.blink, self.network_id, self.camera_id
+            )
+        return api.request_motion_detection_disable(
+            self.sync.blink, self.network_id, self.camera_id
+        )
+
     def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
         return api.request_new_image(self.sync.blink, self.network_id, self.camera_id)
 
     def set_motion_detect(self, enable):
         """Set motion detection."""
+        _LOGGER.warning(
+            "Method is deprecated as of v0.16.0 and will be removed in a future version. Please use the BlinkCamera.arm property instead."
+        )
         if enable:
             return api.request_motion_detection_enable(
                 self.sync.blink, self.network_id, self.camera_id
