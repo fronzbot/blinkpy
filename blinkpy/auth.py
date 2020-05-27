@@ -5,7 +5,6 @@ from requests import Request, Session, exceptions
 from blinkpy import api
 from blinkpy.helpers import util
 from blinkpy.helpers.constants import BLINK_URL, LOGIN_ENDPOINT
-from blinkpy.helpers import errors as ERROR
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -95,7 +94,10 @@ class Auth:
             self.token = self.login_response["authtoken"]["authtoken"]
             self.client_id = self.login_response["client"]["id"]
             self.account_id = self.login_response["account"]["id"]
-        except KeyError:
+        except LoginError:
+            _LOGGER.error("Login endpoint failed. Try again later.")
+            raise TokenRefreshFailed
+        except (TypeError, KeyError):
             _LOGGER.error("Malformed login response: %s", self.login_response)
             raise TokenRefreshFailed
         return True
@@ -110,11 +112,12 @@ class Auth:
         """Check for valid response."""
         if not json_resp:
             return response
-
         try:
-            json_data = response.json()
-            if json_data["code"] in ERROR.BLINK_ERRORS:
+            if response.status_code in [101, 401]:
+                raise UnauthorizedError
+            if response.status_code == 404:
                 raise exceptions.ConnectionError
+            json_data = response.json()
         except KeyError:
             pass
         except (AttributeError, ValueError):
@@ -141,31 +144,42 @@ class Auth:
         :param reqtype: Can be 'get' or 'post' (default: 'get')
         :param stream: Stream response? True/FALSE
         :param json_resp: Return JSON response? TRUE/False
-        :param is_retry: Is this a retry attempt? True/FALSE
+        :param is_retry: Is this part of a re-auth attempt? True/FALSE
         """
         req = self.prepare_request(url, headers, data, reqtype)
         try:
             response = self.session.send(req, stream=stream)
             return self.validate_response(response, json_resp)
-
-        except (exceptions.ConnectionError, exceptions.Timeout, TokenRefreshFailed):
+        except (exceptions.ConnectionError, exceptions.Timeout):
+            _LOGGER.error(
+                "Connection error. Endpoint %s possibly down or throttled. %s: %s",
+                url,
+                response.status_code,
+                response.reason,
+            )
+        except BlinkBadResponse:
+            _LOGGER.error(
+                "Expected json response from %s, but received: %s: %s",
+                url,
+                response.status_code,
+                response.reason,
+            )
+        except UnauthorizedError:
             try:
                 if not is_retry:
                     self.refresh_token()
                     return self.query(
                         url=url,
                         data=data,
-                        headers=headers,
+                        headers=self.header,
                         reqtype=reqtype,
                         stream=stream,
                         json_resp=json_resp,
                         is_retry=True,
                     )
-            except (TokenRefreshFailed, LoginError):
-                _LOGGER.error("Endpoint %s failed. Unable to refresh login tokens", url)
-        except BlinkBadResponse:
-            _LOGGER.error("Expected json response, but received: %s", response)
-        _LOGGER.error("Endpoint %s failed", url)
+                _LOGGER.error("Unable to access %s after token refresh.", url)
+            except TokenRefreshFailed:
+                _LOGGER.error("Unable to refresh token.")
         return None
 
     def send_auth_key(self, blink, key):
@@ -200,3 +214,7 @@ class LoginError(Exception):
 
 class BlinkBadResponse(Exception):
     """Class to throw bad json response exception."""
+
+
+class UnauthorizedError(Exception):
+    """Class to throw an unauthorized access error."""

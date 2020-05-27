@@ -9,6 +9,7 @@ class MockResponse:
         self.json_data = json_data
         self.status_code = status_code
         self.raw_data = raw_data
+        self.reason = "foobar"
 
     def json(self):
         """Return json data from get_request."""

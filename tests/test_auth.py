@@ -3,7 +3,13 @@
 import unittest
 from unittest import mock
 from requests import exceptions
-from blinkpy.auth import Auth, LoginError, TokenRefreshFailed, BlinkBadResponse
+from blinkpy.auth import (
+    Auth,
+    LoginError,
+    TokenRefreshFailed,
+    BlinkBadResponse,
+    UnauthorizedError,
+)
 import blinkpy.helpers.constants as const
 import tests.mock_responses as mresp
 
@@ -90,6 +96,10 @@ class TestAuth(unittest.TestCase):
         with self.assertRaises(exceptions.ConnectionError):
             self.auth.validate_response(fake_resp, True)
 
+        fake_resp = mresp.MockResponse({"code": 101}, 401)
+        with self.assertRaises(UnauthorizedError):
+            self.auth.validate_response(fake_resp, True)
+
     def test_good_response_code(self):
         """Check good response code from server."""
         fake_resp = mresp.MockResponse({"foo": "bar"}, 200)
@@ -133,6 +143,8 @@ class TestAuth(unittest.TestCase):
         mock_req.return_value = fake_resp
         with self.assertRaises(LoginError):
             self.auth.login()
+        with self.assertRaises(TokenRefreshFailed):
+            self.auth.refresh_token()
 
     @mock.patch("blinkpy.auth.Auth.login")
     def test_refresh_token(self, mock_login):
@@ -197,9 +209,21 @@ class TestAuth(unittest.TestCase):
     def test_query_retry(self, mock_refresh, mock_validate):
         """Check handling of request retry."""
         self.auth.session = MockSession()
-        mock_validate.side_effect = [TokenRefreshFailed, "foobar"]
+        mock_validate.side_effect = [UnauthorizedError, "foobar"]
         mock_refresh.return_value = True
         self.assertEqual(self.auth.query(url="http://example.com"), "foobar")
+
+    @mock.patch("blinkpy.auth.Auth.validate_response")
+    @mock.patch("blinkpy.auth.Auth.refresh_token")
+    def test_query_retry_failed(self, mock_refresh, mock_validate):
+        """Check handling of failed retry request."""
+        self.auth.seession = MockSession()
+        mock_validate.side_effect = [UnauthorizedError, BlinkBadResponse]
+        mock_refresh.return_value = True
+        self.assertEqual(self.auth.query(url="http://example.com"), None)
+
+        mock_validate.side_effect = [UnauthorizedError, TokenRefreshFailed]
+        self.assertEqual(self.auth.query(url="http://example.com"), None)
 
 
 class MockSession:
