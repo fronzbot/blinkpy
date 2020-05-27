@@ -78,13 +78,31 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertEqual(self.blink.sync["test"].get_camera_info("1234"), "foobar")
 
     def test_get_camera_info_fail(self, mock_resp):
-        """Test hadnling of failed get camera info function."""
+        """Test handling of failed get camera info function."""
         mock_resp.return_value = None
         self.assertEqual(self.blink.sync["test"].get_camera_info("1"), [])
         mock_resp.return_value = {}
         self.assertEqual(self.blink.sync["test"].get_camera_info("1"), [])
         mock_resp.return_value = {"camera": None}
         self.assertEqual(self.blink.sync["test"].get_camera_info("1"), [])
+
+    def test_get_network_info(self, mock_resp):
+        """Test network retrieval."""
+        mock_resp.return_value = {"network": {"sync_module_error": False}}
+        self.assertTrue(self.blink.sync["test"].get_network_info())
+        mock_resp.return_value = {"network": {"sync_module_error": True}}
+        self.assertFalse(self.blink.sync["test"].get_network_info())
+
+    def test_get_network_info_failure(self, mock_resp):
+        """Test failed network retrieval."""
+        mock_resp.return_value = {}
+        self.blink.sync["test"].available = True
+        self.assertFalse(self.blink.sync["test"].get_network_info())
+        self.assertFalse(self.blink.sync["test"].available)
+        self.blink.sync["test"].available = True
+        mock_resp.return_value = None
+        self.assertFalse(self.blink.sync["test"].get_network_info())
+        self.assertFalse(self.blink.sync["test"].available)
 
     def test_check_new_videos_startup(self, mock_resp):
         """Test that check_new_videos does not block startup."""
