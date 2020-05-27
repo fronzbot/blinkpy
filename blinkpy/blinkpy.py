@@ -152,7 +152,7 @@ class Blink:
                     {"name": camera["name"], "id": camera["id"]}
                 )
             return all_cameras
-        except KeyError:
+        except (KeyError, TypeError):
             _LOGGER.error("Unable to retrieve cameras from response %s", response)
             raise BlinkSetupError
 
@@ -176,7 +176,7 @@ class Blink:
         response = api.request_networks(self)
         try:
             self.networks = response["summary"]
-        except KeyError:
+        except (KeyError, TypeError):
             raise BlinkSetupError
 
     def setup_network_ids(self):
@@ -250,8 +250,8 @@ class Blink:
             try:
                 result = response["media"]
                 if not result:
-                    raise IndexError
-            except (KeyError, IndexError):
+                    raise KeyError
+            except (KeyError, TypeError):
                 _LOGGER.info("No videos found on page %s. Exiting.", page)
                 break
 

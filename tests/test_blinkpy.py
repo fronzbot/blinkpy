@@ -106,6 +106,9 @@ class TestBlinkSetup(unittest.TestCase):
         mock_home.return_value = {}
         with self.assertRaises(BlinkSetupError):
             self.blink.setup_camera_list()
+        mock_home.return_value = None
+        with self.assertRaises(BlinkSetupError):
+            self.blink.setup_camera_list()
 
     def test_setup_urls(self):
         """Check setup of URLS."""
@@ -130,6 +133,9 @@ class TestBlinkSetup(unittest.TestCase):
     def test_setup_networks_failure(self, mock_networks):
         """Check that on failure we raise a setup error."""
         mock_networks.return_value = {}
+        with self.assertRaises(BlinkSetupError):
+            self.blink.setup_networks()
+        mock_networks.return_value = None
         with self.assertRaises(BlinkSetupError):
             self.blink.setup_networks()
 
