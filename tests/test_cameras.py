@@ -144,6 +144,15 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.assertEqual(self.camera.clip, None)
         self.assertEqual(self.camera.video_from_cache, None)
 
+    def test_camera_arm_status(self, mock_resp):
+        """Test arming and disarming camera."""
+        self.camera.motion_enabled = None
+        self.assertFalse(self.camera.arm)
+        self.camera.motion_enabled = False
+        self.assertFalse(self.camera.arm)
+        self.camera.motion_enabled = True
+        self.assertTrue(self.camera.arm)
+
     @mock.patch("blinkpy.camera.api.request_motion_detection_enable")
     @mock.patch("blinkpy.camera.api.request_motion_detection_disable")
     def test_motion_detection_enable_disable(self, mock_dis, mock_en, mock_rep):
