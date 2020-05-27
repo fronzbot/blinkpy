@@ -78,7 +78,6 @@ class Blink:
         """
         if self.check_if_ok_to_update() or force:
             if not self.available:
-                self.auth.refresh_token()
                 self.setup_post_verify()
 
             for sync_name, sync_module in self.sync.items():
