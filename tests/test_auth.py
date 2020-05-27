@@ -92,28 +92,38 @@ class TestAuth(unittest.TestCase):
 
     def test_bad_response_code(self):
         """Check bad response code from server."""
+        self.auth.is_errored = False
         fake_resp = mresp.MockResponse({"code": 404}, 404)
         with self.assertRaises(exceptions.ConnectionError):
             self.auth.validate_response(fake_resp, True)
+        self.assertTrue(self.auth.is_errored)
 
+        self.auth.is_errored = False
         fake_resp = mresp.MockResponse({"code": 101}, 401)
         with self.assertRaises(UnauthorizedError):
             self.auth.validate_response(fake_resp, True)
+        self.assertTrue(self.auth.is_errored)
 
     def test_good_response_code(self):
         """Check good response code from server."""
         fake_resp = mresp.MockResponse({"foo": "bar"}, 200)
+        self.auth.is_errored = True
         self.assertEqual(self.auth.validate_response(fake_resp, True), {"foo": "bar"})
+        self.assertFalse(self.auth.is_errored)
 
     def test_response_not_json(self):
         """Check response when not json."""
         fake_resp = "foobar"
+        self.auth.is_errored = True
         self.assertEqual(self.auth.validate_response(fake_resp, False), "foobar")
+        self.assertFalse(self.auth.is_errored)
 
     def test_response_bad_json(self):
         """Check response when not json but expecting json."""
+        self.auth.is_errored = False
         with self.assertRaises(BlinkBadResponse):
             self.auth.validate_response(None, True)
+        self.assertTrue(self.auth.is_errored)
 
     def test_header(self):
         """Test header data."""
@@ -141,10 +151,12 @@ class TestAuth(unittest.TestCase):
         """Test login handling when bad response."""
         fake_resp = mresp.MockResponse({"foo": "bar"}, 404)
         mock_req.return_value = fake_resp
+        self.auth.is_errored = False
         with self.assertRaises(LoginError):
             self.auth.login()
         with self.assertRaises(TokenRefreshFailed):
             self.auth.refresh_token()
+        self.assertTrue(self.auth.is_errored)
 
     @mock.patch("blinkpy.auth.Auth.login")
     def test_refresh_token(self, mock_login):
@@ -165,8 +177,10 @@ class TestAuth(unittest.TestCase):
     def test_refresh_token_failed(self, mock_login):
         """Test refresh token failed."""
         mock_login.return_value = {}
+        self.auth.is_errored = False
         with self.assertRaises(TokenRefreshFailed):
             self.auth.refresh_token()
+        self.assertTrue(self.auth.is_errored)
 
     def test_check_key_required(self):
         """Check key required method."""

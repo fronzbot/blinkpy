@@ -32,6 +32,7 @@ class Auth:
         self.client_id = login_data.get("client_id", None)
         self.account_id = login_data.get("account_id", None)
         self.login_response = None
+        self.is_errored = False
         self.no_prompt = no_prompt
         self.session = self.create_session()
 
@@ -86,6 +87,7 @@ class Auth:
 
     def refresh_token(self):
         """Refresh auth token."""
+        self.is_errored = True
         try:
             _LOGGER.info("Token expired, attempting automatic refresh.")
             self.login_response = self.login()
@@ -94,6 +96,7 @@ class Auth:
             self.token = self.login_response["authtoken"]["authtoken"]
             self.client_id = self.login_response["client"]["id"]
             self.account_id = self.login_response["account"]["id"]
+            self.is_errored = False
         except LoginError:
             _LOGGER.error("Login endpoint failed. Try again later.")
             raise TokenRefreshFailed
@@ -111,7 +114,9 @@ class Auth:
     def validate_response(self, response, json_resp):
         """Check for valid response."""
         if not json_resp:
+            self.is_errored = False
             return response
+        self.is_errored = True
         try:
             if response.status_code in [101, 401]:
                 raise UnauthorizedError
@@ -123,6 +128,7 @@ class Auth:
         except (AttributeError, ValueError):
             raise BlinkBadResponse
 
+        self.is_errored = False
         return json_data
 
     def query(
