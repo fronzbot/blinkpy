@@ -149,14 +149,11 @@ class BlinkSyncModule:
 
     def get_network_info(self):
         """Retrieve network status."""
-        is_errored = False
         self.network_info = api.request_network_status(self.blink, self.network_id)
         try:
-            is_errored = self.network_info["network"]["sync_module_error"]
-        except KeyError:
-            is_errored = True
-
-        if is_errored:
+            if self.network_info["network"]["sync_module_error"]:
+                raise KeyError
+        except (TypeError, KeyError):
             self.available = False
             return False
         return True
