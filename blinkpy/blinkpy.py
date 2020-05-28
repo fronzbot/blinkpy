@@ -224,7 +224,7 @@ class Blink:
         :param path: Path to write files.  /path/<cameraname>_<recorddate>.mp4
         :param since: Date and time to get videos from.
                       Ex: "2018/07/28 12:33:00" to retrieve videos since
-                           July 28th 2018 at 12:33:00
+                      July 28th 2018 at 12:33:00
         :param camera: Camera name to retrieve.  Defaults to "all".
                        Use a list for multiple cameras.
         :param stop: Page to stop on (~25 items per page. Default page 10).
