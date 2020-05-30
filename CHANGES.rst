@@ -1,10 +1,11 @@
+=========
 Changelog
------------
+=========
 
 A list of changes between each release
 
 0.15.0 (2020-05-08)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Breaking Changes:**
 
 - Removed support for Python 3.5 (3.6 is now the minimum supported version)
@@ -29,7 +30,7 @@ This can be used by instantiating the Blink class with the ``device_id`` paramet
 - Fix typos (`#244 <https://github.com/fronzbot/blinkpy/pull/244>`__)
 
 0.14.3 (2020-04-22)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Add time check on recorded videos before determining motion
 - Fix motion detection variable suck to ``True``
 - Add ability to load credentials from a json file
@@ -37,18 +38,18 @@ This can be used by instantiating the Blink class with the ``device_id`` paramet
 - Log response message from server if not attempting a re-authorization
 
 0.14.2 (2019-10-12)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Update dependencies
 - Dockerize `(@3ch01c <https://github.com/fronzbot/blinkpy/pull/198>__)`
 
 0.14.1 (2019-06-20)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Fix timeout problems blocking blinkpy startup
 - Updated login urls using ``rest-region`` subdomain
 - Removed deprecated thumbanil recovery from homescreen
 
 0.14.0 (2019-05-23)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Breaking Changes:**
 
 - ``BlinkCamera.battery`` no longer reports a percentage, instead it returns a string representing the state of the battery.
@@ -70,11 +71,11 @@ This can be used by instantiating the Blink class with the ``device_id`` paramet
 
 
 0.13.1 (2019-03-01)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Remove throttle decorator from network status request
 
 0.13.0 (2019-03-01)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Breaking change:**
 Wifi status reported in dBm again, instead of bars (which is great).  Also, the old ``get_camera_info`` method has changed and requires a ``camera_id`` parameter.
 
@@ -99,11 +100,11 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 
 
 0.12.1 (2019-01-31)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Remove logging improvements since they were incompatible with home-assistant logging
 
 0.12.0 (2019-01-31)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Fix video api endpoint, re-enables motion detection
 - Add improved logging capability
 - Add download video method
@@ -111,22 +112,22 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 
 
 0.11.2 (2019-01-23)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Hotfix to prevent platform from stalling due to API change
 - Motion detection and video recovery broken until new API endpoint discovered
 
 0.11.1 (2019-01-02)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Fixed incorrect backup login url
 - Added calibrated temperature property for cameras
 
 
 0.11.0 (2018-11-23)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Added support for multiple sync modules
 
 0.10.3 (2018-11-18)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Use networks endpoint rather than homecreen to retrieve arm/disarm status (`@md-reddevil <https://github.com/fronzbot/blinkpy/pull/119>`__)
 - Fix incorrect command status endpoint (`@md-reddevil <https://github.com/fronzbot/blinkpy/pull/118>`__)
 - Add extra debug logging
@@ -134,18 +135,18 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 
 
 0.10.2 (2018-10-30)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Set minimum required version of the requests library to 2.20.0 due to vulnerability in earlier releases.
 - When multiple networks detected, changed log level to ``warning`` from ``error`` 
 
 
 0.10.1 (2018-10-18)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Fix re-authorization bug (fixes `#101 <https://github.com/fronzbot/blinkpy/issues/#101>`__)
 - Log an error if saving video that doesn't exist
 
 0.10.0 (2018-10-16)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Moved all API calls to own module for easier maintainability
 - Added network ids to sync module and cameras to allow for multi-network use
 - Removed dependency on video existance prior to camera setup (fixes `#93 <https://github.com/fronzbot/blinkpy/issues/#93>`__)
@@ -157,7 +158,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 - Check if retrieved clip is "None" prior to storing in cache
 
 0.9.0 (2018-09-27)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Complete code refactoring to enable future multi-sync module support
 - Add image and video caching to the cameras
 - Add internal throttling of system refresh
@@ -168,7 +169,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 
 
 0.8.1 (2018-09-24)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Update requirements_test.txt
 - Update linter versions
 - Fix pylint warnings
@@ -184,18 +185,18 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
   - Reset the value every system refresh
 
 0.8.0 (2018-05-21)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Added support for battery voltage level (fixes `#64 <https://github.com/fronzbot/blinkpy/issues/64>`__)
 - Added motion detection per camera
 - Added fully accessible camera configuration dict
 - Added celcius property to camera (fixes `#60 <https://github.com/fronzbot/blinkpy/issues/60>`__)
 
 0.7.1 (2018-05-09)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Fixed pip 10 import issue during setup (`@fronzbot <https://github.com/fronzbot/blinkpy/pull/61>`__)
 
 0.7.0 (2018-02-08)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Fixed style errors for bumped pydocstring and pylint versions
 - Changed Blink.cameras dictionary to be case-insensitive (fixes `#35 <https://github.com/fronzbot/blinkpy/issues/35>`__)
 - Changed api endpoint for video extraction (fixes `#35 <https://github.com/fronzbot/blinkpy/issues/35>`__ and `#41 <https://github.com/fronzbot/blinkpy/issues/41>`__)
@@ -209,7 +210,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 - Added ``attributes`` dictionary to camera object
 
 0.6.0 (2017-05-12)
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 - Removed redundent properties that only called hidden variables
 - Revised request wrapper function to be more intelligent
 - Added tests to ensure exceptions are caught and handled (100% coverage!)
@@ -217,44 +218,44 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 - Added battery level string to reduce confusion with the way Blink reports battery level as integer from 0 to 3
 
 0.5.2 (2017-03-12)
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 - Fixed packaging mishap, same as 0.5.0 otherwise
 
 0.5.0 (2017-03-12)
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 - Fixed region handling problem
 - Added rest.piri subdomain as a backup if region can't be found
 - Improved the file writing function
 - Large test coverage increase
 
 0.4.4 (2017-03-06)
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 - Fixed bug where region id was not being set in the header
 
 0.4.3 (2017-03-05)
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 - Changed to bdist_wheel release
 
 0.4.2 (2017-01-28)
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 - Fixed inability to retrieve motion data due to Key Error
 
 0.4.1 (2017-01-27)
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 - Fixed refresh bug (0.3.1 did not actually fix the problem)
 - Image refresh routine added (per camera)
 - Dictionary of thumbnails per camera added
 - Improved test coverage
 
 0.3.1 (2017-01-25)
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 - Fixed refresh bug (Key Error)
 
 0.3.0 (2017-01-25)
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 - Added device id to camera lookup table
 - Added image to file method
 
 0.2.0 (2017-01-21)
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 - Initial release of blinkpy
