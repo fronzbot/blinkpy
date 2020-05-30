@@ -85,7 +85,13 @@ class BlinkSyncModule:
 
     def start(self):
         """Initialize the system."""
-        response = api.request_syncmodule(self.blink, self.network_id)
+        try:
+            response = self.blink.auth.login_attributes["sync"]
+            if response is None:
+                raise KeyError
+        except KeyError:
+            response = api.request_syncmodule(self.blink, self.network_id)
+        self.blink.auth.data["sync"] = response
         try:
             self.summary = response["syncmodule"]
             self.network_id = self.summary["network_id"]
@@ -107,7 +113,6 @@ class BlinkSyncModule:
             )
 
         is_ok = self.get_network_info()
-        self.check_new_videos()
         try:
             for camera_config in self.camera_list:
                 if "name" not in camera_config:
@@ -140,7 +145,13 @@ class BlinkSyncModule:
 
     def get_camera_info(self, camera_id):
         """Retrieve camera information."""
-        response = api.request_camera_info(self.blink, self.network_id, camera_id)
+        try:
+            response = self.blink.auth.login_attributes["camera_info"]
+            if response is None:
+                raise KeyError
+        except KeyError:
+            response = api.request_camera_info(self.blink, self.network_id, camera_id)
+        self.blink.auth.data["camera_info"] = response
         try:
             return response["camera"][0]
         except (TypeError, KeyError):

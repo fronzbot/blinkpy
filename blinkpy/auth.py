@@ -200,10 +200,11 @@ class Auth:
                 return False
         return True
 
-    def check_key_required(self):
+    def check_key_required(self, blink):
         """Check if 2FA key is required."""
         try:
-            if self.login_response["client"]["verification_required"]:
+            response = api.request_user(blink)
+            if response["verification_required"]:
                 return True
         except (KeyError, TypeError):
             pass

@@ -100,7 +100,7 @@ class Blink:
             self.available = False
             return False
 
-        self.key_required = self.auth.check_key_required()
+        self.key_required = self.auth.check_key_required(self)
         if self.key_required:
             if self.auth.no_prompt:
                 return True
@@ -141,7 +141,12 @@ class Blink:
     def setup_camera_list(self):
         """Create camera list for onboarded networks."""
         all_cameras = {}
-        response = api.request_homescreen(self)
+        try:
+            response = self.auth.login_attributes["homescreen"]
+            if response is None:
+                raise KeyError
+        except KeyError:
+            response = api.request_homescreen(self)
         try:
             for camera in response["cameras"]:
                 camera_network = str(camera["network_id"])
@@ -150,6 +155,7 @@ class Blink:
                 all_cameras[camera_network].append(
                     {"name": camera["name"], "id": camera["id"]}
                 )
+            self.auth.data["homescreen"] = response
             return all_cameras
         except (KeyError, TypeError):
             _LOGGER.error("Unable to retrieve cameras from response %s", response)
@@ -172,9 +178,16 @@ class Blink:
 
     def setup_networks(self):
         """Get network information."""
-        response = api.request_networks(self)
+        try:
+            self.networks = self.auth.login_attributes["networks"]
+            if self.networks is None:
+                raise KeyError
+            return
+        except KeyError:
+            response = api.request_networks(self)
         try:
             self.networks = response["summary"]
+            self.auth.data["networks"] = self.networks
         except (KeyError, TypeError):
             raise BlinkSetupError
 

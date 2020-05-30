@@ -258,7 +258,7 @@ def http_get(blink, url, stream=False, json=True, is_retry=False):
     :param json: Return json response? TRUE/False
     :param is_retry: Is this part of a re-auth attempt?
     """
-    _LOGGER.debug("Making GET request to %s", url)
+    _LOGGER.error("Making GET request to %s", url)
     return blink.auth.query(
         url=url,
         headers=blink.auth.header,
