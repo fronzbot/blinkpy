@@ -60,6 +60,12 @@ def request_networks(blink):
     return http_get(blink, url)
 
 
+def request_user(blink):
+    """Get user information from blink servers."""
+    url = f"{blink.urls.base_url}/user"
+    return http_get(blink, url)
+
+
 def request_network_status(blink, network):
     """
     Request network information.
