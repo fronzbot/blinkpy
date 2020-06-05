@@ -4,7 +4,7 @@ A Python library for the Blink Camera system (Python 3.6+)
 
 Like the library? Consider buying me a cup of coffee!
 
-|Donate|
+`Buy me a Coffee! <https://buymeacoffee.com/kevinfronczak>`__
 
 **Disclaimer:**
 Published under the MIT license - See LICENSE file for more details.
@@ -191,7 +191,5 @@ Example usage, which downloads all videos recorded since July 4th, 2018 at 9:34a
     :target: https://pypi.python.org/pypi/blinkpy
 .. |Docs| image:: https://readthedocs.org/projects/blinkpy/badge/?version=latest
    :target: http://blinkpy.readthedocs.io/en/latest/?badge=latest   
-.. |Donate| image:: https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif
-   :target: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=UR6Z2B8GXYUCC
 .. |Codestyle| image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
