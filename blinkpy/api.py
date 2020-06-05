@@ -60,6 +60,17 @@ def request_networks(blink):
     return http_get(blink, url)
 
 
+def request_network_update(blink, network):
+    """
+    Request network update.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    """
+    url = f"{blink.urls.base_url}/network/{network}/update"
+    return http_post(blink, url)
+
+
 def request_user(blink):
     """Get user information from blink servers."""
     url = f"{blink.urls.base_url}/user"
@@ -210,6 +221,30 @@ def request_camera_info(blink, network, camera_id):
     """
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/config"
     return http_get(blink, url)
+
+
+def request_camera_usage(blink):
+    """
+    Request camera status.
+
+    :param blink: Blink instance.
+    """
+    url = f"{blink.urls.base_url}/api/v1/camera/usage"
+    return http_get(blink, url)
+
+
+def request_camera_liveview(blink, network, camera_id):
+    """
+    Request camera liveview.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: Camera ID of camera to request liveview from.
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v3/networks/{network}/cameras/{camera_id}/liveview"
+    )
+    return http_post(blink, url)
 
 
 def request_camera_sensors(blink, network, camera_id):
