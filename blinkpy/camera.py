@@ -178,6 +178,13 @@ class BlinkCamera:
                 self.sync.blink, url=self.clip, stream=True, json=False
             )
 
+    def get_liveview(self):
+        """Get livewview rtsps link."""
+        response = api.request_camera_liveview(
+            self.sync.blink, self.sync.network_id, self.camera_id
+        )
+        return response["server"]
+
     def image_to_file(self, path):
         """
         Write image to file.
