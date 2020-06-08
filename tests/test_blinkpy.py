@@ -81,14 +81,19 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(self.blink.sync["TEST"], 1234)
         self.assertEqual(self.blink.sync["tEsT"], 1234)
 
-    @mock.patch("blinkpy.api.request_homescreen")
-    def test_setup_cameras(self, mock_home):
+    @mock.patch("blinkpy.api.request_camera_usage")
+    def test_setup_cameras(self, mock_req):
         """Check retrieval of camera information."""
-        mock_home.return_value = {
-            "cameras": [
-                {"name": "foo", "network_id": 1234, "id": 5678},
-                {"name": "bar", "network_id": 1234, "id": 5679},
-                {"name": "test", "network_id": 4321, "id": 0000},
+        mock_req.return_value = {
+            "networks": [
+                {
+                    "network_id": 1234,
+                    "cameras": [
+                        {"id": 5678, "name": "foo"},
+                        {"id": 5679, "name": "bar"},
+                    ],
+                },
+                {"network_id": 4321, "cameras": [{"id": 0000, "name": "test"}]},
             ]
         }
         result = self.blink.setup_camera_list()
@@ -100,7 +105,7 @@ class TestBlinkSetup(unittest.TestCase):
             },
         )
 
-    @mock.patch("blinkpy.api.request_homescreen")
+    @mock.patch("blinkpy.api.request_camera_usage")
     def test_setup_cameras_failure(self, mock_home):
         """Check that on failure we raise a setup error."""
         mock_home.return_value = {}
