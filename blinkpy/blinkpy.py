@@ -141,15 +141,16 @@ class Blink:
     def setup_camera_list(self):
         """Create camera list for onboarded networks."""
         all_cameras = {}
-        response = api.request_homescreen(self)
+        response = api.request_camera_usage(self)
         try:
-            for camera in response["cameras"]:
-                camera_network = str(camera["network_id"])
+            for network in response["networks"]:
+                camera_network = str(network["network_id"])
                 if camera_network not in all_cameras:
                     all_cameras[camera_network] = []
-                all_cameras[camera_network].append(
-                    {"name": camera["name"], "id": camera["id"]}
-                )
+                for camera in network["cameras"]:
+                    all_cameras[camera_network].append(
+                        {"name": camera["name"], "id": camera["id"]}
+                    )
             return all_cameras
         except (KeyError, TypeError):
             _LOGGER.error("Unable to retrieve cameras from response %s", response)
