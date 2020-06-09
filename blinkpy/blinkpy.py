@@ -23,7 +23,7 @@ from dateutil.parser import parse
 from slugify import slugify
 
 from blinkpy import api
-from blinkpy.sync_module import BlinkSyncModule
+from blinkpy.sync_module import BlinkSyncModule, BlinkOwl
 from blinkpy.helpers import util
 from blinkpy.helpers.constants import (
     DEFAULT_MOTION_INTERVAL,
@@ -68,6 +68,7 @@ class Blink:
         self.version = __version__
         self.available = False
         self.key_required = False
+        self.homescreen = {}
 
     @util.Throttle(seconds=MIN_THROTTLE_TIME)
     def refresh(self, force=False):
@@ -129,6 +130,8 @@ class Blink:
             self.setup_sync_module(name, network_id, sync_cameras)
             self.cameras = self.merge_cameras()
 
+        self.setup_owls()
+
         self.available = True
         self.key_required = False
         return True
@@ -137,6 +140,20 @@ class Blink:
         """Initialize a sync module."""
         self.sync[name] = BlinkSyncModule(self, name, network_id, cameras)
         self.sync[name].start()
+
+    def setup_owls(self):
+        """Check for mini cameras."""
+        response = api.request_homescreen(self)
+        self.homescreen = response
+        try:
+            for owl in response["owls"]:
+                name = owl["name"]
+                network_id = owl["network_id"]
+                if owl["onboarded"]:
+                    self.sync[name] = BlinkOwl(self, name, network_id, owl)
+        except KeyError:
+            # No sync-less devices found
+            pass
 
     def setup_camera_list(self):
         """Create camera list for onboarded networks."""

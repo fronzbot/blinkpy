@@ -9,6 +9,7 @@ any communication related errors at startup.
 import unittest
 from unittest import mock
 from blinkpy.blinkpy import Blink, BlinkSetupError
+from blinkpy.sync_module import BlinkOwl
 from blinkpy.helpers.constants import __version__
 
 
@@ -191,6 +192,38 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(combined["foo"], "bar")
         self.assertEqual(combined["fizz"], "buzz")
         self.assertEqual(combined["bar"], "foo")
+
+    @mock.patch("blinkpy.api.request_homescreen")
+    def test_initialize_blink_minis(self, mock_home):
+        """Test blink mini initialization."""
+        mock_home.return_value = {
+            "owls": [
+                {
+                    "enabled": False,
+                    "id": 1,
+                    "name": "foo",
+                    "network_id": 2,
+                    "onboarded": True,
+                    "status": "online",
+                    "thumbnail": "/foo/bar",
+                    "serial": "",
+                },
+                {
+                    "enabled": True,
+                    "id": 3,
+                    "name": "bar",
+                    "network_id": 4,
+                    "onboarded": True,
+                    "status": "online",
+                    "thumbnail": "/foo/bar",
+                    "serial": "",
+                },
+            ]
+        }
+        self.blink.sync = {}
+        self.blink.setup_owls()
+        self.assertEqual(self.blink.sync["foo"].__class__, BlinkOwl)
+        self.assertEqual(self.blink.sync["bar"].__class__, BlinkOwl)
 
 
 class MockSync:

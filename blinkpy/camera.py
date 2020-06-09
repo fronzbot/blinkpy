@@ -133,9 +133,10 @@ class BlinkCamera:
             self.temperature_calibrated = self.temperature
             _LOGGER.warning("Could not retrieve calibrated temperature.")
 
-        # Check if thumbnail exists in config, if not try to
-        # get it from the homescreen info in the sync module
-        # otherwise set it to None and log an error
+        self.update_images(config, force_cache=force_cache)
+
+    def update_images(self, config, force_cache=False):
+        """Update images for camera."""
         new_thumbnail = None
         thumb_addr = None
         if config["thumbnail"]:
@@ -202,7 +203,8 @@ class BlinkCamera:
             )
 
     def video_to_file(self, path):
-        """Write video to file.
+        """
+        Write video to file.
 
         :param path: Path to write file
         """
@@ -213,3 +215,19 @@ class BlinkCamera:
             return
         with open(path, "wb") as vidfile:
             copyfileobj(response.raw, vidfile)
+
+
+class BlinkCameraMini(BlinkCamera):
+    """Define a class for a Blink Mini camera."""
+
+    def update(self, config, force_cache=False, **kwargs):
+        """Update a blink mini camera."""
+        self.name = config["name"]
+        self.camera_id = str(config["id"])
+        self.network_id = str(config["network_id"])
+        self.serial = config["serial"]
+        if not self.serial:
+            self.serial = f"{self.network_id}-{self.camera_id}"
+        self.motion_enabled = config["enabled"]
+
+        self.update_images(config, force_cache=force_cache)
