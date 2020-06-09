@@ -231,3 +231,13 @@ class BlinkCameraMini(BlinkCamera):
         self.motion_enabled = config["enabled"]
 
         self.update_images(config, force_cache=force_cache)
+
+    def get_liveview(self):
+        """Get liveview link."""
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/liveview"
+        response = api.http_post(self.sync.blink, url)
+        server = response["server"]
+        server_split = server.split(":")
+        server_split[0] = "rtsps"
+        link = "".join(server_split)
+        return link
