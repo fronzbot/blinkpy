@@ -161,10 +161,12 @@ class TestBlinkSetup(unittest.TestCase):
 
     @mock.patch("blinkpy.blinkpy.Blink.setup_camera_list")
     @mock.patch("blinkpy.api.request_networks")
-    def test_setup_post_verify(self, mock_networks, mock_camera):
+    @mock.patch("blinkpy.blinkpy.Blink.setup_owls")
+    def test_setup_post_verify(self, mock_owl, mock_networks, mock_camera):
         """Test setup after verification."""
         self.blink.available = False
         self.blink.key_required = True
+        mock_owl.return_value = True
         mock_networks.return_value = {
             "summary": {"foo": {"onboarded": False, "name": "bar"}}
         }
