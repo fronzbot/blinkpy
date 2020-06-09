@@ -219,7 +219,7 @@ class BlinkOwl(BlinkSyncModule):
 
     def __init__(self, blink, name, network_id, response):
         """Initialize a sync-less object."""
-        cameras = [{network_id: {"name": name, "id": response["id"]}}]
+        cameras = [{"name": name, "id": response["id"]}]
         super().__init__(blink, name, network_id, cameras)
         self.sync_id = response["id"]
         self.serial = response["serial"]
@@ -242,7 +242,7 @@ class BlinkOwl(BlinkSyncModule):
 
     def update_cameras(self, camera_type=BlinkCameraMini):
         """Update sync-less cameras."""
-        super().update_cameras(camera_type=BlinkCameraMini)
+        return super().update_cameras(camera_type=BlinkCameraMini)
 
     def get_camera_info(self, camera_id):
         """Retrieve camera information."""

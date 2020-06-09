@@ -196,8 +196,10 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(combined["bar"], "foo")
 
     @mock.patch("blinkpy.api.request_homescreen")
-    def test_initialize_blink_minis(self, mock_home):
+    @mock.patch("blinkpy.blinkpy.BlinkOwl.start")
+    def test_initialize_blink_minis(self, mock_start, mock_home):
         """Test blink mini initialization."""
+        mock_start.return_value = True
         mock_home.return_value = {
             "owls": [
                 {
@@ -208,7 +210,7 @@ class TestBlinkSetup(unittest.TestCase):
                     "onboarded": True,
                     "status": "online",
                     "thumbnail": "/foo/bar",
-                    "serial": "",
+                    "serial": "1234",
                 },
                 {
                     "enabled": True,
@@ -218,7 +220,7 @@ class TestBlinkSetup(unittest.TestCase):
                     "onboarded": True,
                     "status": "online",
                     "thumbnail": "/foo/bar",
-                    "serial": "",
+                    "serial": "abcd",
                 },
             ]
         }
@@ -226,6 +228,10 @@ class TestBlinkSetup(unittest.TestCase):
         self.blink.setup_owls()
         self.assertEqual(self.blink.sync["foo"].__class__, BlinkOwl)
         self.assertEqual(self.blink.sync["bar"].__class__, BlinkOwl)
+        self.assertEqual(self.blink.sync["foo"].arm, False)
+        self.assertEqual(self.blink.sync["bar"].arm, True)
+        self.assertEqual(self.blink.sync["foo"].name, "foo")
+        self.assertEqual(self.blink.sync["bar"].name, "bar")
 
 
 class MockSync:

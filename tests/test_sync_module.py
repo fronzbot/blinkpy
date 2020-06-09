@@ -4,8 +4,8 @@ from unittest import mock
 
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
-from blinkpy.sync_module import BlinkSyncModule
-from blinkpy.camera import BlinkCamera
+from blinkpy.sync_module import BlinkSyncModule, BlinkOwl
+from blinkpy.camera import BlinkCamera, BlinkCameraMini
 
 
 @mock.patch("blinkpy.auth.Auth.query")
@@ -275,3 +275,20 @@ class TestBlinkSyncModule(unittest.TestCase):
         """Test sync attributes."""
         self.assertEqual(self.blink.sync["test"].attributes["name"], "test")
         self.assertEqual(self.blink.sync["test"].attributes["network_id"], "1234")
+
+    def test_owl_start(self, mock_resp):
+        """Test owl camera instantiation."""
+        response = {
+            "name": "foo",
+            "id": 2,
+            "serial": "foobar123",
+            "enabled": True,
+            "network_id": 1,
+            "thumbnail": "/foo/bar",
+        }
+        self.blink.last_refresh = None
+        self.blink.homescreen = {"owls": [response]}
+        owl = BlinkOwl(self.blink, "foo", 1234, response)
+        self.assertTrue(owl.start())
+        self.assertTrue("foo" in owl.cameras)
+        self.assertEqual(owl.cameras["foo"].__class__, BlinkCameraMini)
