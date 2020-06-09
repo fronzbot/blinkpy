@@ -226,6 +226,21 @@ class BlinkCamera:
 class BlinkCameraMini(BlinkCamera):
     """Define a class for a Blink Mini camera."""
 
+    @property
+    def arm(self):
+        """Return camera arm status."""
+        return self.sync.arm
+
+    @arm.setter
+    def arm(self, value):
+        """Set camera arm status."""
+        self.sync.arm = value
+
+    def snap_picture(self):
+        """Snap picture for a blink mini camera."""
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/thumbnail"
+        return api.http_post(self.sync.blink, url)
+
     def get_sensor_info(self):
         """Get sensor info for blink mini camera."""
 

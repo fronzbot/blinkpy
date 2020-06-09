@@ -78,10 +78,7 @@ class BlinkSyncModule:
     @arm.setter
     def arm(self, value):
         """Arm or disarm system."""
-        if value:
-            return api.request_system_arm(self.blink, self.network_id)
-
-        return api.request_system_disarm(self.blink, self.network_id)
+        _LOGGER.warning("Arm/Disarm API for %s not currently implemented.", self.name)
 
     def start(self):
         """Initialize the system."""
