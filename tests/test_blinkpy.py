@@ -9,6 +9,7 @@ any communication related errors at startup.
 import unittest
 from unittest import mock
 from blinkpy.blinkpy import Blink, BlinkSetupError
+from blinkpy.sync_module import BlinkOwl
 from blinkpy.helpers.constants import __version__
 
 
@@ -160,10 +161,12 @@ class TestBlinkSetup(unittest.TestCase):
 
     @mock.patch("blinkpy.blinkpy.Blink.setup_camera_list")
     @mock.patch("blinkpy.api.request_networks")
-    def test_setup_post_verify(self, mock_networks, mock_camera):
+    @mock.patch("blinkpy.blinkpy.Blink.setup_owls")
+    def test_setup_post_verify(self, mock_owl, mock_networks, mock_camera):
         """Test setup after verification."""
         self.blink.available = False
         self.blink.key_required = True
+        mock_owl.return_value = True
         mock_networks.return_value = {
             "summary": {"foo": {"onboarded": False, "name": "bar"}}
         }
@@ -191,6 +194,44 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(combined["foo"], "bar")
         self.assertEqual(combined["fizz"], "buzz")
         self.assertEqual(combined["bar"], "foo")
+
+    @mock.patch("blinkpy.api.request_homescreen")
+    @mock.patch("blinkpy.blinkpy.BlinkOwl.start")
+    def test_initialize_blink_minis(self, mock_start, mock_home):
+        """Test blink mini initialization."""
+        mock_start.return_value = True
+        mock_home.return_value = {
+            "owls": [
+                {
+                    "enabled": False,
+                    "id": 1,
+                    "name": "foo",
+                    "network_id": 2,
+                    "onboarded": True,
+                    "status": "online",
+                    "thumbnail": "/foo/bar",
+                    "serial": "1234",
+                },
+                {
+                    "enabled": True,
+                    "id": 3,
+                    "name": "bar",
+                    "network_id": 4,
+                    "onboarded": True,
+                    "status": "online",
+                    "thumbnail": "/foo/bar",
+                    "serial": "abcd",
+                },
+            ]
+        }
+        self.blink.sync = {}
+        self.blink.setup_owls()
+        self.assertEqual(self.blink.sync["foo"].__class__, BlinkOwl)
+        self.assertEqual(self.blink.sync["bar"].__class__, BlinkOwl)
+        self.assertEqual(self.blink.sync["foo"].arm, False)
+        self.assertEqual(self.blink.sync["bar"].arm, True)
+        self.assertEqual(self.blink.sync["foo"].name, "foo")
+        self.assertEqual(self.blink.sync["bar"].name, "bar")
 
 
 class MockSync:

@@ -112,18 +112,24 @@ class BlinkCamera:
 
     def update(self, config, force_cache=False, **kwargs):
         """Update camera info."""
-        # force = kwargs.pop('force', False)
-        self.name = config["name"]
-        self.camera_id = str(config["id"])
-        self.network_id = str(config["network_id"])
-        self.serial = config["serial"]
-        self.motion_enabled = config["enabled"]
-        self.battery_voltage = config["battery_voltage"]
-        self.battery_state = config["battery_state"]
-        self.temperature = config["temperature"]
-        self.wifi_strength = config["wifi_strength"]
+        self.extract_config_info(config)
+        self.get_sensor_info()
+        self.update_images(config, force_cache=force_cache)
 
-        # Retrieve calibrated temperature from special endpoint
+    def extract_config_info(self, config):
+        """Extract info from config."""
+        self.name = config.get("name", "unknown")
+        self.camera_id = str(config.get("id", "unknown"))
+        self.network_id = str(config.get("network_id", "unknown"))
+        self.serial = config.get("serial", None)
+        self.motion_enabled = config.get("enabled", "unknown")
+        self.battery_voltage = config.get("battery_voltage", None)
+        self.battery_state = config.get("battery_state", None)
+        self.temperature = config.get("temperature", None)
+        self.wifi_strength = config.get("wifi_strength", None)
+
+    def get_sensor_info(self):
+        """Retrieve calibrated temperatue from special endpoint."""
         resp = api.request_camera_sensors(
             self.sync.blink, self.network_id, self.camera_id
         )
@@ -133,12 +139,11 @@ class BlinkCamera:
             self.temperature_calibrated = self.temperature
             _LOGGER.warning("Could not retrieve calibrated temperature.")
 
-        # Check if thumbnail exists in config, if not try to
-        # get it from the homescreen info in the sync module
-        # otherwise set it to None and log an error
+    def update_images(self, config, force_cache=False):
+        """Update images for camera."""
         new_thumbnail = None
         thumb_addr = None
-        if config["thumbnail"]:
+        if config.get("thumbnail", False):
             thumb_addr = config["thumbnail"]
         else:
             _LOGGER.warning(
@@ -154,10 +159,12 @@ class BlinkCamera:
             self.motion_detected = False
 
         clip_addr = None
-        if self.name in self.sync.last_record:
+        try:
             clip_addr = self.sync.last_record[self.name]["clip"]
             self.last_record = self.sync.last_record[self.name]["time"]
             self.clip = f"{self.sync.urls.base_url}{clip_addr}"
+        except KeyError:
+            pass
 
         # If the thumbnail or clip have changed, update the cache
         update_cached_image = False
@@ -202,7 +209,8 @@ class BlinkCamera:
             )
 
     def video_to_file(self, path):
-        """Write video to file.
+        """
+        Write video to file.
 
         :param path: Path to write file
         """
@@ -213,3 +221,35 @@ class BlinkCamera:
             return
         with open(path, "wb") as vidfile:
             copyfileobj(response.raw, vidfile)
+
+
+class BlinkCameraMini(BlinkCamera):
+    """Define a class for a Blink Mini camera."""
+
+    @property
+    def arm(self):
+        """Return camera arm status."""
+        return self.sync.arm
+
+    @arm.setter
+    def arm(self, value):
+        """Set camera arm status."""
+        self.sync.arm = value
+
+    def snap_picture(self):
+        """Snap picture for a blink mini camera."""
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/thumbnail"
+        return api.http_post(self.sync.blink, url)
+
+    def get_sensor_info(self):
+        """Get sensor info for blink mini camera."""
+
+    def get_liveview(self):
+        """Get liveview link."""
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/liveview"
+        response = api.http_post(self.sync.blink, url)
+        server = response["server"]
+        server_split = server.split(":")
+        server_split[0] = "rtsps"
+        link = "".join(server_split)
+        return link

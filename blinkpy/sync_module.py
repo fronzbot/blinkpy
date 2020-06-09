@@ -4,7 +4,7 @@ import logging
 
 from requests.structures import CaseInsensitiveDict
 from blinkpy import api
-from blinkpy.camera import BlinkCamera
+from blinkpy.camera import BlinkCamera, BlinkCameraMini
 from blinkpy.helpers.util import time_to_seconds
 from blinkpy.helpers.constants import ONLINE
 
@@ -78,23 +78,12 @@ class BlinkSyncModule:
     @arm.setter
     def arm(self, value):
         """Arm or disarm system."""
-        if value:
-            return api.request_system_arm(self.blink, self.network_id)
-
-        return api.request_system_disarm(self.blink, self.network_id)
+        _LOGGER.warning("Arm/Disarm API for %s not currently implemented.", self.name)
 
     def start(self):
         """Initialize the system."""
-        response = api.request_syncmodule(self.blink, self.network_id)
-        try:
-            self.summary = response["syncmodule"]
-            self.network_id = self.summary["network_id"]
-        except (TypeError, KeyError):
-            _LOGGER.error(
-                ("Could not retrieve sync module information " "with response: %s"),
-                response,
-                exc_info=True,
-            )
+        response = self.sync_initialize()
+        if not response:
             return False
 
         try:
@@ -108,24 +97,39 @@ class BlinkSyncModule:
 
         is_ok = self.get_network_info()
         self.check_new_videos()
+
+        if not is_ok or not self.update_cameras():
+            return False
+        self.available = True
+        return True
+
+    def sync_initialize(self):
+        """Initialize a sync module."""
+        response = api.request_syncmodule(self.blink, self.network_id)
+        try:
+            self.summary = response["syncmodule"]
+            self.network_id = self.summary["network_id"]
+        except (TypeError, KeyError):
+            _LOGGER.error(
+                "Could not retrieve sync module information with response: %s", response
+            )
+            return False
+        return response
+
+    def update_cameras(self, camera_type=BlinkCamera):
+        """Update cameras from server."""
         try:
             for camera_config in self.camera_list:
                 if "name" not in camera_config:
                     break
                 name = camera_config["name"]
-                self.cameras[name] = BlinkCamera(self)
+                self.cameras[name] = camera_type(self)
                 self.motion[name] = False
                 camera_info = self.get_camera_info(camera_config["id"])
                 self.cameras[name].update(camera_info, force_cache=True, force=True)
         except KeyError:
-            _LOGGER.error(
-                "Could not create cameras instances for %s", self.name, exc_info=True
-            )
+            _LOGGER.error("Could not create camera instances for %s", self.name)
             return False
-
-        if not is_ok:
-            return False
-        self.available = True
         return True
 
     def get_events(self, **kwargs):
@@ -205,3 +209,86 @@ class BlinkSyncModule:
     def check_new_video_time(self, timestamp):
         """Check if video has timestamp since last refresh."""
         return time_to_seconds(timestamp) > self.blink.last_refresh
+
+
+class BlinkOwl(BlinkSyncModule):
+    """Representation of a sync-less device."""
+
+    def __init__(self, blink, name, network_id, response):
+        """Initialize a sync-less object."""
+        cameras = [{"name": name, "id": response["id"]}]
+        super().__init__(blink, name, network_id, cameras)
+        self.sync_id = response["id"]
+        self.serial = response["serial"]
+        self.status = response["enabled"]
+        if not self.serial:
+            self.serial = f"{network_id}-{self.sync_id}"
+
+    def sync_initialize(self):
+        """Initialize a sync-less module."""
+        self.summary = {
+            "id": self.sync_id,
+            "name": self.name,
+            "serial": self.serial,
+            "status": self.status,
+            "onboarded": True,
+            "account_id": self.blink.account_id,
+            "network_id": self.network_id,
+        }
+        return self.summary
+
+    def update_cameras(self, camera_type=BlinkCameraMini):
+        """Update sync-less cameras."""
+        return super().update_cameras(camera_type=BlinkCameraMini)
+
+    def get_camera_info(self, camera_id):
+        """Retrieve camera information."""
+        try:
+            for owl in self.blink.homescreen["owls"]:
+                if owl["name"] == self.name:
+                    self.status = owl["enabled"]
+                    return owl
+        except KeyError:
+            pass
+        return None
+
+    def get_network_info(self):
+        """Get network info for sync-less module."""
+        return True
+
+    @property
+    def network_info(self):
+        """Format owl response to resemble sync module."""
+        return {
+            "network": {
+                "id": self.network_id,
+                "name": self.name,
+                "armed": self.status,
+                "sync_module_error": False,
+                "account_id": self.blink.account_id,
+            }
+        }
+
+    @network_info.setter
+    def network_info(self, value):
+        """Set network_info property."""
+
+    @property
+    def arm(self):
+        """Return arm status."""
+        try:
+            return self.network_info["network"]["armed"]
+        except (KeyError, TypeError):
+            self.available = False
+            return None
+
+    @arm.setter
+    def arm(self, value):
+        """Arm or disarm camera."""
+        if value:
+            return api.request_motion_detection_enable(
+                self.blink, self.network_id, self.sync_id
+            )
+        return api.request_motion_detection_disable(
+            self.blink, self.network_id, self.sync_id
+        )
