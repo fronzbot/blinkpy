@@ -222,13 +222,11 @@ class BlinkCameraMini(BlinkCamera):
 
     def update(self, config, force_cache=False, **kwargs):
         """Update a blink mini camera."""
-        self.name = config["name"]
-        self.camera_id = str(config["id"])
-        self.network_id = str(config["network_id"])
-        self.serial = config["serial"]
-        if not self.serial:
-            self.serial = f"{self.network_id}-{self.camera_id}"
-        self.motion_enabled = config["enabled"]
+        self.name = config.get("name", "unknown")
+        self.camera_id = str(config.get("id", ""))
+        self.network_id = str(config.get("network_id", ""))
+        self.serial = config.get("serial", f"{self.network_id}-{self.camera_id}")
+        self.motion_enabled = config.get("enabled", False)
 
         self.update_images(config, force_cache=force_cache)
 

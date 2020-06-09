@@ -33,7 +33,6 @@ from blinkpy.helpers.constants import (
 from blinkpy.helpers.constants import __version__
 from blinkpy.auth import Auth, TokenRefreshFailed, LoginError
 
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -128,9 +127,9 @@ class Blink:
         for name, network_id in networks.items():
             sync_cameras = cameras.get(network_id, {})
             self.setup_sync_module(name, network_id, sync_cameras)
-            self.cameras = self.merge_cameras()
 
         self.setup_owls()
+        self.cameras = self.merge_cameras()
 
         self.available = True
         self.key_required = False
@@ -145,15 +144,20 @@ class Blink:
         """Check for mini cameras."""
         response = api.request_homescreen(self)
         self.homescreen = response
+        network_list = []
         try:
             for owl in response["owls"]:
                 name = owl["name"]
                 network_id = owl["network_id"]
                 if owl["onboarded"]:
+                    network_list.append(str(network_id))
                     self.sync[name] = BlinkOwl(self, name, network_id, owl)
+                    self.sync[name].start()
         except KeyError:
             # No sync-less devices found
             pass
+
+        self.network_ids.extend(network_list)
 
     def setup_camera_list(self):
         """Create camera list for onboarded networks."""
