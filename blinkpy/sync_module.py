@@ -77,8 +77,10 @@ class BlinkSyncModule:
 
     @arm.setter
     def arm(self, value):
-        """Arm or disarm system."""
-        _LOGGER.warning("Arm/Disarm API for %s not currently implemented.", self.name)
+        """Arm or disarm camera."""
+        if value:
+            return api.request_system_arm(self.blink, self.network_id)
+        return api.request_system_disarm(self.blink, self.network_id)
 
     def start(self):
         """Initialize the system."""
@@ -285,10 +287,4 @@ class BlinkOwl(BlinkSyncModule):
     @arm.setter
     def arm(self, value):
         """Arm or disarm camera."""
-        if value:
-            return api.request_motion_detection_enable(
-                self.blink, self.network_id, self.sync_id
-            )
-        return api.request_motion_detection_disable(
-            self.blink, self.network_id, self.sync_id
-        )
+        _LOGGER.warning("Arm/Disarm API for %s not currently implemented.", self.name)
