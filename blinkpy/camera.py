@@ -61,7 +61,10 @@ class BlinkCamera:
     @property
     def temperature_c(self):
         """Return temperature in celcius."""
-        return round((self.temperature - 32) / 9.0 * 5.0, 1)
+        try:
+            return round((self.temperature - 32) / 9.0 * 5.0, 1)
+        except TypeError:
+            return None
 
     @property
     def image_from_cache(self):
