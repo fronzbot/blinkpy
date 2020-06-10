@@ -107,7 +107,7 @@ def request_system_arm(blink, network):
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
-    url = f"{blink.urls.base_url}/network/{network}/arm"
+    url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/state/arm"
     return http_post(blink, url)
 
 
@@ -119,7 +119,7 @@ def request_system_disarm(blink, network):
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
-    url = f"{blink.urls.base_url}/network/{network}/disarm"
+    url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/state/disarm"
     return http_post(blink, url)
 
 
