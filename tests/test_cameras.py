@@ -11,7 +11,7 @@ from unittest import mock
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
-from blinkpy.camera import BlinkCamera
+from blinkpy.camera import BlinkCamera, BlinkCameraMini
 
 
 CAMERA_CFG = {
@@ -161,3 +161,21 @@ class TestBlinkCameraSetup(unittest.TestCase):
         mock_en.return_value = "enable"
         self.assertEqual(self.camera.set_motion_detect(True), "enable")
         self.assertEqual(self.camera.set_motion_detect(False), "disable")
+
+    def test_missing_attributes(self, mock_resp):
+        """Test that attributes return None if missing."""
+        self.camera.temperature = None
+        self.camera.serial = None
+        attr = self.camera.attributes
+        self.assertEqual(attr["serial"], None)
+        self.assertEqual(attr["temperature"], None)
+        self.assertEqual(attr["temperature_c"], None)
+
+    def test_mini_missing_attributes(self, mock_resp):
+        """Test that attributes return None if missing."""
+        camera = BlinkCameraMini(self.blink.sync)
+        self.blink.sync.network_id = None
+        self.blink.sync.name = None
+        attr = camera.attributes
+        for key in attr:
+            self.assertEqual(attr[key], None)
