@@ -274,17 +274,3 @@ class BlinkOwl(BlinkSyncModule):
     @network_info.setter
     def network_info(self, value):
         """Set network_info property."""
-
-    @property
-    def arm(self):
-        """Return arm status."""
-        try:
-            return self.network_info["network"]["armed"]
-        except (KeyError, TypeError):
-            self.available = False
-            return None
-
-    @arm.setter
-    def arm(self, value):
-        """Arm or disarm camera."""
-        _LOGGER.warning("Arm/Disarm API for %s not currently implemented.", self.name)
