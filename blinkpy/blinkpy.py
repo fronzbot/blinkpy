@@ -128,7 +128,6 @@ class Blink:
             sync_cameras = cameras.get(network_id, {})
             self.setup_sync_module(name, network_id, sync_cameras)
 
-        self.setup_owls()
         self.cameras = self.merge_cameras()
 
         self.available = True
@@ -145,10 +144,16 @@ class Blink:
         response = api.request_homescreen(self)
         self.homescreen = response
         network_list = []
+        camera_list = []
         try:
             for owl in response["owls"]:
                 name = owl["name"]
-                network_id = owl["network_id"]
+                network_id = str(owl["network_id"])
+                if network_id in self.network_ids:
+                    camera_list.append(
+                        {network_id: {"name": name, "id": network_id, "type": "mini"}}
+                    )
+                    continue
                 if owl["onboarded"]:
                     network_list.append(str(network_id))
                     self.sync[name] = BlinkOwl(self, name, network_id, owl)
@@ -158,6 +163,7 @@ class Blink:
             pass
 
         self.network_ids.extend(network_list)
+        return camera_list
 
     def setup_camera_list(self):
         """Create camera list for onboarded networks."""
@@ -172,6 +178,10 @@ class Blink:
                     all_cameras[camera_network].append(
                         {"name": camera["name"], "id": camera["id"]}
                     )
+            mini_cameras = self.setup_owls()
+            for camera in mini_cameras:
+                for network, camera_info in camera.items():
+                    all_cameras[network].append(camera_info)
             return all_cameras
         except (KeyError, TypeError):
             _LOGGER.error("Unable to retrieve cameras from response %s", response)

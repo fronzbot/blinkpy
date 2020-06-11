@@ -83,8 +83,10 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(self.blink.sync["tEsT"], 1234)
 
     @mock.patch("blinkpy.api.request_camera_usage")
-    def test_setup_cameras(self, mock_req):
+    @mock.patch("blinkpy.api.request_homescreen")
+    def test_setup_cameras(self, mock_home, mock_req):
         """Check retrieval of camera information."""
+        mock_home.return_value = {}
         mock_req.return_value = {
             "networks": [
                 {
@@ -232,6 +234,55 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(self.blink.sync["bar"].arm, True)
         self.assertEqual(self.blink.sync["foo"].name, "foo")
         self.assertEqual(self.blink.sync["bar"].name, "bar")
+
+    @mock.patch("blinkpy.api.request_homescreen")
+    def test_blink_mini_cameras_returned(self, mock_home):
+        """Test that blink mini cameras are found if attached to sync module."""
+        self.blink.network_ids = ["1234"]
+        mock_home.return_value = {
+            "owls": [
+                {
+                    "id": 1,
+                    "name": "foo",
+                    "network_id": 1234,
+                    "onboarded": True,
+                    "enabled": True,
+                    "status": "online",
+                    "thumbnail": "/foo/bar",
+                    "serial": "abc123",
+                }
+            ]
+        }
+        result = self.blink.setup_owls()
+        self.assertEqual(self.blink.network_ids, ["1234"])
+        self.assertEqual(
+            result, [{"1234": {"name": "foo", "id": "1234", "type": "mini"}}]
+        )
+
+    @mock.patch("blinkpy.api.request_homescreen")
+    @mock.patch("blinkpy.api.request_camera_usage")
+    def test_blink_mini_attached_to_sync(self, mock_usage, mock_home):
+        """Test that blink mini cameras are properly attached to sync module."""
+        self.blink.network_ids = ["1234"]
+        mock_home.return_value = {
+            "owls": [
+                {
+                    "id": 1,
+                    "name": "foo",
+                    "network_id": 1234,
+                    "onboarded": True,
+                    "enabled": True,
+                    "status": "online",
+                    "thumbnail": "/foo/bar",
+                    "serial": "abc123",
+                }
+            ]
+        }
+        mock_usage.return_value = {"networks": [{"cameras": [], "network_id": 1234}]}
+        result = self.blink.setup_camera_list()
+        self.assertEqual(
+            result, {"1234": [{"name": "foo", "id": "1234", "type": "mini"}]}
+        )
 
 
 class MockSync:

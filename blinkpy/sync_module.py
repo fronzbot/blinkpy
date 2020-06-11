@@ -124,15 +124,32 @@ class BlinkSyncModule:
             for camera_config in self.camera_list:
                 if "name" not in camera_config:
                     break
+                blink_camera_type = camera_config.get("type", "")
                 name = camera_config["name"]
-                self.cameras[name] = camera_type(self)
                 self.motion[name] = False
-                camera_info = self.get_camera_info(camera_config["id"])
+                owl_info = self.get_owl_info(name)
+                if blink_camera_type == "mini":
+                    camera_type = BlinkCameraMini
+                self.cameras[name] = camera_type(self)
+                camera_info = self.get_camera_info(
+                    camera_config["id"], owl_info=owl_info
+                )
                 self.cameras[name].update(camera_info, force_cache=True, force=True)
+
         except KeyError:
             _LOGGER.error("Could not create camera instances for %s", self.name)
             return False
         return True
+
+    def get_owl_info(self, name):
+        """Extract owl information."""
+        try:
+            for owl in self.blink.homescreen["owls"]:
+                if owl["name"] == name:
+                    return owl
+        except KeyError:
+            pass
+        return None
 
     def get_events(self, **kwargs):
         """Retrieve events from server."""
@@ -144,8 +161,11 @@ class BlinkSyncModule:
             _LOGGER.error("Could not extract events: %s", response, exc_info=True)
             return False
 
-    def get_camera_info(self, camera_id):
+    def get_camera_info(self, camera_id, **kwargs):
         """Retrieve camera information."""
+        owl = kwargs.get("owl_info", None)
+        if owl is not None:
+            return owl
         response = api.request_camera_info(self.blink, self.network_id, camera_id)
         try:
             return response["camera"][0]
@@ -243,7 +263,7 @@ class BlinkOwl(BlinkSyncModule):
         """Update sync-less cameras."""
         return super().update_cameras(camera_type=BlinkCameraMini)
 
-    def get_camera_info(self, camera_id):
+    def get_camera_info(self, camera_id, **kwargs):
         """Retrieve camera information."""
         try:
             for owl in self.blink.homescreen["owls"]:
