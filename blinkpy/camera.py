@@ -29,6 +29,7 @@ class BlinkCamera:
         self.last_record = None
         self._cached_image = None
         self._cached_video = None
+        self.camera_type = ""
 
     @property
     def attributes(self):
@@ -229,6 +230,11 @@ class BlinkCamera:
 class BlinkCameraMini(BlinkCamera):
     """Define a class for a Blink Mini camera."""
 
+    def __init__(self, sync):
+        """Initialize a Blink Mini cameras."""
+        super().__init__(sync)
+        self.camera_type = "mini"
+
     @property
     def arm(self):
         """Return camera arm status."""
@@ -237,7 +243,9 @@ class BlinkCameraMini(BlinkCamera):
     @arm.setter
     def arm(self, value):
         """Set camera arm status."""
-        self.sync.arm = value
+        _LOGGER.warning(
+            "Individual camera motion detection enable/disable for Blink Mini cameras is unsupported at this time."
+        )
 
     def snap_picture(self):
         """Snap picture for a blink mini camera."""
