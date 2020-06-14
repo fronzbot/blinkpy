@@ -32,7 +32,7 @@ def request_login(
             "client_name": "Computer",
             "client_type": "android",
             "os_version": "5.1.1",
-            "reauth": "true",
+            "reauth": "false",
         }
     )
     return auth.query(
