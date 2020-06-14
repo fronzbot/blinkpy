@@ -40,7 +40,10 @@ class Blink:
     """Class to initialize communication."""
 
     def __init__(
-        self, refresh_rate=DEFAULT_REFRESH, motion_interval=DEFAULT_MOTION_INTERVAL,
+        self,
+        refresh_rate=DEFAULT_REFRESH,
+        motion_interval=DEFAULT_MOTION_INTERVAL,
+        no_owls=False,
     ):
         """
         Initialize Blink system.
@@ -51,6 +54,7 @@ class Blink:
                                 Defaults to last refresh time.
                                 Useful for preventing motion_detected property
                                 from de-asserting too quickly.
+        :param no_owls: Disable searching for owl entries (blink mini cameras only known entity).  Prevents an uneccessary API call if you don't have these in your network.
         """
         self.auth = Auth()
         self.account_id = None
@@ -68,6 +72,7 @@ class Blink:
         self.available = False
         self.key_required = False
         self.homescreen = {}
+        self.no_owls = no_owls
 
     @util.Throttle(seconds=MIN_THROTTLE_TIME)
     def refresh(self, force=False):
@@ -141,6 +146,9 @@ class Blink:
 
     def setup_owls(self):
         """Check for mini cameras."""
+        if self.no_owls:
+            _LOGGER.debug("Skipping owl extraction.")
+            return []
         response = api.request_homescreen(self)
         self.homescreen = response
         network_list = []

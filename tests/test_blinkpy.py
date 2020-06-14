@@ -259,6 +259,12 @@ class TestBlinkSetup(unittest.TestCase):
             result, [{"1234": {"name": "foo", "id": "1234", "type": "mini"}}]
         )
 
+        self.blink.no_owls = True
+        self.blink.network_ids = []
+        result = self.blink.setup_owls()
+        self.assertEqual(self.blink.network_ids, [])
+        self.assertEqual(result, [])
+
     @mock.patch("blinkpy.api.request_homescreen")
     @mock.patch("blinkpy.api.request_camera_usage")
     def test_blink_mini_attached_to_sync(self, mock_usage, mock_home):
