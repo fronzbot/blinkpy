@@ -100,6 +100,7 @@ class Blink:
             self.auth.startup()
             self.setup_login_ids()
             self.setup_urls()
+            self.get_homescreen()
         except (LoginError, TokenRefreshFailed, BlinkSetupError):
             _LOGGER.error("Cannot setup Blink platform.")
             self.available = False
@@ -144,17 +145,20 @@ class Blink:
         self.sync[name] = BlinkSyncModule(self, name, network_id, cameras)
         self.sync[name].start()
 
-    def setup_owls(self):
-        """Check for mini cameras."""
+    def get_homescreen(self):
+        """Get homecreen information."""
         if self.no_owls:
             _LOGGER.debug("Skipping owl extraction.")
-            return []
-        response = api.request_homescreen(self)
-        self.homescreen = response
+            self.homescreen = {}
+            return
+        self.homescreen = api.request_homescreen(self)
+
+    def setup_owls(self):
+        """Check for mini cameras."""
         network_list = []
         camera_list = []
         try:
-            for owl in response["owls"]:
+            for owl in self.homescreen["owls"]:
                 name = owl["name"]
                 network_id = str(owl["network_id"])
                 if network_id in self.network_ids:
