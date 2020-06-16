@@ -197,12 +197,11 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(combined["fizz"], "buzz")
         self.assertEqual(combined["bar"], "foo")
 
-    @mock.patch("blinkpy.api.request_homescreen")
     @mock.patch("blinkpy.blinkpy.BlinkOwl.start")
-    def test_initialize_blink_minis(self, mock_start, mock_home):
+    def test_initialize_blink_minis(self, mock_start):
         """Test blink mini initialization."""
         mock_start.return_value = True
-        mock_home.return_value = {
+        self.blink.homescreen = {
             "owls": [
                 {
                     "enabled": False,
@@ -235,11 +234,10 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(self.blink.sync["foo"].name, "foo")
         self.assertEqual(self.blink.sync["bar"].name, "bar")
 
-    @mock.patch("blinkpy.api.request_homescreen")
-    def test_blink_mini_cameras_returned(self, mock_home):
+    def test_blink_mini_cameras_returned(self):
         """Test that blink mini cameras are found if attached to sync module."""
         self.blink.network_ids = ["1234"]
-        mock_home.return_value = {
+        self.blink.homescreen = {
             "owls": [
                 {
                     "id": 1,
@@ -261,16 +259,16 @@ class TestBlinkSetup(unittest.TestCase):
 
         self.blink.no_owls = True
         self.blink.network_ids = []
+        self.blink.get_homescreen()
         result = self.blink.setup_owls()
         self.assertEqual(self.blink.network_ids, [])
         self.assertEqual(result, [])
 
-    @mock.patch("blinkpy.api.request_homescreen")
     @mock.patch("blinkpy.api.request_camera_usage")
-    def test_blink_mini_attached_to_sync(self, mock_usage, mock_home):
+    def test_blink_mini_attached_to_sync(self, mock_usage):
         """Test that blink mini cameras are properly attached to sync module."""
         self.blink.network_ids = ["1234"]
-        mock_home.return_value = {
+        self.blink.homescreen = {
             "owls": [
                 {
                     "id": 1,
