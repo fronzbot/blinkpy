@@ -171,7 +171,7 @@ class BlinkSyncModule:
             return response["camera"][0]
         except (TypeError, KeyError):
             _LOGGER.error("Could not extract camera info: %s", response, exc_info=True)
-            return []
+            return {}
 
     def get_network_info(self):
         """Retrieve network status."""
@@ -191,7 +191,9 @@ class BlinkSyncModule:
         self.check_new_videos()
         for camera_name in self.cameras.keys():
             camera_id = self.cameras[camera_name].camera_id
-            camera_info = self.get_camera_info(camera_id)
+            camera_info = self.get_camera_info(
+                camera_id, owl_info=self.get_owl_info(camera_name)
+            )
             self.cameras[camera_name].update(camera_info, force_cache=force_cache)
         self.available = True
 

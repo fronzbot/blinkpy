@@ -80,11 +80,11 @@ class TestBlinkSyncModule(unittest.TestCase):
     def test_get_camera_info_fail(self, mock_resp):
         """Test handling of failed get camera info function."""
         mock_resp.return_value = None
-        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), [])
+        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), {})
         mock_resp.return_value = {}
-        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), [])
+        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), {})
         mock_resp.return_value = {"camera": None}
-        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), [])
+        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), {})
 
     def test_get_network_info(self, mock_resp):
         """Test network retrieval."""
