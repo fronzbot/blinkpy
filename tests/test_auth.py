@@ -254,6 +254,15 @@ class TestAuth(unittest.TestCase):
         mock_validate.side_effect = [UnauthorizedError, TokenRefreshFailed]
         self.assertEqual(self.auth.query(url="http://example.com"), None)
 
+    def test_login_methods(self):
+        """Test correct login url returned."""
+        auth = Auth()
+        self.assertEqual(auth.login_url, const.LOGIN_ENDPOINT["v4"])
+        auth.login_method = "v3"
+        self.assertEqual(auth.login_url, const.LOGIN_ENDPOINT["v3"])
+        auth.login_method = "foobar"
+        self.assertEqual(auth.login_url, const.LOGIN_ENDPOINT["v4"])
+
 
 class MockSession:
     """Object to mock a session."""
