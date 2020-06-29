@@ -32,7 +32,7 @@ class Auth:
         self.region_id = login_data.get("region_id", None)
         self.client_id = login_data.get("client_id", None)
         self.account_id = login_data.get("account_id", None)
-        self.login_url = LOGIN_ENDPOINT[login_method]
+        self.login_method = login_method
         self.login_response = None
         self.is_errored = False
         self.no_prompt = no_prompt
@@ -54,6 +54,13 @@ class Auth:
         if self.token is None:
             return None
         return {"Host": self.host, "TOKEN_AUTH": self.token}
+
+    @property
+    def login_url(self):
+        """Return login url."""
+        if self.login_method not in LOGIN_ENDPOINT:
+            return LOGIN_ENDPOINT["v4"]
+        return LOGIN_ENDPOINT[self.login_method]
 
     def create_session(self):
         """Create a session for blink communication."""
