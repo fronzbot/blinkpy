@@ -12,7 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 class Auth:
     """Class to handle login communication."""
 
-    def __init__(self, login_data=None, no_prompt=False):
+    def __init__(self, login_data=None, no_prompt=False, login_method="v4"):
         """
         Initialize auth handler.
 
@@ -22,6 +22,7 @@ class Auth:
                              - password
         :param no_prompt: Should any user input prompts
                           be supressed? True/FALSE
+        :param login_method: Choose the login endpoint to use. Default: v4.  v3 uses email verification rather than a 2FA code.
         """
         if login_data is None:
             login_data = {}
@@ -31,6 +32,7 @@ class Auth:
         self.region_id = login_data.get("region_id", None)
         self.client_id = login_data.get("client_id", None)
         self.account_id = login_data.get("account_id", None)
+        self.login_url = LOGIN_ENDPOINT[login_method]
         self.login_response = None
         self.is_errored = False
         self.no_prompt = no_prompt
@@ -73,11 +75,11 @@ class Auth:
 
         self.data = util.validate_login_data(self.data)
 
-    def login(self, login_url=LOGIN_ENDPOINT):
+    def login(self):
         """Attempt login to blink servers."""
         self.validate_login()
-        _LOGGER.info("Attempting login with %s", login_url)
-        response = api.request_login(self, login_url, self.data, is_retry=False,)
+        _LOGGER.info("Attempting login with %s", self.login_url)
+        response = api.request_login(self, self.login_url, self.data, is_retry=False,)
         try:
             if response.status_code == 200:
                 return response.json()
