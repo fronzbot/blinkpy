@@ -1,4 +1,4 @@
 python-dateutil~=2.8.1
 requests~=2.24.0
-python-slugify~=4.0.0
+python-slugify~=4.0.1
 testtools==2.4.0
