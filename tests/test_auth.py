@@ -144,21 +144,6 @@ class TestAuth(unittest.TestCase):
         fake_resp = mresp.MockResponse({"foo": "bar"}, 200)
         mock_req.return_value = fake_resp
         self.assertEqual(self.auth.login(), {"foo": "bar"})
-        mock_req.assert_called_with(
-            self.auth, const.LOGIN_ENDPOINT["v4"], {}, is_retry=False
-        )
-
-    @mock.patch("blinkpy.auth.Auth.validate_login", return_value=None)
-    @mock.patch("blinkpy.auth.api.request_login")
-    def test_login_v3(self, mock_req, mock_validate):
-        """Test login handling."""
-        auth_v3 = Auth(login_method="v3")
-        fake_resp = mresp.MockResponse({"foo": "bar"}, 200)
-        mock_req.return_value = fake_resp
-        self.assertEqual(auth_v3.login(), {"foo": "bar"})
-        mock_req.assert_called_with(
-            auth_v3, const.LOGIN_ENDPOINT["v3"], {}, is_retry=False
-        )
 
     @mock.patch("blinkpy.auth.Auth.validate_login", return_value=None)
     @mock.patch("blinkpy.auth.api.request_login")
@@ -253,15 +238,6 @@ class TestAuth(unittest.TestCase):
 
         mock_validate.side_effect = [UnauthorizedError, TokenRefreshFailed]
         self.assertEqual(self.auth.query(url="http://example.com"), None)
-
-    def test_login_methods(self):
-        """Test correct login url returned."""
-        auth = Auth()
-        self.assertEqual(auth.login_url, const.LOGIN_ENDPOINT["v4"])
-        auth.login_method = "v3"
-        self.assertEqual(auth.login_url, const.LOGIN_ENDPOINT["v3"])
-        auth.login_method = "foobar"
-        self.assertEqual(auth.login_url, const.LOGIN_ENDPOINT["v4"])
 
 
 class MockSession:
