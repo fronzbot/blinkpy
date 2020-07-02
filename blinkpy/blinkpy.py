@@ -29,6 +29,7 @@ from blinkpy.helpers.constants import (
     DEFAULT_MOTION_INTERVAL,
     DEFAULT_REFRESH,
     MIN_THROTTLE_TIME,
+    TIMEOUT_MEDIA,
 )
 from blinkpy.helpers.constants import __version__
 from blinkpy.auth import Auth, TokenRefreshFailed, LoginError
@@ -330,7 +331,13 @@ class Blink:
                     _LOGGER.info("%s already exists, skipping...", filename)
                     continue
 
-                response = api.http_get(self, url=clip_address, stream=True, json=False)
+                response = api.http_get(
+                    self,
+                    url=clip_address,
+                    stream=True,
+                    json=False,
+                    timeout=TIMEOUT_MEDIA,
+                )
                 with open(filename, "wb") as vidfile:
                     copyfileobj(response.raw, vidfile)
 

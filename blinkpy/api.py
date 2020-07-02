@@ -3,7 +3,7 @@
 import logging
 from json import dumps
 from blinkpy.helpers.util import get_time, Throttle
-from blinkpy.helpers.constants import DEFAULT_URL
+from blinkpy.helpers.constants import DEFAULT_URL, TIMEOUT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -284,7 +284,7 @@ def request_motion_detection_disable(blink, network, camera_id):
     return http_post(blink, url)
 
 
-def http_get(blink, url, stream=False, json=True, is_retry=False):
+def http_get(blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOUT):
     """
     Perform an http get request.
 
@@ -304,7 +304,7 @@ def http_get(blink, url, stream=False, json=True, is_retry=False):
     )
 
 
-def http_post(blink, url, is_retry=False):
+def http_post(blink, url, is_retry=False, timeout=TIMEOUT):
     """
     Perform an http post request.
 
