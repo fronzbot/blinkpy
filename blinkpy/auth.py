@@ -2,6 +2,8 @@
 import logging
 from functools import partial
 from requests import Request, Session, exceptions
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from blinkpy import api
 from blinkpy.helpers import util
 from blinkpy.helpers.constants import BLINK_URL, LOGIN_ENDPOINT, TIMEOUT
@@ -56,6 +58,16 @@ class Auth:
     def create_session(self):
         """Create a session for blink communication."""
         sess = Session()
+        assert_status_hook = [
+            lambda response, *args, **kwargs: response.raise_for_status()
+        ]
+        sess.hooks["response"] = assert_status_hook
+        retry = Retry(
+            total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504]
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        sess.mount("https://", adapter)
+        sess.mount("http://", adapter)
         sess.get = partial(sess.get, timeout=TIMEOUT)
         return sess
 
