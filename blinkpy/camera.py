@@ -3,6 +3,7 @@
 from shutil import copyfileobj
 import logging
 from blinkpy import api
+from blinkpy.helpers.constants import TIMEOUT_MEDIA
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -182,11 +183,19 @@ class BlinkCamera:
 
         if new_thumbnail is not None and (update_cached_image or force_cache):
             self._cached_image = api.http_get(
-                self.sync.blink, url=self.thumbnail, stream=True, json=False
+                self.sync.blink,
+                url=self.thumbnail,
+                stream=True,
+                json=False,
+                timeout=TIMEOUT_MEDIA,
             )
         if clip_addr is not None and (update_cached_video or force_cache):
             self._cached_video = api.http_get(
-                self.sync.blink, url=self.clip, stream=True, json=False
+                self.sync.blink,
+                url=self.clip,
+                stream=True,
+                json=False,
+                timeout=TIMEOUT_MEDIA,
             )
 
     def get_liveview(self):

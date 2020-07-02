@@ -4,7 +4,7 @@ from functools import partial
 from requests import Request, Session, exceptions
 from blinkpy import api
 from blinkpy.helpers import util
-from blinkpy.helpers.constants import BLINK_URL, LOGIN_ENDPOINT
+from blinkpy.helpers.constants import BLINK_URL, LOGIN_ENDPOINT, TIMEOUT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class Auth:
     def create_session(self):
         """Create a session for blink communication."""
         sess = Session()
-        sess.get = partial(sess.get, timeout=10)
+        sess.get = partial(sess.get, timeout=TIMEOUT)
         return sess
 
     def prepare_request(self, url, headers, data, reqtype):
@@ -140,6 +140,7 @@ class Auth:
         stream=False,
         json_resp=True,
         is_retry=False,
+        timeout=TIMEOUT,
     ):
         """
         Perform server requests.
@@ -154,7 +155,7 @@ class Auth:
         """
         req = self.prepare_request(url, headers, data, reqtype)
         try:
-            response = self.session.send(req, stream=stream)
+            response = self.session.send(req, stream=stream, timeout=timeout)
             return self.validate_response(response, json_resp)
         except (exceptions.ConnectionError, exceptions.Timeout):
             _LOGGER.error(
@@ -182,6 +183,7 @@ class Auth:
                         stream=stream,
                         json_resp=json_resp,
                         is_retry=True,
+                        timeout=timeout,
                     )
                 _LOGGER.error("Unable to access %s after token refresh.", url)
             except TokenRefreshFailed:
