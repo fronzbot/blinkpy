@@ -171,10 +171,7 @@ class Auth:
             return self.validate_response(response, json_resp)
         except (exceptions.ConnectionError, exceptions.Timeout):
             _LOGGER.error(
-                "Connection error. Endpoint %s possibly down or throttled. %s: %s",
-                url,
-                response.status_code,
-                response.reason,
+                "Connection error. Endpoint %s possibly down or throttled.", url,
             )
         except BlinkBadResponse:
             _LOGGER.error(
