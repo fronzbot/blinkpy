@@ -184,7 +184,7 @@ class Blink:
         ((self.region_id, self.region),) = response["region"].items()
         self._host = "{}.{}".format(self.region_id, BLINK_URL)
         self._token = response["authtoken"]["authtoken"]
-        self._auth_header = {"Host": self._host, "TOKEN_AUTH": self._token}
+        self._auth_header = {"TOKEN_AUTH": self._token}
         self.urls = BlinkURLHandler(self.region_id, legacy=self.legacy)
         self.networks = self.get_networks()
         self.client_id = response["client"]["id"]
