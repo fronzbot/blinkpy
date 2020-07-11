@@ -3,6 +3,11 @@ Changelog
 
 A list of changes between each release
 
+0.15.1 (2020-07-11)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Bugfix: remove "Host" from auth header (`#330 <https://github.com/fronzbot/blinkpy/pull/330>`__)
+
+
 0.15.0 (2020-05-08)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 **Breaking Changes:**
