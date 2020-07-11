@@ -53,7 +53,7 @@ class Auth:
         """Return authorization header."""
         if self.token is None:
             return None
-        return {"Host": self.host, "TOKEN_AUTH": self.token}
+        return {"TOKEN_AUTH": self.token}
 
     def create_session(self):
         """Create a session for blink communication."""
