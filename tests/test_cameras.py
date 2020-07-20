@@ -117,10 +117,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
                     "WARNING:blinkpy.camera:Could not retrieve calibrated "
                     "temperature."
                 ),
-                (
-                    "WARNING:blinkpy.camera:Could not find thumbnail for camera new"
-                    "\nNoneType: None"
-                ),
+                ("WARNING:blinkpy.camera:Could not find thumbnail for camera new"),
             ],
         )
 
