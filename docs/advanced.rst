@@ -30,6 +30,29 @@ By default, the ``blink.auth.Auth`` class creates its own websession via its ``c
     blink.auth = Auth()
     blink.auth.session = YourCustomSession
 
+
+Custom Retry Logic
+--------------------
+The built-in auth session via the ``create_session`` method allows for customizable retry intervals and conditions. These parameters are:
+
+- retries
+- backoff
+- retry_list
+
+``retries`` is the total number of retry attempts that each http request can do before timing out.  ``backoff`` is a parameter that allows for non-linear retry times such that the time between retries is backoff*(2^(retries) - 1).  ``retry_list`` is simply a list of status codes to force a retry.  By default ``retries=3``, ``backoff=1``, and ``retry_list=[429, 500, 502, 503, 504]``. To override them, you need to add you overrides to a dictionary and use that to create a new session with the ``opts`` variable in the ``create_session`` method. The following example can serve as a guide where only the number of retries and backoff factor are overridden:
+
+.. code:: python
+
+    from blinkpy.blinkpy import Blink
+    from blinkpy.auth import Auth
+
+    blink = Blink()
+    blink.auth = Auth()
+
+    opts = {"retries": 10, "backoff": 2}
+    blink.auth.session = blink.auth.create_session(opts=opts)
+
+
 Custom HTTP requests
 ---------------------
 In addition to custom sessions, custom blink server requests can be performed.  This give you the ability to bypass the built-in ``Auth.query`` method.  It also allows flexibility by giving you the option to pass your own url, rather than be limited to what is currently implemented in the ``blinkpy.api`` module.

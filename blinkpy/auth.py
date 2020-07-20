@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 class Auth:
     """Class to handle login communication."""
 
-    def __init__(self, login_data=None, no_prompt=False, retry_opts=None):
+    def __init__(self, login_data=None, no_prompt=False):
         """
         Initialize auth handler.
 
@@ -24,10 +24,6 @@ class Auth:
                              - password
         :param no_prompt: Should any user input prompts
                           be supressed? True/FALSE
-        :param retry_opts: Dictionary containing retry options:
-                             - backoff: backoff factor for http request (backoff*(2^(total_retries)-1)
-                             - retries: total retries to attempt
-                             - retry_list: list of status codes to force retry
         """
         if login_data is None:
             login_data = {}
@@ -40,7 +36,7 @@ class Auth:
         self.login_response = None
         self.is_errored = False
         self.no_prompt = no_prompt
-        self.session = self.create_session(opts=retry_opts)
+        self.session = self.create_session()
 
     @property
     def login_attributes(self):
