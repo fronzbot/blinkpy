@@ -151,9 +151,7 @@ class BlinkCamera:
         if config.get("thumbnail", False):
             thumb_addr = config["thumbnail"]
         else:
-            _LOGGER.warning(
-                "Could not find thumbnail for camera %s", self.name, exc_info=True
-            )
+            _LOGGER.warning("Could not find thumbnail for camera %s", self.name)
 
         if thumb_addr is not None:
             new_thumbnail = f"{self.sync.urls.base_url}{thumb_addr}.jpg"
