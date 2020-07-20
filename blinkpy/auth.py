@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 class Auth:
     """Class to handle login communication."""
 
-    def __init__(self, login_data=None, no_prompt=False):
+    def __init__(self, login_data=None, no_prompt=False, retry_opts=None):
         """
         Initialize auth handler.
 
@@ -24,6 +24,10 @@ class Auth:
                              - password
         :param no_prompt: Should any user input prompts
                           be supressed? True/FALSE
+        :param retry_opts: Dictionary containing retry options:
+                             - backoff: backoff factor for http request (backoff*(2^(total_retries)-1)
+                             - retries: total retries to attempt
+                             - retry_list: list of status codes to force retry
         """
         if login_data is None:
             login_data = {}
@@ -36,7 +40,7 @@ class Auth:
         self.login_response = None
         self.is_errored = False
         self.no_prompt = no_prompt
-        self.session = self.create_session()
+        self.session = self.create_session(opts=retry_opts)
 
     @property
     def login_attributes(self):
@@ -55,15 +59,20 @@ class Auth:
             return None
         return {"TOKEN_AUTH": self.token}
 
-    def create_session(self):
+    def create_session(self, opts=None):
         """Create a session for blink communication."""
+        if opts is None:
+            opts = {}
+        backoff = opts.get("backoff", 1)
+        retries = opts.get("retries", 3)
+        retry_list = opts.get("retry_list", [429, 500, 502, 503, 504])
         sess = Session()
         assert_status_hook = [
             lambda response, *args, **kwargs: response.raise_for_status()
         ]
         sess.hooks["response"] = assert_status_hook
         retry = Retry(
-            total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504]
+            total=retries, backoff_factor=backoff, status_forcelist=retry_list
         )
         adapter = HTTPAdapter(max_retries=retry)
         sess.mount("https://", adapter)

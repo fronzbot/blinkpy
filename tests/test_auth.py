@@ -238,6 +238,16 @@ class TestAuth(unittest.TestCase):
         mock_validate.side_effect = [UnauthorizedError, TokenRefreshFailed]
         self.assertEqual(self.auth.query(url="http://example.com"), None)
 
+    def test_default_session(self):
+        """Test default session creation."""
+        sess = self.auth.create_session()
+        adapter = sess.adapters["https://"]
+        self.assertEqual(adapter.max_retries.total, 3)
+        self.assertEqual(adapter.max_retries.backoff_factor, 1)
+        self.assertEqual(
+            adapter.max_retries.status_forcelist, [429, 500, 502, 503, 504]
+        )
+
 
 class MockSession:
     """Object to mock a session."""
