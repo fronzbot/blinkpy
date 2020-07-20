@@ -55,15 +55,20 @@ class Auth:
             return None
         return {"TOKEN_AUTH": self.token}
 
-    def create_session(self):
+    def create_session(self, opts=None):
         """Create a session for blink communication."""
+        if opts is None:
+            opts = {}
+        backoff = opts.get("backoff", 1)
+        retries = opts.get("retries", 3)
+        retry_list = opts.get("retry_list", [429, 500, 502, 503, 504])
         sess = Session()
         assert_status_hook = [
             lambda response, *args, **kwargs: response.raise_for_status()
         ]
         sess.hooks["response"] = assert_status_hook
         retry = Retry(
-            total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504]
+            total=retries, backoff_factor=backoff, status_forcelist=retry_list
         )
         adapter = HTTPAdapter(max_retries=retry)
         sess.mount("https://", adapter)
