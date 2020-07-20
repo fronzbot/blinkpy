@@ -93,9 +93,7 @@ class BlinkSyncModule:
             self.serial = self.summary["serial"]
             self.status = self.summary["status"]
         except KeyError:
-            _LOGGER.error(
-                "Could not extract some sync module info: %s", response, exc_info=True
-            )
+            _LOGGER.error("Could not extract some sync module info: %s", response)
 
         is_ok = self.get_network_info()
         self.check_new_videos()
@@ -158,7 +156,7 @@ class BlinkSyncModule:
         try:
             return response["event"]
         except (TypeError, KeyError):
-            _LOGGER.error("Could not extract events: %s", response, exc_info=True)
+            _LOGGER.error("Could not extract events: %s", response)
             return False
 
     def get_camera_info(self, camera_id, **kwargs):
@@ -170,7 +168,7 @@ class BlinkSyncModule:
         try:
             return response["camera"][0]
         except (TypeError, KeyError):
-            _LOGGER.error("Could not extract camera info: %s", response, exc_info=True)
+            _LOGGER.error("Could not extract camera info: %s", response)
             return {}
 
     def get_network_info(self):
