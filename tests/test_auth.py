@@ -248,6 +248,39 @@ class TestAuth(unittest.TestCase):
             adapter.max_retries.status_forcelist, [429, 500, 502, 503, 504]
         )
 
+    def test_custom_session_full(self):
+        """Test full custom session creation."""
+        opts = {"backoff": 2, "retries": 10, "retry_list": [404]}
+        sess = self.auth.create_session(opts=opts)
+        adapter = sess.adapters["https://"]
+        self.assertEqual(adapter.max_retries.total, 10)
+        self.assertEqual(adapter.max_retries.backoff_factor, 2)
+        self.assertEqual(adapter.max_retries.status_forcelist, [404])
+
+    def test_custom_session_partial(self):
+        """Test partial custom session creation."""
+        opts1 = {"backoff": 2}
+        opts2 = {"retries": 5}
+        opts3 = {"retry_list": [101, 202]}
+        sess1 = self.auth.create_session(opts=opts1)
+        sess2 = self.auth.create_session(opts=opts2)
+        sess3 = self.auth.create_session(opts=opts3)
+        adapt1 = sess1.adapters["https://"]
+        adapt2 = sess2.adapters["https://"]
+        adapt3 = sess3.adapters["https://"]
+
+        self.assertEqual(adapt1.max_retries.total, 3)
+        self.assertEqual(adapt1.max_retries.backoff_factor, 2)
+        self.assertEqual(adapt1.max_retries.status_forcelist, [429, 500, 502, 503, 504])
+
+        self.assertEqual(adapt2.max_retries.total, 5)
+        self.assertEqual(adapt2.max_retries.backoff_factor, 1)
+        self.assertEqual(adapt2.max_retries.status_forcelist, [429, 500, 502, 503, 504])
+
+        self.assertEqual(adapt3.max_retries.total, 3)
+        self.assertEqual(adapt3.max_retries.backoff_factor, 1)
+        self.assertEqual(adapt3.max_retries.status_forcelist, [101, 202])
+
 
 class MockSession:
     """Object to mock a session."""
