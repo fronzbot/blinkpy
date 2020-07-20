@@ -230,7 +230,7 @@ class TestAuth(unittest.TestCase):
     @mock.patch("blinkpy.auth.Auth.refresh_token")
     def test_query_retry_failed(self, mock_refresh, mock_validate):
         """Check handling of failed retry request."""
-        self.auth.seession = MockSession()
+        self.auth.session = MockSession()
         mock_validate.side_effect = [UnauthorizedError, BlinkBadResponse]
         mock_refresh.return_value = True
         self.assertEqual(self.auth.query(url="http://example.com"), None)

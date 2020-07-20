@@ -174,11 +174,18 @@ class Auth:
                 "Connection error. Endpoint %s possibly down or throttled.", url,
             )
         except BlinkBadResponse:
+            code = None
+            reason = None
+            try:
+                code = response.status_code
+                reason = response.reason
+            except AttributeError:
+                pass
             _LOGGER.error(
                 "Expected json response from %s, but received: %s: %s",
                 url,
-                response.status_code,
-                response.reason,
+                code,
+                reason,
             )
         except UnauthorizedError:
             try:
