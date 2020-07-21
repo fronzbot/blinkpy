@@ -2,55 +2,40 @@
 
 import logging
 from json import dumps
-import blinkpy.helpers.errors as ERROR
-from blinkpy.helpers.util import http_req, get_time, BlinkException, Throttle
-from blinkpy.helpers.constants import DEFAULT_URL
+from blinkpy.helpers.util import get_time, Throttle
+from blinkpy.helpers.constants import DEFAULT_URL, TIMEOUT
 
 _LOGGER = logging.getLogger(__name__)
 
-MIN_THROTTLE_TIME = 2
+MIN_THROTTLE_TIME = 5
 
 
 def request_login(
-    blink,
-    url,
-    username,
-    password,
-    notification_key,
-    uid,
-    is_retry=False,
-    device_id="Blinkpy",
+    auth, url, login_data, is_retry=False,
 ):
     """
     Login request.
 
-    :param blink: Blink instance.
+    :param auth: Auth instance.
     :param url: Login url.
-    :param username: Blink username.
-    :param password: Blink password.
-    :param notification_key: Randomly genereated key.
-    :param uid: Randomly generated unique id key.
-    :param is_retry: Is this part of a re-authorization attempt?
-    :param device_id: Name of application to send at login.
+    :login_data: Dictionary containing blink login data.
     """
     headers = {"Host": DEFAULT_URL, "Content-Type": "application/json"}
     data = dumps(
         {
-            "email": username,
-            "password": password,
-            "notification_key": notification_key,
-            "unique_id": uid,
+            "email": login_data["username"],
+            "password": login_data["password"],
+            "notification_key": login_data["notification_key"],
+            "unique_id": login_data["uid"],
             "app_version": "6.0.7 (520300) #afb0be72a",
+            "device_identifier": login_data["device_id"],
             "client_name": "Computer",
             "client_type": "android",
-            "device_identifier": device_id,
-            "device_name": "Blinkpy",
             "os_version": "5.1.1",
-            "reauth": "true",
+            "reauth": "false",
         }
     )
-    return http_req(
-        blink,
+    return auth.query(
         url=url,
         headers=headers,
         data=data,
@@ -60,25 +45,35 @@ def request_login(
     )
 
 
-def request_verify(blink, verify_key):
+def request_verify(auth, blink, verify_key):
     """Send verification key to blink servers."""
-    url = "{}/api/v4/account/{}/client/{}/pin/verify".format(
-        blink.urls.base_url, blink.account_id, blink.client_id
-    )
+    url = f"{blink.urls.base_url}/api/v4/account/{blink.account_id}/client/{blink.client_id}/pin/verify"
     data = dumps({"pin": verify_key})
-    return http_req(
-        blink,
-        url=url,
-        headers=blink.auth_header,
-        data=data,
-        json_resp=False,
-        reqtype="post",
+    return auth.query(
+        url=url, headers=auth.header, data=data, json_resp=False, reqtype="post",
     )
 
 
 def request_networks(blink):
     """Request all networks information."""
-    url = "{}/networks".format(blink.urls.base_url)
+    url = f"{blink.urls.base_url}/networks"
+    return http_get(blink, url)
+
+
+def request_network_update(blink, network):
+    """
+    Request network update.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    """
+    url = f"{blink.urls.base_url}/network/{network}/update"
+    return http_post(blink, url)
+
+
+def request_user(blink):
+    """Get user information from blink servers."""
+    url = f"{blink.urls.base_url}/user"
     return http_get(blink, url)
 
 
@@ -89,7 +84,7 @@ def request_network_status(blink, network):
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
-    url = "{}/network/{}".format(blink.urls.base_url, network)
+    url = f"{blink.urls.base_url}/network/{network}"
     return http_get(blink, url)
 
 
@@ -100,7 +95,7 @@ def request_syncmodule(blink, network):
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
-    url = "{}/network/{}/syncmodules".format(blink.urls.base_url, network)
+    url = f"{blink.urls.base_url}/network/{network}/syncmodules"
     return http_get(blink, url)
 
 
@@ -112,7 +107,7 @@ def request_system_arm(blink, network):
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
-    url = "{}/network/{}/arm".format(blink.urls.base_url, network)
+    url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/state/arm"
     return http_post(blink, url)
 
 
@@ -124,7 +119,7 @@ def request_system_disarm(blink, network):
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
-    url = "{}/network/{}/disarm".format(blink.urls.base_url, network)
+    url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/state/disarm"
     return http_post(blink, url)
 
 
@@ -136,16 +131,14 @@ def request_command_status(blink, network, command_id):
     :param network: Sync module network id.
     :param command_id: Command id to check.
     """
-    url = "{}/network/{}/command/{}".format(blink.urls.base_url, network, command_id)
+    url = f"{blink.urls.base_url}/network/{network}/command/{command_id}"
     return http_get(blink, url)
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
 def request_homescreen(blink):
     """Request homescreen info."""
-    url = "{}/api/v3/accounts/{}/homescreen".format(
-        blink.urls.base_url, blink.account_id
-    )
+    url = f"{blink.urls.base_url}/api/v3/accounts/{blink.account_id}/homescreen"
     return http_get(blink, url)
 
 
@@ -157,7 +150,7 @@ def request_sync_events(blink, network):
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
-    url = "{}/events/network/{}".format(blink.urls.base_url, network)
+    url = f"{blink.urls.base_url}/events/network/{network}"
     return http_get(blink, url)
 
 
@@ -170,9 +163,7 @@ def request_new_image(blink, network, camera_id):
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request new image from.
     """
-    url = "{}/network/{}/camera/{}/thumbnail".format(
-        blink.urls.base_url, network, camera_id
-    )
+    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/thumbnail"
     return http_post(blink, url)
 
 
@@ -185,14 +176,14 @@ def request_new_video(blink, network, camera_id):
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request new video from.
     """
-    url = "{}/network/{}/camera/{}/clip".format(blink.urls.base_url, network, camera_id)
+    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/clip"
     return http_post(blink, url)
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
 def request_video_count(blink):
     """Request total video count."""
-    url = "{}/api/v2/videos/count".format(blink.urls.base_url)
+    url = f"{blink.urls.base_url}/api/v2/videos/count"
     return http_get(blink, url)
 
 
@@ -205,9 +196,7 @@ def request_videos(blink, time=None, page=0):
     :param page: Page number to get videos from.
     """
     timestamp = get_time(time)
-    url = "{}/api/v1/accounts/{}/media/changed?since={}&page={}".format(
-        blink.urls.base_url, blink.account_id, timestamp, page
-    )
+    url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/media/changed?since={timestamp}&page={page}"
     return http_get(blink, url)
 
 
@@ -218,7 +207,7 @@ def request_cameras(blink, network):
     :param Blink: Blink instance.
     :param network: Sync module network id.
     """
-    url = "{}/network/{}/cameras".format(blink.urls.base_url, network)
+    url = f"{blink.urls.base_url}/network/{network}/cameras"
     return http_get(blink, url)
 
 
@@ -230,10 +219,32 @@ def request_camera_info(blink, network, camera_id):
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request info from.
     """
-    url = "{}/network/{}/camera/{}/config".format(
-        blink.urls.base_url, network, camera_id
-    )
+    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/config"
     return http_get(blink, url)
+
+
+def request_camera_usage(blink):
+    """
+    Request camera status.
+
+    :param blink: Blink instance.
+    """
+    url = f"{blink.urls.base_url}/api/v1/camera/usage"
+    return http_get(blink, url)
+
+
+def request_camera_liveview(blink, network, camera_id):
+    """
+    Request camera liveview.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: Camera ID of camera to request liveview from.
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v3/networks/{network}/cameras/{camera_id}/liveview"
+    )
+    return http_post(blink, url)
 
 
 def request_camera_sensors(blink, network, camera_id):
@@ -244,9 +255,7 @@ def request_camera_sensors(blink, network, camera_id):
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request sesnor info from.
     """
-    url = "{}/network/{}/camera/{}/signals".format(
-        blink.urls.base_url, network, camera_id
-    )
+    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/signals"
     return http_get(blink, url)
 
 
@@ -259,9 +268,7 @@ def request_motion_detection_enable(blink, network, camera_id):
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to enable.
     """
-    url = "{}/network/{}/camera/{}/enable".format(
-        blink.urls.base_url, network, camera_id
-    )
+    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/enable"
     return http_post(blink, url)
 
 
@@ -273,13 +280,11 @@ def request_motion_detection_disable(blink, network, camera_id):
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to disable.
     """
-    url = "{}/network/{}/camera/{}/disable".format(
-        blink.urls.base_url, network, camera_id
-    )
+    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/disable"
     return http_post(blink, url)
 
 
-def http_get(blink, url, stream=False, json=True, is_retry=False):
+def http_get(blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOUT):
     """
     Perform an http get request.
 
@@ -288,13 +293,10 @@ def http_get(blink, url, stream=False, json=True, is_retry=False):
     :param json: Return json response? TRUE/False
     :param is_retry: Is this part of a re-auth attempt?
     """
-    if blink.auth_header is None:
-        raise BlinkException(ERROR.AUTH_TOKEN)
     _LOGGER.debug("Making GET request to %s", url)
-    return http_req(
-        blink,
+    return blink.auth.query(
         url=url,
-        headers=blink.auth_header,
+        headers=blink.auth.header,
         reqtype="get",
         stream=stream,
         json_resp=json,
@@ -302,16 +304,14 @@ def http_get(blink, url, stream=False, json=True, is_retry=False):
     )
 
 
-def http_post(blink, url, is_retry=False):
+def http_post(blink, url, is_retry=False, timeout=TIMEOUT):
     """
     Perform an http post request.
 
     :param url: URL to perfom post request.
     :param is_retry: Is this part of a re-auth attempt?
     """
-    if blink.auth_header is None:
-        raise BlinkException(ERROR.AUTH_TOKEN)
     _LOGGER.debug("Making POST request to %s", url)
-    return http_req(
-        blink, url=url, headers=blink.auth_header, reqtype="post", is_retry=is_retry
+    return blink.auth.query(
+        url=url, headers=blink.auth.header, reqtype="post", is_retry=is_retry
     )

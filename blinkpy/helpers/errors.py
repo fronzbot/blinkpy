@@ -12,4 +12,4 @@ AUTH_TOKEN = (
 )
 REQUEST = (4, "Cannot perform request (get/post type incorrect)")
 
-BLINK_ERRORS = [101, 400, 404]
+BLINK_ERRORS = [400, 404]

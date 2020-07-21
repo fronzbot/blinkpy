@@ -3,6 +3,7 @@
 .tox/*
 __pycache__/*
 htmlcov/*
+.coverage
 .coverage.*
 coverage.xml
 *.pyc
@@ -12,3 +13,4 @@ dist/*
 build/*
 docs/_build
 *.log
+venv

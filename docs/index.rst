@@ -7,12 +7,16 @@ Welcome to blinkpy's documentation!
 ===================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
    :glob:
    
    README
-   api/*
+   advanced
+   CONTRIBUTING
+   modules/*
+   CHANGES
+
 
 Indices and tables
 ==================
