@@ -4,6 +4,14 @@ Changelog
 
 A list of changes between each release
 
+0.16.1 (2020-07-29)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Unpin requeirements, set minimum version instead
+- Bump coverage to 5.2.1
+- Bump pytest to 6.0.0
+
+
 0.16.0 (2020-07-20)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
