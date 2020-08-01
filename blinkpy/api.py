@@ -27,12 +27,12 @@ def request_login(
             "password": login_data["password"],
             "notification_key": login_data["notification_key"],
             "unique_id": login_data["uid"],
-            "app_version": "6.0.7 (520300) #afb0be72a",
+            "app_version": "6.0.12",
             "device_identifier": login_data["device_id"],
             "client_name": "Computer",
             "client_type": "android",
             "os_version": "5.1.1",
-            "reauth": "false",
+            "reauth": "true",
         }
     )
     return auth.query(
