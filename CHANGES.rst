@@ -4,10 +4,18 @@ Changelog
 
 A list of changes between each release
 
+0.16.2 (2020-08-01)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Add user-agent to header at login
+- Remove extra data parameters at login (not-needed)
+- Bump pytest to 6.0.1
+
+
 0.16.1 (2020-07-29)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Unpin requeirements, set minimum version instead
+- Unpin requirements, set minimum version instead
 - Bump coverage to 5.2.1
 - Bump pytest to 6.0.0
 
