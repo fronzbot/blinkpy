@@ -4,6 +4,11 @@ Changelog
 
 A list of changes between each release
 
+0.16.3 (2020-08-02)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Add user-agent to all headers
+
 0.16.2 (2020-08-01)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
