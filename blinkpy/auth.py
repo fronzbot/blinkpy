@@ -6,7 +6,12 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from blinkpy import api
 from blinkpy.helpers import util
-from blinkpy.helpers.constants import BLINK_URL, LOGIN_ENDPOINT, TIMEOUT
+from blinkpy.helpers.constants import (
+    BLINK_URL,
+    DEFAULT_USER_AGENT,
+    LOGIN_ENDPOINT,
+    TIMEOUT,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,7 +58,7 @@ class Auth:
         """Return authorization header."""
         if self.token is None:
             return None
-        return {"TOKEN_AUTH": self.token}
+        return {"TOKEN_AUTH": self.token, "user-agent": DEFAULT_USER_AGENT}
 
     def create_session(self, opts=None):
         """Create a session for blink communication."""

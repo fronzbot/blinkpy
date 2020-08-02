@@ -128,7 +128,7 @@ class TestAuth(unittest.TestCase):
     def test_header(self):
         """Test header data."""
         self.auth.token = "bar"
-        expected_header = {"TOKEN_AUTH": "bar"}
+        expected_header = {"TOKEN_AUTH": "bar", "user-agent": const.DEFAULT_USER_AGENT}
         self.assertDictEqual(self.auth.header, expected_header)
 
     def test_header_no_token(self):
