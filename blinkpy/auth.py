@@ -108,11 +108,7 @@ class Auth:
         try:
             _LOGGER.info("Token expired, attempting automatic refresh.")
             self.login_response = self.login()
-            self.region_id = self.login_response["region"]["tier"]
-            self.host = f"{self.region_id}.{BLINK_URL}"
-            self.token = self.login_response["authtoken"]["authtoken"]
-            self.client_id = self.login_response["client"]["id"]
-            self.account_id = self.login_response["account"]["id"]
+            self.extract_login_info()
             self.is_errored = False
         except LoginError:
             _LOGGER.error("Login endpoint failed. Try again later.")
@@ -121,6 +117,14 @@ class Auth:
             _LOGGER.error("Malformed login response: %s", self.login_response)
             raise TokenRefreshFailed
         return True
+
+    def extract_login_info(self):
+        """Extract login info from login response."""
+        self.region_id = self.login_response["region"]["tier"]
+        self.host = f"{self.region_id}.{BLINK_URL}"
+        self.token = self.login_response["authtoken"]["authtoken"]
+        self.client_id = self.login_response["client"]["id"]
+        self.account_id = self.login_response["account"]["id"]
 
     def startup(self):
         """Initialize tokens for communication."""

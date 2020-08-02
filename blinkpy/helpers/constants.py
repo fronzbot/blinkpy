@@ -4,7 +4,7 @@ import os
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 16
-PATCH_VERSION = 1
+PATCH_VERSION = 2
 
 __version__ = f"{MAJOR_VERSION}.{MINOR_VERSION}.{PATCH_VERSION}"
 
@@ -58,6 +58,7 @@ ONLINE = {"online": True, "offline": False}
 """
 OTHER
 """
+DEFAULT_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
 DEVICE_ID = "Blinkpy"
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 DEFAULT_MOTION_INTERVAL = 1

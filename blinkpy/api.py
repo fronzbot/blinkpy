@@ -3,7 +3,7 @@
 import logging
 from json import dumps
 from blinkpy.helpers.util import get_time, Throttle
-from blinkpy.helpers.constants import DEFAULT_URL, TIMEOUT
+from blinkpy.helpers.constants import DEFAULT_URL, TIMEOUT, DEFAULT_USER_AGENT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,21 +20,24 @@ def request_login(
     :param url: Login url.
     :login_data: Dictionary containing blink login data.
     """
-    headers = {"Host": DEFAULT_URL, "Content-Type": "application/json"}
+    headers = {
+        "Host": DEFAULT_URL,
+        "Content-Type": "application/json",
+        "Accept": "/",
+        "user-agent": DEFAULT_USER_AGENT,
+    }
     data = dumps(
         {
             "email": login_data["username"],
             "password": login_data["password"],
             "notification_key": login_data["notification_key"],
             "unique_id": login_data["uid"],
-            "app_version": "6.0.7 (520300) #afb0be72a",
             "device_identifier": login_data["device_id"],
             "client_name": "Computer",
-            "client_type": "android",
-            "os_version": "5.1.1",
             "reauth": "false",
         }
     )
+
     return auth.query(
         url=url,
         headers=headers,
