@@ -34,6 +34,8 @@ jobs:
         tox -r -e cov
     - name: Codecov
       uses: codecov/codecov-action@v1.0.6
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       with:
         flags: unittests
         file: ./coverage.xml
