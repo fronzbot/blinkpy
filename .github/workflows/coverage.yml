@@ -33,8 +33,9 @@ jobs:
       run: |
         tox -r -e cov
     - name: Codecov
-      uses: codecov/codecov-action@v1.0.6
+      uses: codecov/codecov-action@v1
       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
         flags: unittests
         file: ./coverage.xml
         name: blinkpy

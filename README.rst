@@ -174,7 +174,7 @@ Similar methods exist for individual cameras:
 
 Download videos
 ----------------
-You can also use this library to download all videos from the server.  In order to do this, you must specify a ``path``.  You may also specifiy a how far back in time to go to retrieve videos via the ``since=`` variable (a simple string such as ``"2017/09/21"`` is sufficient), as well as how many pages to traverse via the ``page=`` variable.  Note that by default, the library will search the first ten pages which is sufficient in most use cases.  Additionally, you can specidy one or more cameras via the ``camera=`` property.  This can be a single string indicating the name of the camera, or a list of camera names.  By default, it is set to the string ``'all'`` to grab videos from all cameras.
+You can also use this library to download all videos from the server.  In order to do this, you must specify a ``path``.  You may also specifiy a how far back in time to go to retrieve videos via the ``since=`` variable (a simple string such as ``"2017/09/21"`` is sufficient), as well as how many pages to traverse via the ``stop=`` variable.  Note that by default, the library will search the first ten pages which is sufficient in most use cases.  Additionally, you can specify one or more cameras via the ``camera=`` property.  This can be a single string indicating the name of the camera, or a list of camera names.  By default, it is set to the string ``'all'`` to grab videos from all cameras.
 
 Example usage, which downloads all videos recorded since July 4th, 2018 at 9:34am to the ``/home/blink`` directory:
 
