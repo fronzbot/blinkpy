@@ -244,9 +244,7 @@ def request_camera_liveview(blink, network, camera_id):
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request liveview from.
     """
-    url = (
-        f"{blink.urls.base_url}/api/v3/networks/{network}/cameras/{camera_id}/liveview"
-    )
+    url = f"{blink.urls.base_url}/api/v5/accounts/{blink.account_id}/networks/{network}/cameras/{camera_id}/liveview"
     return http_post(blink, url)
 
 
