@@ -86,6 +86,7 @@ class Blink:
             if not self.available:
                 self.setup_post_verify()
 
+            self.get_homescreen()
             for sync_name, sync_module in self.sync.items():
                 _LOGGER.debug("Attempting refresh of sync %s", sync_name)
                 sync_module.refresh(force_cache=force)
