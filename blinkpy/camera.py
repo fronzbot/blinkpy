@@ -266,6 +266,6 @@ class BlinkCameraMini(BlinkCamera):
         response = api.http_post(self.sync.blink, url)
         server = response["server"]
         server_split = server.split(":")
-        server_split[0] = "rtsps"
+        server_split[0] = "rtsps:"
         link = "".join(server_split)
         return link

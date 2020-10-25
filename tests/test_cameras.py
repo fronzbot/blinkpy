@@ -176,3 +176,10 @@ class TestBlinkCameraSetup(unittest.TestCase):
         attr = camera.attributes
         for key in attr:
             self.assertEqual(attr[key], None)
+
+    def test_camera_stream(self, mock_resp):
+        """Test that camera stream returns correct url."""
+        mock_resp.return_value = {"server": "rtsps://foo.bar"}
+        mini_camera = BlinkCameraMini(self.blink.sync["test"])
+        self.assertEqual(self.camera.get_liveview(), "rtsps://foo.bar")
+        self.assertEqual(mini_camera.get_liveview(), "rtsps://foo.bar")
