@@ -98,6 +98,15 @@ class BlinkCamera:
             self.sync.blink, self.network_id, self.camera_id
         )
 
+    def get_media(self, media_type="image"):
+        """Download media (image or video)."""
+        url = self.thumbnail
+        if media_type.lower() == "video":
+            url = self.clip
+        return api.http_get(
+            self.sync.blink, url=url, stream=True, json=False, timeout=TIMEOUT_MEDIA,
+        )
+
     def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
         return api.request_new_image(self.sync.blink, self.network_id, self.camera_id)
@@ -180,21 +189,10 @@ class BlinkCamera:
             update_cached_video = True
 
         if new_thumbnail is not None and (update_cached_image or force_cache):
-            self._cached_image = api.http_get(
-                self.sync.blink,
-                url=self.thumbnail,
-                stream=True,
-                json=False,
-                timeout=TIMEOUT_MEDIA,
-            )
+            self._cached_image = self.get_media()
+
         if clip_addr is not None and (update_cached_video or force_cache):
-            self._cached_video = api.http_get(
-                self.sync.blink,
-                url=self.clip,
-                stream=True,
-                json=False,
-                timeout=TIMEOUT_MEDIA,
-            )
+            self._cached_video = self.get_media(media_type="video")
 
     def get_liveview(self):
         """Get livewview rtsps link."""
@@ -210,7 +208,7 @@ class BlinkCamera:
         :param path: Path to write file
         """
         _LOGGER.debug("Writing image from %s to %s", self.name, path)
-        response = self._cached_image
+        response = self.get_media()
         if response.status_code == 200:
             with open(path, "wb") as imgfile:
                 copyfileobj(response.raw, imgfile)
@@ -226,7 +224,7 @@ class BlinkCamera:
         :param path: Path to write file
         """
         _LOGGER.debug("Writing video from %s to %s", self.name, path)
-        response = self._cached_video
+        response = self.get_media(media_type="video")
         if response is None:
             _LOGGER.error("No saved video exist for %s.", self.name)
             return
@@ -268,6 +266,6 @@ class BlinkCameraMini(BlinkCamera):
         response = api.http_post(self.sync.blink, url)
         server = response["server"]
         server_split = server.split(":")
-        server_split[0] = "rtsps"
+        server_split[0] = "rtsps:"
         link = "".join(server_split)
         return link
