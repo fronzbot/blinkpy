@@ -4,6 +4,31 @@ Changelog
 
 A list of changes between each release
 
+0.16.4 (2020-11-22)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes:**
+
+- Updated liveview endpoint (`#389 <https://github.com/fronzbot/blinkpy/pull/389>`__)
+- Fixed mini thumbnail not updating (`#388 <https://github.com/fronzbot/blinkpy/pull/388>`__)
+- Add exception catch to prevent NoneType error on refresh, added test to check behavior as well (`#401 <https://github.com/fronzbot/blinkpy/pull/401>`__)
+  - Unrelated: had to add two force methods to refresh for testing purposes. Should not change normal usage.
+- Fix malformed stream url (`#395 <https://github.com/fronzbot/blinkpy/pull/395>`__)
+
+**All:**
+
+- Moved testtools to requirements_test.txt (`#387 <https://github.com/fronzbot/blinkpy/pull/387>`__)
+- Bumped pytest to 6.1.1
+- Bumped flake8 to 3.8.4
+- Fixed README spelling ((`#381 <https://github.com/fronzbot/blinkpy/pull/381>`__) via @rohitsud)
+- Bumped pygments to 2.7.1
+- Bumped coverage to 5.3
+- Bumped pydocstyle to 5.1.1
+- Bumped pre-commit to 2.7.1
+- Bumped pylint to 2.6.0
+- Bumped pytest-cov to 2.10.1
+
+
 0.16.3 (2020-08-02)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
