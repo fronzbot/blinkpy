@@ -69,7 +69,7 @@ class TestBlinkSetup(unittest.TestCase):
         with mock.patch(
             "blinkpy.sync_module.BlinkSyncModule.refresh", return_value=True
         ), mock.patch("blinkpy.blinkpy.Blink.get_homescreen", return_value=True):
-            self.blink.refresh()
+            self.blink.refresh(force=True)
 
         self.assertEqual(self.blink.last_refresh, now)
         self.assertEqual(self.blink.check_if_ok_to_update(), False)

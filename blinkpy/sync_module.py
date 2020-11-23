@@ -145,7 +145,7 @@ class BlinkSyncModule:
             for owl in self.blink.homescreen["owls"]:
                 if owl["name"] == name:
                     return owl
-        except KeyError:
+        except (TypeError, KeyError):
             pass
         return None
 
@@ -270,7 +270,7 @@ class BlinkOwl(BlinkSyncModule):
                 if owl["name"] == self.name:
                     self.status = owl["enabled"]
                     return owl
-        except KeyError:
+        except (TypeError, KeyError):
             pass
         return None
 

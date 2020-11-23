@@ -76,21 +76,22 @@ class Blink:
         self.no_owls = no_owls
 
     @util.Throttle(seconds=MIN_THROTTLE_TIME)
-    def refresh(self, force=False):
+    def refresh(self, force=False, force_cache=False):
         """
         Perform a system refresh.
 
-        :param force: Force an update of the camera data
+        :param force: Used to override throttle, resets refresh
+        :param force_cache: Used to force update without overriding throttle
         """
-        if self.check_if_ok_to_update() or force:
+        if self.check_if_ok_to_update() or force or force_cache:
             if not self.available:
                 self.setup_post_verify()
 
             self.get_homescreen()
             for sync_name, sync_module in self.sync.items():
                 _LOGGER.debug("Attempting refresh of sync %s", sync_name)
-                sync_module.refresh(force_cache=force)
-            if not force:
+                sync_module.refresh(force_cache=(force or force_cache))
+            if not force_cache:
                 # Prevents rapid clearing of motion detect property
                 self.last_refresh = int(time.time())
             return True
