@@ -5,29 +5,23 @@ import logging
 
 from blinkpy import blinkpy
 from blinkpy.sync_module import BlinkSyncModule
+from blinkpy.camera import BlinkCamera
 from blinkpy.helpers.util import get_time, BlinkURLHandler
 
 
 class MockSyncModule(BlinkSyncModule):
-    """Mock http requests from sync module."""
+    """Mock blink sync module object."""
 
-    def __init__(self, blink, header):
-        """Create mock sync module instance."""
-        super().__init__(blink, header, network_id=None, camera_list=None)
-        self.blink = blink
-        self.header = header
-        self.return_value = None
-        self.return_value2 = None
+    def get_network_info(self):
+        """Mock network info method."""
+        return True
 
-    def http_get(self, url, stream=False, json=True):
-        """Mock get request."""
-        if stream and self.return_value2 is not None:
-            return self.return_value2
-        return self.return_value
 
-    def http_post(self, url):
-        """Mock post request."""
-        return self.return_value
+class MockCamera(BlinkCamera):
+    """Mock blink camera object."""
+
+    def update(self, config, force_cache=False, **kwargs):
+        """Mock camera update method."""
 
 
 class TestBlinkFunctions(unittest.TestCase):
@@ -121,3 +115,16 @@ class TestBlinkFunctions(unittest.TestCase):
         with self.assertLogs() as dl_log:
             blink.download_videos("/tmp", camera="bar", stop=2)
         self.assertEqual(dl_log.output, expected_log)
+
+    @mock.patch("blinkpy.blinkpy.api.request_network_update")
+    @mock.patch("blinkpy.auth.Auth.query")
+    def test_refresh(self, mock_req, mock_update):
+        """Test ability to refresh system."""
+        mock_update.return_value = {"network": {"sync_module_error": False}}
+        mock_req.return_value = None
+        self.blink.last_refresh = 0
+        self.blink.available = True
+        self.blink.sync["foo"] = MockSyncModule(self.blink, "foo", 1, [])
+        self.blink.cameras = {"bar": MockCamera(self.blink.sync)}
+        self.blink.sync["foo"].cameras = self.blink.cameras
+        self.assertTrue(self.blink.refresh())
