@@ -3,8 +3,8 @@
 import os
 
 MAJOR_VERSION = 0
-MINOR_VERSION = 16
-PATCH_VERSION = 4
+MINOR_VERSION = 17
+PATCH_VERSION = "0.dev2"
 
 __version__ = f"{MAJOR_VERSION}.{MINOR_VERSION}.{PATCH_VERSION}"
 
@@ -34,6 +34,7 @@ PROJECT_CLASSIFIERS = [
     "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Topic :: Home Automation",
 ]
 
