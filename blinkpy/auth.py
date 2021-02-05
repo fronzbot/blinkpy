@@ -58,7 +58,11 @@ class Auth:
         """Return authorization header."""
         if self.token is None:
             return None
-        return {"TOKEN_AUTH": self.token, "user-agent": DEFAULT_USER_AGENT}
+        return {
+            "TOKEN_AUTH": self.token,
+            "user-agent": DEFAULT_USER_AGENT,
+            "content-type": "application/json",
+        }
 
     def create_session(self, opts=None):
         """Create a session for blink communication."""
@@ -227,6 +231,9 @@ class Auth:
             try:
                 json_resp = response.json()
                 blink.available = json_resp["valid"]
+                if not json_resp["valid"]:
+                    _LOGGER.error(f"{json_resp['message']}")
+                    return False
             except (KeyError, TypeError):
                 _LOGGER.error("Did not receive valid response from server.")
                 return False
