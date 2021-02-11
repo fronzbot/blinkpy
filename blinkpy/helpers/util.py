@@ -33,10 +33,13 @@ def json_save(data, file_name):
         json.dump(data, json_file, indent=4)
 
 
-def gen_uid(size):
+def gen_uid(size, uid_format=False):
     """Create a random sring."""
-    full_token = secrets.token_hex(size)
-    return full_token[0:size]
+    if uid_format:
+        token = f"{secrets.token_hex(8)}-{secrets.token_hex(4)}-{secrets.token_hex(4)}-{secrets.token_hex(4)}-{secrets.token_hex(12)}"
+    else:
+        token = secrets.token_hex(size)
+    return token
 
 
 def time_to_seconds(timestamp):
@@ -79,7 +82,7 @@ def prompt_login_data(data):
 
 def validate_login_data(data):
     """Check for missing keys."""
-    data["uid"] = data.get("uid", gen_uid(const.SIZE_UID))
+    data["uid"] = data.get("uid", gen_uid(const.SIZE_UID, uid_format=True))
     data["notification_key"] = data.get(
         "notification_key", gen_uid(const.SIZE_NOTIFICATION_KEY)
     )

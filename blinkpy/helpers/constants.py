@@ -4,7 +4,7 @@ import os
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 16
-PATCH_VERSION = "5.rc0"
+PATCH_VERSION = "5.rc1"
 
 __version__ = f"{MAJOR_VERSION}.{MINOR_VERSION}.{PATCH_VERSION}"
 
@@ -49,7 +49,7 @@ URLS
 BLINK_URL = "immedia-semi.com"
 DEFAULT_URL = f"rest-prod.{BLINK_URL}"
 BASE_URL = f"https://{DEFAULT_URL}"
-LOGIN_ENDPOINT = f"{BASE_URL}/api/v4/account/login"
+LOGIN_ENDPOINT = f"{BASE_URL}/api/v5/account/login"
 
 """
 Dictionaries
