@@ -36,7 +36,7 @@ def json_save(data, file_name):
 def gen_uid(size, uid_format=False):
     """Create a random sring."""
     if uid_format:
-        token = f"{secrets.token_hex(8)}-{secrets.token_hex(4)}-{secrets.token_hex(4)}-{secrets.token_hex(4)}-{secrets.token_hex(12)}"
+        token = f"BlinkCamera_{secrets.token_hex(4)}-{secrets.token_hex(2)}-{secrets.token_hex(2)}-{secrets.token_hex(2)}-{secrets.token_hex(6)}"
     else:
         token = secrets.token_hex(size)
     return token
@@ -83,9 +83,6 @@ def prompt_login_data(data):
 def validate_login_data(data):
     """Check for missing keys."""
     data["uid"] = data.get("uid", gen_uid(const.SIZE_UID, uid_format=True))
-    data["notification_key"] = data.get(
-        "notification_key", gen_uid(const.SIZE_NOTIFICATION_KEY)
-    )
     data["device_id"] = data.get("device_id", const.DEVICE_ID)
 
     return data

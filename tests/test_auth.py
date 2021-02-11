@@ -42,7 +42,6 @@ class TestAuth(unittest.TestCase):
             "username": "foo",
             "password": "bar",
             "uid": 1234,
-            "notification_key": 1234,
             "device_id": const.DEVICE_ID,
         }
         self.assertDictEqual(auth.data, expected_data)
@@ -62,7 +61,6 @@ class TestAuth(unittest.TestCase):
             "username": "foo",
             "password": "bar",
             "uid": 1234,
-            "notification_key": 1234,
             "device_id": const.DEVICE_ID,
         }
         self.assertDictEqual(auth.data, expected_data)

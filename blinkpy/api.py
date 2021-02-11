@@ -23,18 +23,15 @@ def request_login(
     headers = {
         "Host": DEFAULT_URL,
         "Content-Type": "application/json",
-        "Accept": "/",
-        "user-agent": DEFAULT_USER_AGENT,
+        #"user-agent": DEFAULT_USER_AGENT,
     }
     data = dumps(
         {
             "email": login_data["username"],
             "password": login_data["password"],
-            "notification_key": login_data["notification_key"],
             "unique_id": login_data["uid"],
             "device_identifier": login_data["device_id"],
             "client_name": "Computer",
-            "reauth": "false",
         }
     )
 
