@@ -98,6 +98,10 @@ class BlinkCamera:
             self.sync.blink, self.network_id, self.camera_id
         )
 
+    def record(self):
+        """Initiate clip recording."""
+        return api.request_new_video(self.sync.blink, self.network_id, self.camera_id)
+
     def get_media(self, media_type="image"):
         """Download media (image or video)."""
         url = self.thumbnail
