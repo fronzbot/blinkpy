@@ -129,11 +129,11 @@ class Auth:
 
     def extract_login_info(self):
         """Extract login info from login response."""
-        self.region_id = self.login_response["region"]["tier"]
+        self.region_id = self.login_response["account"]["tier"]
         self.host = f"{self.region_id}.{BLINK_URL}"
-        self.token = self.login_response["authtoken"]["authtoken"]
-        self.client_id = self.login_response["client"]["id"]
-        self.account_id = self.login_response["account"]["id"]
+        self.token = self.login_response["auth"]["token"]
+        self.client_id = self.login_response["account"]["client_id"]
+        self.account_id = self.login_response["account"]["account_id"]
 
     def startup(self):
         """Initialize tokens for communication."""
@@ -242,7 +242,7 @@ class Auth:
     def check_key_required(self):
         """Check if 2FA key is required."""
         try:
-            if self.login_response["client"]["verification_required"]:
+            if self.login_response["account"]["client_verification_required"]:
                 return True
         except (KeyError, TypeError):
             pass

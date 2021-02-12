@@ -42,7 +42,6 @@ class TestAuth(unittest.TestCase):
             "username": "foo",
             "password": "bar",
             "uid": 1234,
-            "notification_key": 1234,
             "device_id": const.DEVICE_ID,
         }
         self.assertDictEqual(auth.data, expected_data)
@@ -62,7 +61,6 @@ class TestAuth(unittest.TestCase):
             "username": "foo",
             "password": "bar",
             "uid": 1234,
-            "notification_key": 1234,
             "device_id": const.DEVICE_ID,
         }
         self.assertDictEqual(auth.data, expected_data)
@@ -165,10 +163,8 @@ class TestAuth(unittest.TestCase):
     def test_refresh_token(self, mock_login):
         """Test refresh token method."""
         mock_login.return_value = {
-            "region": {"tier": "test"},
-            "authtoken": {"authtoken": "foobar"},
-            "client": {"id": 1234},
-            "account": {"id": 5678},
+            "account": {"account_id": 5678, "client_id": 1234, "tier": "test"},
+            "auth": {"token": "foobar"},
         }
         self.assertTrue(self.auth.refresh_token())
         self.assertEqual(self.auth.region_id, "test")
@@ -190,10 +186,10 @@ class TestAuth(unittest.TestCase):
         self.auth.login_response = {}
         self.assertFalse(self.auth.check_key_required())
 
-        self.auth.login_response = {"client": {"verification_required": False}}
+        self.auth.login_response = {"account": {"client_verification_required": False}}
         self.assertFalse(self.auth.check_key_required())
 
-        self.auth.login_response = {"client": {"verification_required": True}}
+        self.auth.login_response = {"account": {"client_verification_required": True}}
         self.assertTrue(self.auth.check_key_required())
 
     @mock.patch("blinkpy.auth.api.request_verify")

@@ -3,7 +3,7 @@
 import unittest
 from unittest import mock
 import time
-from blinkpy.helpers.util import json_load, Throttle, time_to_seconds
+from blinkpy.helpers.util import json_load, Throttle, time_to_seconds, gen_uid
 
 
 class TestUtil(unittest.TestCase):
@@ -132,3 +132,19 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(json_load("fake.file"), None)
         with mock.patch("builtins.open", mock.mock_open(read_data="")):
             self.assertEqual(json_load("fake.file"), None)
+
+    def test_gen_uid(self):
+        """Test gen_uid formatting."""
+        val1 = gen_uid(8)
+        val2 = gen_uid(8, uid_format=True)
+
+        self.assertEqual(len(val1), 16)
+
+        self.assertTrue(val2.startswith("BlinkCamera_"))
+        val2_cut = val2.split("_")
+        val2_split = val2_cut[1].split("-")
+        self.assertEqual(len(val2_split[0]), 8)
+        self.assertEqual(len(val2_split[1]), 4)
+        self.assertEqual(len(val2_split[2]), 4)
+        self.assertEqual(len(val2_split[3]), 4)
+        self.assertEqual(len(val2_split[4]), 12)
