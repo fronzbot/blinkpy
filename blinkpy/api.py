@@ -54,6 +54,12 @@ def request_verify(auth, blink, verify_key):
     )
 
 
+def request_logout(blink):
+    """Logout of blink servers."""
+    url = f"{blink.urls.base_url}/api/v4/account/{blink.account_id}/client/{blink.client_id}/logout"
+    return http_post(blink, url=url)
+
+
 def request_networks(blink):
     """Request all networks information."""
     url = f"{blink.urls.base_url}/networks"

@@ -108,8 +108,12 @@ class Auth:
             if response.status_code == 200:
                 return response.json()
             raise LoginError
-        except AttributeError:
-            raise LoginError
+        except AttributeError as error:
+            raise LoginError from error
+
+    def logout(self, blink):
+        """Log out."""
+        return api.request_logout(blink)
 
     def refresh_token(self):
         """Refresh auth token."""
@@ -119,12 +123,12 @@ class Auth:
             self.login_response = self.login()
             self.extract_login_info()
             self.is_errored = False
-        except LoginError:
+        except LoginError as error:
             _LOGGER.error("Login endpoint failed. Try again later.")
-            raise TokenRefreshFailed
-        except (TypeError, KeyError):
+            raise TokenRefreshFailed from error
+        except (TypeError, KeyError) as error:
             _LOGGER.error("Malformed login response: %s", self.login_response)
-            raise TokenRefreshFailed
+            raise TokenRefreshFailed from error
         return True
 
     def extract_login_info(self):
@@ -155,8 +159,8 @@ class Auth:
             json_data = response.json()
         except KeyError:
             pass
-        except (AttributeError, ValueError):
-            raise BlinkBadResponse
+        except (AttributeError, ValueError) as error:
+            raise BlinkBadResponse from error
 
         self.is_errored = False
         return json_data
@@ -232,7 +236,7 @@ class Auth:
                 json_resp = response.json()
                 blink.available = json_resp["valid"]
                 if not json_resp["valid"]:
-                    _LOGGER.error(f"{json_resp['message']}")
+                    _LOGGER.error("%s", json_resp["message"])
                     return False
             except (KeyError, TypeError):
                 _LOGGER.error("Did not receive valid response from server.")

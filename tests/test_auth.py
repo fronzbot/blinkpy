@@ -192,6 +192,13 @@ class TestAuth(unittest.TestCase):
         self.auth.login_response = {"account": {"client_verification_required": True}}
         self.assertTrue(self.auth.check_key_required())
 
+    @mock.patch("blinkpy.auth.api.request_logout")
+    def test_logout(self, mock_req):
+        """Test logout method."""
+        mock_blink = MockBlink(None)
+        mock_req.return_value = True
+        self.assertTrue(self.auth.logout(mock_blink))
+
     @mock.patch("blinkpy.auth.api.request_verify")
     def test_send_auth_key(self, mock_req):
         """Check sending of auth key."""
