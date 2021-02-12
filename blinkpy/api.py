@@ -23,7 +23,7 @@ def request_login(
     headers = {
         "Host": DEFAULT_URL,
         "Content-Type": "application/json",
-        #"user-agent": DEFAULT_USER_AGENT,
+        "user-agent": DEFAULT_USER_AGENT,
     }
     data = dumps(
         {
