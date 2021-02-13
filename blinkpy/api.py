@@ -32,6 +32,7 @@ def request_login(
             "unique_id": login_data["uid"],
             "device_identifier": login_data["device_id"],
             "client_name": "Computer",
+            "reauth": True,
         }
     )
 
