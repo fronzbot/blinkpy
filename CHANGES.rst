@@ -4,6 +4,29 @@ Changelog
 
 A list of changes between each release
 
+0.17.0 (2021-02-15)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes:**
+- Fix video downloading bug (`#424 <https://github.com/fronzbot/blinkpy/pull/424>`__)
+- Fix repeated authorization email bug (`#432 <https://github.com/fronzbot/blinkpy/pull/432>`__ and `#428 <https://github.com/fronzbot/blinkpy/pull/428>`__)
+
+**New Features:**
+- Add logout method (`#429 <https://github.com/fronzbot/blinkpy/pull/429>`__)
+- Add camera record method (`#430 <https://github.com/fronzbot/blinkpy/pull/430>`__)
+
+**Other:**
+- Add debug script to main repo to help with general debug
+- Upgrade login endpoint from v4 to v5
+- Add python 3.9 support
+- Bump coverage to 5.4
+- Bump pytest to 6.2.2
+- Bump pytest-cov to 2.11.1
+- Bump pygments to 2.8.0
+- Bump pre-commit to 2.10.1
+- Bump restructuredtext-lint to 1.3.2
+
+
 0.16.4 (2020-11-22)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

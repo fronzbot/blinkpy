@@ -23,18 +23,16 @@ def request_login(
     headers = {
         "Host": DEFAULT_URL,
         "Content-Type": "application/json",
-        "Accept": "/",
         "user-agent": DEFAULT_USER_AGENT,
     }
     data = dumps(
         {
             "email": login_data["username"],
             "password": login_data["password"],
-            "notification_key": login_data["notification_key"],
             "unique_id": login_data["uid"],
             "device_identifier": login_data["device_id"],
             "client_name": "Computer",
-            "reauth": "false",
+            "reauth": True,
         }
     )
 
@@ -55,6 +53,12 @@ def request_verify(auth, blink, verify_key):
     return auth.query(
         url=url, headers=auth.header, data=data, json_resp=False, reqtype="post",
     )
+
+
+def request_logout(blink):
+    """Logout of blink servers."""
+    url = f"{blink.urls.base_url}/api/v4/account/{blink.account_id}/client/{blink.client_id}/logout"
+    return http_post(blink, url=url)
 
 
 def request_networks(blink):

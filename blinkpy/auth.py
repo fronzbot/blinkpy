@@ -58,7 +58,11 @@ class Auth:
         """Return authorization header."""
         if self.token is None:
             return None
-        return {"TOKEN_AUTH": self.token, "user-agent": DEFAULT_USER_AGENT}
+        return {
+            "TOKEN_AUTH": self.token,
+            "user-agent": DEFAULT_USER_AGENT,
+            "content-type": "application/json",
+        }
 
     def create_session(self, opts=None):
         """Create a session for blink communication."""
@@ -104,8 +108,12 @@ class Auth:
             if response.status_code == 200:
                 return response.json()
             raise LoginError
-        except AttributeError:
-            raise LoginError
+        except AttributeError as error:
+            raise LoginError from error
+
+    def logout(self, blink):
+        """Log out."""
+        return api.request_logout(blink)
 
     def refresh_token(self):
         """Refresh auth token."""
@@ -115,21 +123,21 @@ class Auth:
             self.login_response = self.login()
             self.extract_login_info()
             self.is_errored = False
-        except LoginError:
+        except LoginError as error:
             _LOGGER.error("Login endpoint failed. Try again later.")
-            raise TokenRefreshFailed
-        except (TypeError, KeyError):
+            raise TokenRefreshFailed from error
+        except (TypeError, KeyError) as error:
             _LOGGER.error("Malformed login response: %s", self.login_response)
-            raise TokenRefreshFailed
+            raise TokenRefreshFailed from error
         return True
 
     def extract_login_info(self):
         """Extract login info from login response."""
-        self.region_id = self.login_response["region"]["tier"]
+        self.region_id = self.login_response["account"]["tier"]
         self.host = f"{self.region_id}.{BLINK_URL}"
-        self.token = self.login_response["authtoken"]["authtoken"]
-        self.client_id = self.login_response["client"]["id"]
-        self.account_id = self.login_response["account"]["id"]
+        self.token = self.login_response["auth"]["token"]
+        self.client_id = self.login_response["account"]["client_id"]
+        self.account_id = self.login_response["account"]["account_id"]
 
     def startup(self):
         """Initialize tokens for communication."""
@@ -151,8 +159,8 @@ class Auth:
             json_data = response.json()
         except KeyError:
             pass
-        except (AttributeError, ValueError):
-            raise BlinkBadResponse
+        except (AttributeError, ValueError) as error:
+            raise BlinkBadResponse from error
 
         self.is_errored = False
         return json_data
@@ -227,6 +235,9 @@ class Auth:
             try:
                 json_resp = response.json()
                 blink.available = json_resp["valid"]
+                if not json_resp["valid"]:
+                    _LOGGER.error("%s", json_resp["message"])
+                    return False
             except (KeyError, TypeError):
                 _LOGGER.error("Did not receive valid response from server.")
                 return False
@@ -235,7 +246,7 @@ class Auth:
     def check_key_required(self):
         """Check if 2FA key is required."""
         try:
-            if self.login_response["client"]["verification_required"]:
+            if self.login_response["account"]["client_verification_required"]:
                 return True
         except (KeyError, TypeError):
             pass

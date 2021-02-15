@@ -14,3 +14,4 @@ build/*
 docs/_build
 *.log
 venv
+.session*
