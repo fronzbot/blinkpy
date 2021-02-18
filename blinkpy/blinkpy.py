@@ -264,7 +264,9 @@ class Blink:
         """Save login data to file."""
         util.json_save(self.auth.login_attributes, file_name)
 
-    def download_videos(self, path, since=None, camera="all", stop=10, debug=False):
+    def download_videos(
+        self, path, since=None, camera="all", stop=10, delay=1, debug=False
+    ):
         """
         Download all videos from server since specified time.
 
@@ -275,6 +277,7 @@ class Blink:
         :param camera: Camera name to retrieve.  Defaults to "all".
                        Use a list for multiple cameras.
         :param stop: Page to stop on (~25 items per page. Default page 10).
+        :param delay: Number of seconds to wait in between subsequent video downloads.
         :param debug: Set to TRUE to prevent downloading of items.
                       Instead of downloading, entries will be printed to log.
         """
@@ -301,9 +304,9 @@ class Blink:
                 _LOGGER.info("No videos found on page %s. Exiting.", page)
                 break
 
-            self._parse_downloaded_items(result, camera, path, debug)
+            self._parse_downloaded_items(result, camera, path, delay, debug)
 
-    def _parse_downloaded_items(self, result, camera, path, debug):
+    def _parse_downloaded_items(self, result, camera, path, delay, debug):
         """Parse downloaded videos."""
         for item in result:
             try:
@@ -351,6 +354,8 @@ class Blink:
                         "Address: {address}, Filename: {filename}"
                     )
                 )
+            if delay > 0:
+                time.sleep(delay)
 
 
 class BlinkSetupError(Exception):
