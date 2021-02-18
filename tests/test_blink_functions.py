@@ -2,6 +2,7 @@
 import unittest
 from unittest import mock
 import logging
+import time
 
 from blinkpy import blinkpy
 from blinkpy.sync_module import BlinkSyncModule
@@ -88,8 +89,32 @@ class TestBlinkFunctions(unittest.TestCase):
             "DEBUG:blinkpy.blinkpy:foo: /bar.mp4 is marked as deleted.",
         ]
         with self.assertLogs() as dl_log:
-            blink.download_videos("/tmp", stop=2)
+            blink.download_videos("/tmp", stop=2, delay=0)
         self.assertEqual(dl_log.output, expected_log)
+
+    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    def test_parse_downloaded_throttle(self, mock_req):
+        """Test ability to parse downloaded items list."""
+        generic_entry = {
+            "created_at": "1970",
+            "device_name": "foo",
+            "deleted": False,
+            "media": "/bar.mp4",
+        }
+        result = [generic_entry]
+        mock_req.return_value = {"media": result}
+        self.blink.last_refresh = 0
+        start = time.time()
+        self.blink.download_videos("/tmp", stop=2, delay=0, debug=True)
+        now = time.time()
+        delta = now - start
+        self.assertTrue(delta < 0.1)
+
+        start = time.time()
+        self.blink.download_videos("/tmp", stop=2, delay=0.1, debug=True)
+        now = time.time()
+        delta = now - start
+        self.assertTrue(delta >= 0.1)
 
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     def test_parse_camera_not_in_list(self, mock_req):
@@ -113,7 +138,7 @@ class TestBlinkFunctions(unittest.TestCase):
             "DEBUG:blinkpy.blinkpy:Skipping videos for foo.",
         ]
         with self.assertLogs() as dl_log:
-            blink.download_videos("/tmp", camera="bar", stop=2)
+            blink.download_videos("/tmp", camera="bar", stop=2, delay=0)
         self.assertEqual(dl_log.output, expected_log)
 
     @mock.patch("blinkpy.blinkpy.api.request_network_update")

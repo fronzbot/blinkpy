@@ -4,6 +4,13 @@ Changelog
 
 A list of changes between each release
 
+0.17.1 (2021-02-18)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Add delay parameter to Blink.download_videos method in order to throttle API during video retrieval (`#437 <https://github.com/fronzbot/blinkpy/pull/437>`__)
+- Bump pylint to 2.6.2
+
+
 0.17.0 (2021-02-15)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
