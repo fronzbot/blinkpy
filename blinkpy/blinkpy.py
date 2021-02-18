@@ -265,7 +265,7 @@ class Blink:
         util.json_save(self.auth.login_attributes, file_name)
 
     def download_videos(
-        self, path, since=None, camera="all", stop=10, delay=2, debug=False
+        self, path, since=None, camera="all", stop=10, delay=1, debug=False
     ):
         """
         Download all videos from server since specified time.
