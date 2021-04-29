@@ -1,0 +1,33 @@
+version: 2
+updates:
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  reviewers:
+  - fronzbot
+  ignore:
+  - dependency-name: black
+    versions:
+    - 21.4b0
+    - 21.4b1
+  - dependency-name: pylint
+    versions:
+    - 2.7.1
+    - 2.7.2
+    - 2.7.3
+    - 2.7.4
+    - 2.8.1
+  - dependency-name: pre-commit
+    versions:
+    - 2.10.0
+    - 2.11.0
+    - 2.11.1
+    - 2.12.0
+  - dependency-name: flake8
+    versions:
+    - 3.9.0
+  - dependency-name: pygments
+    versions:
+    - 2.8.1
