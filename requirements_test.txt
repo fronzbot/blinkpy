@@ -3,7 +3,7 @@ coverage==5.5
 flake8==3.9.1
 flake8-docstrings==1.6.0
 pre-commit==2.12.1
-pylint==2.8.2
+pylint==2.9.3
 pydocstyle==6.0.0
 pytest==6.2.4
 pytest-cov==2.11.1
