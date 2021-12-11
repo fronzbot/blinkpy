@@ -11,7 +11,7 @@ from unittest import mock
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
-from blinkpy.camera import BlinkCamera, BlinkCameraMini
+from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
 
 
 CAMERA_CFG = {
@@ -177,9 +177,20 @@ class TestBlinkCameraSetup(unittest.TestCase):
         for key in attr:
             self.assertEqual(attr[key], None)
 
+    def test_doorbell_missing_attributes(self, mock_resp):
+        """Test that attributes return None if missing."""
+        camera = BlinkDoorbell(self.blink.sync)
+        self.blink.sync.network_id = None
+        self.blink.sync.name = None
+        attr = camera.attributes
+        for key in attr:
+            self.assertEqual(attr[key], None)
+
     def test_camera_stream(self, mock_resp):
         """Test that camera stream returns correct url."""
         mock_resp.return_value = {"server": "rtsps://foo.bar"}
         mini_camera = BlinkCameraMini(self.blink.sync["test"])
+        doorbell_camera = BlinkDoorbell(self.blink.sync["test"])
         self.assertEqual(self.camera.get_liveview(), "rtsps://foo.bar")
         self.assertEqual(mini_camera.get_liveview(), "rtsps://foo.bar")
+        self.assertEqual(doorbell_camera.get_liveview(), "rtsps://foo.bar")

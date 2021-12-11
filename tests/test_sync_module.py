@@ -4,8 +4,8 @@ from unittest import mock
 
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
-from blinkpy.sync_module import BlinkSyncModule, BlinkOwl
-from blinkpy.camera import BlinkCamera, BlinkCameraMini
+from blinkpy.sync_module import BlinkSyncModule, BlinkOwl, BlinkLotus
+from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
 
 
 @mock.patch("blinkpy.auth.Auth.query")
@@ -292,3 +292,20 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertTrue(owl.start())
         self.assertTrue("foo" in owl.cameras)
         self.assertEqual(owl.cameras["foo"].__class__, BlinkCameraMini)
+
+    def test_lotus_start(self, mock_resp):
+        """Test doorbell instantiation."""
+        response = {
+            "name": "doo",
+            "id": 3,
+            "serial": "doobar123",
+            "enabled": True,
+            "network_id": 1,
+            "thumbnail": "/foo/bar",
+        }
+        self.blink.last_refresh = None
+        self.blink.homescreen = {"doorbells": [response]}
+        lotus = BlinkLotus(self.blink, "doo", 1234, response)
+        self.assertTrue(lotus.start())
+        self.assertTrue("doo" in lotus.cameras)
+        self.assertEqual(lotus.cameras["doo"].__class__, BlinkDoorbell)

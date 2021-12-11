@@ -23,7 +23,7 @@ from dateutil.parser import parse
 from slugify import slugify
 
 from blinkpy import api
-from blinkpy.sync_module import BlinkSyncModule, BlinkOwl
+from blinkpy.sync_module import BlinkSyncModule, BlinkOwl, BlinkLotus
 from blinkpy.helpers import util
 from blinkpy.helpers.constants import (
     DEFAULT_MOTION_INTERVAL,
@@ -180,6 +180,36 @@ class Blink:
         self.network_ids.extend(network_list)
         return camera_list
 
+    def setup_lotus(self):
+        """Check for doorbells cameras."""
+        network_list = []
+        camera_list = []
+        try:
+            for lotus in self.homescreen["doorbells"]:
+                name = lotus["name"]
+                network_id = str(lotus["network_id"])
+                if network_id in self.network_ids:
+                    camera_list.append(
+                        {
+                            network_id: {
+                                "name": name,
+                                "id": network_id,
+                                "type": "doorbell",
+                            }
+                        }
+                    )
+                    continue
+                if lotus["onboarded"]:
+                    network_list.append(str(network_id))
+                    self.sync[name] = BlinkLotus(self, name, network_id, lotus)
+                    self.sync[name].start()
+        except KeyError:
+            # No sync-less devices found
+            pass
+
+        self.network_ids.extend(network_list)
+        return camera_list
+
     def setup_camera_list(self):
         """Create camera list for onboarded networks."""
         all_cameras = {}
@@ -194,7 +224,11 @@ class Blink:
                         {"name": camera["name"], "id": camera["id"]}
                     )
             mini_cameras = self.setup_owls()
+            lotus_cameras = self.setup_lotus()
             for camera in mini_cameras:
+                for network, camera_info in camera.items():
+                    all_cameras[network].append(camera_info)
+            for camera in lotus_cameras:
                 for network, camera_info in camera.items():
                     all_cameras[network].append(camera_info)
             return all_cameras
