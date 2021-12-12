@@ -4,6 +4,29 @@ Changelog
 
 A list of changes between each release
 
+0.18.0 (2021-12-11)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes:**
+
+- None
+
+**New Features:**
+
+- Support for Blink Doorbell (`@magicalyak <https://github.com/fronzbot/blinkpy/pull/526>`__)
+
+**Other:**
+
+- Bump pytest-cov to 3.0.0
+- Bump pre-commit to 2.15.0
+- Bump pytest to 6.2.5
+- Bump pylint to 2.10.2
+- Bump pygments to 2.10.0
+- Bump flake8-docstrings to 1.6.0
+- Bump pydocstyle to 6.0.0
+- Bump coverage to 5.5
+
+
 0.17.1 (2021-02-18)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -15,14 +38,17 @@ A list of changes between each release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Bugfixes:**
+
 - Fix video downloading bug (`#424 <https://github.com/fronzbot/blinkpy/pull/424>`__)
 - Fix repeated authorization email bug (`#432 <https://github.com/fronzbot/blinkpy/pull/432>`__ and `#428 <https://github.com/fronzbot/blinkpy/pull/428>`__)
 
 **New Features:**
+
 - Add logout method (`#429 <https://github.com/fronzbot/blinkpy/pull/429>`__)
 - Add camera record method (`#430 <https://github.com/fronzbot/blinkpy/pull/430>`__)
 
 **Other:**
+
 - Add debug script to main repo to help with general debug
 - Upgrade login endpoint from v4 to v5
 - Add python 3.9 support
