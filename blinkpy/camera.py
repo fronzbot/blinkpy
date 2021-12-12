@@ -273,3 +273,42 @@ class BlinkCameraMini(BlinkCamera):
         server_split[0] = "rtsps:"
         link = "".join(server_split)
         return link
+
+
+class BlinkDoorbell(BlinkCamera):
+    """Define a class for a Blink Doorbell camera."""
+
+    def __init__(self, sync):
+        """Initialize a Blink Doorbell."""
+        super().__init__(sync)
+        self.camera_type = "doorbell"
+
+    @property
+    def arm(self):
+        """Return camera arm status."""
+        return self.sync.arm
+
+    @arm.setter
+    def arm(self, value):
+        """Set camera arm status."""
+        _LOGGER.warning(
+            "Individual camera motion detection enable/disable for Blink Doorbell is unsupported at this time."
+        )
+
+    def snap_picture(self):
+        """Snap picture for a blink doorbell camera."""
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/lotus/{self.camera_id}/thumbnail"
+        return api.http_post(self.sync.blink, url)
+
+    def get_sensor_info(self):
+        """Get sensor info for blink doorbell camera."""
+
+    def get_liveview(self):
+        """Get liveview link."""
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/lotus/{self.camera_id}/liveview"
+        response = api.http_post(self.sync.blink, url)
+        server = response["server"]
+        server_split = server.split(":")
+        server_split[0] = "rtsps:"
+        link = "".join(server_split)
+        return link

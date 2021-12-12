@@ -4,7 +4,7 @@ import logging
 
 from requests.structures import CaseInsensitiveDict
 from blinkpy import api
-from blinkpy.camera import BlinkCamera, BlinkCameraMini
+from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
 from blinkpy.helpers.util import time_to_seconds
 from blinkpy.helpers.constants import ONLINE
 
@@ -126,11 +126,14 @@ class BlinkSyncModule:
                 name = camera_config["name"]
                 self.motion[name] = False
                 owl_info = self.get_owl_info(name)
+                lotus_info = self.get_lotus_info(name)
                 if blink_camera_type == "mini":
                     camera_type = BlinkCameraMini
+                if blink_camera_type == "lotus":
+                    camera_type = BlinkDoorbell
                 self.cameras[name] = camera_type(self)
                 camera_info = self.get_camera_info(
-                    camera_config["id"], owl_info=owl_info
+                    camera_config["id"], owl_info=owl_info, lotus_info=lotus_info
                 )
                 self.cameras[name].update(camera_info, force_cache=True, force=True)
 
@@ -145,6 +148,16 @@ class BlinkSyncModule:
             for owl in self.blink.homescreen["owls"]:
                 if owl["name"] == name:
                     return owl
+        except (TypeError, KeyError):
+            pass
+        return None
+
+    def get_lotus_info(self, name):
+        """Extract lotus information."""
+        try:
+            for doorbell in self.blink.homescreen["doorbells"]:
+                if doorbell["name"] == name:
+                    return doorbell
         except (TypeError, KeyError):
             pass
         return None
@@ -164,6 +177,9 @@ class BlinkSyncModule:
         owl = kwargs.get("owl_info", None)
         if owl is not None:
             return owl
+        lotus = kwargs.get("lotus_info", None)
+        if lotus is not None:
+            return lotus
         response = api.request_camera_info(self.blink, self.network_id, camera_id)
         try:
             return response["camera"][0]
@@ -190,7 +206,9 @@ class BlinkSyncModule:
         for camera_name in self.cameras.keys():
             camera_id = self.cameras[camera_name].camera_id
             camera_info = self.get_camera_info(
-                camera_id, owl_info=self.get_owl_info(camera_name)
+                camera_id,
+                owl_info=self.get_owl_info(camera_name),
+                lotus_info=self.get_lotus_info(camera_name),
             )
             self.cameras[camera_name].update(camera_info, force_cache=force_cache)
         self.available = True
@@ -281,6 +299,69 @@ class BlinkOwl(BlinkSyncModule):
     @property
     def network_info(self):
         """Format owl response to resemble sync module."""
+        return {
+            "network": {
+                "id": self.network_id,
+                "name": self.name,
+                "armed": self.status,
+                "sync_module_error": False,
+                "account_id": self.blink.account_id,
+            }
+        }
+
+    @network_info.setter
+    def network_info(self, value):
+        """Set network_info property."""
+
+
+class BlinkLotus(BlinkSyncModule):
+    """Representation of a sync-less device."""
+
+    def __init__(self, blink, name, network_id, response):
+        """Initialize a sync-less object."""
+        cameras = [{"name": name, "id": response["id"]}]
+        super().__init__(blink, name, network_id, cameras)
+        self.sync_id = response["id"]
+        self.serial = response["serial"]
+        self.status = response["enabled"]
+        if not self.serial:
+            self.serial = f"{network_id}-{self.sync_id}"
+
+    def sync_initialize(self):
+        """Initialize a sync-less module."""
+        self.summary = {
+            "id": self.sync_id,
+            "name": self.name,
+            "serial": self.serial,
+            "status": self.status,
+            "onboarded": True,
+            "account_id": self.blink.account_id,
+            "network_id": self.network_id,
+        }
+        return self.summary
+
+    def update_cameras(self, camera_type=BlinkDoorbell):
+        """Update sync-less cameras."""
+        return super().update_cameras(camera_type=BlinkDoorbell)
+
+    def get_camera_info(self, camera_id, **kwargs):
+        """Retrieve camera information."""
+        try:
+            for doorbell in self.blink.homescreen["doorbells"]:
+                if doorbell["name"] == self.name:
+                    self.status = doorbell["enabled"]
+                    return doorbell
+        except (TypeError, KeyError):
+            pass
+        return None
+
+    def get_network_info(self):
+        """Get network info for sync-less module."""
+        return True
+
+    @property
+    def network_info(self):
+        """Format lotus response to resemble sync module."""
         return {
             "network": {
                 "id": self.network_id,
