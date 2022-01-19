@@ -6,7 +6,7 @@ VOLUME /media
 RUN python -m pip install --upgrade pip
 RUN pip3 install blinkpy
 
-COPY app/ .
+COPY blinkapp/ .
 
-ENTRYPOINT ["python", "./app.py"]
+ENTRYPOINT ["python", "./blinkapp.py"]
 CMD []
