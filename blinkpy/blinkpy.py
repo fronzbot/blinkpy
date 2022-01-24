@@ -385,7 +385,7 @@ class Blink:
                 print(
                     (
                         f"Camera: {camera_name}, Timestamp: {created_at}, "
-                        "Address: {address}, Filename: {filename}"
+                        f"Address: {address}, Filename: {filename}"
                     )
                 )
             if delay > 0:
