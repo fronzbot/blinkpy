@@ -4,7 +4,7 @@ from shutil import copyfileobj
 import logging
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
-
+from json import dumps
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -252,9 +252,9 @@ class BlinkCameraMini(BlinkCamera):
     @arm.setter
     def arm(self, value):
         """Set camera arm status."""
-        _LOGGER.warning(
-            "Individual camera motion detection enable/disable for Blink Mini cameras is unsupported at this time."
-        )
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.account_id}/networks/{self.network_id}/owls/{self.camera_id}/config"
+        data = dumps({"enabled": value})
+        return api.http_post(self.sync.blink, url, json=False, data=data)
 
     def snap_picture(self):
         """Snap picture for a blink mini camera."""
