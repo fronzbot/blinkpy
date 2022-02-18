@@ -252,7 +252,7 @@ class BlinkCameraMini(BlinkCamera):
     @arm.setter
     def arm(self, value):
         """Set camera arm status."""
-        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.account_id}/networks/{self.network_id}/owls/{self.camera_id}/config"
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/config"
         data = dumps({"enabled": value})
         return api.http_post(self.sync.blink, url, json=False, data=data)
 
