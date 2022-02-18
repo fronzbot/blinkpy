@@ -320,5 +320,10 @@ def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TIMEOUT)
     """
     _LOGGER.debug("Making POST request to %s", url)
     return blink.auth.query(
-        url=url, headers=blink.auth.header, reqtype="post", is_retry=is_retry, json_resp=json, data=data
+        url=url,
+        headers=blink.auth.header,
+        reqtype="post",
+        is_retry=is_retry,
+        json_resp=json,
+        data=data,
     )

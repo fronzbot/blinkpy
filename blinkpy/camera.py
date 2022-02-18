@@ -5,6 +5,7 @@ import logging
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
 from json import dumps
+
 _LOGGER = logging.getLogger(__name__)
 
 
