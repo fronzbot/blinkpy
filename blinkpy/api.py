@@ -315,6 +315,7 @@ def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TIMEOUT)
 
     :param url: URL to perfom post request.
     :param is_retry: Is this part of a re-auth attempt?
+    :param data: str body for post request
     :param json: Return json response? TRUE/False
     """
     _LOGGER.debug("Making POST request to %s", url)
