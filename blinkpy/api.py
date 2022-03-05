@@ -309,14 +309,21 @@ def http_get(blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOU
     )
 
 
-def http_post(blink, url, is_retry=False, timeout=TIMEOUT):
+def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TIMEOUT):
     """
     Perform an http post request.
 
     :param url: URL to perfom post request.
     :param is_retry: Is this part of a re-auth attempt?
+    :param data: str body for post request
+    :param json: Return json response? TRUE/False
     """
     _LOGGER.debug("Making POST request to %s", url)
     return blink.auth.query(
-        url=url, headers=blink.auth.header, reqtype="post", is_retry=is_retry
+        url=url,
+        headers=blink.auth.header,
+        reqtype="post",
+        is_retry=is_retry,
+        json_resp=json,
+        data=data,
     )
