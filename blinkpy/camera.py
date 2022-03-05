@@ -2,9 +2,10 @@
 
 from shutil import copyfileobj
 import logging
+from json import dumps
+from requests.compat import urljoin
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
-from json import dumps
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -168,7 +169,7 @@ class BlinkCamera:
             _LOGGER.warning("Could not find thumbnail for camera %s", self.name)
 
         if thumb_addr is not None:
-            new_thumbnail = f"{self.sync.urls.base_url}{thumb_addr}.jpg"
+            new_thumbnail = urljoin(self.sync.urls.base_url, f"{thumb_addr}.jpg")
 
         try:
             self.motion_detected = self.sync.motion[self.name]

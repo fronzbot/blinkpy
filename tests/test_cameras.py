@@ -87,6 +87,14 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.assertEqual(self.camera.image_from_cache, "test")
         self.assertEqual(self.camera.video_from_cache, "foobar")
 
+        # Check that thumbnail without slash processed properly
+        mock_resp.side_effect = [None]
+        self.camera.update_images({"thumbnail": "thumb_no_slash"})
+        self.assertEqual(
+            self.camera.thumbnail,
+            "https://rest-test.immedia-semi.com/thumb_no_slash.jpg",
+        )
+
     def test_no_thumbnails(self, mock_resp):
         """Tests that thumbnail is 'None' if none found."""
         mock_resp.return_value = "foobar"
