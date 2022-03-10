@@ -4,6 +4,26 @@ Changelog
 
 A list of changes between each release
 
+0.19.0 (pre-release)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes:**
+
+- Debug log in prase download method fix (`@tieum <https://github.com/fronzbot/blinkpy/pull/540>`__)
+- Fix issue with malformed thumbnails (`#550 <https://github.com/fronzbot/blinkpy/pull/550>`__)
+
+**New Features:**
+
+- Support for arm/disarm of Blink Mini cameras (`@mstratford <https://github.com/fronzbot/blinkpy/pull/546>`__)
+
+**Other:**
+
+- Bump pre-commit to 2.17.0
+- Bump pytest to 7.0.1
+- Bump pytest-timeout to 2.1.0
+- Bump pygments to 2.11.2
+
+
 0.18.0 (2021-12-11)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -2,6 +2,8 @@
 
 from shutil import copyfileobj
 import logging
+from json import dumps
+from requests.compat import urljoin
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
 
@@ -167,7 +169,7 @@ class BlinkCamera:
             _LOGGER.warning("Could not find thumbnail for camera %s", self.name)
 
         if thumb_addr is not None:
-            new_thumbnail = f"{self.sync.urls.base_url}{thumb_addr}.jpg"
+            new_thumbnail = urljoin(self.sync.urls.base_url, f"{thumb_addr}.jpg")
 
         try:
             self.motion_detected = self.sync.motion[self.name]
@@ -252,9 +254,9 @@ class BlinkCameraMini(BlinkCamera):
     @arm.setter
     def arm(self, value):
         """Set camera arm status."""
-        _LOGGER.warning(
-            "Individual camera motion detection enable/disable for Blink Mini cameras is unsupported at this time."
-        )
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/config"
+        data = dumps({"enabled": value})
+        return api.http_post(self.sync.blink, url, json=False, data=data)
 
     def snap_picture(self):
         """Snap picture for a blink mini camera."""
