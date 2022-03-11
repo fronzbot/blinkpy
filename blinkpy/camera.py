@@ -5,13 +5,11 @@ import logging
 from json import dumps
 from requests.compat import urljoin
 from blinkpy import api
-from blinkpy.helpers.constants import TIMEOUT_MEDIA
+from blinkpy.helpers.constants import TIMEOUT_MEDIA, THUMBNAIL_ENDPOINT
 
 _LOGGER = logging.getLogger(__name__)
 
 
-THUMBNAIL_URL = "/api/v3/media/accounts/{account_id}/networks/{network_id}/catalina/{id}/thumbnail/thumbnail.jpg?" \
-                "ts={thumbnail}&ext="
 
 
 class BlinkCamera:
@@ -174,7 +172,7 @@ class BlinkCamera:
         try:
             # API update only returns the timestamp!
             int(thumb_addr)
-            thumb_addr = THUMBNAIL_URL.format(**config)
+            thumb_addr = THUMBNAIL_ENDPOINT.format(**config)
         except TypeError:
             # This is the old API and has the full url
             pass

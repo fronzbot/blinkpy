@@ -4,7 +4,7 @@ import os
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 19
-PATCH_VERSION = "0.rc0"
+PATCH_VERSION = "1.rc0"
 
 __version__ = f"{MAJOR_VERSION}.{MINOR_VERSION}.{PATCH_VERSION}"
 
@@ -50,6 +50,8 @@ BLINK_URL = "immedia-semi.com"
 DEFAULT_URL = f"rest-prod.{BLINK_URL}"
 BASE_URL = f"https://{DEFAULT_URL}"
 LOGIN_ENDPOINT = f"{BASE_URL}/api/v5/account/login"
+THUMBNAIL_ENDPOINT = "/api/v3/media/accounts/{account_id}/networks/{network_id}/catalina/{id}/thumbnail/" \
+                     "thumbnail.jpg?ts={thumbnail}&ext="
 
 """
 Dictionaries
