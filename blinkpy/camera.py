@@ -10,6 +10,10 @@ from blinkpy.helpers.constants import TIMEOUT_MEDIA
 _LOGGER = logging.getLogger(__name__)
 
 
+THUMBNAIL_URL = "/api/v3/media/accounts/{account_id}/networks/{network_id}/catalina/{id}/thumbnail/thumbnail.jpg?" \
+                "ts={thumbnail}&ext="
+
+
 class BlinkCamera:
     """Class to initialize individual camera."""
 
@@ -174,6 +178,13 @@ class BlinkCamera:
             thumb_addr = config["thumbnail"]
         else:
             _LOGGER.warning("Could not find thumbnail for camera %s", self.name)
+        try:
+            # API update only returns the timestamp!
+            int(thumb_addr)
+            thumb_addr = THUMBNAIL_URL.format(**config)
+        except TypeError:
+            # This is the old API and has the full url
+            pass
 
         if thumb_addr is not None:
             new_thumbnail = urljoin(self.sync.urls.base_url, f"{thumb_addr}.jpg")
