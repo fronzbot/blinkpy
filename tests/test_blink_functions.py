@@ -65,7 +65,7 @@ class TestBlinkFunctions(unittest.TestCase):
         ]
         with self.assertLogs() as dl_log:
             blink.download_videos("/tmp")
-        self.assertEqual(dl_log.output, expected_log)
+        self.assertListEqual(dl_log.output, expected_log)
 
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     def test_parse_downloaded_items(self, mock_req):
@@ -90,7 +90,7 @@ class TestBlinkFunctions(unittest.TestCase):
         ]
         with self.assertLogs() as dl_log:
             blink.download_videos("/tmp", stop=2, delay=0)
-        self.assertEqual(dl_log.output, expected_log)
+        self.assertListEqual(dl_log.output, expected_log)
 
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     def test_parse_downloaded_throttle(self, mock_req):
@@ -139,7 +139,7 @@ class TestBlinkFunctions(unittest.TestCase):
         ]
         with self.assertLogs() as dl_log:
             blink.download_videos("/tmp", camera="bar", stop=2, delay=0)
-        self.assertEqual(dl_log.output, expected_log)
+        self.assertListEqual(dl_log.output, expected_log)
 
     @mock.patch("blinkpy.blinkpy.api.request_network_update")
     @mock.patch("blinkpy.auth.Auth.query")
