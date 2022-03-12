@@ -1,4 +1,7 @@
-name: coverage
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Black
 
 on:
   push:
@@ -7,19 +10,15 @@ on:
     branches: [ master, dev ]
 
 jobs:
-  coverage:
-    runs-on: ${{ matrix.platform }}
+  black:
+    runs-on: ubuntu-latest
     strategy:
-      max-parallel: 4
       matrix:
-        platform:
-          - ubuntu-latest
-        python-version: [3.8]
-
+        python-version: [3.9]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -28,15 +27,6 @@ jobs:
         pip install -r requirements.txt
         pip install -r requirements_test.txt
         pip install tox
-        pip install codecov
-    - name: Test
+    - name: Black
       run: |
-        tox -r -e cov
-    - name: Codecov
-      uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        flags: unittests
-        file: ./coverage.xml
-        name: blinkpy
-        fail_ci_if_error: true
+        tox -r -e black
