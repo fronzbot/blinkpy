@@ -112,7 +112,11 @@ class BlinkCamera:
         if media_type.lower() == "video":
             url = self.clip
         return api.http_get(
-            self.sync.blink, url=url, stream=True, json=False, timeout=TIMEOUT_MEDIA,
+            self.sync.blink,
+            url=url,
+            stream=True,
+            json=False,
+            timeout=TIMEOUT_MEDIA,
         )
 
     def snap_picture(self):

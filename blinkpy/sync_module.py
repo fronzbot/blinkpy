@@ -200,7 +200,8 @@ class BlinkSyncModule:
         for camera_name in self.cameras.keys():
             camera_id = self.cameras[camera_name].camera_id
             camera_info = self.get_camera_info(
-                camera_id, unique_info=self.get_unique_info(camera_name),
+                camera_id,
+                unique_info=self.get_unique_info(camera_name),
             )
             self.cameras[camera_name].update(camera_info, force_cache=force_cache)
         self.available = True
