@@ -1,7 +1,6 @@
 """Tests camera and system functions."""
 import unittest
 from unittest import mock
-import logging
 import time
 
 from blinkpy import blinkpy
@@ -53,8 +52,6 @@ class TestBlinkFunctions(unittest.TestCase):
     def test_download_video_exit(self, mock_req):
         """Test we exit method when provided bad response."""
         blink = blinkpy.Blink()
-        # pylint: disable=protected-access
-        blinkpy._LOGGER.setLevel(logging.DEBUG)
         blink.last_refresh = 0
         mock_req.return_value = {}
         formatted_date = get_time(blink.last_refresh)
@@ -63,7 +60,7 @@ class TestBlinkFunctions(unittest.TestCase):
             "DEBUG:blinkpy.blinkpy:Processing page 1",
             "INFO:blinkpy.blinkpy:No videos found on page 1. Exiting.",
         ]
-        with self.assertLogs() as dl_log:
+        with self.assertLogs(level="DEBUG") as dl_log:
             blink.download_videos("/tmp")
         self.assertListEqual(dl_log.output, expected_log)
 
@@ -71,8 +68,6 @@ class TestBlinkFunctions(unittest.TestCase):
     def test_parse_downloaded_items(self, mock_req):
         """Test ability to parse downloaded items list."""
         blink = blinkpy.Blink()
-        # pylint: disable=protected-access
-        blinkpy._LOGGER.setLevel(logging.DEBUG)
         generic_entry = {
             "created_at": "1970",
             "device_name": "foo",
@@ -88,7 +83,7 @@ class TestBlinkFunctions(unittest.TestCase):
             "DEBUG:blinkpy.blinkpy:Processing page 1",
             "DEBUG:blinkpy.blinkpy:foo: /bar.mp4 is marked as deleted.",
         ]
-        with self.assertLogs() as dl_log:
+        with self.assertLogs(level="DEBUG") as dl_log:
             blink.download_videos("/tmp", stop=2, delay=0)
         self.assertListEqual(dl_log.output, expected_log)
 
@@ -120,8 +115,6 @@ class TestBlinkFunctions(unittest.TestCase):
     def test_parse_camera_not_in_list(self, mock_req):
         """Test ability to parse downloaded items list."""
         blink = blinkpy.Blink()
-        # pylint: disable=protected-access
-        blinkpy._LOGGER.setLevel(logging.DEBUG)
         generic_entry = {
             "created_at": "1970",
             "device_name": "foo",
@@ -137,7 +130,7 @@ class TestBlinkFunctions(unittest.TestCase):
             "DEBUG:blinkpy.blinkpy:Processing page 1",
             "DEBUG:blinkpy.blinkpy:Skipping videos for foo.",
         ]
-        with self.assertLogs() as dl_log:
+        with self.assertLogs(level="DEBUG") as dl_log:
             blink.download_videos("/tmp", camera="bar", stop=2, delay=0)
         self.assertListEqual(dl_log.output, expected_log)
 
