@@ -11,7 +11,10 @@ MIN_THROTTLE_TIME = 5
 
 
 def request_login(
-    auth, url, login_data, is_retry=False,
+    auth,
+    url,
+    login_data,
+    is_retry=False,
 ):
     """
     Login request.
@@ -51,7 +54,11 @@ def request_verify(auth, blink, verify_key):
     url = f"{blink.urls.base_url}/api/v4/account/{blink.account_id}/client/{blink.client_id}/pin/verify"
     data = dumps({"pin": verify_key})
     return auth.query(
-        url=url, headers=auth.header, data=data, json_resp=False, reqtype="post",
+        url=url,
+        headers=auth.header,
+        data=data,
+        json_resp=False,
+        reqtype="post",
     )
 
 
