@@ -170,13 +170,28 @@ class BlinkCamera:
         """Update images for camera."""
         new_thumbnail = None
         thumb_addr = None
+        thumb_string = None
         if config.get("thumbnail", False):
             thumb_addr = config["thumbnail"]
+            try:
+                # API update only returns the timestamp!
+                int(thumb_addr)
+                thumb_string = f"/api/v3/media/accounts/{self.sync.blink.account_id}/networks/{self.product_type}/{self.camera_id}/thumbnail/thumbnail.jpg?ts={thumb_addr}&ext="
+            except ValueError:
+                # This is the old API and has the full url
+                thumb_string = f"{thumb_addr}.jpg"
+                # Check that new full api url has not been returned:
+                if thumb_addr.endswith("&ext="):
+                    thumb_string = thumb_addr
+            except TypeError:
+                # Thumb address is None
+                pass
+
+            if thumb_string is not None:
+                new_thumbnail = urljoin(self.sync.urls.base_url, thumb_string)
+
         else:
             _LOGGER.warning("Could not find thumbnail for camera %s", self.name)
-
-        if thumb_addr is not None:
-            new_thumbnail = urljoin(self.sync.urls.base_url, f"{thumb_addr}.jpg")
 
         try:
             self.motion_detected = self.sync.motion[self.name]
