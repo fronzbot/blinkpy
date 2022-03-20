@@ -5,11 +5,9 @@ import logging
 from json import dumps
 from requests.compat import urljoin
 from blinkpy import api
-from blinkpy.helpers.constants import TIMEOUT_MEDIA, THUMBNAIL_ENDPOINT
+from blinkpy.helpers.constants import TIMEOUT_MEDIA
 
 _LOGGER = logging.getLogger(__name__)
-
-
 
 
 class BlinkCamera:
@@ -194,13 +192,6 @@ class BlinkCamera:
 
         else:
             _LOGGER.warning("Could not find thumbnail for camera %s", self.name)
-        try:
-            # API update only returns the timestamp!
-            int(thumb_addr)
-            thumb_addr = THUMBNAIL_ENDPOINT.format(**config)
-        except TypeError:
-            # This is the old API and has the full url
-            pass
 
         try:
             self.motion_detected = self.sync.motion[self.name]
