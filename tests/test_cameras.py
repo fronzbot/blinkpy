@@ -204,7 +204,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
     def test_different_thumb_api(self, mock_resp):
         """Test that the correct url is created with new api."""
-        thumb_endpoint = "https://rest-test.immedia-semi.com/api/v3/media/accounts/9999/networks/test/1234/thumbnail/thumbnail.jpg?ts=1357924680&ext="
+        thumb_endpoint = "https://rest-test.immedia-semi.com/api/v3/media/accounts/9999/networks/5678/test/1234/thumbnail/thumbnail.jpg?ts=1357924680&ext="
         config = {
             "name": "new",
             "id": 1234,
@@ -250,7 +250,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
     def test_new_thumb_url_returned(self, mock_resp):
         """Test that thumb handled properly if new url returned."""
-        thumb_return = "/api/v3/media/accounts/9999/networks/test/1234/thumbnail/thumbnail.jpg?ts=1357924680&ext="
+        thumb_return = "/api/v3/media/accounts/9999/networks/5678/test/1234/thumbnail/thumbnail.jpg?ts=1357924680&ext="
         config = {
             "name": "new",
             "id": 1234,
