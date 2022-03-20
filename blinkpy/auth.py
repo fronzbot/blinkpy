@@ -103,7 +103,12 @@ class Auth:
         """Attempt login to blink servers."""
         self.validate_login()
         _LOGGER.info("Attempting login with %s", login_url)
-        response = api.request_login(self, login_url, self.data, is_retry=False,)
+        response = api.request_login(
+            self,
+            login_url,
+            self.data,
+            is_retry=False,
+        )
         try:
             if response.status_code == 200:
                 return response.json()
@@ -193,7 +198,8 @@ class Auth:
             return self.validate_response(response, json_resp)
         except (exceptions.ConnectionError, exceptions.Timeout):
             _LOGGER.error(
-                "Connection error. Endpoint %s possibly down or throttled.", url,
+                "Connection error. Endpoint %s possibly down or throttled.",
+                url,
             )
         except BlinkBadResponse:
             code = None

@@ -35,6 +35,7 @@ class BlinkCamera:
         self._cached_image = None
         self._cached_video = None
         self.camera_type = ""
+        self.product_type = None
 
     @property
     def attributes(self):
@@ -56,6 +57,7 @@ class BlinkCamera:
             "network_id": self.sync.network_id,
             "sync_module": self.sync.name,
             "last_record": self.last_record,
+            "type": self.product_type,
         }
         return attributes
 
@@ -112,7 +114,11 @@ class BlinkCamera:
         if media_type.lower() == "video":
             url = self.clip
         return api.http_get(
-            self.sync.blink, url=url, stream=True, json=False, timeout=TIMEOUT_MEDIA,
+            self.sync.blink,
+            url=url,
+            stream=True,
+            json=False,
+            timeout=TIMEOUT_MEDIA,
         )
 
     def snap_picture(self):
@@ -149,6 +155,7 @@ class BlinkCamera:
         self.battery_state = config.get("battery_state", None)
         self.temperature = config.get("temperature", None)
         self.wifi_strength = config.get("wifi_strength", None)
+        self.product_type = config.get("type", None)
 
     def get_sensor_info(self):
         """Retrieve calibrated temperatue from special endpoint."""
