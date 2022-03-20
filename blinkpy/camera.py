@@ -176,7 +176,7 @@ class BlinkCamera:
             try:
                 # API update only returns the timestamp!
                 int(thumb_addr)
-                thumb_string = f"/api/v3/media/accounts/{self.sync.blink.account_id}/networks/{self.product_type}/{self.camera_id}/thumbnail/thumbnail.jpg?ts={thumb_addr}&ext="
+                thumb_string = f"/api/v3/media/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/{self.product_type}/{self.camera_id}/thumbnail/thumbnail.jpg?ts={thumb_addr}&ext="
             except ValueError:
                 # This is the old API and has the full url
                 thumb_string = f"{thumb_addr}.jpg"
