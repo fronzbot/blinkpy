@@ -4,7 +4,7 @@ Changelog
 
 A list of changes between each release
 
-0.19.0 (pre-release)
+0.19.0 (2022-03-20)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Bugfixes:**
@@ -23,7 +23,6 @@ A list of changes between each release
 
 - Make code that determines need for unique class (Mini + Doorbells) generic (`#553 <https://github.com/fronzbot/blinkpy/pull/553>`__)
 - Bump pre-commit to 2.17.0
-- Bump pytest to 7.0.1
 - Bump pytest-timeout to 2.1.0
 - Bump pygments to 2.11.2
 - Bump black to 22.1.0
