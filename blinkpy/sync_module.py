@@ -37,6 +37,10 @@ class BlinkSyncModule:
         self.last_record = {}
         self.camera_list = camera_list
         self.available = False
+        self.type_key_map = {
+            "mini": "owls",
+            "lotus": "doorbell",
+        }
 
     @property
     def attributes(self):
@@ -118,6 +122,10 @@ class BlinkSyncModule:
 
     def update_cameras(self, camera_type=BlinkCamera):
         """Update cameras from server."""
+        type_map = {
+            "mini": BlinkCameraMini,
+            "lotus": BlinkDoorbell,
+        }
         try:
             for camera_config in self.camera_list:
                 if "name" not in camera_config:
@@ -125,15 +133,12 @@ class BlinkSyncModule:
                 blink_camera_type = camera_config.get("type", "")
                 name = camera_config["name"]
                 self.motion[name] = False
-                owl_info = self.get_owl_info(name)
-                lotus_info = self.get_lotus_info(name)
-                if blink_camera_type == "mini":
-                    camera_type = BlinkCameraMini
-                if blink_camera_type == "lotus":
-                    camera_type = BlinkDoorbell
+                unique_info = self.get_unique_info(name)
+                if blink_camera_type in type_map.keys():
+                    camera_type = type_map[blink_camera_type]
                 self.cameras[name] = camera_type(self)
                 camera_info = self.get_camera_info(
-                    camera_config["id"], owl_info=owl_info, lotus_info=lotus_info
+                    camera_config["id"], unique_info=unique_info
                 )
                 self.cameras[name].update(camera_info, force_cache=True, force=True)
 
@@ -142,22 +147,14 @@ class BlinkSyncModule:
             return False
         return True
 
-    def get_owl_info(self, name):
-        """Extract owl information."""
+    def get_unique_info(self, name):
+        """Extract unique information for Minis and Doorbells."""
         try:
-            for owl in self.blink.homescreen["owls"]:
-                if owl["name"] == name:
-                    return owl
-        except (TypeError, KeyError):
-            pass
-        return None
-
-    def get_lotus_info(self, name):
-        """Extract lotus information."""
-        try:
-            for doorbell in self.blink.homescreen["doorbells"]:
-                if doorbell["name"] == name:
-                    return doorbell
+            for camera_type in self.type_key_map:
+                type_key = self.type_key_map[camera_type]
+                for device in self.blink.homescreen[type_key]:
+                    if device["name"] == name:
+                        return device
         except (TypeError, KeyError):
             pass
         return None
@@ -174,12 +171,9 @@ class BlinkSyncModule:
 
     def get_camera_info(self, camera_id, **kwargs):
         """Retrieve camera information."""
-        owl = kwargs.get("owl_info", None)
-        if owl is not None:
-            return owl
-        lotus = kwargs.get("lotus_info", None)
-        if lotus is not None:
-            return lotus
+        unique = kwargs.get("unique_info", None)
+        if unique is not None:
+            return unique
         response = api.request_camera_info(self.blink, self.network_id, camera_id)
         try:
             return response["camera"][0]
@@ -207,8 +201,7 @@ class BlinkSyncModule:
             camera_id = self.cameras[camera_name].camera_id
             camera_info = self.get_camera_info(
                 camera_id,
-                owl_info=self.get_owl_info(camera_name),
-                lotus_info=self.get_lotus_info(camera_name),
+                unique_info=self.get_unique_info(camera_name),
             )
             self.cameras[camera_name].update(camera_info, force_cache=force_cache)
         self.available = True

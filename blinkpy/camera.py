@@ -2,6 +2,8 @@
 
 from shutil import copyfileobj
 import logging
+from json import dumps
+from requests.compat import urljoin
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
 
@@ -31,6 +33,7 @@ class BlinkCamera:
         self._cached_image = None
         self._cached_video = None
         self.camera_type = ""
+        self.product_type = None
 
     @property
     def attributes(self):
@@ -52,6 +55,7 @@ class BlinkCamera:
             "network_id": self.sync.network_id,
             "sync_module": self.sync.name,
             "last_record": self.last_record,
+            "type": self.product_type,
         }
         return attributes
 
@@ -108,7 +112,11 @@ class BlinkCamera:
         if media_type.lower() == "video":
             url = self.clip
         return api.http_get(
-            self.sync.blink, url=url, stream=True, json=False, timeout=TIMEOUT_MEDIA,
+            self.sync.blink,
+            url=url,
+            stream=True,
+            json=False,
+            timeout=TIMEOUT_MEDIA,
         )
 
     def snap_picture(self):
@@ -145,6 +153,7 @@ class BlinkCamera:
         self.battery_state = config.get("battery_state", None)
         self.temperature = config.get("temperature", None)
         self.wifi_strength = config.get("wifi_strength", None)
+        self.product_type = config.get("type", None)
 
     def get_sensor_info(self):
         """Retrieve calibrated temperatue from special endpoint."""
@@ -161,13 +170,28 @@ class BlinkCamera:
         """Update images for camera."""
         new_thumbnail = None
         thumb_addr = None
+        thumb_string = None
         if config.get("thumbnail", False):
             thumb_addr = config["thumbnail"]
+            try:
+                # API update only returns the timestamp!
+                int(thumb_addr)
+                thumb_string = f"/api/v3/media/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/{self.product_type}/{self.camera_id}/thumbnail/thumbnail.jpg?ts={thumb_addr}&ext="
+            except ValueError:
+                # This is the old API and has the full url
+                thumb_string = f"{thumb_addr}.jpg"
+                # Check that new full api url has not been returned:
+                if thumb_addr.endswith("&ext="):
+                    thumb_string = thumb_addr
+            except TypeError:
+                # Thumb address is None
+                pass
+
+            if thumb_string is not None:
+                new_thumbnail = urljoin(self.sync.urls.base_url, thumb_string)
+
         else:
             _LOGGER.warning("Could not find thumbnail for camera %s", self.name)
-
-        if thumb_addr is not None:
-            new_thumbnail = f"{self.sync.urls.base_url}{thumb_addr}.jpg"
 
         try:
             self.motion_detected = self.sync.motion[self.name]
@@ -252,9 +276,9 @@ class BlinkCameraMini(BlinkCamera):
     @arm.setter
     def arm(self, value):
         """Set camera arm status."""
-        _LOGGER.warning(
-            "Individual camera motion detection enable/disable for Blink Mini cameras is unsupported at this time."
-        )
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/config"
+        data = dumps({"enabled": value})
+        return api.http_post(self.sync.blink, url, json=False, data=data)
 
     def snap_picture(self):
         """Snap picture for a blink mini camera."""

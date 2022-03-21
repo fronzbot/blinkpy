@@ -4,6 +4,33 @@ Changelog
 
 A list of changes between each release
 
+0.19.0 (2022-03-20)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes:**
+
+- Debug log in prase download method fix (`@tieum <https://github.com/fronzbot/blinkpy/pull/540>`__)
+- Fix issue with malformed thumbnails (`#550 <https://github.com/fronzbot/blinkpy/pull/550>`__)
+- Fully support new thumbnail API (`@gdoermann <https://github.com/fronzbot/blinkpy/pull/552>`__)
+
+**New Features:**
+
+- Support for arm/disarm of Blink Mini cameras (`@mstratford <https://github.com/fronzbot/blinkpy/pull/546>`__)
+- Add product_type to BlinkCamera class to report type of camera (`#553 <https://github.com/fronzbot/blinkpy/pull/553>`__)
+- Remove python 3.6 support, add python 3.10 support (`#554 <https://github.com/fronzbot/blinkpy/pull/554>`__)
+
+**Other:**
+
+- Make code that determines need for unique class (Mini + Doorbells) generic (`#553 <https://github.com/fronzbot/blinkpy/pull/553>`__)
+- Bump pre-commit to 2.17.0
+- Bump pytest-timeout to 2.1.0
+- Bump pygments to 2.11.2
+- Bump black to 22.1.0
+- Bump coverage to 6.3.2
+- Bump pytest to 7.1.1
+- Bump restructuredtext-lint to 1.4.0
+
+
 0.18.0 (2021-12-11)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

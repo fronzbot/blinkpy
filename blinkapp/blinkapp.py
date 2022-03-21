@@ -1,4 +1,4 @@
-"""Script to run blinkpy as an app."""
+"""Script to run blinkpy as an blinkapp."""
 from os import environ
 from datetime import datetime, timedelta
 from blinkpy.blinkpy import Blink
@@ -29,7 +29,7 @@ def start():
 
 
 def main():
-    """Run the app."""
+    """Run the blink app."""
     blink = start()
     download_videos(blink)
     blink.save(CREDFILE)

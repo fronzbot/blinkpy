@@ -7,14 +7,14 @@ on:
     branches: [ master, dev ]
 
 jobs:
-  build:
+  coverage:
     runs-on: ${{ matrix.platform }}
     strategy:
       max-parallel: 4
       matrix:
         platform:
           - ubuntu-latest
-        python-version: [3.8]
+        python-version: [3.9]
 
     steps:
     - uses: actions/checkout@v2

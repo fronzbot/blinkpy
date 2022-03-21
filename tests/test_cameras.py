@@ -13,7 +13,6 @@ from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
 
-
 CAMERA_CFG = {
     "camera": [
         {
@@ -86,6 +85,14 @@ class TestBlinkCameraSetup(unittest.TestCase):
         )
         self.assertEqual(self.camera.image_from_cache, "test")
         self.assertEqual(self.camera.video_from_cache, "foobar")
+
+        # Check that thumbnail without slash processed properly
+        mock_resp.side_effect = [None]
+        self.camera.update_images({"thumbnail": "thumb_no_slash"})
+        self.assertEqual(
+            self.camera.thumbnail,
+            "https://rest-test.immedia-semi.com/thumb_no_slash.jpg",
+        )
 
     def test_no_thumbnails(self, mock_resp):
         """Tests that thumbnail is 'None' if none found."""
@@ -194,3 +201,75 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.assertEqual(self.camera.get_liveview(), "rtsps://foo.bar")
         self.assertEqual(mini_camera.get_liveview(), "rtsps://foo.bar")
         self.assertEqual(doorbell_camera.get_liveview(), "rtsps://foo.bar")
+
+    def test_different_thumb_api(self, mock_resp):
+        """Test that the correct url is created with new api."""
+        thumb_endpoint = "https://rest-test.immedia-semi.com/api/v3/media/accounts/9999/networks/5678/test/1234/thumbnail/thumbnail.jpg?ts=1357924680&ext="
+        config = {
+            "name": "new",
+            "id": 1234,
+            "network_id": 5678,
+            "serial": "12345678",
+            "enabled": False,
+            "battery_voltage": 90,
+            "battery_state": "ok",
+            "temperature": 68,
+            "wifi_strength": 4,
+            "thumbnail": 1357924680,
+            "type": "test",
+        }
+        mock_resp.side_effect = [
+            {"temp": 71},
+            "test",
+        ]
+        self.camera.sync.blink.account_id = 9999
+        self.camera.update(config)
+        self.assertEqual(self.camera.thumbnail, thumb_endpoint)
+
+    def test_thumb_return_none(self, mock_resp):
+        """Test that a 'None" thumbnail is doesn't break system."""
+        config = {
+            "name": "new",
+            "id": 1234,
+            "network_id": 5678,
+            "serial": "12345678",
+            "enabled": False,
+            "battery_voltage": 90,
+            "battery_state": "ok",
+            "temperature": 68,
+            "wifi_strength": 4,
+            "thumbnail": None,
+            "type": "test",
+        }
+        mock_resp.side_effect = [
+            {"temp": 71},
+            "test",
+        ]
+        self.camera.update(config)
+        self.assertEqual(self.camera.thumbnail, None)
+
+    def test_new_thumb_url_returned(self, mock_resp):
+        """Test that thumb handled properly if new url returned."""
+        thumb_return = "/api/v3/media/accounts/9999/networks/5678/test/1234/thumbnail/thumbnail.jpg?ts=1357924680&ext="
+        config = {
+            "name": "new",
+            "id": 1234,
+            "network_id": 5678,
+            "serial": "12345678",
+            "enabled": False,
+            "battery_voltage": 90,
+            "battery_state": "ok",
+            "temperature": 68,
+            "wifi_strength": 4,
+            "thumbnail": thumb_return,
+            "type": "test",
+        }
+        mock_resp.side_effect = [
+            {"temp": 71},
+            "test",
+        ]
+        self.camera.sync.blink.account_id = 9999
+        self.camera.update(config)
+        self.assertEqual(
+            self.camera.thumbnail, f"https://rest-test.immedia-semi.com{thumb_return}"
+        )

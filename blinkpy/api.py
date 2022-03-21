@@ -11,7 +11,10 @@ MIN_THROTTLE_TIME = 5
 
 
 def request_login(
-    auth, url, login_data, is_retry=False,
+    auth,
+    url,
+    login_data,
+    is_retry=False,
 ):
     """
     Login request.
@@ -51,7 +54,11 @@ def request_verify(auth, blink, verify_key):
     url = f"{blink.urls.base_url}/api/v4/account/{blink.account_id}/client/{blink.client_id}/pin/verify"
     data = dumps({"pin": verify_key})
     return auth.query(
-        url=url, headers=auth.header, data=data, json_resp=False, reqtype="post",
+        url=url,
+        headers=auth.header,
+        data=data,
+        json_resp=False,
+        reqtype="post",
     )
 
 
@@ -309,14 +316,21 @@ def http_get(blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOU
     )
 
 
-def http_post(blink, url, is_retry=False, timeout=TIMEOUT):
+def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TIMEOUT):
     """
     Perform an http post request.
 
     :param url: URL to perfom post request.
     :param is_retry: Is this part of a re-auth attempt?
+    :param data: str body for post request
+    :param json: Return json response? TRUE/False
     """
     _LOGGER.debug("Making POST request to %s", url)
     return blink.auth.query(
-        url=url, headers=blink.auth.header, reqtype="post", is_retry=is_retry
+        url=url,
+        headers=blink.auth.header,
+        reqtype="post",
+        is_retry=is_retry,
+        json_resp=json,
+        data=data,
     )
