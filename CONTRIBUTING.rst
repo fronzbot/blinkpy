@@ -15,7 +15,7 @@ Start Developing
 
 1. Setup Local Repository
 
-.. code:: bash
+   .. code:: bash
        
        $ git clone https://github.com/<YOUR_GIT_USERNAME>/blinkpy.git
        $ cd blinkpy
