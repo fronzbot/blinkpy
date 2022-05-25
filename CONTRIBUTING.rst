@@ -14,14 +14,15 @@ Start Developing
 -----------------
 
 1. Setup Local Repository
-   .. code:: bash
+
+.. code:: bash
        
        $ git clone https://github.com/<YOUR_GIT_USERNAME>/blinkpy.git
        $ cd blinkpy
        $ git remote add upstream https://github.com/fronzbot/blinkpy.git
 
 2. Create virtualenv and install dependencies
-   
+
    .. code:: bash
 
        $ python -m venv venv
