@@ -150,7 +150,7 @@ class BlinkCamera:
         self.serial = config.get("serial", None)
         self.motion_enabled = config.get("enabled", "unknown")
         self.battery_voltage = config.get("battery_voltage", None)
-        self.battery_state = config.get("battery_state", None)
+        self.battery_state = config.get("battery_state", None) or config.get("battery", None)
         self.temperature = config.get("temperature", None)
         self.wifi_strength = config.get("wifi_strength", None)
         self.product_type = config.get("type", None)
