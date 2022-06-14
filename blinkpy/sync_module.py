@@ -124,7 +124,7 @@ class BlinkSyncModule:
         """Update cameras from server."""
         type_map = {
             "mini": BlinkCameraMini,
-            "doorbell": BlinkDoorbell,
+            "lotus": BlinkDoorbell,
         }
         try:
             for camera_config in self.camera_list:
