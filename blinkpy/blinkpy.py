@@ -193,7 +193,7 @@ class Blink:
                         {
                             network_id: {
                                 "name": name,
-                                "id": network_id,
+                                "id": lotus["id"],
                                 "type": "doorbell",
                             }
                         }
