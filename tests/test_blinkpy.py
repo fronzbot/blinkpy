@@ -327,35 +327,6 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(self.blink.sync["foo"].name, "foo")
         self.assertEqual(self.blink.sync["bar"].name, "bar")
 
-    # def test_blink_doorbell_cameras_returned(self):
-    #     """Test that blink doorbell cameras are found if attached to sync module."""
-    #     self.blink.network_ids = ["1234"]
-    #     self.blink.homescreen = {
-    #         "doorbells": [
-    #             {
-    #                 "id": 1,
-    #                 "name": "foo",
-    #                 "network_id": 1234,
-    #                 "onboarded": True,
-    #                 "enabled": True,
-    #                 "status": "online",
-    #                 "thumbnail": "/foo/bar",
-    #                 "serial": "abc123",
-    #             }
-    #         ]
-    #     }
-    #     result = self.blink.setup_lotus()
-    #     self.assertEqual(self.blink.network_ids, ["1234"])
-    #     self.assertEqual(
-    #         result, [{"1234": {"name": "foo", "id": "1234", "type": "doorbell"}}]
-    #     )
-
-    #     self.blink.network_ids = []
-    #     self.blink.get_homescreen()
-    #     result = self.blink.setup_lotus()
-    #     self.assertEqual(self.blink.network_ids, [])
-    #     self.assertEqual(result, [])
-
     @mock.patch("blinkpy.api.request_camera_usage")
     def test_blink_doorbell_attached_to_sync(self, mock_usage):
         """Test that blink doorbell cameras are properly attached to sync module."""
@@ -379,6 +350,151 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(
             result, {"1234": [{"name": "foo", "id": "1234", "type": "doorbell"}]}
         )
+
+    @mock.patch("blinkpy.api.request_camera_usage")
+    def test_blink_multi_doorbell(self, mock_usage):
+        """Test that multiple doorbells are properly attached to sync module."""
+        self.blink.network_ids = ["1234"]
+        self.blink.homescreen = {
+            "doorbells": [
+                {
+                    "id": 1,
+                    "name": "foo",
+                    "network_id": 1234,
+                    "onboarded": True,
+                    "enabled": True,
+                    "status": "online",
+                    "thumbnail": "/foo/bar",
+                    "serial": "abc123",
+                },
+                {
+                    "id": 2,
+                    "name": "bar",
+                    "network_id": 1234,
+                    "onboarded": True,
+                    "enabled": True,
+                    "status": "online",
+                    "thumbnail": "/bar/foo",
+                    "serial": "zxc456",
+                },
+            ]
+        }
+        expected = {
+            "1234": [
+                {"name": "foo", "id": "1234", "type": "doorbell"},
+                {"name": "bar", "id": "1234", "type": "doorbell"},
+            ]
+        }
+        mock_usage.return_value = {"networks": [{"cameras": [], "network_id": 1234}]}
+        result = self.blink.setup_camera_list()
+        self.assertEqual(result, expected)
+
+    @mock.patch("blinkpy.api.request_camera_usage")
+    def test_blink_multi_mini(self, mock_usage):
+        """Test that multiple minis are properly attached to sync module."""
+        self.blink.network_ids = ["1234"]
+        self.blink.homescreen = {
+            "owls": [
+                {
+                    "id": 1,
+                    "name": "foo",
+                    "network_id": 1234,
+                    "onboarded": True,
+                    "enabled": True,
+                    "status": "online",
+                    "thumbnail": "/foo/bar",
+                    "serial": "abc123",
+                },
+                {
+                    "id": 2,
+                    "name": "bar",
+                    "network_id": 1234,
+                    "onboarded": True,
+                    "enabled": True,
+                    "status": "online",
+                    "thumbnail": "/bar/foo",
+                    "serial": "zxc456",
+                },
+            ]
+        }
+        expected = {
+            "1234": [
+                {"name": "foo", "id": "1234", "type": "mini"},
+                {"name": "bar", "id": "1234", "type": "mini"},
+            ]
+        }
+        mock_usage.return_value = {"networks": [{"cameras": [], "network_id": 1234}]}
+        result = self.blink.setup_camera_list()
+        self.assertEqual(result, expected)
+
+    @mock.patch("blinkpy.api.request_camera_usage")
+    def test_blink_camera_mix(self, mock_usage):
+        """Test that a mix of cameras are properly attached to sync module."""
+        self.blink.network_ids = ["1234"]
+        self.blink.homescreen = {
+            "doorbells": [
+                {
+                    "id": 1,
+                    "name": "foo",
+                    "network_id": 1234,
+                    "onboarded": True,
+                    "enabled": True,
+                    "status": "online",
+                    "thumbnail": "/foo/bar",
+                    "serial": "abc123",
+                },
+                {
+                    "id": 2,
+                    "name": "bar",
+                    "network_id": 1234,
+                    "onboarded": True,
+                    "enabled": True,
+                    "status": "online",
+                    "thumbnail": "/bar/foo",
+                    "serial": "zxc456",
+                },
+            ],
+            "owls": [
+                {
+                    "id": 3,
+                    "name": "dead",
+                    "network_id": 1234,
+                    "onboarded": True,
+                    "enabled": True,
+                    "status": "online",
+                    "thumbnail": "/dead/beef",
+                    "serial": "qwerty",
+                },
+                {
+                    "id": 4,
+                    "name": "beef",
+                    "network_id": 1234,
+                    "onboarded": True,
+                    "enabled": True,
+                    "status": "online",
+                    "thumbnail": "/beef/dead",
+                    "serial": "dvorak",
+                },
+            ],
+        }
+        expected = {
+            "1234": [
+                {"name": "foo", "id": "1234", "type": "doorbell"},
+                {"name": "bar", "id": "1234", "type": "doorbell"},
+                {"name": "dead", "id": "1234", "type": "mini"},
+                {"name": "beef", "id": "1234", "type": "mini"},
+                {"name": "normal", "id": "1234"},
+            ]
+        }
+        mock_usage.return_value = {
+            "networks": [
+                {"cameras": [{"name": "normal", "id": "1234"}], "network_id": 1234}
+            ]
+        }
+        result = self.blink.setup_camera_list()
+        self.assertTrue("1234" in result)
+        for element in result["1234"]:
+            self.assertTrue(element in expected["1234"])
 
 
 class MockSync:
