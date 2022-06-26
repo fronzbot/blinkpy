@@ -221,7 +221,7 @@ class Blink:
                     all_cameras[camera_network] = []
                 for camera in network["cameras"]:
                     all_cameras[camera_network].append(
-                        {"name": camera["name"], "id": camera["id"]}
+                        {"name": camera["name"], "id": camera["id"], "type": "default"}
                     )
             mini_cameras = self.setup_owls()
             lotus_cameras = self.setup_lotus()

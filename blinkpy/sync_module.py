@@ -39,7 +39,7 @@ class BlinkSyncModule:
         self.available = False
         self.type_key_map = {
             "mini": "owls",
-            "lotus": "doorbell",
+            "lotus": "doorbells",
         }
 
     @property
@@ -125,6 +125,7 @@ class BlinkSyncModule:
         type_map = {
             "mini": BlinkCameraMini,
             "lotus": BlinkDoorbell,
+            "default": BlinkCamera,
         }
         try:
             for camera_config in self.camera_list:

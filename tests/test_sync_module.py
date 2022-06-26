@@ -4,8 +4,8 @@ from unittest import mock
 
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
-from blinkpy.sync_module import BlinkSyncModule, BlinkOwl, BlinkLotus
-from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
+from blinkpy.sync_module import BlinkSyncModule
+from blinkpy.camera import BlinkCamera
 
 
 @mock.patch("blinkpy.auth.Auth.query")
@@ -110,105 +110,6 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.blink.last_refresh = None
         self.assertFalse(sync_module.check_new_videos())
 
-    def test_check_new_videos(self, mock_resp):
-        """Test recent video response."""
-        mock_resp.return_value = {
-            "media": [
-                {
-                    "device_name": "foo",
-                    "media": "/foo/bar.mp4",
-                    "created_at": "1990-01-01T00:00:00+00:00",
-                }
-            ]
-        }
-
-        sync_module = self.blink.sync["test"]
-        sync_module.cameras = {"foo": None}
-        sync_module.blink.last_refresh = 0
-        self.assertEqual(sync_module.motion, {})
-        self.assertTrue(sync_module.check_new_videos())
-        self.assertEqual(
-            sync_module.last_record["foo"],
-            {"clip": "/foo/bar.mp4", "time": "1990-01-01T00:00:00+00:00"},
-        )
-        self.assertEqual(sync_module.motion, {"foo": True})
-        mock_resp.return_value = {"media": []}
-        self.assertTrue(sync_module.check_new_videos())
-        self.assertEqual(sync_module.motion, {"foo": False})
-        self.assertEqual(
-            sync_module.last_record["foo"],
-            {"clip": "/foo/bar.mp4", "time": "1990-01-01T00:00:00+00:00"},
-        )
-
-    def test_check_new_videos_old_date(self, mock_resp):
-        """Test videos return response with old date."""
-        mock_resp.return_value = {
-            "media": [
-                {
-                    "device_name": "foo",
-                    "media": "/foo/bar.mp4",
-                    "created_at": "1970-01-01T00:00:00+00:00",
-                }
-            ]
-        }
-
-        sync_module = self.blink.sync["test"]
-        sync_module.cameras = {"foo": None}
-        sync_module.blink.last_refresh = 1000
-        self.assertTrue(sync_module.check_new_videos())
-        self.assertEqual(sync_module.motion, {"foo": False})
-
-    def test_check_no_motion_if_not_armed(self, mock_resp):
-        """Test that motion detection is not set if module unarmed."""
-        mock_resp.return_value = {
-            "media": [
-                {
-                    "device_name": "foo",
-                    "media": "/foo/bar.mp4",
-                    "created_at": "1990-01-01T00:00:00+00:00",
-                }
-            ]
-        }
-        sync_module = self.blink.sync["test"]
-        sync_module.cameras = {"foo": None}
-        sync_module.blink.last_refresh = 1000
-        self.assertTrue(sync_module.check_new_videos())
-        self.assertEqual(sync_module.motion, {"foo": True})
-        sync_module.network_info = {"network": {"armed": False}}
-        self.assertTrue(sync_module.check_new_videos())
-        self.assertEqual(sync_module.motion, {"foo": False})
-
-    def test_check_multiple_videos(self, mock_resp):
-        """Test motion found even with multiple videos."""
-        mock_resp.return_value = {
-            "media": [
-                {
-                    "device_name": "foo",
-                    "media": "/foo/bar.mp4",
-                    "created_at": "1970-01-01T00:00:00+00:00",
-                },
-                {
-                    "device_name": "foo",
-                    "media": "/bar/foo.mp4",
-                    "created_at": "1990-01-01T00:00:00+00:00",
-                },
-                {
-                    "device_name": "foo",
-                    "media": "/foobar.mp4",
-                    "created_at": "1970-01-01T00:00:01+00:00",
-                },
-            ]
-        }
-        sync_module = self.blink.sync["test"]
-        sync_module.cameras = {"foo": None}
-        sync_module.blink.last_refresh = 1000
-        self.assertTrue(sync_module.check_new_videos())
-        self.assertEqual(sync_module.motion, {"foo": True})
-        expected_result = {
-            "foo": {"clip": "/bar/foo.mp4", "time": "1990-01-01T00:00:00+00:00"}
-        }
-        self.assertEqual(sync_module.last_record, expected_result)
-
     def test_check_new_videos_failed(self, mock_resp):
         """Test method when response is unexpected."""
         mock_resp.side_effect = [None, "just a string", {}]
@@ -226,16 +127,6 @@ class TestBlinkSyncModule(unittest.TestCase):
         sync_module.motion["foo"] = True
         self.assertFalse(sync_module.check_new_videos())
         self.assertFalse(sync_module.motion["foo"])
-
-    def test_sync_start(self, mock_resp):
-        """Test sync start function."""
-        mock_resp.side_effect = self.mock_start
-        self.blink.sync["test"].start()
-        self.assertEqual(self.blink.sync["test"].name, "test")
-        self.assertEqual(self.blink.sync["test"].sync_id, 1234)
-        self.assertEqual(self.blink.sync["test"].network_id, 5678)
-        self.assertEqual(self.blink.sync["test"].serial, "12345678")
-        self.assertEqual(self.blink.sync["test"].status, "foobar")
 
     def test_unexpected_summary(self, mock_resp):
         """Test unexpected summary response."""
@@ -276,36 +167,14 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertEqual(self.blink.sync["test"].attributes["name"], "test")
         self.assertEqual(self.blink.sync["test"].attributes["network_id"], "1234")
 
-    def test_owl_start(self, mock_resp):
-        """Test owl camera instantiation."""
-        response = {
-            "name": "foo",
-            "id": 2,
-            "serial": "foobar123",
-            "enabled": True,
-            "network_id": 1,
-            "thumbnail": "/foo/bar",
-        }
-        self.blink.last_refresh = None
-        self.blink.homescreen = {"owls": [response]}
-        owl = BlinkOwl(self.blink, "foo", 1234, response)
-        self.assertTrue(owl.start())
-        self.assertTrue("foo" in owl.cameras)
-        self.assertEqual(owl.cameras["foo"].__class__, BlinkCameraMini)
+    def test_name_not_in_config(self, mock_resp):
+        """Check that function exits when name not in camera_config."""
+        test_sync = self.blink.sync["test"]
+        test_sync.camera_list = [{"foo": "bar"}]
+        self.assertTrue(test_sync.update_cameras())
 
-    def test_lotus_start(self, mock_resp):
-        """Test doorbell instantiation."""
-        response = {
-            "name": "doo",
-            "id": 3,
-            "serial": "doobar123",
-            "enabled": True,
-            "network_id": 1,
-            "thumbnail": "/foo/bar",
-        }
-        self.blink.last_refresh = None
-        self.blink.homescreen = {"doorbells": [response]}
-        lotus = BlinkLotus(self.blink, "doo", 1234, response)
-        self.assertTrue(lotus.start())
-        self.assertTrue("doo" in lotus.cameras)
-        self.assertEqual(lotus.cameras["doo"].__class__, BlinkDoorbell)
+    def test_camera_config_key_error(self, mock_resp):
+        """Check that update returns False on KeyError."""
+        test_sync = self.blink.sync["test"]
+        test_sync.camera_list = [{"name": "foobar"}]
+        self.assertFalse(test_sync.update_cameras())
