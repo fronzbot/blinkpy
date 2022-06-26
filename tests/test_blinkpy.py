@@ -103,8 +103,11 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(
             result,
             {
-                "1234": [{"name": "foo", "id": 5678}, {"name": "bar", "id": 5679}],
-                "4321": [{"name": "test", "id": 0000}],
+                "1234": [
+                    {"name": "foo", "id": 5678, "type": "default"},
+                    {"name": "bar", "id": 5679, "type": "default"},
+                ],
+                "4321": [{"name": "test", "id": 0000, "type": "default"}],
             },
         )
 
@@ -483,7 +486,7 @@ class TestBlinkSetup(unittest.TestCase):
                 {"name": "bar", "id": "1234", "type": "doorbell"},
                 {"name": "dead", "id": "1234", "type": "mini"},
                 {"name": "beef", "id": "1234", "type": "mini"},
-                {"name": "normal", "id": "1234"},
+                {"name": "normal", "id": "1234", "type": "default"},
             ]
         }
         mock_usage.return_value = {

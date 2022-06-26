@@ -125,6 +125,7 @@ class BlinkSyncModule:
         type_map = {
             "mini": BlinkCameraMini,
             "lotus": BlinkDoorbell,
+            "default": BlinkCamera,
         }
         try:
             for camera_config in self.camera_list:

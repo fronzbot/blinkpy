@@ -2,6 +2,8 @@
 import unittest
 from unittest import mock
 
+from random import shuffle
+
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule, BlinkOwl, BlinkLotus
@@ -309,3 +311,65 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertTrue(lotus.start())
         self.assertTrue("doo" in lotus.cameras)
         self.assertEqual(lotus.cameras["doo"].__class__, BlinkDoorbell)
+
+    def test_sync_with_mixed_cameras(self, mock_resp):
+        """Test sync module with mixed cameras attached."""
+        resp_sync = {
+            "syncmodule": {
+                "network_id": 1234,
+                "id": 1,
+                "serial": 456,
+                "status": "onboarded",
+            }
+        }
+        resp_network_info = {"network": {"sync_module_error": False}}
+        resp_videos = {"media": []}
+        resp_empty = {}
+
+        self.blink.sync["test"].camera_list = [
+            {"name": "foo", "id": 10, "type": "default"},
+            {"name": "bar", "id": 11, "type": "mini"},
+            {"name": "fake", "id": 12, "type": "lotus"},
+        ]
+
+        self.blink.homescreen = {
+            "owls": [{"name": "bar", "id": 3}],
+            "doorbells": [{"name": "fake", "id": 12}],
+        }
+
+        side_effect = [
+            resp_sync,
+            resp_network_info,
+            resp_videos,
+            resp_empty,
+            resp_empty,
+            resp_empty,
+            resp_empty,
+            resp_empty,
+            resp_empty,
+        ]
+
+        mock_resp.side_effect = side_effect
+
+        test_sync = self.blink.sync["test"]
+
+        self.assertTrue(test_sync.start())
+        self.assertEqual(test_sync.cameras["foo"].__class__, BlinkCamera)
+        self.assertEqual(test_sync.cameras["bar"].__class__, BlinkCameraMini)
+        self.assertEqual(test_sync.cameras["fake"].__class__, BlinkDoorbell)
+
+        # Now shuffle the cameras and see if it still works
+        for i in range(0, 10):
+            shuffle(test_sync.camera_list)
+            mock_resp.side_effect = side_effect
+            self.assertTrue(test_sync.start())
+            debug_msg = f"Iteration: {i}, {test_sync.camera_list}"
+            self.assertEqual(
+                test_sync.cameras["foo"].__class__, BlinkCamera, msg=debug_msg
+            )
+            self.assertEqual(
+                test_sync.cameras["bar"].__class__, BlinkCameraMini, msg=debug_msg
+            )
+            self.assertEqual(
+                test_sync.cameras["fake"].__class__, BlinkDoorbell, msg=debug_msg
+            )
