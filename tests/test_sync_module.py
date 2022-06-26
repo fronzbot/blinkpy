@@ -373,3 +373,15 @@ class TestBlinkSyncModule(unittest.TestCase):
             self.assertEqual(
                 test_sync.cameras["fake"].__class__, BlinkDoorbell, msg=debug_msg
             )
+
+    def test_name_not_in_config(self, mock_resp):
+        """Check that function exits when name not in camera_config."""
+        test_sync = self.blink.sync["test"]
+        test_sync.camera_list = [{"foo": "bar"}]
+        self.assertTrue(test_sync.update_cameras())
+
+    def test_camera_config_key_error(self, mock_resp):
+        """Check that update returns False on KeyError."""
+        test_sync = self.blink.sync["test"]
+        test_sync.camera_list = [{"name": "foobar"}]
+        self.assertFalse(test_sync.update_cameras())
