@@ -4,6 +4,23 @@ Changelog
 
 A list of changes between each release
 
+0.19.1 (2022-06-26)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes**
+
+- Fix getting doorbell details (`@uvjim <https://github.com/fronzbot/blinkpy/pull/584>`__)
+- Potential fix for mixed camera usage (`#590 <https://github.com/fronzbot/blinkpy/pull/590>`__)
+
+**Other Changes**
+
+- doc update (`@dwaltsch <https://github.com/fronzbot/blinkpy/pull/579>`__)
+- Test re-factoring (`#591 <https://github.com/fronzbot/blinkpy/pull/591>`__)
+- Bump pylint to 2.14.3
+- Bump coverage to 6.41
+- Bump black to 22.3.0
+
+
 0.19.0 (2022-03-20)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
