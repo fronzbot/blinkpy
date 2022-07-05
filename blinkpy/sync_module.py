@@ -124,7 +124,7 @@ class BlinkSyncModule:
         """Update cameras from server."""
         type_map = {
             "mini": BlinkCameraMini,
-            "lotus": BlinkDoorbell,
+            "doorbell": BlinkDoorbell,
             "default": BlinkCamera,
         }
         try:
