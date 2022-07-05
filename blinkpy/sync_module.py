@@ -39,7 +39,7 @@ class BlinkSyncModule:
         self.available = False
         self.type_key_map = {
             "mini": "owls",
-            "lotus": "doorbells",
+            "doorbell": "doorbells",
         }
 
     @property
