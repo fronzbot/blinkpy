@@ -170,7 +170,7 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.blink.sync["test"].camera_list = [
             {"name": "foo", "id": 10, "type": "default"},
             {"name": "bar", "id": 11, "type": "mini"},
-            {"name": "fake", "id": 12, "type": "lotus"},
+            {"name": "fake", "id": 12, "type": "doorbell"},
         ]
 
         self.blink.homescreen = {
