@@ -148,7 +148,7 @@ Methods exist to arm/disarm the sync module, as well as enable/disable motion de
     blink.sync["SYNC MODULE NAME"].arm = True
 
     # Disarm a sync module
-    blink.sync["SYNC MODULE NAME"].disarm = False
+    blink.sync["SYNC MODULE NAME"].arm = False
 
     # Print arm status of a sync module - a system refresh should be performed first
     blink.refresh()
