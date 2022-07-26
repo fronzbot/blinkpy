@@ -39,7 +39,7 @@ class BlinkSyncModule:
         self.available = False
         self.type_key_map = {
             "mini": "owls",
-            "lotus": "doorbells",
+            "doorbell": "doorbells",
         }
 
     @property
@@ -124,7 +124,7 @@ class BlinkSyncModule:
         """Update cameras from server."""
         type_map = {
             "mini": BlinkCameraMini,
-            "lotus": BlinkDoorbell,
+            "doorbell": BlinkDoorbell,
             "default": BlinkCamera,
         }
         try:
