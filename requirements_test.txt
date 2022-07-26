@@ -1,13 +1,13 @@
 black==22.6.0
-coverage==6.4.1
+coverage==6.4.2
 flake8==3.9.1
 flake8-docstrings==1.6.0
-pre-commit==2.17.0
-pylint==2.14.3
+pre-commit==2.20.0
+pylint==2.14.5
 pydocstyle==6.0.0
 pytest==7.1.1
 pytest-cov==3.0.0
-pytest-sugar==0.9.4
+pytest-sugar==0.9.5
 pytest-timeout==2.1.0
 restructuredtext-lint==1.4.0
 pygments==2.11.2
