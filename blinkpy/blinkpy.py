@@ -338,9 +338,10 @@ class Blink:
                 _LOGGER.info("No videos found on page %s. Exiting.", page)
                 break
 
-            self._parse_downloaded_items(result, camera, path, delay, debug)
+            self._parse_downloaded_items(
+                result, camera, path, delay, debug, formatted_date)
 
-    def _parse_downloaded_items(self, result, camera, path, delay, debug):
+    def _parse_downloaded_items(self, result, camera, path, delay, debug, formatted_date):
         """Parse downloaded videos."""
         for item in result:
             try:
@@ -357,9 +358,15 @@ class Blink:
                 continue
 
             if is_deleted:
-                _LOGGER.debug("%s: %s is marked as deleted.", camera_name, address)
+                _LOGGER.debug("%s: %s is marked as deleted.",
+                              camera_name, address)
                 continue
 
+            if created_at < formatted_date:
+                _LOGGER.debug("%s: %s is marked to old.",
+                              camera_name, address)
+                continue
+                
             clip_address = f"{self.urls.base_url}{address}"
             filename = f"{camera_name}-{created_at}"
             filename = f"{slugify(filename)}.mp4"
