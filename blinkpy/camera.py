@@ -334,7 +334,5 @@ class BlinkDoorbell(BlinkCamera):
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/doorbells/{self.camera_id}/liveview"
         response = api.http_post(self.sync.blink, url)
         server = response["server"]
-        server_split = server.split(":")
-        server_split[0] = "rtsps:"
-        link = "".join(server_split)
+        link = server.replace("immis://", "rtsps://")
         return link
