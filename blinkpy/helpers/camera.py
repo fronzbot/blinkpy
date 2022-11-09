@@ -1,9 +1,11 @@
+"""Provide functions for enabling infrared illumiation."""
+
 from json import dumps
 from blinkpy import api
 
 
 def get_night_vision_info(camera):
-    """Get `night_vision_control` info"""
+    """Get `night_vision_control` info."""
     if camera.product_type == "owl":
         url = f"{camera.sync.urls.base_url}/api/v1/accounts/{camera.sync.blink.account_id}/networks/{camera.network_id}/owls/{camera.camera_id}/config"
         res = api.http_get(camera.sync.blink, url)
@@ -18,9 +20,9 @@ def get_night_vision_info(camera):
 
 def set_night_vision(camera, to="auto"):
     """
-    Set night vision (IR) parameters for a Blink camera
+    Set night vision (IR) parameters for a Blink camera.
 
-    :to: new state for the IR illuminator. 
+    :to: new state for the IR illuminator.
          Owl cameras accept "on", "off", and "auto" states,
          whereas Catalina cameras accept 0, 1, or 2 as valid states.
     """
