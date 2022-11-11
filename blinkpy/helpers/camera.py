@@ -26,7 +26,7 @@ def set_night_vision(camera, to="auto"):
          Possible states are 'on', 'off', and 'auto'
     """
     if camera.product_type == "catalina":
-        to = {"off": 0, "on": 1, "auto": 2}.get(to, None)
+        to = {"on": 0, "off": 1, "auto": 2}.get(to, None)
     if camera.product_type == "owl" and to in ["auto", "on", "off"]:
         url = f"{camera.sync.urls.base_url}/api/v1/accounts/{camera.sync.blink.account_id}/networks/{camera.network_id}/owls/{camera.camera_id}/config"
     elif camera.product_type == "catalina" and to in [0, 1, 2]:
