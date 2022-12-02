@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # bash run.sh [username] [password]
 
 if [ "$#" -ne 2 ]; then
@@ -9,23 +9,33 @@ if [ "$#" -ne 2 ]; then
     exit 1
 fi
 
-set -ex
+#set -ex
 USER=fronzbot
-IMAGE=blinkpy
+CONTAINER=blinkpy
 CONFIG=$HOME/blinkpy_media
 USERNAME=$1
 PASSWORD=$2
+CREDSDIR=$HOME/.blinkapp
 
 mkdir -p $CONFIG
+mkdir -p $CREDSDIR
 
-result=$(docker images -q $IMAGE)
+result=$(docker images -q $CONTAINER)
 if [ $result ]; then
-    docker rm $IMAGE
+  echo "Removing ${result}"
+  docker rm -f $CONTAINER
+else
+  echo "${CONTAINER} not found"
 fi
-docker run -it --name ${IMAGE} \
+
+docker rm -f $CONTAINER
+docker run -it --name ${CONTAINER} \
     -v $CONFIG:/media \
+    -v $CREDSDIR:/blink_creds \
     -e USERNAME=${USERNAME} \
     -e PASSWORD=${PASSWORD} \
-    $USER/$IMAGE \
+    -e CREDFILE=${CREDFILE} \
+    -e TIMEDELTA=${TIMEDELTA} \
+    $USER/$CONTAINER \
     /bin/bash
 

@@ -1,6 +1,9 @@
 """Implements known blink API calls."""
 
 import logging
+import string
+import time
+import random
 from json import dumps
 from blinkpy.helpers.util import get_time, Throttle
 from blinkpy.helpers.constants import DEFAULT_URL, TIMEOUT, DEFAULT_USER_AGENT
@@ -21,7 +24,8 @@ def request_login(
 
     :param auth: Auth instance.
     :param url: Login url.
-    :login_data: Dictionary containing blink login data.
+    :param login_data: Dictionary containing blink login data.
+    :param is_retry:
     """
     headers = {
         "Host": DEFAULT_URL,
@@ -296,9 +300,105 @@ def request_motion_detection_disable(blink, network, camera_id):
     return http_post(blink, url)
 
 
-def http_get(blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOUT):
+def request_local_storage_manifest(blink, network, sync_id, max_retries=10):
+    """Request creation of an updated manifest of video clips stored in sync module local storage.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param sync_id: ID of sync module.
+    :param max_retries: Number of polling retries.
     """
-    Perform an http get request.
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
+        + "/local_storage/manifest/request"
+    )
+
+    # The sync module may be busy processing another request (like saving a new clip).
+    # Poll the endpoint until it is ready, backing off each retry.
+    response = None
+    time.sleep(1)
+    retry = 0
+    while True:
+        if retry > max_retries:
+            break
+        response = http_post(blink, url)
+        if "id" in response:
+            break
+        seconds = backoff_seconds(retry=retry, default_time=3)
+        _LOGGER.debug("Retrying in %d seconds: %s", seconds, url)
+        time.sleep(seconds)
+        retry += 1
+    return response
+
+
+def get_local_storage_manifest(
+    blink, network, sync_id, manifest_request_id, max_retries=8
+):
+    """Request manifest of video clips stored in sync module local storage.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param sync_id: ID of sync module.
+    :param manifest_request_id: Request ID of local storage manifest (requested creation of new manifest).
+    :param max_retries: Number of polling retries.
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
+        + f"/local_storage/manifest/request/{manifest_request_id}"
+    )
+    # It takes some time for the sync module to build the manifest (if the sync module is busy).
+    # Poll the endpoint until it is ready, backing off each retry.
+    response = None
+    time.sleep(1)
+    retry = 0
+    while True:
+        if retry > max_retries:
+            break
+        response = http_get(blink, url)
+        if "clips" in response:
+            break
+        seconds = backoff_seconds(retry=retry)
+        _LOGGER.debug("Retrying in %d seconds: %s", seconds, url)
+        time.sleep(seconds)
+        retry += 1
+    return response
+
+
+def request_local_storage_clip(
+    blink, network, sync_id, manifest_id, clip_id, max_retries=5
+):
+    """Prepare video clip stored in the sync module to be downloaded.
+
+    :param blink:
+    :param network:
+    :param sync_id:
+    :param manifest_id:
+    :param clip_id:
+    :param max_retries:
+    :return:
+    """
+    url = blink.urls.base_url + string.Template(
+        local_storage_clip_url_template()
+    ).substitute(
+        account_id=blink.account_id,
+        network_id=network,
+        sync_id=sync_id,
+        manifest_id=manifest_id,
+        clip_id=clip_id,
+    )
+    return http_post(blink, url)
+
+
+def local_storage_clip_url_template():
+    """Return URL template for local storage clip download location."""
+    return (
+        "/api/v1/accounts/$account_id/networks/$network_id/sync_modules/$sync_id"
+        "/local_storage/manifest/$manifest_id/clip/request/$clip_id"
+    )
+
+
+def http_get(blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOUT):
+    """Perform an http get request.
 
     :param url: URL to perform get request.
     :param stream: Stream response? True/FALSE
@@ -317,8 +417,7 @@ def http_get(blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOU
 
 
 def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TIMEOUT):
-    """
-    Perform an http post request.
+    """Perform an http post request.
 
     :param url: URL to perfom post request.
     :param is_retry: Is this part of a re-auth attempt?
@@ -334,3 +433,8 @@ def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TIMEOUT)
         json_resp=json,
         data=data,
     )
+
+
+def backoff_seconds(retry=0, default_time=1):
+    """Calculate number of seconds to back off for retry."""
+    return default_time * 2**retry + random.uniform(0, 1)

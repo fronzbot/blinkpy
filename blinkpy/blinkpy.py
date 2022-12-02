@@ -14,8 +14,10 @@ blinkpy is in no way affiliated with Blink, nor Immedia Inc.
 """
 
 import os.path
+import re
 import time
 import logging
+import datetime
 from shutil import copyfileobj
 
 from requests.structures import CaseInsensitiveDict
@@ -88,12 +90,16 @@ class Blink:
                 self.setup_post_verify()
 
             self.get_homescreen()
+
             for sync_name, sync_module in self.sync.items():
-                _LOGGER.debug("Attempting refresh of sync %s", sync_name)
+                _LOGGER.debug("Attempting refresh of blink.sync['%s']", sync_name)
                 sync_module.refresh(force_cache=(force or force_cache))
+
             if not force_cache:
                 # Prevents rapid clearing of motion detect property
                 self.last_refresh = int(time.time())
+                _LOGGER.debug(f"last_refresh={self.last_refresh}")
+
             return True
         return False
 
@@ -114,6 +120,15 @@ class Blink:
             if self.auth.no_prompt:
                 return True
             self.setup_prompt_2fa()
+
+        if not self.last_refresh:
+            # Initialize last_refresh to be just before the refresh delay period.
+            self.last_refresh = int(time.time() - self.refresh_rate * 1.05)
+            _LOGGER.debug(
+                f"Initialized last_refresh to {self.last_refresh} == "
+                + f"{datetime.datetime.fromtimestamp(self.last_refresh)}"
+            )
+
         return self.setup_post_verify()
 
     def setup_prompt_2fa(self):
@@ -220,8 +235,10 @@ class Blink:
                 if camera_network not in all_cameras:
                     all_cameras[camera_network] = []
                 for camera in network["cameras"]:
+                    # Keep only alphanumeric characters for name.
+                    camera_name = re.sub(r"\W+", "", camera["name"])
                     all_cameras[camera_network].append(
-                        {"name": camera["name"], "id": camera["id"], "type": "default"}
+                        {"name": camera_name, "id": camera["id"], "type": "default"}
                     )
             mini_cameras = self.setup_owls()
             lotus_cameras = self.setup_lotus()

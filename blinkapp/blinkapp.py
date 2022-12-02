@@ -1,13 +1,19 @@
 """Script to run blinkpy as an blinkapp."""
+import logging
 from os import environ
 from datetime import datetime, timedelta
 from blinkpy.blinkpy import Blink
 from blinkpy.auth import Auth
 from blinkpy.helpers.util import json_load
 
+logging.basicConfig(
+    format="%(asctime)s,%(msecs)03d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s",
+    datefmt="%Y-%m-%d:%H:%M:%S",
+    level=logging.DEBUG,
+)
 
 CREDFILE = environ.get("CREDFILE")
-TIMEDELTA = timedelta(environ.get("TIMEDELTA", 1))
+TIMEDELTA = timedelta(int(environ.get("TIMEDELTA", "1")))
 
 
 def get_date():
@@ -17,7 +23,9 @@ def get_date():
 
 def download_videos(blink, save_dir="/media"):
     """Make request to download videos."""
-    blink.download_videos(save_dir, since=get_date())
+    since = get_date()
+    print("Downloading all videos since " + since)
+    blink.download_videos(save_dir, since=since)
 
 
 def start():
@@ -30,6 +38,7 @@ def start():
 
 def main():
     """Run the blink app."""
+    print("Starting blink app")
     blink = start()
     download_videos(blink)
     blink.save(CREDFILE)

@@ -1,4 +1,6 @@
 """Tests camera and system functions."""
+
+import json
 import unittest
 from unittest import mock
 
@@ -62,16 +64,16 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertEqual(sync_module.motion, {})
         self.assertTrue(sync_module.check_new_videos())
         self.assertEqual(
-            sync_module.last_record["foo"],
-            {"clip": "/foo/bar.mp4", "time": "1990-01-01T00:00:00+00:00"},
+            sync_module.last_records["foo"],
+            [{"clip": "/foo/bar.mp4", "time": "1990-01-01T00:00:00+00:00"}],
         )
         self.assertEqual(sync_module.motion, {"foo": True})
         mock_resp.return_value = {"media": []}
         self.assertTrue(sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {"foo": False})
         self.assertEqual(
-            sync_module.last_record["foo"],
-            {"clip": "/foo/bar.mp4", "time": "1990-01-01T00:00:00+00:00"},
+            sync_module.last_records["foo"],
+            [],
         )
 
     def test_check_new_videos_old_date(self, mock_resp):
@@ -139,9 +141,9 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertTrue(sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {"foo": True})
         expected_result = {
-            "foo": {"clip": "/bar/foo.mp4", "time": "1990-01-01T00:00:00+00:00"}
+            "foo": [{"clip": "/bar/foo.mp4", "time": "1990-01-01T00:00:00+00:00"}]
         }
-        self.assertEqual(sync_module.last_record, expected_result)
+        self.assertEqual(sync_module.last_records, expected_result)
 
     def test_sync_start(self, mock_resp):
         """Test sync start function."""
@@ -214,3 +216,20 @@ class TestBlinkSyncModule(unittest.TestCase):
             self.assertEqual(
                 test_sync.cameras["fake"].__class__, BlinkDoorbell, msg=debug_msg
             )
+
+    def test_init_local_storage(self, mock_resp):
+        """Test initialization of local storage object."""
+        json_fragment = """{
+            "sync_modules": [
+                {
+                    "id": 123456,
+                    "name": "test",
+                    "local_storage_enabled": true,
+                    "local_storage_compatible": true,
+                    "local_storage_status": "active"
+                }
+            ]
+        }"""
+        self.blink.homescreen = json.loads(json_fragment)
+        self.blink.sync["test"]._init_local_storage(123456)
+        self.assertTrue(self.blink.sync["test"].local_storage)

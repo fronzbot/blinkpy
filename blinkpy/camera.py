@@ -1,8 +1,11 @@
 """Defines Blink cameras."""
-
+import string
 from shutil import copyfileobj
 import logging
+import datetime
 from json import dumps
+import traceback
+import re
 from requests.compat import urljoin
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
@@ -24,6 +27,7 @@ class BlinkCamera:
         self.motion_enabled = None
         self.battery_voltage = None
         self.clip = None
+        self.recent_clips = []
         self.temperature = None
         self.temperature_calibrated = None
         self.battery_state = None
@@ -49,6 +53,7 @@ class BlinkCamera:
             "battery_voltage": self.battery_voltage,
             "thumbnail": self.thumbnail,
             "video": self.clip,
+            "recent_clips": self.recent_clips,
             "motion_enabled": self.motion_enabled,
             "motion_detected": self.motion_detected,
             "wifi_strength": self.wifi_strength,
@@ -108,9 +113,32 @@ class BlinkCamera:
 
     def get_media(self, media_type="image"):
         """Download media (image or video)."""
-        url = self.thumbnail
         if media_type.lower() == "video":
+            return self.get_video_clip()
+        return self.get_thumbnail()
+
+    def get_thumbnail(self, url=None):
+        """Download thumbnail image."""
+        if not url:
+            url = self.thumbnail
+            if not url:
+                _LOGGER.error(f"Thumbnail URL not available: self.thumbnail={url}")
+                return None
+        return api.http_get(
+            self.sync.blink,
+            url=url,
+            stream=True,
+            json=False,
+            timeout=TIMEOUT_MEDIA,
+        )
+
+    def get_video_clip(self, url=None):
+        """Download video clip."""
+        if not url:
             url = self.clip
+            if not url:
+                _LOGGER.error(f"Video clip URL not available: self.clip={url}")
+                return None
         return api.http_get(
             self.sync.blink,
             url=url,
@@ -144,7 +172,8 @@ class BlinkCamera:
 
     def extract_config_info(self, config):
         """Extract info from config."""
-        self.name = config.get("name", "unknown")
+        # Keep only alphanumeric characters for name.
+        self.name = re.sub(r"\W+", "", config.get("name", "unknown"))
         self.camera_id = str(config.get("id", "unknown"))
         self.network_id = str(config.get("network_id", "unknown"))
         self.serial = config.get("serial", None)
@@ -201,11 +230,39 @@ class BlinkCamera:
             self.motion_detected = False
 
         clip_addr = None
+        self.recent_clips = []
         try:
-            clip_addr = self.sync.last_record[self.name]["clip"]
-            self.last_record = self.sync.last_record[self.name]["time"]
-            self.clip = f"{self.sync.urls.base_url}{clip_addr}"
-        except KeyError:
+
+            def ts(record):
+                time = record["time"]
+                iso_time = datetime.datetime.fromisoformat(time)
+                s = int(iso_time.timestamp())
+                return s
+
+            if (
+                len(self.sync.last_records) > 0
+                and len(self.sync.last_records[self.name]) > 0
+            ):
+                last_records = sorted(self.sync.last_records[self.name], key=ts)
+                for rec in last_records:
+                    clip_addr = rec["clip"]
+                    self.clip = f"{self.sync.urls.base_url}{clip_addr}"
+                    self.last_record = rec["time"]
+                    self.recent_clips.append(
+                        {"time": self.last_record, "clip": self.clip}
+                    )
+                _LOGGER.debug(
+                    f"Found {len(self.recent_clips)} recent clips for {self.name}"
+                )
+                _LOGGER.debug(
+                    f"Most recent clip for {self.name} was created at {self.last_record}: {self.clip}"
+                )
+        except (KeyError, IndexError):
+            e = traceback.format_exc()
+            trace = "".join(traceback.format_stack())
+            _LOGGER.error(
+                f"Error getting last records for '{self.name}': {e} \n{trace}"
+            )
             pass
 
         # If the thumbnail or clip have changed, update the cache
@@ -256,10 +313,30 @@ class BlinkCamera:
         _LOGGER.debug("Writing video from %s to %s", self.name, path)
         response = self.get_media(media_type="video")
         if response is None:
-            _LOGGER.error("No saved video exist for %s.", self.name)
+            _LOGGER.error("No saved video exists for %s.", self.name)
             return
         with open(path, "wb") as vidfile:
             copyfileobj(response.raw, vidfile)
+
+    def save_recent_clips(
+        self, output_dir="/tmp", file_pattern="${created}_${name}.mp4"
+    ):
+        """Save all recent clips using timestamp file name pattern."""
+        if not output_dir[-1] == "/":
+            output_dir += "/"
+        for clip in self.recent_clips:
+            time = datetime.datetime.fromisoformat(clip["time"])
+            created_at = time.strftime("%Y%m%d_%H%M%S")
+            clip_addr = clip["clip"]
+            path = output_dir + string.Template(file_pattern).substitute(
+                created=created_at, name=self.name
+            )
+            _LOGGER.debug(f"Saving {clip_addr} to {path}")
+            media = self.get_video_clip(clip_addr)
+            with open(path, "wb") as clip_file:
+                copyfileobj(media.raw, clip_file)
+        if len(self.recent_clips) == 0:
+            _LOGGER.info("No recent clips to save")
 
 
 class BlinkCameraMini(BlinkCamera):

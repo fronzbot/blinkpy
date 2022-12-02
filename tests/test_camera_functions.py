@@ -58,8 +58,8 @@ class TestBlinkCameraSetup(unittest.TestCase):
             "thumbnail": "/thumb",
         }
         self.camera.last_record = ["1"]
-        self.camera.sync.last_record = {
-            "new": {"clip": "/test.mp4", "time": "1970-01-01T00:00:00"}
+        self.camera.sync.last_records = {
+            "new": [{"clip": "/test.mp4", "time": "1970-01-01T00:00:00"}]
         }
         mock_resp.side_effect = [
             {"temp": 71},
@@ -147,6 +147,31 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.camera.update(config, force_cache=True)
         self.assertEqual(self.camera.clip, None)
         self.assertEqual(self.camera.video_from_cache, None)
+
+    def test_recent_video_clips(self, mock_resp):
+        """Tests that the last records in the sync module are added to the camera recent clips list."""
+        config = {
+            "name": "new",
+            "id": 1234,
+            "network_id": 5678,
+            "serial": "12345678",
+            "enabled": False,
+            "battery_voltage": 90,
+            "battery_state": "ok",
+            "temperature": 68,
+            "wifi_strength": 4,
+            "thumbnail": "/thumb",
+        }
+        self.camera.sync.last_records["foobar"] = []
+        record2 = {"clip": "/clip2", "time": "2022-12-01 00:00:10+00:00"}
+        self.camera.sync.last_records["foobar"].append(record2)
+        record1 = {"clip": "/clip1", "time": "2022-12-01 00:00:00+00:00"}
+        self.camera.sync.last_records["foobar"].append(record1)
+        self.camera.update_images(config)
+        record1["clip"] = self.blink.urls.base_url + "/clip1"
+        record2["clip"] = self.blink.urls.base_url + "/clip2"
+        self.assertEqual(self.camera.recent_clips[0], record1)
+        self.assertEqual(self.camera.recent_clips[1], record2)
 
     @mock.patch("blinkpy.camera.api.request_motion_detection_enable")
     @mock.patch("blinkpy.camera.api.request_motion_detection_disable")

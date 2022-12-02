@@ -68,6 +68,9 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.blink.sync.name = None
         attr = camera.attributes
         for key in attr:
+            if key == "recent_clips":
+                self.assertEqual(attr[key], [])
+                continue
             self.assertEqual(attr[key], None)
 
     def test_doorbell_missing_attributes(self, mock_resp):
@@ -77,6 +80,9 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.blink.sync.name = None
         attr = camera.attributes
         for key in attr:
+            if key == "recent_clips":
+                self.assertEqual(attr[key], [])
+                continue
             self.assertEqual(attr[key], None)
 
     def test_camera_stream(self, mock_resp):
