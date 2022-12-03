@@ -1,6 +1,7 @@
 """Useful functions for blinkpy."""
 
 import json
+import random
 import logging
 import time
 import secrets
@@ -86,6 +87,19 @@ def validate_login_data(data):
     data["device_id"] = data.get("device_id", const.DEVICE_ID)
 
     return data
+
+
+def local_storage_clip_url_template():
+    """Return URL template for local storage clip download location."""
+    return (
+        "/api/v1/accounts/$account_id/networks/$network_id/sync_modules/$sync_id"
+        "/local_storage/manifest/$manifest_id/clip/request/$clip_id"
+    )
+
+
+def backoff_seconds(retry=0, default_time=1):
+    """Calculate number of seconds to back off for retry."""
+    return default_time * 2**retry + random.uniform(0, 1)
 
 
 class BlinkException(Exception):

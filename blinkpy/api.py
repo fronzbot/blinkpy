@@ -3,9 +3,13 @@
 import logging
 import string
 import time
-import random
 from json import dumps
-from blinkpy.helpers.util import get_time, Throttle
+from blinkpy.helpers.util import (
+    get_time,
+    Throttle,
+    local_storage_clip_url_template,
+    backoff_seconds,
+)
 from blinkpy.helpers.constants import DEFAULT_URL, TIMEOUT, DEFAULT_USER_AGENT
 
 _LOGGER = logging.getLogger(__name__)
@@ -389,14 +393,6 @@ def request_local_storage_clip(
     return http_post(blink, url)
 
 
-def local_storage_clip_url_template():
-    """Return URL template for local storage clip download location."""
-    return (
-        "/api/v1/accounts/$account_id/networks/$network_id/sync_modules/$sync_id"
-        "/local_storage/manifest/$manifest_id/clip/request/$clip_id"
-    )
-
-
 def http_get(blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOUT):
     """Perform an http get request.
 
@@ -433,8 +429,3 @@ def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TIMEOUT)
         json_resp=json,
         data=data,
     )
-
-
-def backoff_seconds(retry=0, default_time=1):
-    """Calculate number of seconds to back off for retry."""
-    return default_time * 2**retry + random.uniform(0, 1)
