@@ -260,9 +260,8 @@ class BlinkCamera:
         except (KeyError, IndexError):
             e = traceback.format_exc()
             trace = "".join(traceback.format_stack())
-            _LOGGER.error(
-                f"Error getting last records for '{self.name}': {e} \n{trace}"
-            )
+            _LOGGER.error(f"Error getting last records for '{self.name}': {e}")
+            _LOGGER.debug(f"\n{trace}")
             pass
 
         # If the thumbnail or clip have changed, update the cache
