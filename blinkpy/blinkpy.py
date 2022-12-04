@@ -14,7 +14,6 @@ blinkpy is in no way affiliated with Blink, nor Immedia Inc.
 """
 
 import os.path
-import re
 import time
 import logging
 import datetime
@@ -236,9 +235,9 @@ class Blink:
                     all_cameras[camera_network] = []
                 for camera in network["cameras"]:
                     # Keep only alphanumeric characters for name.
-                    camera_name = re.sub(r"\W+", "", camera["name"])
+                    # camera_name = re.sub(r"\W+", "", camera["name"])
                     all_cameras[camera_network].append(
-                        {"name": camera_name, "id": camera["id"], "type": "default"}
+                        {"name": camera["name"], "id": camera["id"], "type": "default"}
                     )
             mini_cameras = self.setup_owls()
             lotus_cameras = self.setup_lotus()

@@ -5,14 +5,13 @@ import string
 from sortedcontainers import SortedSet
 
 import datetime
-import re
 import traceback
 import time
 
 from requests.structures import CaseInsensitiveDict
 from blinkpy import api
 from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
-from blinkpy.helpers.util import time_to_seconds, backoff_seconds
+from blinkpy.helpers.util import time_to_seconds, backoff_seconds, to_alphanumeric
 from blinkpy.helpers.constants import ONLINE
 
 _LOGGER = logging.getLogger(__name__)
@@ -49,6 +48,7 @@ class BlinkSyncModule:
             "mini": "owls",
             "doorbell": "doorbells",
         }
+        self._names_table = dict()
         self._local_storage = {
             "enabled": False,
             "compatible": False,
@@ -176,9 +176,7 @@ class BlinkSyncModule:
                 if "name" not in camera_config:
                     break
                 blink_camera_type = camera_config.get("type", "")
-                # Keep only alphanumeric characters for name.
                 name = camera_config["name"]
-                self.name = re.sub(r"\W+", "", name)
                 self.motion[name] = False
                 unique_info = self.get_unique_info(name)
                 if blink_camera_type in type_map.keys():
@@ -187,8 +185,8 @@ class BlinkSyncModule:
                 camera_info = self.get_camera_info(
                     camera_config["id"], unique_info=unique_info
                 )
+                self._names_table[to_alphanumeric(name)] = name
                 self.cameras[name].update(camera_info, force_cache=True, force=True)
-
         except KeyError:
             _LOGGER.error("Could not create camera instances for %s", self.name)
             return False
@@ -370,10 +368,12 @@ class BlinkSyncModule:
         num_stored = len(self._local_storage["manifest"])
         try:
             for item in response["clips"]:
+                alphanumeric_name = item["camera_name"]
+                camera_name = self._names_table[alphanumeric_name]
                 self._local_storage["manifest"].add(
                     LocalStorageMediaItem(
                         item["id"],
-                        item["camera_name"],
+                        camera_name,
                         item["created_at"],
                         item["size"],
                         manifest_id,

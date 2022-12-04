@@ -3,7 +3,7 @@ import unittest
 from unittest import mock
 
 from blinkpy.blinkpy import Blink
-from blinkpy.helpers.util import BlinkURLHandler
+from blinkpy.helpers.util import BlinkURLHandler, to_alphanumeric
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera
 from tests.test_blink_functions import MockCamera
@@ -225,6 +225,9 @@ class TestBlinkSyncModule(unittest.TestCase):
                 ],
             },
         ]
+        test_sync._names_table[to_alphanumeric("Front Door")] = "Front Door"
+        test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
+        test_sync._names_table[to_alphanumeric("Yard")] = "Yard"
         test_sync.update_local_storage_manifest()
         self.assertEqual(len(test_sync._local_storage["manifest"]), 5)
         self.assertEqual(
@@ -239,14 +242,14 @@ class TestBlinkSyncModule(unittest.TestCase):
         )
 
     def test_check_new_videos_with_local_storage(self, mock_resp):
-        """TODO."""
+        """Test checking new videos in local storage."""
         self.blink.account_id = 10111213
         test_sync = self.blink.sync["test"]
         test_sync._local_storage["status"] = True
         test_sync.sync_id = 1234
 
-        test_sync.cameras["BackDoor"] = MockCamera(self.blink.sync)
-        test_sync.cameras["FrontDoor"] = MockCamera(self.blink.sync)
+        test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
+        test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
         mock_resp.side_effect = [
             {"id": 387372591, "network_id": 123456},
             {
@@ -262,7 +265,7 @@ class TestBlinkSyncModule(unittest.TestCase):
                     {
                         "id": "1568781420",
                         "size": "430",
-                        "camera_name": "FrontDoor",
+                        "camera_name": "Front_Door",
                         "created_at": "2022-12-01T21:11:22+00:00",
                     },
                 ],
@@ -271,15 +274,17 @@ class TestBlinkSyncModule(unittest.TestCase):
             {"id": 489371591, "network_id": 123456},
             {"id": 489371592, "network_id": 123456},
         ]
+        test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
+        test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
         test_sync.update_local_storage_manifest()
         self.assertTrue(test_sync.check_new_videos())
         self.assertEqual(
-            test_sync.last_records["BackDoor"][0]["clip"],
+            test_sync.last_records["Back Door"][0]["clip"],
             "/api/v1/accounts/10111213/networks/1234/sync_modules/1234/local_storage/"
             + "manifest/4321/clip/request/866333964",
         )
         self.assertEqual(
-            test_sync.last_records["FrontDoor"][0]["clip"],
+            test_sync.last_records["Front_Door"][0]["clip"],
             "/api/v1/accounts/10111213/networks/1234/sync_modules/1234/local_storage/"
             + "manifest/4321/clip/request/1568781420",
         )

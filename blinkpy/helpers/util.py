@@ -5,6 +5,7 @@ import random
 import logging
 import time
 import secrets
+import re
 from calendar import timegm
 from functools import wraps
 from getpass import getpass
@@ -100,6 +101,11 @@ def local_storage_clip_url_template():
 def backoff_seconds(retry=0, default_time=1):
     """Calculate number of seconds to back off for retry."""
     return default_time * 2**retry + random.uniform(0, 1)
+
+
+def to_alphanumeric(name):
+    """Convert name to one with only alphanumeric characters."""
+    return re.sub(r"\W+", "", name)
 
 
 class BlinkException(Exception):
