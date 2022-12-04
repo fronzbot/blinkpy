@@ -394,7 +394,6 @@ class BlinkSyncModule:
         # The sync module may be busy processing another request (like saving a new clip).
         # Poll the endpoint until it is ready, backing off each retry.
         response = None
-        time.sleep(1)
         retry = 0
         while True:
             if retry > max_retries:
@@ -415,7 +414,6 @@ class BlinkSyncModule:
         # It takes some time for the sync module to build the manifest (if the sync module is busy).
         # Poll the endpoint until it is ready, backing off each retry.
         response = None
-        time.sleep(1)
         retry = 0
         while True:
             if retry > max_retries:
