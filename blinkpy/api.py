@@ -2,13 +2,11 @@
 
 import logging
 import string
-import time
 from json import dumps
 from blinkpy.helpers.util import (
     get_time,
     Throttle,
     local_storage_clip_url_template,
-    backoff_seconds,
 )
 from blinkpy.helpers.constants import DEFAULT_URL, TIMEOUT, DEFAULT_USER_AGENT
 
@@ -316,23 +314,7 @@ def request_local_storage_manifest(blink, network, sync_id, max_retries=10):
         f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
         + "/local_storage/manifest/request"
     )
-
-    # The sync module may be busy processing another request (like saving a new clip).
-    # Poll the endpoint until it is ready, backing off each retry.
-    response = None
-    time.sleep(1)
-    retry = 0
-    while True:
-        if retry > max_retries:
-            break
-        response = http_post(blink, url)
-        if "id" in response:
-            break
-        seconds = backoff_seconds(retry=retry, default_time=3)
-        _LOGGER.debug("Retrying in %d seconds: %s", seconds, url)
-        time.sleep(seconds)
-        retry += 1
-    return response
+    return http_post(blink, url)
 
 
 def get_local_storage_manifest(
@@ -350,22 +332,7 @@ def get_local_storage_manifest(
         f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
         + f"/local_storage/manifest/request/{manifest_request_id}"
     )
-    # It takes some time for the sync module to build the manifest (if the sync module is busy).
-    # Poll the endpoint until it is ready, backing off each retry.
-    response = None
-    time.sleep(1)
-    retry = 0
-    while True:
-        if retry > max_retries:
-            break
-        response = http_get(blink, url)
-        if "clips" in response:
-            break
-        seconds = backoff_seconds(retry=retry)
-        _LOGGER.debug("Retrying in %d seconds: %s", seconds, url)
-        time.sleep(seconds)
-        retry += 1
-    return response
+    return http_get(blink, url)
 
 
 def request_local_storage_clip(

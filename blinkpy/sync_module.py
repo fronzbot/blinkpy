@@ -12,7 +12,7 @@ import time
 from requests.structures import CaseInsensitiveDict
 from blinkpy import api
 from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
-from blinkpy.helpers.util import time_to_seconds
+from blinkpy.helpers.util import time_to_seconds, backoff_seconds
 from blinkpy.helpers.constants import ONLINE
 
 _LOGGER = logging.getLogger(__name__)
@@ -338,14 +338,13 @@ class BlinkSyncModule:
         """Check if video has timestamp since last refresh."""
         return time_to_seconds(timestamp) > self.blink.last_refresh
 
-    def update_local_storage_manifest(self):
+    def update_local_storage_manifest(self, max_retries=10):
         """Update local storage manifest, which lists all stored clips."""
         if not self.local_storage:
             return None
         _LOGGER.debug("Updating local storage manifest")
-        response = api.request_local_storage_manifest(
-            self.blink, self.network_id, self.sync_id
-        )
+
+        response = self.poll_request_local_storage_manifest()
         try:
             manifest_request_id = response["id"]
         except (TypeError, KeyError):
@@ -354,9 +353,7 @@ class BlinkSyncModule:
             )
             return None
 
-        response = api.get_local_storage_manifest(
-            self.blink, self.network_id, self.sync_id, manifest_request_id
-        )
+        response = self.poll_get_local_storage_manifest(manifest_request_id)
         try:
             manifest_id = response["manifest_id"]
         except (TypeError, KeyError):
@@ -392,6 +389,48 @@ class BlinkSyncModule:
         except (TypeError, KeyError):
             _LOGGER.error("Could not extract clips list from response: %s", response)
             return None
+
+    def poll_request_local_storage_manifest(self, max_retries=10):
+        """Request creation of local storage manifest."""
+        # The sync module may be busy processing another request (like saving a new clip).
+        # Poll the endpoint until it is ready, backing off each retry.
+        response = None
+        time.sleep(1)
+        retry = 0
+        while True:
+            if retry > max_retries:
+                break
+            response = api.request_local_storage_manifest(
+                self.blink, self.network_id, self.sync_id
+            )
+            if "id" in response:
+                break
+            seconds = backoff_seconds(retry=retry, default_time=3)
+            _LOGGER.debug("Retrying in %d seconds", seconds)
+            time.sleep(seconds)
+            retry += 1
+        return response
+
+    def poll_get_local_storage_manifest(self, manifest_request_id, max_retries=10):
+        """Get local storage manifest."""
+        # It takes some time for the sync module to build the manifest (if the sync module is busy).
+        # Poll the endpoint until it is ready, backing off each retry.
+        response = None
+        time.sleep(1)
+        retry = 0
+        while True:
+            if retry > max_retries:
+                break
+            response = api.get_local_storage_manifest(
+                self.blink, self.network_id, self.sync_id, manifest_request_id
+            )
+            if "clips" in response:
+                break
+            seconds = backoff_seconds(retry=retry)
+            _LOGGER.debug("Retrying in %d seconds", seconds)
+            time.sleep(seconds)
+            retry += 1
+        return response
 
 
 class BlinkOwl(BlinkSyncModule):
@@ -586,7 +625,7 @@ class LocalStorageMediaItem:
             response = api.http_post(blink, url)
             if "id" in response:
                 break
-            seconds = api.backoff_seconds(retry=retry, default_time=1)
+            seconds = backoff_seconds(retry=retry, default_time=1)
             _LOGGER.debug("Retrying in %d seconds: %s", seconds, url)
             time.sleep(seconds)
             retry += 1
