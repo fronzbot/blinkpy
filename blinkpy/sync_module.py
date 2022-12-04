@@ -41,9 +41,8 @@ class BlinkSyncModule:
         self.cameras = CaseInsensitiveDict({})
         self.motion_interval = blink.motion_interval
         self.motion = {}
-        self.last_records = (
-            {}
-        )  # A dictionary where keys are the camera names, and values are lists of recent clips.
+        # A dictionary where keys are the camera names, and values are lists of recent clips.
+        self.last_records = {}
         self.camera_list = camera_list
         self.available = False
         self.type_key_map = {
