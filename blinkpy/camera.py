@@ -122,7 +122,7 @@ class BlinkCamera:
         if not url:
             url = self.thumbnail
             if not url:
-                _LOGGER.error(f"Thumbnail URL not available: self.thumbnail={url}")
+                _LOGGER.warning(f"Thumbnail URL not available: self.thumbnail={url}")
                 return None
         return api.http_get(
             self.sync.blink,
@@ -137,7 +137,7 @@ class BlinkCamera:
         if not url:
             url = self.clip
             if not url:
-                _LOGGER.error(f"Video clip URL not available: self.clip={url}")
+                _LOGGER.warning(f"Video clip URL not available: self.clip={url}")
                 return None
         return api.http_get(
             self.sync.blink,
