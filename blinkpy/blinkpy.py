@@ -235,8 +235,6 @@ class Blink:
                 if camera_network not in all_cameras:
                     all_cameras[camera_network] = []
                 for camera in network["cameras"]:
-                    # Keep only alphanumeric characters for name.
-                    # camera_name = re.sub(r"\W+", "", camera["name"])
                     all_cameras[camera_network].append(
                         {"name": camera["name"], "id": camera["id"], "type": "default"}
                     )
