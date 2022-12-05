@@ -316,9 +316,7 @@ def request_local_storage_manifest(blink, network, sync_id):
     return http_post(blink, url)
 
 
-def get_local_storage_manifest(
-    blink, network, sync_id, manifest_request_id
-):
+def get_local_storage_manifest(blink, network, sync_id, manifest_request_id):
     """Request manifest of video clips stored in sync module local storage.
 
     :param blink: Blink instance.
@@ -333,9 +331,7 @@ def get_local_storage_manifest(
     return http_get(blink, url)
 
 
-def request_local_storage_clip(
-    blink, network, sync_id, manifest_id, clip_id
-):
+def request_local_storage_clip(blink, network, sync_id, manifest_id, clip_id):
     """Prepare video clip stored in the sync module to be downloaded.
 
     :param blink: Blink instance.
