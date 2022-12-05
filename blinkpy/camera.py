@@ -5,10 +5,10 @@ import logging
 import datetime
 from json import dumps
 import traceback
-import re
 from requests.compat import urljoin
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
+from blinkpy.helpers.util import to_alphanumeric
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -172,8 +172,7 @@ class BlinkCamera:
 
     def extract_config_info(self, config):
         """Extract info from config."""
-        # Keep only alphanumeric characters for name.
-        self.name = re.sub(r"\W+", "", config.get("name", "unknown"))
+        self.name = config.get("name", "unknown")
         self.camera_id = str(config.get("id", "unknown"))
         self.network_id = str(config.get("network_id", "unknown"))
         self.serial = config.get("serial", None)
@@ -328,7 +327,7 @@ class BlinkCamera:
             created_at = time.strftime("%Y%m%d_%H%M%S")
             clip_addr = clip["clip"]
             path = output_dir + string.Template(file_pattern).substitute(
-                created=created_at, name=self.name
+                created=created_at, name=to_alphanumeric(self.name)
             )
             _LOGGER.debug(f"Saving {clip_addr} to {path}")
             media = self.get_video_clip(clip_addr)

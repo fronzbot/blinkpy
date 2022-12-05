@@ -97,7 +97,8 @@ class Blink:
             if not force_cache:
                 # Prevents rapid clearing of motion detect property
                 self.last_refresh = int(time.time())
-                _LOGGER.debug(f"last_refresh={self.last_refresh}")
+                last_refresh = datetime.datetime.fromtimestamp(self.last_refresh)
+                _LOGGER.debug(f"last_refresh={last_refresh}")
 
             return True
         return False

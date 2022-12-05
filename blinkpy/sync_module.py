@@ -109,6 +109,7 @@ class BlinkSyncModule:
 
     def start(self):
         """Initialize the system."""
+        _LOGGER.debug("Initializing the sync module")
         response = self.sync_initialize()
         if not response:
             return False
@@ -172,6 +173,7 @@ class BlinkSyncModule:
             "default": BlinkCamera,
         }
         try:
+            _LOGGER.debug("Updating cameras")
             for camera_config in self.camera_list:
                 if "name" not in camera_config:
                     break
@@ -266,10 +268,11 @@ class BlinkSyncModule:
             # This is the first start, so refresh hasn't happened yet.
             # No need to check for motion.
             e = traceback.format_exc()
-            trace = "".join(traceback.format_stack())
-            _LOGGER.debug(
-                f"Error calculating interval (last_refresh={self.blink.last_refresh}): {e} \n{trace}"
+            _LOGGER.error(
+                f"Error calculating interval (last_refresh={self.blink.last_refresh}): {e}"
             )
+            trace = "".join(traceback.format_stack())
+            _LOGGER.debug(f"\n{trace}")
             _LOGGER.info("No new videos since last refresh.")
             return False
 
@@ -369,24 +372,28 @@ class BlinkSyncModule:
         try:
             for item in response["clips"]:
                 alphanumeric_name = item["camera_name"]
-                camera_name = self._names_table[alphanumeric_name]
-                self._local_storage["manifest"].add(
-                    LocalStorageMediaItem(
-                        item["id"],
-                        camera_name,
-                        item["created_at"],
-                        item["size"],
-                        manifest_id,
-                        template,
+                if alphanumeric_name in self._names_table.keys():
+                    camera_name = self._names_table[alphanumeric_name]
+                    self._local_storage["manifest"].add(
+                        LocalStorageMediaItem(
+                            item["id"],
+                            camera_name,
+                            item["created_at"],
+                            item["size"],
+                            manifest_id,
+                            template,
+                        )
                     )
-                )
             num_added = len(self._local_storage["manifest"]) - num_stored
             if num_added > 0:
                 _LOGGER.info(
                     f"Found {num_added} new clip(s) in local storage manifest id={manifest_id}"
                 )
         except (TypeError, KeyError):
-            _LOGGER.error("Could not extract clips list from response: %s", response)
+            e = traceback.format_exc()
+            _LOGGER.error(f"Could not extract clips list from response: {e}")
+            trace = "".join(traceback.format_stack())
+            _LOGGER.debug(f"\n{trace}")
             return None
 
     def poll_request_local_storage_manifest(self, max_retries=10):
