@@ -55,6 +55,8 @@ class BlinkSyncModule:
             "status": False,
             "last_manifest_id": None,
             "manifest": SortedSet(),
+            "manifest_stale": True,
+            "last_manifest_read": datetime.datetime(1970, 1, 1, 0, 0, 0).isoformat(),
         }
 
     @property
@@ -99,6 +101,11 @@ class BlinkSyncModule:
     def local_storage(self):
         """Indicate if local storage is activated or not (True/False)."""
         return self._local_storage["status"]
+
+    @property
+    def local_storage_manifest_ready(self):
+        """Indicate if the manifest is up-to-date."""
+        return not self._local_storage["manifest_stale"]
 
     @arm.setter
     def arm(self, value):
@@ -156,6 +163,9 @@ class BlinkSyncModule:
                     self._local_storage["status"] = (
                         mod["local_storage_status"] == "active"
                     )
+                    self._local_storage["last_manifest_read"] = (
+                        datetime.datetime.utcnow() - datetime.timedelta(seconds=10)
+                    ).isoformat()
                     sync_module = mod
         except (TypeError, KeyError):
             _LOGGER.error(
@@ -299,27 +309,35 @@ class BlinkSyncModule:
                     self.last_records[name].append(record)
             except KeyError:
                 last_refresh = datetime.datetime.fromtimestamp(self.blink.last_refresh)
-                _LOGGER.info(f"No new videos for since last refresh at {last_refresh}.")
+                _LOGGER.debug(
+                    f"No new videos for {entry} since last refresh at {last_refresh}."
+                )
 
-        if self.local_storage:
+        # Process local storage if active and if the manifest is ready.
+        last_manifest_read = datetime.datetime.fromisoformat(
+            self._local_storage["last_manifest_read"]
+        )
+        _LOGGER.debug(f"last_manifest_read = {last_manifest_read}")
+        _LOGGER.debug(f"Manifest ready? {self.local_storage_manifest_ready}")
+        if self.local_storage and self.local_storage_manifest_ready:
+            _LOGGER.debug("Processing updated manifest")
             manifest = self._local_storage["manifest"]
             last_manifest_id = self._local_storage["last_manifest_id"]
+            last_manifest_read = self._local_storage["last_manifest_read"]
             num_new = 0
             for item in manifest.__reversed__():
                 iso_timestamp = item.created_at.isoformat()
 
-                if not self.check_new_video_time(iso_timestamp):
-                    last_refresh = datetime.datetime.fromtimestamp(
-                        self.blink.last_refresh
-                    )
+                # Exit the loop once there are no new videos in the list.
+                if not self.check_new_video_time(iso_timestamp, last_manifest_read):
                     if num_new > 0:
                         _LOGGER.info(
                             f"Found {num_new} new items in local storage manifest "
-                            + f"since last refresh at {last_refresh}."
+                            + f"since last manifest read at {last_manifest_read}."
                         )
                     else:
                         _LOGGER.info(
-                            f"No new local storage videos since last refresh at {last_refresh}."
+                            f"No new local storage videos since last manifest read at {last_manifest_read}."
                         )
                     break
 
@@ -332,15 +350,29 @@ class BlinkSyncModule:
                 self.last_records[name].append(record)
                 num_new += 1
 
+            # The manifest became ready, and we read recent clips from it.
+            if num_new > 0:
+                last_manifest_read = datetime.datetime.utcnow().isoformat()
+                self._local_storage["last_manifest_read"] = last_manifest_read
+                _LOGGER.debug(f"Updated last_manifest_read to {last_manifest_read}")
+
         return True
 
-    def check_new_video_time(self, timestamp):
+    def check_new_video_time(self, timestamp, reference=None):
         """Check if video has timestamp since last refresh."""
-        return time_to_seconds(timestamp) > self.blink.last_refresh
+        """
+        :param timestamp ISO-formatted timestamp string
+        :param reference ISO-formatted reference timestamp string
+        """
 
-    def update_local_storage_manifest(self, max_retries=10):
+        if not reference:
+            return time_to_seconds(timestamp) > self.blink.last_refresh
+        return time_to_seconds(timestamp) > time_to_seconds(reference)
+
+    def update_local_storage_manifest(self):
         """Update local storage manifest, which lists all stored clips."""
         if not self.local_storage:
+            self._local_storage["manifest_stale"] = True
             return None
         _LOGGER.debug("Updating local storage manifest")
 
@@ -351,6 +383,7 @@ class BlinkSyncModule:
             _LOGGER.error(
                 "Could not extract manifest request ID from response: %s", response
             )
+            self._local_storage["manifest_stale"] = True
             return None
 
         response = self.poll_local_storage_manifest(manifest_request_id)
@@ -358,6 +391,7 @@ class BlinkSyncModule:
             manifest_id = response["manifest_id"]
         except (TypeError, KeyError):
             _LOGGER.error("Could not extract manifest ID from response: %s", response)
+            self._local_storage["manifest_stale"] = True
             return None
 
         self._local_storage["last_manifest_id"] = manifest_id
@@ -394,9 +428,13 @@ class BlinkSyncModule:
             _LOGGER.error(f"Could not extract clips list from response: {e}")
             trace = "".join(traceback.format_stack())
             _LOGGER.debug(f"\n{trace}")
+            self._local_storage["manifest_stale"] = True
             return None
 
-    def poll_local_storage_manifest(self, manifest_request_id=None, max_retries=8):
+        self._local_storage["manifest_stale"] = False
+        return True
+
+    def poll_local_storage_manifest(self, manifest_request_id=None, max_retries=4):
         """Poll for local storage manifest."""
         # The sync module may be busy processing another request (like saving a new clip).
         # Poll the endpoint until it is ready, backing off each retry.
@@ -606,18 +644,14 @@ class LocalStorageMediaItem:
     def prepare_download(self, blink, max_retries=4):
         """Initiate upload of media item from the sync module to Blink cloud servers."""
         url = blink.urls.base_url + self.url()
-        retry = 0
         response = None
-        while True:
-            if retry > max_retries:
-                break
+        for retry in range(max_retries):
             response = api.http_post(blink, url)
             if "id" in response:
                 break
-            seconds = backoff_seconds(retry=retry, default_time=1)
-            _LOGGER.debug("Retrying in %d seconds: %s", seconds, url)
+            seconds = backoff_seconds(retry=retry, default_time=3)
+            _LOGGER.debug("[retry=%d] Retrying in %d seconds: %s", retry, seconds, url)
             time.sleep(seconds)
-            retry += 1
         return response
 
     def __repr__(self):

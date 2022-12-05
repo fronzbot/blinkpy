@@ -1,4 +1,5 @@
 """Tests camera and system functions."""
+import datetime
 import unittest
 from unittest import mock
 
@@ -250,6 +251,9 @@ class TestBlinkSyncModule(unittest.TestCase):
 
         test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
         test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
+        created_at = (
+            datetime.datetime.utcnow() + datetime.timedelta(seconds=30)
+        ).isoformat()
         mock_resp.side_effect = [
             {"id": 387372591, "network_id": 123456},
             {
@@ -260,13 +264,13 @@ class TestBlinkSyncModule(unittest.TestCase):
                         "id": "866333964",
                         "size": "234",
                         "camera_name": "BackDoor",
-                        "created_at": "2022-12-01T21:11:50+00:00",
+                        "created_at": f"{created_at}",
                     },
                     {
                         "id": "1568781420",
                         "size": "430",
                         "camera_name": "Front_Door",
-                        "created_at": "2022-12-01T21:11:22+00:00",
+                        "created_at": f"{created_at}",
                     },
                 ],
             },
