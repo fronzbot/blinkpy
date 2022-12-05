@@ -302,13 +302,12 @@ def request_motion_detection_disable(blink, network, camera_id):
     return http_post(blink, url)
 
 
-def request_local_storage_manifest(blink, network, sync_id, max_retries=10):
+def request_local_storage_manifest(blink, network, sync_id):
     """Request creation of an updated manifest of video clips stored in sync module local storage.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param sync_id: ID of sync module.
-    :param max_retries: Number of polling retries.
     """
     url = (
         f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
@@ -318,7 +317,7 @@ def request_local_storage_manifest(blink, network, sync_id, max_retries=10):
 
 
 def get_local_storage_manifest(
-    blink, network, sync_id, manifest_request_id, max_retries=8
+    blink, network, sync_id, manifest_request_id
 ):
     """Request manifest of video clips stored in sync module local storage.
 
@@ -326,7 +325,6 @@ def get_local_storage_manifest(
     :param network: Sync module network id.
     :param sync_id: ID of sync module.
     :param manifest_request_id: Request ID of local storage manifest (requested creation of new manifest).
-    :param max_retries: Number of polling retries.
     """
     url = (
         f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
@@ -336,17 +334,15 @@ def get_local_storage_manifest(
 
 
 def request_local_storage_clip(
-    blink, network, sync_id, manifest_id, clip_id, max_retries=5
+    blink, network, sync_id, manifest_id, clip_id
 ):
     """Prepare video clip stored in the sync module to be downloaded.
 
-    :param blink:
-    :param network:
-    :param sync_id:
-    :param manifest_id:
-    :param clip_id:
-    :param max_retries:
-    :return:
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param sync_id: ID of sync module.
+    :param manifest_id: ID of local storage manifest (returned in the manifest response).
+    :param clip_id: ID of the clip.
     """
     url = blink.urls.base_url + string.Template(
         local_storage_clip_url_template()
