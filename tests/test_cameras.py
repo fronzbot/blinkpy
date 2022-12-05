@@ -115,7 +115,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             "test",
         ]
         self.camera.sync.blink.account_id = 9999
-        self.camera.update(config)
+        self.camera.update(config, expire_clips=False)
         self.assertEqual(self.camera.thumbnail, thumb_endpoint)
 
     def test_thumb_return_none(self, mock_resp):
@@ -137,7 +137,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             {"temp": 71},
             "test",
         ]
-        self.camera.update(config)
+        self.camera.update(config, expire_clips=False)
         self.assertEqual(self.camera.thumbnail, None)
 
     def test_new_thumb_url_returned(self, mock_resp):
@@ -161,7 +161,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             "test",
         ]
         self.camera.sync.blink.account_id = 9999
-        self.camera.update(config)
+        self.camera.update(config, expire_clips=False)
         self.assertEqual(
             self.camera.thumbnail, f"https://rest-test.immedia-semi.com{thumb_return}"
         )

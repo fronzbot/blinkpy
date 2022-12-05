@@ -1,4 +1,5 @@
 """Defines Blink cameras."""
+import copy
 import string
 from shutil import copyfileobj
 import logging
@@ -27,6 +28,7 @@ class BlinkCamera:
         self.motion_enabled = None
         self.battery_voltage = None
         self.clip = None
+        # A clip remains in the recent clips list until is has been downloaded or has been expired.
         self.recent_clips = []
         self.temperature = None
         self.temperature_calibrated = None
@@ -164,11 +166,11 @@ class BlinkCamera:
             self.sync.blink, self.network_id, self.camera_id
         )
 
-    def update(self, config, force_cache=False, **kwargs):
+    def update(self, config, force_cache=False, expire_clips=True, **kwargs):
         """Update camera info."""
         self.extract_config_info(config)
         self.get_sensor_info()
-        self.update_images(config, force_cache=force_cache)
+        self.update_images(config, force_cache=force_cache, expire_clips=expire_clips)
 
     def extract_config_info(self, config):
         """Extract info from config."""
@@ -196,7 +198,7 @@ class BlinkCamera:
             self.temperature_calibrated = self.temperature
             _LOGGER.warning("Could not retrieve calibrated temperature.")
 
-    def update_images(self, config, force_cache=False):
+    def update_images(self, config, force_cache=False, expire_clips=True):
         """Update images for camera."""
         new_thumbnail = None
         thumb_addr = None
@@ -229,7 +231,6 @@ class BlinkCamera:
             self.motion_detected = False
 
         clip_addr = None
-        self.recent_clips = []
         try:
 
             def ts(record):
@@ -279,6 +280,22 @@ class BlinkCamera:
         if clip_addr is not None and (update_cached_video or force_cache):
             self._cached_video = self.get_media(media_type="video")
 
+        # Don't let the recent clips list grow without bound.
+        if expire_clips:
+            self.expire_recent_clips()
+
+    def expire_recent_clips(self, delta=datetime.timedelta(hours=1)):
+        """Remove recent clips from list when they get too old."""
+        to_keep = []
+        for clip in self.recent_clips:
+            t = (datetime.datetime.now() - delta).timestamp()
+            clip_time = datetime.datetime.fromisoformat(clip["time"]).timestamp()
+            if clip_time > t:
+                to_keep.append(clip)
+        self.recent_clips = copy.deepcopy(to_keep)
+        if len(self.recent_clips) > 0:
+            _LOGGER.debug(f"'{self.name}' has {len(self.recent_clips)} clips available for download")
+
     def get_liveview(self):
         """Get livewview rtsps link."""
         response = api.request_camera_liveview(
@@ -322,7 +339,10 @@ class BlinkCamera:
         """Save all recent clips using timestamp file name pattern."""
         if not output_dir[-1] == "/":
             output_dir += "/"
-        for clip in self.recent_clips:
+
+        recent = copy.deepcopy(self.recent_clips)
+
+        for clip in recent:
             time = datetime.datetime.fromisoformat(clip["time"])
             created_at = time.strftime("%Y%m%d_%H%M%S")
             clip_addr = clip["clip"]
@@ -333,8 +353,20 @@ class BlinkCamera:
             media = self.get_video_clip(clip_addr)
             with open(path, "wb") as clip_file:
                 copyfileobj(media.raw, clip_file)
-        if len(self.recent_clips) == 0:
-            _LOGGER.info("No recent clips to save")
+            try:
+                # Remove recent clip from the list once the download has finished.
+                self.recent_clips.remove(clip)
+                _LOGGER.debug(f"Removed {clip} from recent clips")
+            except ValueError:
+                e = traceback.format_exc()
+                _LOGGER.error(f"Error removing clip from list: {e}")
+                trace = "".join(traceback.format_stack())
+                _LOGGER.debug(f"\n{trace}")
+
+        if len(recent) == 0:
+            _LOGGER.info("No recent clips to save.")
+        else:
+            _LOGGER.info(f"Saved {len(recent)} clips from '{self.name}' to directory {output_dir}")
 
 
 class BlinkCameraMini(BlinkCamera):

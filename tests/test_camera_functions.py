@@ -66,7 +66,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             "test",
             "foobar",
         ]
-        self.camera.update(config)
+        self.camera.update(config, expire_clips=False)
         self.assertEqual(self.camera.name, "new")
         self.assertEqual(self.camera.camera_id, "1234")
         self.assertEqual(self.camera.network_id, "5678")
@@ -88,7 +88,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
         # Check that thumbnail without slash processed properly
         mock_resp.side_effect = [None]
-        self.camera.update_images({"thumbnail": "thumb_no_slash"})
+        self.camera.update_images({"thumbnail": "thumb_no_slash"}, expire_clips=False)
         self.assertEqual(
             self.camera.thumbnail,
             "https://rest-test.immedia-semi.com/thumb_no_slash.jpg",
@@ -113,7 +113,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.camera.sync.homescreen = {"devices": []}
         self.assertEqual(self.camera.temperature_calibrated, None)
         with self.assertLogs() as logrecord:
-            self.camera.update(config, force=True)
+            self.camera.update(config, force=True, expire_clips=False)
         self.assertEqual(self.camera.thumbnail, None)
         self.assertEqual(self.camera.last_record, ["1"])
         self.assertEqual(self.camera.temperature_calibrated, 68)
@@ -144,7 +144,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             "thumbnail": "/foobar",
         }
         self.camera.sync.homescreen = {"devices": []}
-        self.camera.update(config, force_cache=True)
+        self.camera.update(config, force_cache=True, expire_clips=False)
         self.assertEqual(self.camera.clip, None)
         self.assertEqual(self.camera.video_from_cache, None)
 
@@ -167,7 +167,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.camera.sync.last_records["foobar"].append(record2)
         record1 = {"clip": "/clip1", "time": "2022-12-01 00:00:00+00:00"}
         self.camera.sync.last_records["foobar"].append(record1)
-        self.camera.update_images(config)
+        self.camera.update_images(config, expire_clips=False)
         record1["clip"] = self.blink.urls.base_url + "/clip1"
         record2["clip"] = self.blink.urls.base_url + "/clip2"
         self.assertEqual(self.camera.recent_clips[0], record1)
