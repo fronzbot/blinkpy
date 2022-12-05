@@ -571,10 +571,10 @@ class LocalStorageMediaItem:
     ):
         """Initialize media item.
 
-        :param item_id:
-        :param camera_name:
-        :param created_at:
-        :param size:
+        :param item_id: ID of the manifest item.
+        :param camera_name: Name of camera that took the video.
+        :param created_at: ISO-formatted time stamp for creation time.
+        :param size: Size of the video file.
         """
         self._id = int(item_id)
         self._camera_name = camera_name
