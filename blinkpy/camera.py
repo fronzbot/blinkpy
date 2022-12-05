@@ -294,7 +294,9 @@ class BlinkCamera:
                 to_keep.append(clip)
         self.recent_clips = copy.deepcopy(to_keep)
         if len(self.recent_clips) > 0:
-            _LOGGER.debug(f"'{self.name}' has {len(self.recent_clips)} clips available for download")
+            _LOGGER.debug(
+                f"'{self.name}' has {len(self.recent_clips)} clips available for download"
+            )
 
     def get_liveview(self):
         """Get livewview rtsps link."""
@@ -366,7 +368,9 @@ class BlinkCamera:
         if len(recent) == 0:
             _LOGGER.info("No recent clips to save.")
         else:
-            _LOGGER.info(f"Saved {len(recent)} clips from '{self.name}' to directory {output_dir}")
+            _LOGGER.info(
+                f"Saved {len(recent)} clips from '{self.name}' to directory {output_dir}"
+            )
 
 
 class BlinkCameraMini(BlinkCamera):
