@@ -184,10 +184,10 @@ Example usage, which downloads all videos recorded since July 4th, 2018 at 9:34a
 
 
 Sync Module Local Storage
-==============
+=========================
 
 Description of how I think the local storage API is used by Blink
---------------
+-----------------------------------------------------------------
 
 Since local storage is within a customer's residence, there are no guarantees for latency
 and availability.  As a result, the API seems to be built to deal with these conditions.
@@ -199,7 +199,7 @@ cloud, and then downloads the clip back from a cloud URL. Each interaction requi
 the response since networking conditions are uncertain.  The app also caches recent clips and the manifest.
 
 API steps
---------------
+---------
 1. Request the local storage manifest be created by the sync module.
 
    * POST **{base_url}/api/v1/accounts/{account_id}/networks/{network_id}/sync_modules/{sync_id}/local_storage/manifest/request**
