@@ -12,7 +12,7 @@ from blinkpy.blinkpy import Blink, BlinkSetupError
 from blinkpy.sync_module import BlinkOwl, BlinkLotus
 from blinkpy.helpers.constants import __version__
 
-SPECIAL = "!@#$%^&*()+-=[]{}|/<>?,.'special_name"
+SPECIAL = "!@#$%^&*()+-=[]{}|/<>?,.'"
 
 
 class TestBlinkSetup(unittest.TestCase):
@@ -101,7 +101,7 @@ class TestBlinkSetup(unittest.TestCase):
                     "cameras": [
                         {"id": 5678, "name": "foo"},
                         {"id": 5679, "name": "bar"},
-                        {"id": 5779, "name": "special_name"},
+                        {"id": 5779, "name": SPECIAL},
                     ],
                 },
                 {"network_id": 4321, "cameras": [{"id": 0000, "name": "test"}]},
@@ -114,7 +114,7 @@ class TestBlinkSetup(unittest.TestCase):
                 "1234": [
                     {"name": "foo", "id": 5678, "type": "default"},
                     {"name": "bar", "id": 5679, "type": "default"},
-                    {"name": "special_name", "id": 5779, "type": "default"},
+                    {"name": SPECIAL, "id": 5779, "type": "default"},
                 ],
                 "4321": [{"name": "test", "id": 0000, "type": "default"}],
             },
