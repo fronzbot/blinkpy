@@ -5,7 +5,7 @@ Tests the camera initialization and attributes of
 individual BlinkCamera instantiations once the
 Blink system is set up.
 """
-
+import datetime
 import unittest
 from unittest import mock
 from blinkpy.blinkpy import Blink
@@ -173,6 +173,25 @@ class TestBlinkCameraSetup(unittest.TestCase):
         record2["clip"] = self.blink.urls.base_url + "/clip2"
         self.assertEqual(self.camera.recent_clips[0], record1)
         self.assertEqual(self.camera.recent_clips[1], record2)
+
+    def test_expire_recent_clips(self, mock_resp):
+        """Test expiration of recent clips."""
+        self.camera.recent_clips = []
+        now = datetime.datetime.utcnow()
+        self.camera.recent_clips.append(
+            {
+                "time": (now - datetime.timedelta(minutes=20)).isoformat(),
+                "clip": "/clip1",
+            },
+        )
+        self.camera.recent_clips.append(
+            {
+                "time": (now - datetime.timedelta(minutes=1)).isoformat(),
+                "clip": "/clip2",
+            },
+        )
+        self.camera.expire_recent_clips(delta=datetime.timedelta(minutes=5))
+        self.assertEqual(len(self.camera.recent_clips), 1)
 
     @mock.patch("blinkpy.camera.api.request_motion_detection_enable")
     @mock.patch("blinkpy.camera.api.request_motion_detection_disable")
