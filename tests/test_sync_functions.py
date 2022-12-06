@@ -73,7 +73,7 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertEqual(sync_module.motion, {"foo": False})
         self.assertEqual(
             sync_module.last_records["foo"],
-            [],
+            [{"clip": "/foo/bar.mp4", "time": "1990-01-01T00:00:00+00:00"}],
         )
 
     def test_check_new_videos_old_date(self, mock_resp):

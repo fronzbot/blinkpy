@@ -1,6 +1,7 @@
 """Defines Blink cameras."""
 import copy
 import string
+import time
 from shutil import copyfileobj
 import logging
 import datetime
@@ -141,13 +142,14 @@ class BlinkCamera:
             if not url:
                 _LOGGER.warning(f"Video clip URL not available: self.clip={url}")
                 return None
-        return api.http_get(
+        response = api.http_get(
             self.sync.blink,
             url=url,
             stream=True,
             json=False,
             timeout=TIMEOUT_MEDIA,
         )
+        return response
 
     def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
@@ -248,15 +250,17 @@ class BlinkCamera:
                     clip_addr = rec["clip"]
                     self.clip = f"{self.sync.urls.base_url}{clip_addr}"
                     self.last_record = rec["time"]
-                    self.recent_clips.append(
-                        {"time": self.last_record, "clip": self.clip}
+                    if self.motion_detected:
+                        self.recent_clips.append(
+                            {"time": self.last_record, "clip": self.clip}
+                        )
+                if len(self.recent_clips) > 0:
+                    _LOGGER.debug(
+                        f"Found {len(self.recent_clips)} recent clips for {self.name}"
                     )
-                _LOGGER.debug(
-                    f"Found {len(self.recent_clips)} recent clips for {self.name}"
-                )
-                _LOGGER.debug(
-                    f"Most recent clip for {self.name} was created at {self.last_record}: {self.clip}"
-                )
+                    _LOGGER.debug(
+                        f"Most recent clip for {self.name} was created at {self.last_record}: {self.clip}"
+                    )
         except (KeyError, IndexError):
             e = traceback.format_exc()
             trace = "".join(traceback.format_stack())
@@ -294,7 +298,7 @@ class BlinkCamera:
                 to_keep.append(clip)
         self.recent_clips = copy.deepcopy(to_keep)
         if len(self.recent_clips) > 0:
-            _LOGGER.debug(
+            _LOGGER.info(
                 f"'{self.name}' has {len(self.recent_clips)} clips available for download"
             )
 
@@ -345,14 +349,22 @@ class BlinkCamera:
         recent = copy.deepcopy(self.recent_clips)
 
         for clip in recent:
-            time = datetime.datetime.fromisoformat(clip["time"])
-            created_at = time.strftime("%Y%m%d_%H%M%S")
+            clip_time = datetime.datetime.fromisoformat(clip["time"])
+            clip_time_local = clip_time.replace(
+                tzinfo=datetime.timezone.utc
+            ).astimezone(tz=None)
+            created_at = clip_time_local.strftime("%Y%m%d_%H%M%S")
             clip_addr = clip["clip"]
             path = output_dir + string.Template(file_pattern).substitute(
                 created=created_at, name=to_alphanumeric(self.name)
             )
             _LOGGER.debug(f"Saving {clip_addr} to {path}")
             media = self.get_video_clip(clip_addr)
+            if media.status_code == 404:
+                if "local_storage" in clip_addr:
+                    api.http_post(self.sync.blink, clip_addr, is_retry=True)
+                    time.sleep(3)
+                    media = self.get_video_clip(clip_addr)
             with open(path, "wb") as clip_file:
                 copyfileobj(media.raw, clip_file)
             try:

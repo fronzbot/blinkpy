@@ -288,9 +288,17 @@ class BlinkSyncModule:
 
         resp = api.request_videos(self.blink, time=interval, page=1)
 
+        last_record = {}
         for camera in self.cameras.keys():
-            self.motion[camera] = False
+            # Initialize the list if doesn't exist yet.
+            if camera not in self.last_records.keys():
+                self.last_records[camera] = []
+            # Hang on to the last record if there is one.
+            if len(self.last_records[camera]) > 0:
+                last_record[camera] = self.last_records[camera][-1]
+            # Reset in preparation for processing new entries.
             self.last_records[camera] = []
+            self.motion[camera] = False
 
         try:
             info = resp["media"]
@@ -352,9 +360,20 @@ class BlinkSyncModule:
 
             # The manifest became ready, and we read recent clips from it.
             if num_new > 0:
-                last_manifest_read = datetime.datetime.utcnow().isoformat()
+                last_manifest_read = (
+                    datetime.datetime.utcnow() - datetime.timedelta(seconds=10)
+                ).isoformat()
                 self._local_storage["last_manifest_read"] = last_manifest_read
                 _LOGGER.debug(f"Updated last_manifest_read to {last_manifest_read}")
+
+        # We want to keep the last record when no new motion was detected.
+        for camera in self.cameras.keys():
+            # Check if there are no new records, indicating motion.
+            if len(self.last_records[camera]) == 0:
+                # If no new records, check if we had a previous last record.
+                if camera in last_record.keys():
+                    # Put the last record back into the empty list.
+                    self.last_records[camera].append(last_record[camera])
 
         return True
 
@@ -455,7 +474,7 @@ class BlinkSyncModule:
                 if "clips" in response:
                     break
             seconds = backoff_seconds(retry=retry, default_time=3)
-            _LOGGER.debug("[retry=%d] Retrying in %d seconds", retry, seconds)
+            _LOGGER.debug("[retry=%d] Retrying in %d seconds", retry + 1, seconds)
             time.sleep(seconds)
         return response
 
@@ -650,7 +669,9 @@ class LocalStorageMediaItem:
             if "id" in response:
                 break
             seconds = backoff_seconds(retry=retry, default_time=3)
-            _LOGGER.debug("[retry=%d] Retrying in %d seconds: %s", retry, seconds, url)
+            _LOGGER.debug(
+                "[retry=%d] Retrying in %d seconds: %s", retry + 1, seconds, url
+            )
             time.sleep(seconds)
         return response
 

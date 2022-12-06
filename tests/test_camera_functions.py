@@ -167,6 +167,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.camera.sync.last_records["foobar"].append(record2)
         record1 = {"clip": "/clip1", "time": "2022-12-01 00:00:00+00:00"}
         self.camera.sync.last_records["foobar"].append(record1)
+        self.camera.sync.motion["foobar"] = True
         self.camera.update_images(config, expire_clips=False)
         record1["clip"] = self.blink.urls.base_url + "/clip1"
         record2["clip"] = self.blink.urls.base_url + "/clip2"
