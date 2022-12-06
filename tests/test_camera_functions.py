@@ -5,6 +5,7 @@ Tests the camera initialization and attributes of
 individual BlinkCamera instantiations once the
 Blink system is set up.
 """
+
 import datetime
 import unittest
 from unittest import mock
