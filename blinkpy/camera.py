@@ -1,7 +1,6 @@
 """Defines Blink cameras."""
 import copy
 import string
-import time
 from shutil import copyfileobj
 import logging
 import datetime
@@ -236,8 +235,8 @@ class BlinkCamera:
         try:
 
             def ts(record):
-                time = record["time"]
-                iso_time = datetime.datetime.fromisoformat(time)
+                rec_time = record["time"]
+                iso_time = datetime.datetime.fromisoformat(rec_time)
                 s = int(iso_time.timestamp())
                 return s
 
