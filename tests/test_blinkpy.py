@@ -12,7 +12,7 @@ from blinkpy.blinkpy import Blink, BlinkSetupError
 from blinkpy.sync_module import BlinkOwl, BlinkLotus
 from blinkpy.helpers.constants import __version__
 
-SPECIAL = "!@#$%^&*()+-=[]{}|/<>?,.'"
+SPECIAL = "!@#$%^&*()_+-=[]{}|/<>?,.'"
 
 
 class TestBlinkSetup(unittest.TestCase):
