@@ -381,7 +381,7 @@ class BlinkCamera:
                 _LOGGER.debug(f"\n{trace}")
 
         if len(recent) == 0:
-            _LOGGER.info("No recent clips to save.")
+            _LOGGER.info(f"No recent clips to save for '{self.name}'.")
         else:
             _LOGGER.info(
                 f"Saved {len(recent)} clips from '{self.name}' to directory {output_dir}"
