@@ -351,6 +351,7 @@ class BlinkCamera:
 
         recent = copy.deepcopy(self.recent_clips)
 
+        num_saved = 0
         for clip in recent:
             clip_time = datetime.datetime.fromisoformat(clip["time"])
             clip_time_local = clip_time.replace(
@@ -363,28 +364,25 @@ class BlinkCamera:
             )
             _LOGGER.debug(f"Saving {clip_addr} to {path}")
             media = self.get_video_clip(clip_addr)
-            if media.status_code == 404:
-                if "local_storage" in clip_addr:
-                    api.http_post(self.sync.blink, clip_addr, is_retry=True)
-                    time.sleep(3)
-                    media = self.get_video_clip(clip_addr)
-            with open(path, "wb") as clip_file:
-                copyfileobj(media.raw, clip_file)
-            try:
-                # Remove recent clip from the list once the download has finished.
-                self.recent_clips.remove(clip)
-                _LOGGER.debug(f"Removed {clip} from recent clips")
-            except ValueError:
-                e = traceback.format_exc()
-                _LOGGER.error(f"Error removing clip from list: {e}")
-                trace = "".join(traceback.format_stack())
-                _LOGGER.debug(f"\n{trace}")
+            if media.status_code == 200:
+                with open(path, "wb") as clip_file:
+                    copyfileobj(media.raw, clip_file)
+                num_saved += 1
+                try:
+                    # Remove recent clip from the list once the download has finished.
+                    self.recent_clips.remove(clip)
+                    _LOGGER.debug(f"Removed {clip} from recent clips")
+                except ValueError:
+                    e = traceback.format_exc()
+                    _LOGGER.error(f"Error removing clip from list: {e}")
+                    trace = "".join(traceback.format_stack())
+                    _LOGGER.debug(f"\n{trace}")
 
         if len(recent) == 0:
             _LOGGER.info(f"No recent clips to save for '{self.name}'.")
         else:
             _LOGGER.info(
-                f"Saved {len(recent)} clips from '{self.name}' to directory {output_dir}"
+                f"Saved {num_saved} of {len(recent)} recent clips from '{self.name}' to directory {output_dir}"
             )
 
 
