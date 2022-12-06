@@ -178,7 +178,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
     def test_expire_recent_clips(self, mock_resp):
         """Test expiration of recent clips."""
         self.camera.recent_clips = []
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now()
         self.camera.recent_clips.append(
             {
                 "time": (now - datetime.timedelta(minutes=20)).isoformat(),

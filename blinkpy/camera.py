@@ -292,10 +292,13 @@ class BlinkCamera:
         """Remove recent clips from list when they get too old."""
         to_keep = []
         for clip in self.recent_clips:
-            t = (datetime.datetime.utcnow() - delta).timestamp()
+            t = (datetime.datetime.now() - delta).timestamp()
             clip_time = datetime.datetime.fromisoformat(clip["time"]).timestamp()
             if clip_time > t:
                 to_keep.append(clip)
+        num_expired = len(self.recent_clips) - len(to_keep)
+        if num_expired > 0:
+            _LOGGER.info(f"Expired {num_expired} clips from '{self.name}'")
         self.recent_clips = copy.deepcopy(to_keep)
         if len(self.recent_clips) > 0:
             _LOGGER.info(

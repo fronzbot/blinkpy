@@ -332,20 +332,29 @@ class BlinkSyncModule:
             manifest = self._local_storage["manifest"]
             last_manifest_id = self._local_storage["last_manifest_id"]
             last_manifest_read = self._local_storage["last_manifest_read"]
+            last_read_local = (
+                datetime.datetime.fromisoformat(last_manifest_read)
+                .replace(tzinfo=datetime.timezone.utc)
+                .astimezone(tz=None)
+            )
+            last_clip_time = None
             num_new = 0
             for item in manifest.__reversed__():
                 iso_timestamp = item.created_at.isoformat()
 
+                _LOGGER.debug(
+                    f"Checking '{item.name}': clip_time={iso_timestamp}, manifest_read={last_manifest_read}"
+                )
                 # Exit the loop once there are no new videos in the list.
                 if not self.check_new_video_time(iso_timestamp, last_manifest_read):
                     if num_new > 0:
                         _LOGGER.info(
                             f"Found {num_new} new items in local storage manifest "
-                            + f"since last manifest read at {last_manifest_read}."
+                            + f"since last manifest read at {last_read_local}."
                         )
                     else:
                         _LOGGER.info(
-                            f"No new local storage videos since last manifest read at {last_manifest_read}."
+                            f"No new local storage videos since last manifest read at {last_read_local}."
                         )
                     break
 
@@ -356,12 +365,13 @@ class BlinkSyncModule:
                 self.motion[name] = True
                 record = {"clip": clip_url, "time": iso_timestamp}
                 self.last_records[name].append(record)
+                last_clip_time = item.created_at
                 num_new += 1
 
             # The manifest became ready, and we read recent clips from it.
             if num_new > 0:
                 last_manifest_read = (
-                    datetime.datetime.utcnow() - datetime.timedelta(seconds=10)
+                    last_clip_time - datetime.timedelta(seconds=0)
                 ).isoformat()
                 self._local_storage["last_manifest_read"] = last_manifest_read
                 _LOGGER.debug(f"Updated last_manifest_read to {last_manifest_read}")
