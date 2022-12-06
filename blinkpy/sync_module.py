@@ -375,6 +375,7 @@ class BlinkSyncModule:
                 ).isoformat()
                 self._local_storage["last_manifest_read"] = last_manifest_read
                 _LOGGER.debug(f"Updated last_manifest_read to {last_manifest_read}")
+                _LOGGER.debug(f"Last clip time was {last_clip_time}")
 
         # We want to keep the last record when no new motion was detected.
         for camera in self.cameras.keys():
