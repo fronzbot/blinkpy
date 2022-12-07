@@ -305,7 +305,9 @@ class BlinkCamera:
                 f"'{self.name}' has {len(self.recent_clips)} clips available for download"
             )
             for clip in self.recent_clips:
-                api.http_post(self.sync.blink, clip["clip"])
+                url = clip["clip"]
+                if "local_storage" in url:
+                    api.http_post(self.sync.blink, url)
 
     def get_liveview(self):
         """Get livewview rtsps link."""
