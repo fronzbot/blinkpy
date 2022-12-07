@@ -250,9 +250,10 @@ class BlinkCamera:
                     self.clip = f"{self.sync.urls.base_url}{clip_addr}"
                     self.last_record = rec["time"]
                     if self.motion_detected:
-                        self.recent_clips.append(
-                            {"time": self.last_record, "clip": self.clip}
-                        )
+                        recent = {"time": self.last_record, "clip": self.clip}
+                        # Prevent duplicates.
+                        if recent not in self.recent_clips:
+                            self.recent_clips.append(recent)
                 if len(self.recent_clips) > 0:
                     _LOGGER.debug(
                         f"Found {len(self.recent_clips)} recent clips for {self.name}"
