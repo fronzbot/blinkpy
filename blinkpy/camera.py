@@ -303,6 +303,8 @@ class BlinkCamera:
             _LOGGER.info(
                 f"'{self.name}' has {len(self.recent_clips)} clips available for download"
             )
+            for clip in self.recent_clips:
+                api.http_post(self.sync.blink, clip["clip"])
 
     def get_liveview(self):
         """Get livewview rtsps link."""
