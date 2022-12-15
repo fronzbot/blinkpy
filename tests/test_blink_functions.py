@@ -2,6 +2,7 @@
 import unittest
 from unittest import mock
 import time
+import random
 
 from blinkpy import blinkpy
 from blinkpy.sync_module import BlinkSyncModule
@@ -19,6 +20,11 @@ class MockSyncModule(BlinkSyncModule):
 
 class MockCamera(BlinkCamera):
     """Mock blink camera object."""
+
+    def __init__(self, sync):
+        """Initialize mock camera."""
+        super().__init__(sync)
+        self.camera_id = random.randint(1, 100000)
 
     def update(self, config, force_cache=False, **kwargs):
         """Mock camera update method."""

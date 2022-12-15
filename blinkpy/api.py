@@ -1,8 +1,13 @@
 """Implements known blink API calls."""
 
 import logging
+import string
 from json import dumps
-from blinkpy.helpers.util import get_time, Throttle
+from blinkpy.helpers.util import (
+    get_time,
+    Throttle,
+    local_storage_clip_url_template,
+)
 from blinkpy.helpers.constants import DEFAULT_URL, TIMEOUT, DEFAULT_USER_AGENT
 
 _LOGGER = logging.getLogger(__name__)
@@ -21,7 +26,8 @@ def request_login(
 
     :param auth: Auth instance.
     :param url: Login url.
-    :login_data: Dictionary containing blink login data.
+    :param login_data: Dictionary containing blink login data.
+    :param is_retry:
     """
     headers = {
         "Host": DEFAULT_URL,
@@ -296,9 +302,58 @@ def request_motion_detection_disable(blink, network, camera_id):
     return http_post(blink, url)
 
 
-def http_get(blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOUT):
+def request_local_storage_manifest(blink, network, sync_id):
+    """Request creation of an updated manifest of video clips stored in sync module local storage.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param sync_id: ID of sync module.
     """
-    Perform an http get request.
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
+        + "/local_storage/manifest/request"
+    )
+    return http_post(blink, url)
+
+
+def get_local_storage_manifest(blink, network, sync_id, manifest_request_id):
+    """Request manifest of video clips stored in sync module local storage.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param sync_id: ID of sync module.
+    :param manifest_request_id: Request ID of local storage manifest (requested creation of new manifest).
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
+        + f"/local_storage/manifest/request/{manifest_request_id}"
+    )
+    return http_get(blink, url)
+
+
+def request_local_storage_clip(blink, network, sync_id, manifest_id, clip_id):
+    """Prepare video clip stored in the sync module to be downloaded.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param sync_id: ID of sync module.
+    :param manifest_id: ID of local storage manifest (returned in the manifest response).
+    :param clip_id: ID of the clip.
+    """
+    url = blink.urls.base_url + string.Template(
+        local_storage_clip_url_template()
+    ).substitute(
+        account_id=blink.account_id,
+        network_id=network,
+        sync_id=sync_id,
+        manifest_id=manifest_id,
+        clip_id=clip_id,
+    )
+    return http_post(blink, url)
+
+
+def http_get(blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOUT):
+    """Perform an http get request.
 
     :param url: URL to perform get request.
     :param stream: Stream response? True/FALSE
@@ -317,8 +372,7 @@ def http_get(blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOU
 
 
 def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TIMEOUT):
-    """
-    Perform an http post request.
+    """Perform an http post request.
 
     :param url: URL to perfom post request.
     :param is_retry: Is this part of a re-auth attempt?

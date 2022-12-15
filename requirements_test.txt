@@ -12,3 +12,4 @@ pytest-timeout==2.1.0
 restructuredtext-lint==1.4.0
 pygments==2.11.2
 testtools>=2.4.0
+sortedcontainers~=2.4.0

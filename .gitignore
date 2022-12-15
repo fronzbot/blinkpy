@@ -15,3 +15,5 @@ docs/_build
 *.log
 venv
 .session*
+Pipfile
+Pipfile.lock
