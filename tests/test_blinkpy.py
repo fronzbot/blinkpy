@@ -12,6 +12,8 @@ from blinkpy.blinkpy import Blink, BlinkSetupError
 from blinkpy.sync_module import BlinkOwl, BlinkLotus
 from blinkpy.helpers.constants import __version__
 
+SPECIAL = "!@#$%^&*()_+-=[]{}|/<>?,.'"
+
 
 class TestBlinkSetup(unittest.TestCase):
     """Test the Blink class in blinkpy."""
@@ -82,6 +84,11 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(self.blink.sync["TEST"], 1234)
         self.assertEqual(self.blink.sync["tEsT"], 1234)
 
+    def test_sync_special_chars(self):
+        """Check that special chars can be used as sync name."""
+        self.blink.sync[SPECIAL] = 1234
+        self.assertEqual(self.blink.sync[SPECIAL], 1234)
+
     @mock.patch("blinkpy.api.request_camera_usage")
     @mock.patch("blinkpy.api.request_homescreen")
     def test_setup_cameras(self, mock_home, mock_req):
@@ -94,6 +101,7 @@ class TestBlinkSetup(unittest.TestCase):
                     "cameras": [
                         {"id": 5678, "name": "foo"},
                         {"id": 5679, "name": "bar"},
+                        {"id": 5779, "name": SPECIAL},
                     ],
                 },
                 {"network_id": 4321, "cameras": [{"id": 0000, "name": "test"}]},
@@ -106,6 +114,7 @@ class TestBlinkSetup(unittest.TestCase):
                 "1234": [
                     {"name": "foo", "id": 5678, "type": "default"},
                     {"name": "bar", "id": 5679, "type": "default"},
+                    {"name": SPECIAL, "id": 5779, "type": "default"},
                 ],
                 "4321": [{"name": "test", "id": 0000, "type": "default"}],
             },

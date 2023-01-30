@@ -1,11 +1,15 @@
 """Defines Blink cameras."""
-
+import copy
+import string
 from shutil import copyfileobj
 import logging
+import datetime
 from json import dumps
+import traceback
 from requests.compat import urljoin
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
+from blinkpy.helpers.util import to_alphanumeric
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,6 +28,8 @@ class BlinkCamera:
         self.motion_enabled = None
         self.battery_voltage = None
         self.clip = None
+        # A clip remains in the recent clips list until is has been downloaded or has been expired.
+        self.recent_clips = []
         self.temperature = None
         self.temperature_calibrated = None
         self.battery_state = None
@@ -49,6 +55,7 @@ class BlinkCamera:
             "battery_voltage": self.battery_voltage,
             "thumbnail": self.thumbnail,
             "video": self.clip,
+            "recent_clips": self.recent_clips,
             "motion_enabled": self.motion_enabled,
             "motion_detected": self.motion_detected,
             "wifi_strength": self.wifi_strength,
@@ -108,9 +115,17 @@ class BlinkCamera:
 
     def get_media(self, media_type="image"):
         """Download media (image or video)."""
-        url = self.thumbnail
         if media_type.lower() == "video":
-            url = self.clip
+            return self.get_video_clip()
+        return self.get_thumbnail()
+
+    def get_thumbnail(self, url=None):
+        """Download thumbnail image."""
+        if not url:
+            url = self.thumbnail
+            if not url:
+                _LOGGER.warning(f"Thumbnail URL not available: self.thumbnail={url}")
+                return None
         return api.http_get(
             self.sync.blink,
             url=url,
@@ -118,6 +133,22 @@ class BlinkCamera:
             json=False,
             timeout=TIMEOUT_MEDIA,
         )
+
+    def get_video_clip(self, url=None):
+        """Download video clip."""
+        if not url:
+            url = self.clip
+            if not url:
+                _LOGGER.warning(f"Video clip URL not available: self.clip={url}")
+                return None
+        response = api.http_get(
+            self.sync.blink,
+            url=url,
+            stream=True,
+            json=False,
+            timeout=TIMEOUT_MEDIA,
+        )
+        return response
 
     def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
@@ -136,11 +167,11 @@ class BlinkCamera:
             self.sync.blink, self.network_id, self.camera_id
         )
 
-    def update(self, config, force_cache=False, **kwargs):
+    def update(self, config, force_cache=False, expire_clips=True, **kwargs):
         """Update camera info."""
         self.extract_config_info(config)
         self.get_sensor_info()
-        self.update_images(config, force_cache=force_cache)
+        self.update_images(config, force_cache=force_cache, expire_clips=expire_clips)
 
     def extract_config_info(self, config):
         """Extract info from config."""
@@ -168,7 +199,7 @@ class BlinkCamera:
             self.temperature_calibrated = self.temperature
             _LOGGER.warning("Could not retrieve calibrated temperature.")
 
-    def update_images(self, config, force_cache=False):
+    def update_images(self, config, force_cache=False, expire_clips=True):
         """Update images for camera."""
         new_thumbnail = None
         thumb_addr = None
@@ -202,10 +233,39 @@ class BlinkCamera:
 
         clip_addr = None
         try:
-            clip_addr = self.sync.last_record[self.name]["clip"]
-            self.last_record = self.sync.last_record[self.name]["time"]
-            self.clip = f"{self.sync.urls.base_url}{clip_addr}"
-        except KeyError:
+
+            def ts(record):
+                rec_time = record["time"]
+                iso_time = datetime.datetime.fromisoformat(rec_time)
+                s = int(iso_time.timestamp())
+                return s
+
+            if (
+                len(self.sync.last_records) > 0
+                and len(self.sync.last_records[self.name]) > 0
+            ):
+                last_records = sorted(self.sync.last_records[self.name], key=ts)
+                for rec in last_records:
+                    clip_addr = rec["clip"]
+                    self.clip = f"{self.sync.urls.base_url}{clip_addr}"
+                    self.last_record = rec["time"]
+                    if self.motion_detected:
+                        recent = {"time": self.last_record, "clip": self.clip}
+                        # Prevent duplicates.
+                        if recent not in self.recent_clips:
+                            self.recent_clips.append(recent)
+                if len(self.recent_clips) > 0:
+                    _LOGGER.debug(
+                        f"Found {len(self.recent_clips)} recent clips for {self.name}"
+                    )
+                    _LOGGER.debug(
+                        f"Most recent clip for {self.name} was created at {self.last_record}: {self.clip}"
+                    )
+        except (KeyError, IndexError):
+            e = traceback.format_exc()
+            trace = "".join(traceback.format_stack())
+            _LOGGER.error(f"Error getting last records for '{self.name}': {e}")
+            _LOGGER.debug(f"\n{trace}")
             pass
 
         # If the thumbnail or clip have changed, update the cache
@@ -223,6 +283,31 @@ class BlinkCamera:
 
         if clip_addr is not None and (update_cached_video or force_cache):
             self._cached_video = self.get_media(media_type="video")
+
+        # Don't let the recent clips list grow without bound.
+        if expire_clips:
+            self.expire_recent_clips()
+
+    def expire_recent_clips(self, delta=datetime.timedelta(hours=1)):
+        """Remove recent clips from list when they get too old."""
+        to_keep = []
+        for clip in self.recent_clips:
+            t = (datetime.datetime.now() - delta).timestamp()
+            clip_time = datetime.datetime.fromisoformat(clip["time"]).timestamp()
+            if clip_time > t:
+                to_keep.append(clip)
+        num_expired = len(self.recent_clips) - len(to_keep)
+        if num_expired > 0:
+            _LOGGER.info(f"Expired {num_expired} clips from '{self.name}'")
+        self.recent_clips = copy.deepcopy(to_keep)
+        if len(self.recent_clips) > 0:
+            _LOGGER.info(
+                f"'{self.name}' has {len(self.recent_clips)} clips available for download"
+            )
+            for clip in self.recent_clips:
+                url = clip["clip"]
+                if "local_storage" in url:
+                    api.http_post(self.sync.blink, url)
 
     def get_liveview(self):
         """Get livewview rtsps link."""
@@ -256,10 +341,53 @@ class BlinkCamera:
         _LOGGER.debug("Writing video from %s to %s", self.name, path)
         response = self.get_media(media_type="video")
         if response is None:
-            _LOGGER.error("No saved video exist for %s.", self.name)
+            _LOGGER.error("No saved video exists for %s.", self.name)
             return
         with open(path, "wb") as vidfile:
             copyfileobj(response.raw, vidfile)
+
+    def save_recent_clips(
+        self, output_dir="/tmp", file_pattern="${created}_${name}.mp4"
+    ):
+        """Save all recent clips using timestamp file name pattern."""
+        if not output_dir[-1] == "/":
+            output_dir += "/"
+
+        recent = copy.deepcopy(self.recent_clips)
+
+        num_saved = 0
+        for clip in recent:
+            clip_time = datetime.datetime.fromisoformat(clip["time"])
+            clip_time_local = clip_time.replace(
+                tzinfo=datetime.timezone.utc
+            ).astimezone(tz=None)
+            created_at = clip_time_local.strftime("%Y%m%d_%H%M%S")
+            clip_addr = clip["clip"]
+            path = output_dir + string.Template(file_pattern).substitute(
+                created=created_at, name=to_alphanumeric(self.name)
+            )
+            _LOGGER.debug(f"Saving {clip_addr} to {path}")
+            media = self.get_video_clip(clip_addr)
+            if media.status_code == 200:
+                with open(path, "wb") as clip_file:
+                    copyfileobj(media.raw, clip_file)
+                num_saved += 1
+                try:
+                    # Remove recent clip from the list once the download has finished.
+                    self.recent_clips.remove(clip)
+                    _LOGGER.debug(f"Removed {clip} from recent clips")
+                except ValueError:
+                    e = traceback.format_exc()
+                    _LOGGER.error(f"Error removing clip from list: {e}")
+                    trace = "".join(traceback.format_stack())
+                    _LOGGER.debug(f"\n{trace}")
+
+        if len(recent) == 0:
+            _LOGGER.info(f"No recent clips to save for '{self.name}'.")
+        else:
+            _LOGGER.info(
+                f"Saved {num_saved} of {len(recent)} recent clips from '{self.name}' to directory {output_dir}"
+            )
 
 
 class BlinkCameraMini(BlinkCamera):
@@ -323,7 +451,7 @@ class BlinkDoorbell(BlinkCamera):
 
     def snap_picture(self):
         """Snap picture for a blink doorbell camera."""
-        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/doorbells/{self.camera_id}/thumbnail"
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/thumbnail"
         return api.http_post(self.sync.blink, url)
 
     def get_sensor_info(self):
@@ -331,10 +459,8 @@ class BlinkDoorbell(BlinkCamera):
 
     def get_liveview(self):
         """Get liveview link."""
-        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/doorbells/{self.camera_id}/liveview"
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
         response = api.http_post(self.sync.blink, url)
         server = response["server"]
-        server_split = server.split(":")
-        server_split[0] = "rtsps:"
-        link = "".join(server_split)
+        link = server.replace("immis://", "rtsps://")
         return link

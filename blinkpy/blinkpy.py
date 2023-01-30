@@ -16,6 +16,7 @@ blinkpy is in no way affiliated with Blink, nor Immedia Inc.
 import os.path
 import time
 import logging
+import datetime
 from shutil import copyfileobj
 
 from requests.structures import CaseInsensitiveDict
@@ -88,12 +89,17 @@ class Blink:
                 self.setup_post_verify()
 
             self.get_homescreen()
+
             for sync_name, sync_module in self.sync.items():
-                _LOGGER.debug("Attempting refresh of sync %s", sync_name)
+                _LOGGER.debug("Attempting refresh of blink.sync['%s']", sync_name)
                 sync_module.refresh(force_cache=(force or force_cache))
+
             if not force_cache:
                 # Prevents rapid clearing of motion detect property
                 self.last_refresh = int(time.time())
+                last_refresh = datetime.datetime.fromtimestamp(self.last_refresh)
+                _LOGGER.debug(f"last_refresh={last_refresh}")
+
             return True
         return False
 
@@ -114,6 +120,15 @@ class Blink:
             if self.auth.no_prompt:
                 return True
             self.setup_prompt_2fa()
+
+        if not self.last_refresh:
+            # Initialize last_refresh to be just before the refresh delay period.
+            self.last_refresh = int(time.time() - self.refresh_rate * 1.05)
+            _LOGGER.debug(
+                f"Initialized last_refresh to {self.last_refresh} == "
+                + f"{datetime.datetime.fromtimestamp(self.last_refresh)}"
+            )
+
         return self.setup_post_verify()
 
     def setup_prompt_2fa(self):

@@ -6,6 +6,7 @@ individual BlinkCamera instantiations once the
 Blink system is set up.
 """
 
+import datetime
 import unittest
 from unittest import mock
 from blinkpy.blinkpy import Blink
@@ -58,15 +59,15 @@ class TestBlinkCameraSetup(unittest.TestCase):
             "thumbnail": "/thumb",
         }
         self.camera.last_record = ["1"]
-        self.camera.sync.last_record = {
-            "new": {"clip": "/test.mp4", "time": "1970-01-01T00:00:00"}
+        self.camera.sync.last_records = {
+            "new": [{"clip": "/test.mp4", "time": "1970-01-01T00:00:00"}]
         }
         mock_resp.side_effect = [
             {"temp": 71},
             "test",
             "foobar",
         ]
-        self.camera.update(config)
+        self.camera.update(config, expire_clips=False)
         self.assertEqual(self.camera.name, "new")
         self.assertEqual(self.camera.camera_id, "1234")
         self.assertEqual(self.camera.network_id, "5678")
@@ -88,7 +89,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
 
         # Check that thumbnail without slash processed properly
         mock_resp.side_effect = [None]
-        self.camera.update_images({"thumbnail": "thumb_no_slash"})
+        self.camera.update_images({"thumbnail": "thumb_no_slash"}, expire_clips=False)
         self.assertEqual(
             self.camera.thumbnail,
             "https://rest-test.immedia-semi.com/thumb_no_slash.jpg",
@@ -113,7 +114,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.camera.sync.homescreen = {"devices": []}
         self.assertEqual(self.camera.temperature_calibrated, None)
         with self.assertLogs() as logrecord:
-            self.camera.update(config, force=True)
+            self.camera.update(config, force=True, expire_clips=False)
         self.assertEqual(self.camera.thumbnail, None)
         self.assertEqual(self.camera.last_record, ["1"])
         self.assertEqual(self.camera.temperature_calibrated, 68)
@@ -144,9 +145,54 @@ class TestBlinkCameraSetup(unittest.TestCase):
             "thumbnail": "/foobar",
         }
         self.camera.sync.homescreen = {"devices": []}
-        self.camera.update(config, force_cache=True)
+        self.camera.update(config, force_cache=True, expire_clips=False)
         self.assertEqual(self.camera.clip, None)
         self.assertEqual(self.camera.video_from_cache, None)
+
+    def test_recent_video_clips(self, mock_resp):
+        """Tests that the last records in the sync module are added to the camera recent clips list."""
+        config = {
+            "name": "new",
+            "id": 1234,
+            "network_id": 5678,
+            "serial": "12345678",
+            "enabled": False,
+            "battery_voltage": 90,
+            "battery_state": "ok",
+            "temperature": 68,
+            "wifi_strength": 4,
+            "thumbnail": "/thumb",
+        }
+        self.camera.sync.last_records["foobar"] = []
+        record2 = {"clip": "/clip2", "time": "2022-12-01 00:00:10+00:00"}
+        self.camera.sync.last_records["foobar"].append(record2)
+        record1 = {"clip": "/clip1", "time": "2022-12-01 00:00:00+00:00"}
+        self.camera.sync.last_records["foobar"].append(record1)
+        self.camera.sync.motion["foobar"] = True
+        self.camera.update_images(config, expire_clips=False)
+        record1["clip"] = self.blink.urls.base_url + "/clip1"
+        record2["clip"] = self.blink.urls.base_url + "/clip2"
+        self.assertEqual(self.camera.recent_clips[0], record1)
+        self.assertEqual(self.camera.recent_clips[1], record2)
+
+    def test_expire_recent_clips(self, mock_resp):
+        """Test expiration of recent clips."""
+        self.camera.recent_clips = []
+        now = datetime.datetime.now()
+        self.camera.recent_clips.append(
+            {
+                "time": (now - datetime.timedelta(minutes=20)).isoformat(),
+                "clip": "/clip1",
+            },
+        )
+        self.camera.recent_clips.append(
+            {
+                "time": (now - datetime.timedelta(minutes=1)).isoformat(),
+                "clip": "/clip2",
+            },
+        )
+        self.camera.expire_recent_clips(delta=datetime.timedelta(minutes=5))
+        self.assertEqual(len(self.camera.recent_clips), 1)
 
     @mock.patch("blinkpy.camera.api.request_motion_detection_enable")
     @mock.patch("blinkpy.camera.api.request_motion_detection_disable")

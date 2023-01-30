@@ -4,6 +4,32 @@ Changelog
 
 A list of changes between each release
 
+0.20.0 (2023-01-29)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes**
+
+- Misc doorbell fixes (`@jeffothy #623 <https://github.com/fronzbot/blinkpy/pull/623>`__)
+
+**New Features**
+
+- Add support for local storage API (`@perdue #650 <https://github.com/fronzbot/blinkpy/pull/650>`__)
+
+**Other Changes**
+
+- Deprecate py3.7 (`@fronzbot #644 <https://github.com/fronzbot/blinkpy/pull/644>`__)
+- Upgrade pytest to 7.20
+- Upgrade pylint to 2.15.10
+- Upgrade pre-commit to 3.0.2
+- Upgrade black to 22.12.0
+- Upgrade flake8 to 6.0.0
+- Upgrade coverage to 7.1.0
+- Upgrade pydocstyle to 6.3.0
+- Upgrade flake8-docstrings to 1.7.0
+- Upgrade pygments to 2.14.0
+- Upgrade pytest-sugar to 0.9.6
+
+
 0.19.2 (2022-07-26)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
