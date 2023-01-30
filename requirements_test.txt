@@ -1,7 +1,7 @@
 black==22.6.0
 coverage==7.1.0
 flake8==6.0.0
-flake8-docstrings==1.6.0
+flake8-docstrings==1.7.0
 pre-commit==2.20.0
 pylint==2.15.10
 pydocstyle==6.3.0
