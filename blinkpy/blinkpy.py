@@ -336,9 +336,7 @@ class Blink:
         results = self.get_videos_metadata(since=since, stop=stop)
         self._parse_downloaded_items(results, camera, path, delay, debug)
 
-    def get_videos_metadata(
-        self, since=None, camera="all", stop=10
-    ):
+    def get_videos_metadata(self, since=None, camera="all", stop=10):
         """
         Fetch and return video metadata.
 

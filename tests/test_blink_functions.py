@@ -136,10 +136,10 @@ class TestBlinkFunctions(unittest.TestCase):
         results = blink.get_videos_metadata(stop=2)
         expected_results = [
             {
-                'created_at': '1970',
-                'device_name': 'foo',
-                'deleted': True,
-                'media': '/bar.mp4'
+                "created_at": "1970",
+                "device_name": "foo",
+                "deleted": True,
+                "media": "/bar.mp4",
             }
         ]
         self.assertListEqual(results, expected_results)
