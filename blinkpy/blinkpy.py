@@ -330,7 +330,6 @@ class Blink:
         :param debug: Set to TRUE to prevent downloading of items.
                       Instead of downloading, entries will be printed to log.
         """
-
         if not isinstance(camera, list):
             camera = [camera]
 
