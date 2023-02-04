@@ -134,7 +134,14 @@ class TestBlinkFunctions(unittest.TestCase):
         blink.last_refresh = 0
 
         results = blink.get_videos_metadata(stop=2)
-        expected_results = [{'created_at': '1970', 'device_name': 'foo', 'deleted': True, 'media': '/bar.mp4'}]
+        expected_results = [
+            {
+                'created_at': '1970',
+                'device_name': 'foo',
+                'deleted': True,
+                'media': '/bar.mp4'
+            }
+        ]
         self.assertListEqual(results, expected_results)
 
     @mock.patch("blinkpy.blinkpy.api.http_get")
@@ -144,7 +151,7 @@ class TestBlinkFunctions(unittest.TestCase):
         blink.urls = BlinkURLHandler("test")
 
         mock_req.return_value = Response()
-        response = blink.do_http_get('/path/to/request')
+        response = blink.do_http_get("/path/to/request")
         self.assertTrue(response is not None)
 
     @mock.patch("blinkpy.blinkpy.api.request_videos")
