@@ -341,7 +341,7 @@ class Blink:
         self, since=None, camera="all", stop=10
     ):
         """
-        Fetch and return video metadata
+        Fetch and return video metadata.
 
         :param since: Date and time to get videos from.
                       Ex: "2018/07/28 12:33:00" to retrieve videos since
@@ -372,6 +372,11 @@ class Blink:
         return videos
 
     def do_http_get(self, address):
+        """
+        Do an http_get on address.
+
+        :param address: address to be added to base_url.
+        """
         response = api.http_get(
             self,
             url=f"{self.urls.base_url}{address}",
