@@ -9,6 +9,7 @@ from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera
 from blinkpy.helpers.util import get_time, BlinkURLHandler
 
+from requests import Response
 
 class MockSyncModule(BlinkSyncModule):
     """Mock blink sync module object."""
@@ -116,6 +117,36 @@ class TestBlinkFunctions(unittest.TestCase):
         now = time.time()
         delta = now - start
         self.assertTrue(delta >= 0.1)
+
+    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    def test_get_videos_metadata(self, mock_req):
+        """Test ability to fetch videos metadata."""
+        blink = blinkpy.Blink()
+        generic_entry = {
+            "created_at": "1970",
+            "device_name": "foo",
+            "deleted": True,
+            "media": "/bar.mp4",
+        }
+        result = [generic_entry]
+        mock_req.return_value = {"media": result}
+        blink.last_refresh = 0
+        formatted_date = get_time(blink.last_refresh)
+
+        results = blink.get_videos_metadata(stop=2)
+        expected_results = [ {'created_at': '1970', 'device_name': 'foo', 'deleted': True, 'media': '/bar.mp4'} ]
+        self.assertListEqual(results, expected_results)
+
+
+    @mock.patch("blinkpy.blinkpy.api.http_get")
+    def test_do_http_get(self, mock_req):
+        """Test ability to do_http_get."""
+        blink = blinkpy.Blink()
+        blink.urls = BlinkURLHandler("test")
+
+        mock_req.return_value = Response()
+        response = blink.do_http_get('/path/to/request')
+        self.assertTrue(response != None)
 
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     def test_parse_camera_not_in_list(self, mock_req):

@@ -334,7 +334,7 @@ class Blink:
         if not isinstance(camera, list):
             camera = [camera]
 
-        results = self.get_videos_metadata(since, stop)
+        results = self.get_videos_metadata(since=since, stop=stop)
         self._parse_downloaded_items(results, camera, path, delay, debug)
 
     def get_videos_metadata(
