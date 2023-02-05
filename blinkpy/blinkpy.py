@@ -330,6 +330,22 @@ class Blink:
         :param debug: Set to TRUE to prevent downloading of items.
                       Instead of downloading, entries will be printed to log.
         """
+        if not isinstance(camera, list):
+            camera = [camera]
+
+        results = self.get_videos_metadata(since=since, stop=stop)
+        self._parse_downloaded_items(results, camera, path, delay, debug)
+
+    def get_videos_metadata(self, since=None, camera="all", stop=10):
+        """
+        Fetch and return video metadata.
+
+        :param since: Date and time to get videos from.
+                      Ex: "2018/07/28 12:33:00" to retrieve videos since
+                      July 28th 2018 at 12:33:00
+        :param stop: Page to stop on (~25 items per page. Default page 10).
+        """
+        videos = []
         if since is None:
             since_epochs = self.last_refresh
         else:
@@ -339,9 +355,6 @@ class Blink:
         formatted_date = util.get_time(time_to_convert=since_epochs)
         _LOGGER.info("Retrieving videos since %s", formatted_date)
 
-        if not isinstance(camera, list):
-            camera = [camera]
-
         for page in range(1, stop):
             response = api.request_videos(self, time=since_epochs, page=page)
             _LOGGER.debug("Processing page %s", page)
@@ -349,11 +362,26 @@ class Blink:
                 result = response["media"]
                 if not result:
                     raise KeyError
+                videos.extend(result)
             except (KeyError, TypeError):
                 _LOGGER.info("No videos found on page %s. Exiting.", page)
                 break
+        return videos
 
-            self._parse_downloaded_items(result, camera, path, delay, debug)
+    def do_http_get(self, address):
+        """
+        Do an http_get on address.
+
+        :param address: address to be added to base_url.
+        """
+        response = api.http_get(
+            self,
+            url=f"{self.urls.base_url}{address}",
+            stream=True,
+            json=False,
+            timeout=TIMEOUT_MEDIA,
+        )
+        return response
 
     def _parse_downloaded_items(self, result, camera, path, delay, debug):
         """Parse downloaded videos."""
@@ -375,7 +403,6 @@ class Blink:
                 _LOGGER.debug("%s: %s is marked as deleted.", camera_name, address)
                 continue
 
-            clip_address = f"{self.urls.base_url}{address}"
             filename = f"{camera_name}-{created_at}"
             filename = f"{slugify(filename)}.mp4"
             filename = os.path.join(path, filename)
@@ -385,13 +412,7 @@ class Blink:
                     _LOGGER.info("%s already exists, skipping...", filename)
                     continue
 
-                response = api.http_get(
-                    self,
-                    url=clip_address,
-                    stream=True,
-                    json=False,
-                    timeout=TIMEOUT_MEDIA,
-                )
+                response = self.do_http_get(address)
                 with open(filename, "wb") as vidfile:
                     copyfileobj(response.raw, vidfile)
 
