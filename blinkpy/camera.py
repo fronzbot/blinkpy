@@ -112,31 +112,42 @@ class BlinkCamera:
     @property
     def night_vision(self):
         """Return night_vision status."""
-        if self.product_type == "owl":
-            url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/config"
-            res = api.http_get(self.sync.blink, url)
-        elif self.product_type == "catalina":
-            url = f"{self.sync.urls.base_url}/network/{self.network_id}/camera/{self.camera_id}/config"
-            res = api.http_get(self.sync.blink, url).get("camera", [{}])[0]
-        else:
-            print("self.product_type = '%s'" % (self.product_type))
+        res = api.request_get_config(
+            self.sync.blink,
+            self.network_id,
+            self.camera_id,
+            product_type=self.product_type,
+        )
+        if res is None:
             return None
-        keys = ["night_vision_control", "illuminator_enable", "illuminator_enable_v2"]
-        return dict(zip(keys, map(lambda _: res.get(_, None), keys)))
+        if self.product_type == "catalina":
+            res = res.get("camera", [{}])[0]
+        if res["illuminator_enable"] in [0, 1, 2]:
+            res["illuminator_enable"] = ["off", "on", "auto"][
+                res.get("illuminator_enable")
+            ]
+        nv_keys = [
+            "night_vision_control",
+            "illuminator_enable",
+            "illuminator_enable_v2",
+        ]
+        return {key: res.get(key) for key in nv_keys}
 
     @night_vision.setter
     def night_vision(self, value):
         """Set camera night_vision status."""
-        if self.product_type == "catalina":
-            value = {"on": 0, "off": 1, "auto": 2}.get(value, None)
-        if self.product_type == "owl" and value in ["auto", "on", "off"]:
-            url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/config"
-        elif self.product_type == "catalina" and value in [0, 1, 2]:
-            url = f"{self.sync.urls.base_url}/network/{self.network_id}/camera/{self.camera_id}/update"
-        else:
+        if value not in ["on", "off", "auto"]:
             return None
+        if self.product_type == "catalina":
+            value = {"off": 0, "on": 1, "auto": 2}.get(value, None)
         data = dumps({"illuminator_enable": value})
-        res = api.http_post(self.sync.blink, url, json=False, data=data)
+        res = api.request_update_config(
+            self.sync.blink,
+            self.network_id,
+            self.camera_id,
+            product_type=self.product_type,
+            data=data,
+        )
         if res.ok:
             return res.json()
         return None
