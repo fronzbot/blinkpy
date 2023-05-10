@@ -7,7 +7,7 @@ pylint==2.16.1
 pydocstyle==6.3.0
 pytest==7.3.1
 pytest-cov==3.0.0
-pytest-sugar==0.9.6
+pytest-sugar==0.9.7
 pytest-timeout==2.1.0
 restructuredtext-lint==1.4.0
 pygments==2.14.0
