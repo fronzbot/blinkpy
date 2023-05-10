@@ -109,6 +109,49 @@ class BlinkCamera:
             self.sync.blink, self.network_id, self.camera_id
         )
 
+    @property
+    def night_vision(self):
+        """Return night_vision status."""
+        res = api.request_get_config(
+            self.sync.blink,
+            self.network_id,
+            self.camera_id,
+            product_type=self.product_type,
+        )
+        if res is None:
+            return None
+        if self.product_type == "catalina":
+            res = res.get("camera", [{}])[0]
+        if res["illuminator_enable"] in [0, 1, 2]:
+            res["illuminator_enable"] = ["off", "on", "auto"][
+                res.get("illuminator_enable")
+            ]
+        nv_keys = [
+            "night_vision_control",
+            "illuminator_enable",
+            "illuminator_enable_v2",
+        ]
+        return {key: res.get(key) for key in nv_keys}
+
+    @night_vision.setter
+    def night_vision(self, value):
+        """Set camera night_vision status."""
+        if value not in ["on", "off", "auto"]:
+            return None
+        if self.product_type == "catalina":
+            value = {"off": 0, "on": 1, "auto": 2}.get(value, None)
+        data = dumps({"illuminator_enable": value})
+        res = api.request_update_config(
+            self.sync.blink,
+            self.network_id,
+            self.camera_id,
+            product_type=self.product_type,
+            data=data,
+        )
+        if res.ok:
+            return res.json()
+        return None
+
     def record(self):
         """Initiate clip recording."""
         return api.request_new_video(self.sync.blink, self.network_id, self.camera_id)
