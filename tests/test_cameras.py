@@ -46,12 +46,12 @@ class TestBlinkCameraSetup(unittest.TestCase):
     def test_camera_arm_status(self, mock_resp):
         """Test arming and disarming camera."""
         self.camera.motion_enabled = None
-        self.camera.arm == None
+        self.camera.arm = None
         self.assertFalse(self.camera.arm)
-        self.camera.arm == False
+        self.camera.arm = False
         self.camera.motion_enabled = False
         self.assertFalse(self.camera.arm)
-        self.camera.arm == True
+        self.camera.arm = True
         self.camera.motion_enabled = True
         self.assertTrue(self.camera.arm)
 
@@ -60,12 +60,12 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.blink.sync.arm = False
         doorbell_camera = BlinkDoorbell(self.blink.sync["test"])
         doorbell_camera.motion_enabled = None
-        doorbell_camera.arm == None
+        doorbell_camera.arm = None
         self.assertFalse(doorbell_camera.arm)
-        doorbell_camera.arm == False
+        doorbell_camera.arm = False
         doorbell_camera.motion_enabled = False
         self.assertFalse(doorbell_camera.arm)
-        doorbell_camera.arm == True
+        doorbell_camera.arm = True
         doorbell_camera.motion_enabled = True
         self.assertTrue(doorbell_camera.arm)
 
