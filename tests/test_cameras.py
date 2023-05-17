@@ -69,7 +69,6 @@ class TestBlinkCameraSetup(unittest.TestCase):
         doorbell_camera.motion_enabled = True
         self.assertTrue(doorbell_camera.arm)
 
-
     def test_missing_attributes(self, mock_resp):
         """Test that attributes return None if missing."""
         self.camera.temperature = None
