@@ -483,7 +483,7 @@ class BlinkDoorbell(BlinkCamera):
     @property
     def arm(self):
         """Return camera arm status."""
-        return self.sync.arm
+        return self.motion_enabled
 
     @arm.setter
     def arm(self, value):
