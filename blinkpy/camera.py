@@ -483,14 +483,17 @@ class BlinkDoorbell(BlinkCamera):
     @property
     def arm(self):
         """Return camera arm status."""
-        return self.sync.arm
+        return self.motion_enabled
 
     @arm.setter
     def arm(self, value):
         """Set camera arm status."""
-        _LOGGER.warning(
-            "Individual camera motion detection enable/disable for Blink Doorbell is unsupported at this time."
-        )
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}"
+        if value:
+            url = f"{url}/enable"
+        else:
+            url = f"{url}/disable"
+        return api.http_post(self.sync.blink, url)
 
     def snap_picture(self):
         """Snap picture for a blink doorbell camera."""
