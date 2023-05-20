@@ -488,10 +488,11 @@ class BlinkDoorbell(BlinkCamera):
     @arm.setter
     def arm(self, value):
         """Set camera arm status."""
+        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}"
         if value:
-            url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/enable"
+            url = f"{url}/enable"
         else:
-            url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/disable"
+            url = f"{url}/disable"
         return api.http_post(self.sync.blink, url)
 
     def snap_picture(self):
