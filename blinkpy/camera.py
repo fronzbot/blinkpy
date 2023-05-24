@@ -98,14 +98,13 @@ class BlinkCamera:
         """Return arm status of camera."""
         return self.motion_enabled
 
-    @arm.setter
-    def arm(self, value):
+    async def async_arm(self, value):
         """Set camera arm status."""
         if value:
-            return api.request_motion_detection_enable(
+            return await api.request_motion_detection_enable(
                 self.sync.blink, self.network_id, self.camera_id
             )
-        return api.request_motion_detection_disable(
+        return await api.request_motion_detection_disable(
             self.sync.blink, self.network_id, self.camera_id
         )
 
@@ -156,20 +155,20 @@ class BlinkCamera:
         """Initiate clip recording."""
         return api.request_new_video(self.sync.blink, self.network_id, self.camera_id)
 
-    def get_media(self, media_type="image"):
+    async def get_media(self, media_type="image"):
         """Download media (image or video)."""
         if media_type.lower() == "video":
-            return self.get_video_clip()
-        return self.get_thumbnail()
+            return await self.get_video_clip()
+        return await self.get_thumbnail()
 
-    def get_thumbnail(self, url=None):
+    async def get_thumbnail(self, url=None):
         """Download thumbnail image."""
         if not url:
             url = self.thumbnail
             if not url:
                 _LOGGER.warning(f"Thumbnail URL not available: self.thumbnail={url}")
                 return None
-        return api.http_get(
+        return await api.http_get(
             self.sync.blink,
             url=url,
             stream=True,
@@ -177,14 +176,14 @@ class BlinkCamera:
             timeout=TIMEOUT_MEDIA,
         )
 
-    def get_video_clip(self, url=None):
+    async def get_video_clip(self, url=None):
         """Download video clip."""
         if not url:
             url = self.clip
             if not url:
                 _LOGGER.warning(f"Video clip URL not available: self.clip={url}")
                 return None
-        response = api.http_get(
+        response = await api.http_get(
             self.sync.blink,
             url=url,
             stream=True,
@@ -193,28 +192,28 @@ class BlinkCamera:
         )
         return response
 
-    def snap_picture(self):
+    async def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
-        return api.request_new_image(self.sync.blink, self.network_id, self.camera_id)
+        return await api.request_new_image(self.sync.blink, self.network_id, self.camera_id)
 
-    def set_motion_detect(self, enable):
+    async def set_motion_detect(self, enable):
         """Set motion detection."""
         _LOGGER.warning(
             "Method is deprecated as of v0.16.0 and will be removed in a future version. Please use the BlinkCamera.arm property instead."
         )
         if enable:
-            return api.request_motion_detection_enable(
+            return await api.request_motion_detection_enable(
                 self.sync.blink, self.network_id, self.camera_id
             )
-        return api.request_motion_detection_disable(
+        return await api.request_motion_detection_disable(
             self.sync.blink, self.network_id, self.camera_id
         )
 
-    def update(self, config, force_cache=False, expire_clips=True, **kwargs):
+    async def update(self, config, force_cache=False, expire_clips=True, **kwargs):
         """Update camera info."""
         self.extract_config_info(config)
-        self.get_sensor_info()
-        self.update_images(config, force_cache=force_cache, expire_clips=expire_clips)
+        await self.get_sensor_info()
+        await self.update_images(config, force_cache=force_cache, expire_clips=expire_clips)
 
     def extract_config_info(self, config):
         """Extract info from config."""
@@ -231,9 +230,9 @@ class BlinkCamera:
         self.wifi_strength = config.get("wifi_strength", None)
         self.product_type = config.get("type", None)
 
-    def get_sensor_info(self):
+    async def get_sensor_info(self):
         """Retrieve calibrated temperatue from special endpoint."""
-        resp = api.request_camera_sensors(
+        resp = await api.request_camera_sensors(
             self.sync.blink, self.network_id, self.camera_id
         )
         try:
@@ -242,7 +241,7 @@ class BlinkCamera:
             self.temperature_calibrated = self.temperature
             _LOGGER.warning("Could not retrieve calibrated temperature.")
 
-    def update_images(self, config, force_cache=False, expire_clips=True):
+    async def update_images(self, config, force_cache=False, expire_clips=True):
         """Update images for camera."""
         new_thumbnail = None
         thumb_addr = None
@@ -277,17 +276,17 @@ class BlinkCamera:
         clip_addr = None
         try:
 
-            def ts(record):
+            def timest(record):
                 rec_time = record["time"]
                 iso_time = datetime.datetime.fromisoformat(rec_time)
-                s = int(iso_time.timestamp())
-                return s
+                stamp = int(iso_time.timestamp())
+                return stamp
 
             if (
                 len(self.sync.last_records) > 0
                 and len(self.sync.last_records[self.name]) > 0
             ):
-                last_records = sorted(self.sync.last_records[self.name], key=ts)
+                last_records = sorted(self.sync.last_records[self.name], key=timest)
                 for rec in last_records:
                     clip_addr = rec["clip"]
                     self.clip = f"{self.sync.urls.base_url}{clip_addr}"
@@ -305,11 +304,10 @@ class BlinkCamera:
                         f"Most recent clip for {self.name} was created at {self.last_record}: {self.clip}"
                     )
         except (KeyError, IndexError):
-            e = traceback.format_exc()
+            ex = traceback.format_exc()
             trace = "".join(traceback.format_stack())
-            _LOGGER.error(f"Error getting last records for '{self.name}': {e}")
+            _LOGGER.error(f"Error getting last records for '{self.name}': {ex}")
             _LOGGER.debug(f"\n{trace}")
-            pass
 
         # If the thumbnail or clip have changed, update the cache
         update_cached_image = False
@@ -322,10 +320,10 @@ class BlinkCamera:
             update_cached_video = True
 
         if new_thumbnail is not None and (update_cached_image or force_cache):
-            self._cached_image = self.get_media()
+            self._cached_image = await self.get_media()
 
         if clip_addr is not None and (update_cached_video or force_cache):
-            self._cached_video = self.get_media(media_type="video")
+            self._cached_video = await self.get_media(media_type="video")
 
         # Don't let the recent clips list grow without bound.
         if expire_clips:
@@ -335,9 +333,9 @@ class BlinkCamera:
         """Remove recent clips from list when they get too old."""
         to_keep = []
         for clip in self.recent_clips:
-            t = (datetime.datetime.now() - delta).timestamp()
+            timedelta = (datetime.datetime.now() - delta).timestamp()
             clip_time = datetime.datetime.fromisoformat(clip["time"]).timestamp()
-            if clip_time > t:
+            if clip_time > timedelta:
                 to_keep.append(clip)
         num_expired = len(self.recent_clips) - len(to_keep)
         if num_expired > 0:
@@ -352,48 +350,48 @@ class BlinkCamera:
                 if "local_storage" in url:
                     api.http_post(self.sync.blink, url)
 
-    def get_liveview(self):
+    async def get_liveview(self):
         """Get livewview rtsps link."""
-        response = api.request_camera_liveview(
+        response = await api.request_camera_liveview(
             self.sync.blink, self.sync.network_id, self.camera_id
         )
         return response["server"]
 
-    def image_to_file(self, path):
+    async def image_to_file(self, path):
         """
         Write image to file.
 
         :param path: Path to write file
         """
         _LOGGER.debug("Writing image from %s to %s", self.name, path)
-        response = self.get_media()
-        if response.status_code == 200:
+        response = await self.get_media()
+        if response.status == 200:
             with open(path, "wb") as imgfile:
-                copyfileobj(response.raw, imgfile)
+                copyfileobj(await response.raw(), imgfile)
         else:
             _LOGGER.error(
-                "Cannot write image to file, response %s", response.status_code
+                "Cannot write image to file, response %s", response.status
             )
 
-    def video_to_file(self, path):
+    async def video_to_file(self, path):
         """
         Write video to file.
 
         :param path: Path to write file
         """
         _LOGGER.debug("Writing video from %s to %s", self.name, path)
-        response = self.get_media(media_type="video")
+        response = await self.get_media(media_type="video")
         if response is None:
             _LOGGER.error("No saved video exists for %s.", self.name)
             return
         with open(path, "wb") as vidfile:
-            copyfileobj(response.raw, vidfile)
+            copyfileobj(await response.raw(), vidfile)
 
-    def save_recent_clips(
+    async def save_recent_clips(
         self, output_dir="/tmp", file_pattern="${created}_${name}.mp4"
     ):
         """Save all recent clips using timestamp file name pattern."""
-        if not output_dir[-1] == "/":
+        if output_dir[-1] != "/":
             output_dir += "/"
 
         recent = copy.deepcopy(self.recent_clips)
@@ -410,8 +408,8 @@ class BlinkCamera:
                 created=created_at, name=to_alphanumeric(self.name)
             )
             _LOGGER.debug(f"Saving {clip_addr} to {path}")
-            media = self.get_video_clip(clip_addr)
-            if media.status_code == 200:
+            media = await self.get_video_clip(clip_addr)
+            if media.status == 200:
                 with open(path, "wb") as clip_file:
                     copyfileobj(media.raw, clip_file)
                 num_saved += 1
@@ -420,8 +418,8 @@ class BlinkCamera:
                     self.recent_clips.remove(clip)
                     _LOGGER.debug(f"Removed {clip} from recent clips")
                 except ValueError:
-                    e = traceback.format_exc()
-                    _LOGGER.error(f"Error removing clip from list: {e}")
+                    ex = traceback.format_exc()
+                    _LOGGER.error(f"Error removing clip from list: {ex}")
                     trace = "".join(traceback.format_stack())
                     _LOGGER.debug(f"\n{trace}")
 
@@ -446,25 +444,24 @@ class BlinkCameraMini(BlinkCamera):
         """Return camera arm status."""
         return self.sync.arm
 
-    @arm.setter
-    def arm(self, value):
+    async def async_arm(self, value):
         """Set camera arm status."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/config"
         data = dumps({"enabled": value})
-        return api.http_post(self.sync.blink, url, json=False, data=data)
+        return await api.http_post(self.sync.blink, url, json=False, data=data)
 
-    def snap_picture(self):
+    async def snap_picture(self):
         """Snap picture for a blink mini camera."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/thumbnail"
-        return api.http_post(self.sync.blink, url)
+        return await api.http_post(self.sync.blink, url)
 
-    def get_sensor_info(self):
+    async def get_sensor_info(self):
         """Get sensor info for blink mini camera."""
 
-    def get_liveview(self):
+    async def get_liveview(self):
         """Get liveview link."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/liveview"
-        response = api.http_post(self.sync.blink, url)
+        response = await api.http_post(self.sync.blink, url)
         server = response["server"]
         server_split = server.split(":")
         server_split[0] = "rtsps:"
@@ -484,28 +481,27 @@ class BlinkDoorbell(BlinkCamera):
     def arm(self):
         """Return camera arm status."""
         return self.motion_enabled
-
-    @arm.setter
-    def arm(self, value):
+       
+    async def async_arm(self, value):
         """Set camera arm status."""
         if value:
             url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/enable"
         else:
             url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/disable"
-        return api.http_post(self.sync.blink, url)
+        return await api.http_post(self.sync.blink, url)
 
-    def snap_picture(self):
+    async def snap_picture(self):
         """Snap picture for a blink doorbell camera."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/thumbnail"
-        return api.http_post(self.sync.blink, url)
+        return await api.http_post(self.sync.blink, url)
 
-    def get_sensor_info(self):
+    async def get_sensor_info(self):
         """Get sensor info for blink doorbell camera."""
 
-    def get_liveview(self):
+    async def get_liveview(self):
         """Get liveview link."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
-        response = api.http_post(self.sync.blink, url)
+        response = await api.http_post(self.sync.blink, url)
         server = response["server"]
         link = server.replace("immis://", "rtsps://")
         return link
