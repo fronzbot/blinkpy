@@ -210,12 +210,12 @@ class Auth:
                 _LOGGER.error("Unable to refresh token.")
         return None
 
-    def send_auth_key(self, blink, key):
+    async def send_auth_key(self, blink, key):
         """Send 2FA key to blink servers."""
         if key is not None:
-            response = api.request_verify(self, blink, key)
+            response = await api.request_verify(self, blink, key)
             try:
-                json_resp = response.json()
+                json_resp = await response.json()
                 blink.available = json_resp["valid"]
                 if not json_resp["valid"]:
                     _LOGGER.error("%s", json_resp["message"])

@@ -62,106 +62,106 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertEqual(self.blink.sync["test"].arm, None)
         self.assertFalse(self.blink.sync["test"].available)
 
-    def test_get_events(self, mock_resp):
+    async def test_get_events(self, mock_resp):
         """Test get events function."""
         mock_resp.return_value = {"event": True}
-        self.assertEqual(self.blink.sync["test"].get_events(), True)
+        self.assertEqual(await self.blink.sync["test"].get_events(), True)
 
-    def test_get_events_fail(self, mock_resp):
+    async def test_get_events_fail(self, mock_resp):
         """Test handling of failed get events function."""
         mock_resp.return_value = None
-        self.assertFalse(self.blink.sync["test"].get_events())
+        self.assertFalse(await self.blink.sync["test"].get_events())
         mock_resp.return_value = {}
-        self.assertFalse(self.blink.sync["test"].get_events())
+        self.assertFalse(await self.blink.sync["test"].get_events())
 
-    def test_get_camera_info(self, mock_resp):
+    async def test_get_camera_info(self, mock_resp):
         """Test get camera info function."""
         mock_resp.return_value = {"camera": ["foobar"]}
-        self.assertEqual(self.blink.sync["test"].get_camera_info("1234"), "foobar")
+        self.assertEqual(await self.blink.sync["test"].get_camera_info("1234"), "foobar")
 
-    def test_get_camera_info_fail(self, mock_resp):
+    async def test_get_camera_info_fail(self, mock_resp):
         """Test handling of failed get camera info function."""
         mock_resp.return_value = None
-        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), {})
+        self.assertEqual(await self.blink.sync["test"].get_camera_info("1"), {})
         mock_resp.return_value = {}
-        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), {})
+        self.assertEqual(await self.blink.sync["test"].get_camera_info("1"), {})
         mock_resp.return_value = {"camera": None}
-        self.assertEqual(self.blink.sync["test"].get_camera_info("1"), {})
+        self.assertEqual(await self.blink.sync["test"].get_camera_info("1"), {})
 
-    def test_get_network_info(self, mock_resp):
+    async def test_get_network_info(self, mock_resp):
         """Test network retrieval."""
         mock_resp.return_value = {"network": {"sync_module_error": False}}
-        self.assertTrue(self.blink.sync["test"].get_network_info())
+        self.assertTrue(await self.blink.sync["test"].get_network_info())
         mock_resp.return_value = {"network": {"sync_module_error": True}}
-        self.assertFalse(self.blink.sync["test"].get_network_info())
+        self.assertFalse(await self.blink.sync["test"].get_network_info())
 
-    def test_get_network_info_failure(self, mock_resp):
+    async def test_get_network_info_failure(self, mock_resp):
         """Test failed network retrieval."""
         mock_resp.return_value = {}
         self.blink.sync["test"].available = True
-        self.assertFalse(self.blink.sync["test"].get_network_info())
-        self.assertFalse(self.blink.sync["test"].available)
+        self.assertFalse(await self.blink.sync["test"].get_network_info())
+        self.assertFalse(await self.blink.sync["test"].available)
         self.blink.sync["test"].available = True
         mock_resp.return_value = None
-        self.assertFalse(self.blink.sync["test"].get_network_info())
-        self.assertFalse(self.blink.sync["test"].available)
+        self.assertFalse(await self.blink.sync["test"].get_network_info())
+        self.assertFalse(await self.blink.sync["test"].available)
 
-    def test_check_new_videos_startup(self, mock_resp):
+    async def test_check_new_videos_startup(self, mock_resp):
         """Test that check_new_videos does not block startup."""
         sync_module = self.blink.sync["test"]
         self.blink.last_refresh = None
-        self.assertFalse(sync_module.check_new_videos())
+        self.assertFalse(await sync_module.check_new_videos())
 
-    def test_check_new_videos_failed(self, mock_resp):
+    async def test_check_new_videos_failed(self, mock_resp):
         """Test method when response is unexpected."""
         mock_resp.side_effect = [None, "just a string", {}]
         sync_module = self.blink.sync["test"]
         sync_module.cameras = {"foo": None}
 
         sync_module.motion["foo"] = True
-        self.assertFalse(sync_module.check_new_videos())
+        self.assertFalse(await sync_module.check_new_videos())
         self.assertFalse(sync_module.motion["foo"])
 
         sync_module.motion["foo"] = True
-        self.assertFalse(sync_module.check_new_videos())
+        self.assertFalse(await sync_module.check_new_videos())
         self.assertFalse(sync_module.motion["foo"])
 
         sync_module.motion["foo"] = True
-        self.assertFalse(sync_module.check_new_videos())
+        self.assertFalse(await sync_module.check_new_videos())
         self.assertFalse(sync_module.motion["foo"])
 
-    def test_unexpected_summary(self, mock_resp):
+    async def test_unexpected_summary(self, mock_resp):
         """Test unexpected summary response."""
         self.mock_start[0] = None
         mock_resp.side_effect = self.mock_start
-        self.assertFalse(self.blink.sync["test"].start())
+        self.assertFalse(await elf.blink.sync["test"].start())
 
-    def test_summary_with_no_network_id(self, mock_resp):
+    async def test_summary_with_no_network_id(self, mock_resp):
         """Test handling of bad summary."""
         self.mock_start[0]["syncmodule"] = None
         mock_resp.side_effect = self.mock_start
-        self.assertFalse(self.blink.sync["test"].start())
+        self.assertFalse(await self.blink.sync["test"].start())
 
-    def test_summary_with_only_network_id(self, mock_resp):
+    async def test_summary_with_only_network_id(self, mock_resp):
         """Test handling of sparse summary."""
         self.mock_start[0]["syncmodule"] = {"network_id": 8675309}
         mock_resp.side_effect = self.mock_start
-        self.blink.sync["test"].start()
+        await self.blink.sync["test"].start()
         self.assertEqual(self.blink.sync["test"].network_id, 8675309)
 
-    def test_unexpected_camera_info(self, mock_resp):
+    async def test_unexpected_camera_info(self, mock_resp):
         """Test unexpected camera info response."""
         self.blink.sync["test"].cameras["foo"] = None
         self.mock_start[5] = None
         mock_resp.side_effect = self.mock_start
-        self.blink.sync["test"].start()
+        await self.blink.sync["test"].start()
         self.assertEqual(self.blink.sync["test"].cameras, {"foo": None})
 
-    def test_missing_camera_info(self, mock_resp):
+    async def test_missing_camera_info(self, mock_resp):
         """Test missing key from camera info response."""
         self.blink.sync["test"].cameras["foo"] = None
         self.mock_start[5] = {}
-        self.blink.sync["test"].start()
+        await self.blink.sync["test"].start()
         self.assertEqual(self.blink.sync["test"].cameras, {"foo": None})
 
     def test_sync_attributes(self, mock_resp):
@@ -169,19 +169,19 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertEqual(self.blink.sync["test"].attributes["name"], "test")
         self.assertEqual(self.blink.sync["test"].attributes["network_id"], "1234")
 
-    def test_name_not_in_config(self, mock_resp):
+    async def test_name_not_in_config(self, mock_resp):
         """Check that function exits when name not in camera_config."""
         test_sync = self.blink.sync["test"]
         test_sync.camera_list = [{"foo": "bar"}]
-        self.assertTrue(test_sync.update_cameras())
+        self.assertTrue(await test_sync.update_cameras())
 
-    def test_camera_config_key_error(self, mock_resp):
+    async def test_camera_config_key_error(self, mock_resp):
         """Check that update returns False on KeyError."""
         test_sync = self.blink.sync["test"]
         test_sync.camera_list = [{"name": "foobar"}]
-        self.assertFalse(test_sync.update_cameras())
+        self.assertFalse(await test_sync.update_cameras())
 
-    def test_update_local_storage_manifest(self, mock_resp):
+    async def test_update_local_storage_manifest(self, mock_resp):
         """Test getting the manifest from the sync module."""
         self.blink.account_id = 10111213
         test_sync = self.blink.sync["test"]
@@ -229,7 +229,7 @@ class TestBlinkSyncModule(unittest.TestCase):
         test_sync._names_table[to_alphanumeric("Front Door")] = "Front Door"
         test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
         test_sync._names_table[to_alphanumeric("Yard")] = "Yard"
-        test_sync.update_local_storage_manifest()
+        await test_sync.update_local_storage_manifest()
         self.assertEqual(len(test_sync._local_storage["manifest"]), 5)
         self.assertEqual(
             test_sync._local_storage["manifest"][0].url(),
@@ -242,7 +242,7 @@ class TestBlinkSyncModule(unittest.TestCase):
             + "manifest/4321/clip/request/866333964",
         )
 
-    def test_check_new_videos_with_local_storage(self, mock_resp):
+    async def test_check_new_videos_with_local_storage(self, mock_resp):
         """Test checking new videos in local storage."""
         self.blink.account_id = 10111213
         test_sync = self.blink.sync["test"]
@@ -281,7 +281,7 @@ class TestBlinkSyncModule(unittest.TestCase):
         test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
         test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
         test_sync.update_local_storage_manifest()
-        self.assertTrue(test_sync.check_new_videos())
+        self.assertTrue(await test_sync.check_new_videos())
         self.assertEqual(
             test_sync.last_records["Back Door"][0]["clip"],
             "/api/v1/accounts/10111213/networks/1234/sync_modules/1234/local_storage/"

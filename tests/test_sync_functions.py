@@ -46,7 +46,7 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.camera = None
         self.mock_start = None
 
-    def test_check_new_videos(self, mock_resp):
+    async def test_check_new_videos(self, mock_resp):
         """Test recent video response."""
         mock_resp.return_value = {
             "media": [
@@ -62,21 +62,21 @@ class TestBlinkSyncModule(unittest.TestCase):
         sync_module.cameras = {"foo": None}
         sync_module.blink.last_refresh = 0
         self.assertEqual(sync_module.motion, {})
-        self.assertTrue(sync_module.check_new_videos())
+        self.assertTrue(await sync_module.check_new_videos())
         self.assertEqual(
             sync_module.last_records["foo"],
             [{"clip": "/foo/bar.mp4", "time": "1990-01-01T00:00:00+00:00"}],
         )
         self.assertEqual(sync_module.motion, {"foo": True})
         mock_resp.return_value = {"media": []}
-        self.assertTrue(sync_module.check_new_videos())
+        self.assertTrue(await sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {"foo": False})
         self.assertEqual(
             sync_module.last_records["foo"],
             [{"clip": "/foo/bar.mp4", "time": "1990-01-01T00:00:00+00:00"}],
         )
 
-    def test_check_new_videos_old_date(self, mock_resp):
+    async def test_check_new_videos_old_date(self, mock_resp):
         """Test videos return response with old date."""
         mock_resp.return_value = {
             "media": [
@@ -91,10 +91,10 @@ class TestBlinkSyncModule(unittest.TestCase):
         sync_module = self.blink.sync["test"]
         sync_module.cameras = {"foo": None}
         sync_module.blink.last_refresh = 1000
-        self.assertTrue(sync_module.check_new_videos())
+        self.assertTrue(await sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {"foo": False})
 
-    def test_check_no_motion_if_not_armed(self, mock_resp):
+    async def test_check_no_motion_if_not_armed(self, mock_resp):
         """Test that motion detection is not set if module unarmed."""
         mock_resp.return_value = {
             "media": [
@@ -108,13 +108,13 @@ class TestBlinkSyncModule(unittest.TestCase):
         sync_module = self.blink.sync["test"]
         sync_module.cameras = {"foo": None}
         sync_module.blink.last_refresh = 1000
-        self.assertTrue(sync_module.check_new_videos())
+        self.assertTrue(await sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {"foo": True})
         sync_module.network_info = {"network": {"armed": False}}
-        self.assertTrue(sync_module.check_new_videos())
+        self.assertTrue(await sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {"foo": False})
 
-    def test_check_multiple_videos(self, mock_resp):
+    async def test_check_multiple_videos(self, mock_resp):
         """Test motion found even with multiple videos."""
         mock_resp.return_value = {
             "media": [
@@ -138,24 +138,24 @@ class TestBlinkSyncModule(unittest.TestCase):
         sync_module = self.blink.sync["test"]
         sync_module.cameras = {"foo": None}
         sync_module.blink.last_refresh = 1000
-        self.assertTrue(sync_module.check_new_videos())
+        self.assertTrue(await sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {"foo": True})
         expected_result = {
             "foo": [{"clip": "/bar/foo.mp4", "time": "1990-01-01T00:00:00+00:00"}]
         }
         self.assertEqual(sync_module.last_records, expected_result)
 
-    def test_sync_start(self, mock_resp):
+    async def test_sync_start(self, mock_resp):
         """Test sync start function."""
         mock_resp.side_effect = self.mock_start
-        self.blink.sync["test"].start()
+        await self.blink.sync["test"].start()
         self.assertEqual(self.blink.sync["test"].name, "test")
         self.assertEqual(self.blink.sync["test"].sync_id, 1234)
         self.assertEqual(self.blink.sync["test"].network_id, 5678)
         self.assertEqual(self.blink.sync["test"].serial, "12345678")
         self.assertEqual(self.blink.sync["test"].status, "foobar")
 
-    def test_sync_with_mixed_cameras(self, mock_resp):
+    async def test_sync_with_mixed_cameras(self, mock_resp):
         """Test sync module with mixed cameras attached."""
         resp_sync = {
             "syncmodule": {
@@ -196,7 +196,7 @@ class TestBlinkSyncModule(unittest.TestCase):
 
         test_sync = self.blink.sync["test"]
 
-        self.assertTrue(test_sync.start())
+        self.assertTrue(await test_sync.start())
         self.assertEqual(test_sync.cameras["foo"].__class__, BlinkCamera)
         self.assertEqual(test_sync.cameras["bar"].__class__, BlinkCameraMini)
         self.assertEqual(test_sync.cameras["fake"].__class__, BlinkDoorbell)
@@ -217,7 +217,7 @@ class TestBlinkSyncModule(unittest.TestCase):
                 test_sync.cameras["fake"].__class__, BlinkDoorbell, msg=debug_msg
             )
 
-    def test_init_local_storage(self, mock_resp):
+    async def test_init_local_storage(self, mock_resp):
         """Test initialization of local storage object."""
         json_fragment = """{
             "sync_modules": [
@@ -231,5 +231,5 @@ class TestBlinkSyncModule(unittest.TestCase):
             ]
         }"""
         self.blink.homescreen = json.loads(json_fragment)
-        self.blink.sync["test"]._init_local_storage(123456)
+        await self.blink.sync["test"]._init_local_storage(123456)
         self.assertTrue(self.blink.sync["test"].local_storage)

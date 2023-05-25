@@ -38,10 +38,10 @@ class TestBlinkDoorbell(unittest.TestCase):
         self.assertEqual(self.blink.sync["test"].attributes["name"], "test")
         self.assertEqual(self.blink.sync["test"].attributes["network_id"], "1234")
 
-    def test_lotus_start(self, mock_resp):
+    async def test_lotus_start(self, mock_resp):
         """Test doorbell instantiation."""
         self.blink.last_refresh = None
         lotus = self.blink.sync["test"]
-        self.assertTrue(lotus.start())
+        self.assertTrue(await lotus.start())
         self.assertTrue("test" in lotus.cameras)
         self.assertEqual(lotus.cameras["test"].__class__, BlinkDoorbell)

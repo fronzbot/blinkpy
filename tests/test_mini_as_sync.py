@@ -38,10 +38,10 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertEqual(self.blink.sync["test"].attributes["name"], "test")
         self.assertEqual(self.blink.sync["test"].attributes["network_id"], "1234")
 
-    def test_owl_start(self, mock_resp):
+    async def test_owl_start(self, mock_resp):
         """Test owl camera instantiation."""
         self.blink.last_refresh = None
         owl = self.blink.sync["test"]
-        self.assertTrue(owl.start())
+        self.assertTrue(await owl.start())
         self.assertTrue("test" in owl.cameras)
         self.assertEqual(owl.cameras["test"].__class__, BlinkCameraMini)

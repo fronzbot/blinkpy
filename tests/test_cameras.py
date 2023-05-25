@@ -43,29 +43,29 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.blink = None
         self.camera = None
 
-    def test_camera_arm_status(self, mock_resp):
+    async def test_camera_arm_status(self, mock_resp):
         """Test arming and disarming camera."""
         self.camera.motion_enabled = None
-        self.camera.arm = None
+        await self.camera.async_arm(None)
         self.assertFalse(self.camera.arm)
-        self.camera.arm = False
+        await self.camera.async_arm(False)
         self.camera.motion_enabled = False
         self.assertFalse(self.camera.arm)
-        self.camera.arm = True
+        await self.camera.async_arm(True)
         self.camera.motion_enabled = True
         self.assertTrue(self.camera.arm)
 
-    def test_doorbell_camera_arm(self, mock_resp):
+    async def test_doorbell_camera_arm(self, mock_resp):
         """Test arming and disarming camera."""
         self.blink.sync.arm = False
         doorbell_camera = BlinkDoorbell(self.blink.sync["test"])
         doorbell_camera.motion_enabled = None
-        doorbell_camera.arm = None
+        await doorbell_camera.async_arm(None)
         self.assertFalse(doorbell_camera.arm)
-        doorbell_camera.arm = False
+        await doorbell_camera.async_arm(False)
         doorbell_camera.motion_enabled = False
         self.assertFalse(doorbell_camera.arm)
-        doorbell_camera.arm = True
+        await doorbell_camera.async_arm(True)
         doorbell_camera.motion_enabled = True
         self.assertTrue(doorbell_camera.arm)
 
@@ -102,16 +102,16 @@ class TestBlinkCameraSetup(unittest.TestCase):
                 continue
             self.assertEqual(attr[key], None)
 
-    def test_camera_stream(self, mock_resp):
+    async def test_camera_stream(self, mock_resp):
         """Test that camera stream returns correct url."""
         mock_resp.return_value = {"server": "rtsps://foo.bar"}
         mini_camera = BlinkCameraMini(self.blink.sync["test"])
         doorbell_camera = BlinkDoorbell(self.blink.sync["test"])
-        self.assertEqual(self.camera.get_liveview(), "rtsps://foo.bar")
-        self.assertEqual(mini_camera.get_liveview(), "rtsps://foo.bar")
-        self.assertEqual(doorbell_camera.get_liveview(), "rtsps://foo.bar")
+        self.assertEqual(await self.camera.get_liveview(), "rtsps://foo.bar")
+        self.assertEqual(await mini_camera.get_liveview(), "rtsps://foo.bar")
+        self.assertEqual(await doorbell_camera.get_liveview(), "rtsps://foo.bar")
 
-    def test_different_thumb_api(self, mock_resp):
+    async def test_different_thumb_api(self, mock_resp):
         """Test that the correct url is created with new api."""
         thumb_endpoint = "https://rest-test.immedia-semi.com/api/v3/media/accounts/9999/networks/5678/test/1234/thumbnail/thumbnail.jpg?ts=1357924680&ext="
         config = {
@@ -132,10 +132,10 @@ class TestBlinkCameraSetup(unittest.TestCase):
             "test",
         ]
         self.camera.sync.blink.account_id = 9999
-        self.camera.update(config, expire_clips=False)
+        await self.camera.update(config, expire_clips=False)
         self.assertEqual(self.camera.thumbnail, thumb_endpoint)
 
-    def test_thumb_return_none(self, mock_resp):
+    async def test_thumb_return_none(self, mock_resp):
         """Test that a 'None" thumbnail is doesn't break system."""
         config = {
             "name": "new",
@@ -154,10 +154,10 @@ class TestBlinkCameraSetup(unittest.TestCase):
             {"temp": 71},
             "test",
         ]
-        self.camera.update(config, expire_clips=False)
+        await self.camera.update(config, expire_clips=False)
         self.assertEqual(self.camera.thumbnail, None)
 
-    def test_new_thumb_url_returned(self, mock_resp):
+    async def test_new_thumb_url_returned(self, mock_resp):
         """Test that thumb handled properly if new url returned."""
         thumb_return = "/api/v3/media/accounts/9999/networks/5678/test/1234/thumbnail/thumbnail.jpg?ts=1357924680&ext="
         config = {
@@ -178,7 +178,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             "test",
         ]
         self.camera.sync.blink.account_id = 9999
-        self.camera.update(config, expire_clips=False)
+        await self.camera.update(config, expire_clips=False)
         self.assertEqual(
             self.camera.thumbnail, f"https://rest-test.immedia-semi.com{thumb_return}"
         )
