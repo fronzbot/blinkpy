@@ -1,8 +1,8 @@
 """Tests camera and system functions."""
 
 import json
-import unittest
 from unittest import mock
+from unittest import IsolatedAsyncioTestCase
 from random import shuffle
 import pytest
 from blinkpy.blinkpy import Blink
@@ -12,7 +12,7 @@ from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
 
 
 @mock.patch("blinkpy.auth.Auth.query")
-class TestBlinkSyncModule(unittest.TestCase):
+class TestBlinkSyncModule(IsolatedAsyncioTestCase):
     """Test BlinkSyncModule functions in blinkpy."""
 
     def setUp(self):

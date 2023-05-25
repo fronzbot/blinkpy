@@ -363,7 +363,7 @@ class BlinkSyncModule:
                 _LOGGER.debug(f"Found new item in local storage manifest: {item}")
                 name = item.name
                 clip_url = item.url(last_manifest_id)
-                item.prepare_download(self.blink)
+                await item.prepare_download(self.blink)
                 self.motion[name] = True
                 record = {"clip": clip_url, "time": iso_timestamp}
                 self.last_records[name].append(record)

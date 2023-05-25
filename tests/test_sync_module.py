@@ -1,6 +1,7 @@
 """Tests camera and system functions."""
 import datetime
 import unittest
+from unittest import IsolatedAsyncioTestCase
 from unittest import mock
 import pytest
 from blinkpy.blinkpy import Blink
@@ -11,7 +12,7 @@ from tests.test_blink_functions import MockCamera
 
 
 @mock.patch("blinkpy.auth.Auth.query")
-class TestBlinkSyncModule(unittest.TestCase):
+class TestBlinkSyncModule(IsolatedAsyncioTestCase):
     """Test BlinkSyncModule functions in blinkpy."""
 
     def setUp(self):
@@ -62,13 +63,12 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertEqual(self.blink.sync["test"].arm, None)
         self.assertFalse(self.blink.sync["test"].available)
 
-    @pytest.mark.asyncio
     async def test_get_events(self, mock_resp) -> None:
         """Test get events function."""
         mock_resp.return_value = {"event": True}
         self.assertEqual(await self.blink.sync["test"].get_events(), True)
 
-    @pytest.mark.asyncio
+#    @mock.patch("blinkpy.api.request_sync_events")
     async def test_get_events_fail(self, mock_resp) -> None:
         """Test handling of failed get events function."""
         mock_resp.return_value = None
@@ -76,7 +76,6 @@ class TestBlinkSyncModule(unittest.TestCase):
         mock_resp.return_value = {}
         self.assertFalse(await self.blink.sync["test"].get_events())
 
-    @pytest.mark.asyncio
     async def test_get_camera_info(self, mock_resp) -> None:
         """Test get camera info function."""
         mock_resp.return_value = {"camera": ["foobar"]}
@@ -84,7 +83,6 @@ class TestBlinkSyncModule(unittest.TestCase):
             await self.blink.sync["test"].get_camera_info("1234"), "foobar"
         )
 
-    @pytest.mark.asyncio
     async def test_get_camera_info_fail(self, mock_resp) -> None:
         """Test handling of failed get camera info function."""
         mock_resp.return_value = None
@@ -94,7 +92,6 @@ class TestBlinkSyncModule(unittest.TestCase):
         mock_resp.return_value = {"camera": None}
         self.assertEqual(await self.blink.sync["test"].get_camera_info("1"), {})
 
-    @pytest.mark.asyncio
     async def test_get_network_info(self, mock_resp) -> None:
         """Test network retrieval."""
         mock_resp.return_value = {"network": {"sync_module_error": False}}
@@ -102,26 +99,23 @@ class TestBlinkSyncModule(unittest.TestCase):
         mock_resp.return_value = {"network": {"sync_module_error": True}}
         self.assertFalse(await self.blink.sync["test"].get_network_info())
 
-    @pytest.mark.asyncio
     async def test_get_network_info_failure(self, mock_resp) -> None:
         """Test failed network retrieval."""
         mock_resp.return_value = {}
         self.blink.sync["test"].available = True
         self.assertFalse(await self.blink.sync["test"].get_network_info())
-        self.assertFalse(await self.blink.sync["test"].available)
+        self.assertFalse(self.blink.sync["test"].available)
         self.blink.sync["test"].available = True
         mock_resp.return_value = None
         self.assertFalse(await self.blink.sync["test"].get_network_info())
-        self.assertFalse(await self.blink.sync["test"].available)
+        self.assertFalse(self.blink.sync["test"].available)
 
-    @pytest.mark.asyncio
     async def test_check_new_videos_startup(self, mock_resp) -> None:
         """Test that check_new_videos does not block startup."""
         sync_module = self.blink.sync["test"]
         self.blink.last_refresh = None
         self.assertFalse(await sync_module.check_new_videos())
 
-    @pytest.mark.asyncio
     async def test_check_new_videos_failed(self, mock_resp) -> None:
         """Test method when response is unexpected."""
         mock_resp.side_effect = [None, "just a string", {}]
@@ -140,21 +134,18 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertFalse(await sync_module.check_new_videos())
         self.assertFalse(sync_module.motion["foo"])
 
-    @pytest.mark.asyncio
     async def test_unexpected_summary(self, mock_resp) -> None:
         """Test unexpected summary response."""
         self.mock_start[0] = None
         mock_resp.side_effect = self.mock_start
         self.assertFalse(await self.blink.sync["test"].start())
 
-    @pytest.mark.asyncio
     async def test_summary_with_no_network_id(self, mock_resp) -> None:
         """Test handling of bad summary."""
         self.mock_start[0]["syncmodule"] = None
         mock_resp.side_effect = self.mock_start
         self.assertFalse(await self.blink.sync["test"].start())
 
-    @pytest.mark.asyncio
     async def test_summary_with_only_network_id(self, mock_resp) -> None:
         """Test handling of sparse summary."""
         self.mock_start[0]["syncmodule"] = {"network_id": 8675309}
@@ -162,7 +153,6 @@ class TestBlinkSyncModule(unittest.TestCase):
         await self.blink.sync["test"].start()
         self.assertEqual(self.blink.sync["test"].network_id, 8675309)
 
-    @pytest.mark.asyncio
     async def test_unexpected_camera_info(self, mock_resp) -> None:
         """Test unexpected camera info response."""
         self.blink.sync["test"].cameras["foo"] = None
@@ -171,7 +161,6 @@ class TestBlinkSyncModule(unittest.TestCase):
         await self.blink.sync["test"].start()
         self.assertEqual(self.blink.sync["test"].cameras, {"foo": None})
 
-    @pytest.mark.asyncio
     async def test_missing_camera_info(self, mock_resp) -> None:
         """Test missing key from camera info response."""
         self.blink.sync["test"].cameras["foo"] = None
@@ -184,21 +173,18 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertEqual(self.blink.sync["test"].attributes["name"], "test")
         self.assertEqual(self.blink.sync["test"].attributes["network_id"], "1234")
 
-    @pytest.mark.asyncio
     async def test_name_not_in_config(self, mock_resp) -> None:
         """Check that function exits when name not in camera_config."""
         test_sync = self.blink.sync["test"]
         test_sync.camera_list = [{"foo": "bar"}]
         self.assertTrue(await test_sync.update_cameras())
 
-    @pytest.mark.asyncio
     async def test_camera_config_key_error(self, mock_resp) -> None:
         """Check that update returns False on KeyError."""
         test_sync = self.blink.sync["test"]
         test_sync.camera_list = [{"name": "foobar"}]
         self.assertFalse(await test_sync.update_cameras())
     
-    @pytest.mark.asyncio
     async def test_update_local_storage_manifest(self, mock_resp) -> None:
         """Test getting the manifest from the sync module."""
         self.blink.account_id = 10111213
@@ -260,7 +246,6 @@ class TestBlinkSyncModule(unittest.TestCase):
             + "manifest/4321/clip/request/866333964",
         )
 
-    @pytest.mark.asyncio
     async def test_check_new_videos_with_local_storage(self, mock_resp) -> None:
         """Test checking new videos in local storage."""
         self.blink.account_id = 10111213

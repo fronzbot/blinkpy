@@ -6,8 +6,8 @@ the main Blink system.  Tests if we properly catch
 any communication related errors at startup.
 """
 
-import unittest
 from unittest import mock
+from unittest import IsolatedAsyncioTestCase
 import pytest
 from blinkpy.blinkpy import Blink, BlinkSetupError
 from blinkpy.sync_module import BlinkOwl, BlinkLotus
@@ -16,7 +16,7 @@ from blinkpy.helpers.constants import __version__
 SPECIAL = "!@#$%^&*()_+-=[]{}|/<>?,.'"
 
 
-class TestBlinkSetup(unittest.TestCase):
+class TestBlinkSetup(IsolatedAsyncioTestCase):
     """Test the Blink class in blinkpy."""
 
     def setUp(self):
@@ -222,8 +222,9 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(combined["fizz"], "buzz")
         self.assertEqual(combined["bar"], "foo")
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.blinkpy.BlinkOwl.start")
-    def test_initialize_blink_minis(self, mock_start):
+    async def test_initialize_blink_minis(self, mock_start):
         """Test blink mini initialization."""
         mock_start.return_value = True
         self.blink.homescreen = {
@@ -251,7 +252,7 @@ class TestBlinkSetup(unittest.TestCase):
             ]
         }
         self.blink.sync = {}
-        self.blink.setup_owls()
+        await self.blink.setup_owls()
         self.assertEqual(self.blink.sync["foo"].__class__, BlinkOwl)
         self.assertEqual(self.blink.sync["bar"].__class__, BlinkOwl)
         self.assertEqual(self.blink.sync["foo"].arm, False)
@@ -277,7 +278,7 @@ class TestBlinkSetup(unittest.TestCase):
                 }
             ]
         }
-        result = self.blink.setup_owls()
+        result = await self.blink.setup_owls()
         self.assertEqual(self.blink.network_ids, ["1234"])
         self.assertEqual(
             result, [{"1234": {"name": "foo", "id": "1234", "type": "mini"}}]
@@ -286,7 +287,7 @@ class TestBlinkSetup(unittest.TestCase):
         self.blink.no_owls = True
         self.blink.network_ids = []
         await self.blink.get_homescreen()
-        result = self.blink.setup_owls()
+        result = await self.blink.setup_owls()
         self.assertEqual(self.blink.network_ids, [])
         self.assertEqual(result, [])
 
@@ -315,8 +316,9 @@ class TestBlinkSetup(unittest.TestCase):
             result, {"1234": [{"name": "foo", "id": "1234", "type": "mini"}]}
         )
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.blinkpy.BlinkLotus.start")
-    def test_initialize_blink_doorbells(self, mock_start):
+    async def test_initialize_blink_doorbells(self, mock_start):
         """Test blink doorbell initialization."""
         mock_start.return_value = True
         self.blink.homescreen = {
@@ -344,7 +346,7 @@ class TestBlinkSetup(unittest.TestCase):
             ]
         }
         self.blink.sync = {}
-        self.blink.setup_lotus()
+        await self.blink.setup_lotus()
         self.assertEqual(self.blink.sync["foo"].__class__, BlinkLotus)
         self.assertEqual(self.blink.sync["bar"].__class__, BlinkLotus)
         self.assertEqual(self.blink.sync["foo"].arm, False)

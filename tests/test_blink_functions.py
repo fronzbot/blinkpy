@@ -1,16 +1,15 @@
 """Tests camera and system functions."""
-import unittest
 from unittest import mock
-import pytest
+from unittest import IsolatedAsyncioTestCase
 import time
 import random
+import pytest
 
 from blinkpy import blinkpy
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera
 from blinkpy.helpers.util import get_time, BlinkURLHandler
 
-from requests import Response
 
 
 class MockSyncModule(BlinkSyncModule):
@@ -33,7 +32,7 @@ class MockCamera(BlinkCamera):
         """Mock camera update method."""
 
 
-class TestBlinkFunctions(unittest.TestCase):
+class TestBlinkFunctions(IsolatedAsyncioTestCase):
     """Test Blink and BlinkCamera functions in blinkpy."""
 
     def setUp(self):

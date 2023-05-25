@@ -1,6 +1,6 @@
 """Login handler for blink."""
 import logging
-from aiohttp import ClientSession, client_exceptions
+from aiohttp import ClientSession, ClientConnectionError
 from blinkpy import api
 from blinkpy.helpers import util
 from blinkpy.helpers.constants import (
@@ -142,7 +142,7 @@ class Auth:
             if response.status in [101, 401]:
                 raise UnauthorizedError
             if response.status == 404:
-                raise client_exceptions.ClientConnectionError
+                raise ClientConnectionError
             json_data = await response.json()
         except KeyError:
             pass
@@ -174,7 +174,7 @@ class Auth:
                     url=url, data=data, headers=headers, timeout=timeout
                 )
             return await self.validate_response(response, json_resp)
-        except (client_exceptions.ClientConnectionError, TimeoutError):
+        except (ClientConnectionError, TimeoutError):
             _LOGGER.error(
                 "Connection error. Endpoint %s possibly down or throttled.",
                 url,
@@ -197,7 +197,7 @@ class Auth:
             try:
                 if not is_retry:
                     await self.refresh_token()
-                    return self.query(
+                    return await self.query(
                         url=url,
                         data=data,
                         headers=self.header,

@@ -6,8 +6,8 @@ individual BlinkCamera instantiations once the
 Blink system is set up.
 """
 
-import unittest
 from unittest import mock
+from unittest import IsolatedAsyncioTestCase
 import pytest
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
@@ -27,7 +27,7 @@ CAMERA_CFG = {
 
 
 @mock.patch("blinkpy.auth.Auth.query")
-class TestBlinkCameraSetup(unittest.TestCase):
+class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     """Test the Blink class in blinkpy."""
 
     def setUp(self):
@@ -44,7 +44,6 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.blink = None
         self.camera = None
 
-    @pytest.mark.asyncio
     async def test_camera_arm_status(self, mock_resp):
         """Test arming and disarming camera."""
         self.camera.motion_enabled = None
@@ -57,7 +56,6 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.camera.motion_enabled = True
         self.assertTrue(self.camera.arm)
 
-    @pytest.mark.asyncio
     async def test_doorbell_camera_arm(self, mock_resp):
         """Test arming and disarming camera."""
         self.blink.sync.arm = False

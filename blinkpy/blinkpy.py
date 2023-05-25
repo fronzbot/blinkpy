@@ -172,7 +172,7 @@ class Blink:
             return
         self.homescreen = await api.request_homescreen(self)
 
-    def setup_owls(self):
+    async def setup_owls(self):
         """Check for mini cameras."""
         network_list = []
         camera_list = []
@@ -188,7 +188,7 @@ class Blink:
                 if owl["onboarded"]:
                     network_list.append(str(network_id))
                     self.sync[name] = BlinkOwl(self, name, network_id, owl)
-                    self.sync[name].start()
+                    await self.sync[name].start()
         except KeyError:
             # No sync-less devices found
             pass
@@ -196,7 +196,7 @@ class Blink:
         self.network_ids.extend(network_list)
         return camera_list
 
-    def setup_lotus(self):
+    async def setup_lotus(self):
         """Check for doorbells cameras."""
         network_list = []
         camera_list = []
@@ -218,7 +218,7 @@ class Blink:
                 if lotus["onboarded"]:
                     network_list.append(str(network_id))
                     self.sync[name] = BlinkLotus(self, name, network_id, lotus)
-                    self.sync[name].start()
+                    await self.sync[name].start()
         except KeyError:
             # No sync-less devices found
             pass
@@ -239,8 +239,8 @@ class Blink:
                     all_cameras[camera_network].append(
                         {"name": camera["name"], "id": camera["id"], "type": "default"}
                     )
-            mini_cameras = self.setup_owls()
-            lotus_cameras = self.setup_lotus()
+            mini_cameras = await self.setup_owls()
+            lotus_cameras = await self.setup_lotus()
             for camera in mini_cameras:
                 for network, camera_info in camera.items():
                     all_cameras[network].append(camera_info)
@@ -335,7 +335,7 @@ class Blink:
             camera = [camera]
 
         results = await self.get_videos_metadata(since=since, stop=stop)
-        self._parse_downloaded_items(results, camera, path, delay, debug)
+        await self._parse_downloaded_items(results, camera, path, delay, debug)
 
     async def get_videos_metadata(self, since=None, camera="all", stop=10):
         """

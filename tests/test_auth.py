@@ -1,8 +1,8 @@
 """Test login handler."""
 
-import unittest
 from unittest import mock
-from requests import exceptions
+from unittest import IsolatedAsyncioTestCase
+from aiohttp import ClientConnectionError
 from blinkpy.auth import (
     Auth,
     LoginError,
@@ -17,7 +17,7 @@ USERNAME = "foobar"
 PASSWORD = "deadbeef"
 
 
-class TestAuth(unittest.TestCase):
+class TestAuth(IsolatedAsyncioTestCase):
     """Test the Auth class in blinkpy."""
 
     def setUp(self):
@@ -92,7 +92,7 @@ class TestAuth(unittest.TestCase):
         """Check bad response code from server."""
         self.auth.is_errored = False
         fake_resp = mresp.MockResponse({"code": 404}, 404)
-        with self.assertRaises(exceptions.ConnectionError):
+        with self.assertRaises(ClientConnectionError):
             await self.auth.validate_response(fake_resp, True)
         self.assertTrue(self.auth.is_errored)
 
@@ -226,13 +226,12 @@ class TestAuth(unittest.TestCase):
         mock_req.return_value = mresp.MockResponse({}, 200)
         self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
 
-    @mock.patch("blinkpy.auth.Auth.validate_response")
-    @mock.patch("blinkpy.auth.Auth.refresh_token")
-    async def test_query_retry(self, mock_refresh, mock_validate):
+    @mock.patch("blinkpy.auth.Auth.validate_response", mock.AsyncMock(side_effect = [UnauthorizedError, "foobar"] ))
+    @mock.patch("blinkpy.auth.Auth.refresh_token", mock.AsyncMock(return_value = True))
+    @mock.patch("blinkpy.auth.Auth.query",mock.AsyncMock(return_value = "foobar"))
+    async def test_query_retry(self): #, mock_refresh, mock_validate):
         """Check handling of request retry."""
         self.auth.session = MockSession()
-        mock_validate.side_effect = [UnauthorizedError, "foobar"]
-        mock_refresh.return_value = True
         self.assertEqual(await self.auth.query(url="http://example.com"), "foobar")
 
     @mock.patch("blinkpy.auth.Auth.validate_response")
@@ -240,21 +239,22 @@ class TestAuth(unittest.TestCase):
     async def test_query_retry_failed(self, mock_refresh, mock_validate):
         """Check handling of failed retry request."""
         self.auth.session = MockSession()
-        mock_validate.side_effect = [UnauthorizedError, BlinkBadResponse]
+        mock_validate.side_effect = [BlinkBadResponse, UnauthorizedError, TokenRefreshFailed]
         mock_refresh.return_value = True
         self.assertEqual(await self.auth.query(url="http://example.com"), None)
-
-        mock_validate.side_effect = [UnauthorizedError, TokenRefreshFailed]
         self.assertEqual(await self.auth.query(url="http://example.com"), None)
 
 
 class MockSession:
     """Object to mock a session."""
 
-    def send(self, *args, **kwargs):
+    async def get(self, *args, **kwargs):
         """Mock send function."""
         return None
-
+    
+    async def post(self, *args, **kwargs):
+        """Mock send function."""
+        return None
 
 class MockBlink:
     """Object to mock basic blink class."""
