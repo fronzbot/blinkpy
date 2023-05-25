@@ -16,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 class Auth:
     """Class to handle login communication."""
 
-    def __init__(self, login_data=None, no_prompt=False, session = None):
+    def __init__(self, login_data=None, no_prompt=False, session=None):
         """
         Initialize auth handler.
 
@@ -73,14 +73,12 @@ class Auth:
             sess = ClientSession()
         return sess
 
-
     def validate_login(self):
         """Check login information and prompt if not available."""
         self.data["username"] = self.data.get("username", None)
         self.data["password"] = self.data.get("password", None)
         if not self.no_prompt:
             self.data = util.prompt_login_data(self.data)
-
         self.data = util.validate_login_data(self.data)
 
     async def login(self, login_url=LOGIN_ENDPOINT):
@@ -165,12 +163,16 @@ class Auth:
         is_retry=False,
         timeout=TIMEOUT,
     ):
-        """Set up an auth query"""
+        """Set up an auth query."""
         try:
             if reqtype == "get":
-                response = await self.session.get(url=url, data=data, headers=headers, timeout=timeout)
+                response = await self.session.get(
+                    url=url, data=data, headers=headers, timeout=timeout
+                )
             else:
-                response = await self.session.post(url=url,data=data, headers=headers, timeout=timeout)
+                response = await self.session.post(
+                    url=url, data=data, headers=headers, timeout=timeout
+                )
             return await self.validate_response(response, json_resp)
         except (client_exceptions.ClientConnectionError, TimeoutError):
             _LOGGER.error(

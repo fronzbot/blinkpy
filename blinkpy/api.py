@@ -374,7 +374,9 @@ async def request_get_config(blink, network, camera_id, product_type="owl"):
     return await http_get(blink, url)
 
 
-async def request_update_config(blink, network, camera_id, product_type="owl", data=None):
+async def request_update_config(
+    blink, network, camera_id, product_type="owl", data=None
+):
     """Update camera configuration.
 
     :param blink: Blink instance.
@@ -397,7 +399,9 @@ async def request_update_config(blink, network, camera_id, product_type="owl", d
     return await http_post(blink, url, json=False, data=data)
 
 
-async def http_get(blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOUT):
+async def http_get(
+    blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOUT
+):
     """Perform an http get request.
 
     :param url: URL to perform get request.

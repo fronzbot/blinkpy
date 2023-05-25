@@ -9,6 +9,7 @@ Blink system is set up.
 import datetime
 import unittest
 from unittest import mock
+import pytest
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
@@ -44,6 +45,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.blink = None
         self.camera = None
 
+    @pytest.mark.asyncio
     async def test_camera_update(self, mock_resp):
         """Test that we can properly update camera properties."""
         config = {
@@ -95,6 +97,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             "https://rest-test.immedia-semi.com/thumb_no_slash.jpg",
         )
 
+    @pytest.mark.asyncio
     async def test_no_thumbnails(self, mock_resp):
         """Tests that thumbnail is 'None' if none found."""
         mock_resp.return_value = "foobar"
@@ -129,6 +132,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
             ],
         )
 
+    @pytest.mark.asyncio
     async def test_no_video_clips(self, mock_resp):
         """Tests that we still proceed with camera setup with no videos."""
         mock_resp.return_value = "foobar"
@@ -149,6 +153,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.assertEqual(self.camera.clip, None)
         self.assertEqual(self.camera.video_from_cache, None)
 
+    @pytest.mark.asyncio
     async def test_recent_video_clips(self, mock_resp):
         """Tests that the last records in the sync module are added to the camera recent clips list."""
         config = {
@@ -194,6 +199,7 @@ class TestBlinkCameraSetup(unittest.TestCase):
         self.camera.expire_recent_clips(delta=datetime.timedelta(minutes=5))
         self.assertEqual(len(self.camera.recent_clips), 1)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.camera.api.request_motion_detection_enable")
     @mock.patch("blinkpy.camera.api.request_motion_detection_disable")
     async def test_motion_detection_enable_disable(self, mock_dis, mock_en, mock_rep):

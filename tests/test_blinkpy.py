@@ -8,6 +8,7 @@ any communication related errors at startup.
 
 import unittest
 from unittest import mock
+import pytest
 from blinkpy.blinkpy import Blink, BlinkSetupError
 from blinkpy.sync_module import BlinkOwl, BlinkLotus
 from blinkpy.helpers.constants import __version__
@@ -60,6 +61,7 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertTrue("5678" in self.blink.network_ids)
         self.assertTrue("1234" in self.blink.network_ids)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.blinkpy.time.time")
     async def test_throttle(self, mock_time):
         """Check throttling functionality."""
@@ -89,6 +91,7 @@ class TestBlinkSetup(unittest.TestCase):
         self.blink.sync[SPECIAL] = 1234
         self.assertEqual(self.blink.sync[SPECIAL], 1234)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.api.request_camera_usage")
     @mock.patch("blinkpy.api.request_homescreen")
     async def test_setup_cameras(self, mock_home, mock_req):
@@ -120,6 +123,7 @@ class TestBlinkSetup(unittest.TestCase):
             },
         )
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.api.request_camera_usage")
     async def test_setup_cameras_failure(self, mock_home):
         """Check that on failure we raise a setup error."""
@@ -142,6 +146,7 @@ class TestBlinkSetup(unittest.TestCase):
         with self.assertRaises(BlinkSetupError):
             self.blink.setup_urls()
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.api.request_networks")
     async def test_setup_networks(self, mock_networks):
         """Check setup of networks."""
@@ -149,6 +154,7 @@ class TestBlinkSetup(unittest.TestCase):
         await self.blink.setup_networks()
         self.assertEqual(self.blink.networks, "foobar")
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.api.request_networks")
     async def test_setup_networks_failure(self, mock_networks):
         """Check that on failure we raise a setup error."""
@@ -159,6 +165,7 @@ class TestBlinkSetup(unittest.TestCase):
         with self.assertRaises(BlinkSetupError):
             await self.blink.setup_networks()
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.blinkpy.Auth.send_auth_key")
     async def test_setup_prompt_2fa(self, mock_key):
         """Test setup with 2fa prompt."""
@@ -173,11 +180,14 @@ class TestBlinkSetup(unittest.TestCase):
             await self.blink.setup_prompt_2fa()
         self.assertTrue(self.blink.key_required)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.blinkpy.Blink.setup_camera_list")
     @mock.patch("blinkpy.api.request_networks")
     @mock.patch("blinkpy.blinkpy.Blink.setup_owls")
     @mock.patch("blinkpy.blinkpy.Blink.setup_lotus")
-    async def test_setup_post_verify(self, mock_lotus, mock_owl, mock_networks, mock_camera):
+    async def test_setup_post_verify(
+        self, mock_lotus, mock_owl, mock_networks, mock_camera
+    ):
         """Test setup after verification."""
         self.blink.available = False
         self.blink.key_required = True
@@ -191,6 +201,7 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertTrue(self.blink.available)
         self.assertFalse(self.blink.key_required)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.api.request_networks")
     async def test_setup_post_verify_failure(self, mock_networks):
         """Test failed setup after verification."""
@@ -248,6 +259,7 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(self.blink.sync["foo"].name, "foo")
         self.assertEqual(self.blink.sync["bar"].name, "bar")
 
+    @pytest.mark.asyncio
     async def test_blink_mini_cameras_returned(self):
         """Test that blink mini cameras are found if attached to sync module."""
         self.blink.network_ids = ["1234"]
@@ -278,6 +290,7 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(self.blink.network_ids, [])
         self.assertEqual(result, [])
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.api.request_camera_usage")
     async def test_blink_mini_attached_to_sync(self, mock_usage):
         """Test that blink mini cameras are properly attached to sync module."""
@@ -339,6 +352,7 @@ class TestBlinkSetup(unittest.TestCase):
         self.assertEqual(self.blink.sync["foo"].name, "foo")
         self.assertEqual(self.blink.sync["bar"].name, "bar")
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.api.request_camera_usage")
     async def test_blink_doorbell_attached_to_sync(self, mock_usage):
         """Test that blink doorbell cameras are properly attached to sync module."""
@@ -363,6 +377,7 @@ class TestBlinkSetup(unittest.TestCase):
             result, {"1234": [{"name": "foo", "id": "1234", "type": "doorbell"}]}
         )
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.api.request_camera_usage")
     async def test_blink_multi_doorbell(self, mock_usage):
         """Test that multiple doorbells are properly attached to sync module."""
@@ -401,6 +416,7 @@ class TestBlinkSetup(unittest.TestCase):
         result = await self.blink.setup_camera_list()
         self.assertEqual(result, expected)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.api.request_camera_usage")
     async def test_blink_multi_mini(self, mock_usage):
         """Test that multiple minis are properly attached to sync module."""
@@ -439,6 +455,7 @@ class TestBlinkSetup(unittest.TestCase):
         result = await self.blink.setup_camera_list()
         self.assertEqual(result, expected)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.api.request_camera_usage")
     async def test_blink_camera_mix(self, mock_usage):
         """Test that a mix of cameras are properly attached to sync module."""

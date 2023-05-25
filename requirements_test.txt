@@ -13,3 +13,4 @@ restructuredtext-lint==1.4.0
 pygments==2.15.1
 testtools>=2.4.0
 sortedcontainers~=2.4.0
+pytest-asyncio>=0.21.0

@@ -1,7 +1,7 @@
 """Tests camera and system functions."""
 import unittest
 from unittest import mock
-
+import pytest
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkLotus
@@ -38,6 +38,7 @@ class TestBlinkDoorbell(unittest.TestCase):
         self.assertEqual(self.blink.sync["test"].attributes["name"], "test")
         self.assertEqual(self.blink.sync["test"].attributes["network_id"], "1234")
 
+    @pytest.mark.asyncio
     async def test_lotus_start(self, mock_resp):
         """Test doorbell instantiation."""
         self.blink.last_refresh = None

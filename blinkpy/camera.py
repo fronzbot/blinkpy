@@ -194,7 +194,9 @@ class BlinkCamera:
 
     async def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
-        return await api.request_new_image(self.sync.blink, self.network_id, self.camera_id)
+        return await api.request_new_image(
+            self.sync.blink, self.network_id, self.camera_id
+        )
 
     async def set_motion_detect(self, enable):
         """Set motion detection."""
@@ -213,7 +215,9 @@ class BlinkCamera:
         """Update camera info."""
         self.extract_config_info(config)
         await self.get_sensor_info()
-        await self.update_images(config, force_cache=force_cache, expire_clips=expire_clips)
+        await self.update_images(
+            config, force_cache=force_cache, expire_clips=expire_clips
+        )
 
     def extract_config_info(self, config):
         """Extract info from config."""
@@ -369,9 +373,7 @@ class BlinkCamera:
             with open(path, "wb") as imgfile:
                 copyfileobj(await response.raw(), imgfile)
         else:
-            _LOGGER.error(
-                "Cannot write image to file, response %s", response.status
-            )
+            _LOGGER.error("Cannot write image to file, response %s", response.status)
 
     async def video_to_file(self, path):
         """
@@ -481,7 +483,7 @@ class BlinkDoorbell(BlinkCamera):
     def arm(self):
         """Return camera arm status."""
         return self.motion_enabled
-       
+
     async def async_arm(self, value):
         """Set camera arm status."""
         if value:

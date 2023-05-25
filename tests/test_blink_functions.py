@@ -1,6 +1,7 @@
 """Tests camera and system functions."""
 import unittest
 from unittest import mock
+import pytest
 import time
 import random
 
@@ -15,7 +16,7 @@ from requests import Response
 class MockSyncModule(BlinkSyncModule):
     """Mock blink sync module object."""
 
-    def get_network_info(self):
+    async def get_network_info(self):
         """Mock network info method."""
         return True
 
@@ -28,7 +29,7 @@ class MockCamera(BlinkCamera):
         super().__init__(sync)
         self.camera_id = random.randint(1, 100000)
 
-    def update(self, config, force_cache=False, **kwargs):
+    async def update(self, config, force_cache=False, **kwargs):
         """Mock camera update method."""
 
 
@@ -56,6 +57,7 @@ class TestBlinkFunctions(unittest.TestCase):
         expected = {"foo": "bar", "test": 123, "foobar": 456, "bar": "foo"}
         self.assertEqual(expected, result)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     async def test_download_video_exit(self, mock_req):
         """Test we exit method when provided bad response."""
@@ -72,6 +74,7 @@ class TestBlinkFunctions(unittest.TestCase):
             await blink.download_videos("/tmp")
         self.assertListEqual(dl_log.output, expected_log)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     async def test_parse_downloaded_items(self, mock_req):
         """Test ability to parse downloaded items list."""
@@ -95,6 +98,7 @@ class TestBlinkFunctions(unittest.TestCase):
             await blink.download_videos("/tmp", stop=2, delay=0)
         self.assertListEqual(dl_log.output, expected_log)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     async def test_parse_downloaded_throttle(self, mock_req):
         """Test ability to parse downloaded items list."""
@@ -119,6 +123,7 @@ class TestBlinkFunctions(unittest.TestCase):
         delta = now - start
         self.assertTrue(delta >= 0.1)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     async def test_get_videos_metadata(self, mock_req):
         """Test ability to fetch videos metadata."""
@@ -144,6 +149,7 @@ class TestBlinkFunctions(unittest.TestCase):
         ]
         self.assertListEqual(results, expected_results)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.blinkpy.api.http_get")
     async def test_do_http_get(self, mock_req):
         """Test ability to do_http_get."""
@@ -154,6 +160,7 @@ class TestBlinkFunctions(unittest.TestCase):
         response = await blink.do_http_get("/path/to/request")
         self.assertTrue(response is not None)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     async def test_parse_camera_not_in_list(self, mock_req):
         """Test ability to parse downloaded items list."""
@@ -177,6 +184,7 @@ class TestBlinkFunctions(unittest.TestCase):
             await blink.download_videos("/tmp", camera="bar", stop=2, delay=0)
         self.assertListEqual(dl_log.output, expected_log)
 
+    @pytest.mark.asyncio
     @mock.patch("blinkpy.blinkpy.api.request_network_update")
     @mock.patch("blinkpy.auth.Auth.query")
     async def test_refresh(self, mock_req, mock_update):

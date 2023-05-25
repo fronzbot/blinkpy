@@ -3,9 +3,8 @@
 import json
 import unittest
 from unittest import mock
-
 from random import shuffle
-
+import pytest
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
@@ -46,6 +45,7 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.camera = None
         self.mock_start = None
 
+    @pytest.mark.asyncio
     async def test_check_new_videos(self, mock_resp):
         """Test recent video response."""
         mock_resp.return_value = {
@@ -76,6 +76,7 @@ class TestBlinkSyncModule(unittest.TestCase):
             [{"clip": "/foo/bar.mp4", "time": "1990-01-01T00:00:00+00:00"}],
         )
 
+    @pytest.mark.asyncio
     async def test_check_new_videos_old_date(self, mock_resp):
         """Test videos return response with old date."""
         mock_resp.return_value = {
@@ -94,6 +95,7 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertTrue(await sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {"foo": False})
 
+    @pytest.mark.asyncio
     async def test_check_no_motion_if_not_armed(self, mock_resp):
         """Test that motion detection is not set if module unarmed."""
         mock_resp.return_value = {
@@ -114,6 +116,7 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertTrue(await sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {"foo": False})
 
+    @pytest.mark.asyncio
     async def test_check_multiple_videos(self, mock_resp):
         """Test motion found even with multiple videos."""
         mock_resp.return_value = {
@@ -145,6 +148,7 @@ class TestBlinkSyncModule(unittest.TestCase):
         }
         self.assertEqual(sync_module.last_records, expected_result)
 
+    @pytest.mark.asyncio
     async def test_sync_start(self, mock_resp):
         """Test sync start function."""
         mock_resp.side_effect = self.mock_start
@@ -155,6 +159,7 @@ class TestBlinkSyncModule(unittest.TestCase):
         self.assertEqual(self.blink.sync["test"].serial, "12345678")
         self.assertEqual(self.blink.sync["test"].status, "foobar")
 
+    @pytest.mark.asyncio
     async def test_sync_with_mixed_cameras(self, mock_resp):
         """Test sync module with mixed cameras attached."""
         resp_sync = {
@@ -217,6 +222,7 @@ class TestBlinkSyncModule(unittest.TestCase):
                 test_sync.cameras["fake"].__class__, BlinkDoorbell, msg=debug_msg
             )
 
+    @pytest.mark.asyncio
     async def test_init_local_storage(self, mock_resp):
         """Test initialization of local storage object."""
         json_fragment = """{
