@@ -25,6 +25,7 @@ CAMERA_CFG = {
     ]
 }
 
+
 @mock.patch("blinkpy.auth.Auth.query")
 class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     """Test the Blink class in blinkpy."""
@@ -88,7 +89,9 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
 
         # Check that thumbnail without slash processed properly
         mock_resp.side_effect = [None]
-        await self.camera.update_images({"thumbnail": "thumb_no_slash"}, expire_clips=False)
+        await self.camera.update_images(
+            {"thumbnail": "thumb_no_slash"}, expire_clips=False
+        )
         self.assertEqual(
             self.camera.thumbnail,
             "https://rest-test.immedia-semi.com/thumb_no_slash.jpg",
@@ -193,8 +196,14 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.camera.expire_recent_clips(delta=datetime.timedelta(minutes=5))
         self.assertEqual(len(self.camera.recent_clips), 1)
 
-    @mock.patch("blinkpy.api.request_motion_detection_enable", mock.AsyncMock(return_value = "enable"))
-    @mock.patch("blinkpy.api.request_motion_detection_disable", mock.AsyncMock(return_value = "disable"))
+    @mock.patch(
+        "blinkpy.api.request_motion_detection_enable",
+        mock.AsyncMock(return_value="enable"),
+    )
+    @mock.patch(
+        "blinkpy.api.request_motion_detection_disable",
+        mock.AsyncMock(return_value="disable"),
+    )
     async def test_motion_detection_enable_disable(self, mock_rep):
         """Test setting motion detection enable properly."""
         self.assertEqual(await self.camera.set_motion_detect(True), "enable")

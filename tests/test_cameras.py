@@ -25,13 +25,14 @@ CAMERA_CFG = {
     ]
 }
 
+
 @mock.patch("blinkpy.auth.Auth.query")
 class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     """Test the Blink class in blinkpy."""
 
     def setUp(self):
         """Set up Blink module."""
-        self.blink = Blink(session = mock.AsyncMock())
+        self.blink = Blink(session=mock.AsyncMock())
         self.blink.urls = BlinkURLHandler("test")
         self.blink.sync["test"] = BlinkSyncModule(self.blink, "test", 1234, [])
         self.camera = BlinkCamera(self.blink.sync["test"])
@@ -43,8 +44,14 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.blink = None
         self.camera = None
 
-    @mock.patch("blinkpy.api.request_motion_detection_enable", mock.AsyncMock(return_value = "enable"))
-    @mock.patch("blinkpy.api.request_motion_detection_disable", mock.AsyncMock(return_value = "disable"))
+    @mock.patch(
+        "blinkpy.api.request_motion_detection_enable",
+        mock.AsyncMock(return_value="enable"),
+    )
+    @mock.patch(
+        "blinkpy.api.request_motion_detection_disable",
+        mock.AsyncMock(return_value="disable"),
+    )
     async def test_camera_arm_status(self, mock_resp):
         """Test arming and disarming camera."""
         self.camera.motion_enabled = None

@@ -8,16 +8,19 @@ from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera
 from tests.test_blink_functions import MockCamera
 
+
 @mock.patch("blinkpy.auth.Auth.query")
 class TestBlinkSyncModule(IsolatedAsyncioTestCase):
     """Test BlinkSyncModule functions in blinkpy."""
 
     def setUp(self):
         """Set up Blink module."""
-        self.blink: Blink = Blink(motion_interval=0,session = mock.AsyncMock())
+        self.blink: Blink = Blink(motion_interval=0, session=mock.AsyncMock())
         self.blink.last_refresh = 0
         self.blink.urls = BlinkURLHandler("test")
-        self.blink.sync["test"]: (BlinkSyncModule) = BlinkSyncModule(self.blink, "test", "1234", [])
+        self.blink.sync["test"]: (BlinkSyncModule) = BlinkSyncModule(
+            self.blink, "test", "1234", []
+        )
         self.blink.sync["test"].network_info = {"network": {"armed": True}}
         self.camera: BlinkCamera = BlinkCamera(self.blink.sync)
         self.mock_start = [
@@ -63,7 +66,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
     async def test_get_events(self, mock_resp) -> None:
         """Test get events function."""
         mock_resp.return_value = {"event": True}
-        self.assertEqual(await self.blink.sync["test"].get_events(), True)  
+        self.assertEqual(await self.blink.sync["test"].get_events(), True)
 
     @mock.patch("blinkpy.sync_module.BlinkSyncModule.get_events")
     async def test_get_events_fail(self, mock_get, mock_resp) -> None:
@@ -183,7 +186,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync = self.blink.sync["test"]
         test_sync.camera_list = [{"name": "foobar"}]
         self.assertFalse(await test_sync.update_cameras())
-    
+
     async def test_update_local_storage_manifest(self, mock_resp) -> None:
         """Test getting the manifest from the sync module."""
         self.blink.account_id = 10111213

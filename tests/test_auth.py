@@ -16,6 +16,7 @@ import tests.mock_responses as mresp
 USERNAME = "foobar"
 PASSWORD = "deadbeef"
 
+
 class TestAuth(IsolatedAsyncioTestCase):
     """Test the Auth class in blinkpy."""
 
@@ -225,10 +226,13 @@ class TestAuth(IsolatedAsyncioTestCase):
         mock_req.return_value = mresp.MockResponse({}, 200)
         self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
 
-    @mock.patch("blinkpy.auth.Auth.validate_response", mock.AsyncMock(side_effect = [UnauthorizedError, "foobar"] ))
-    @mock.patch("blinkpy.auth.Auth.refresh_token", mock.AsyncMock(return_value = True))
-    @mock.patch("blinkpy.auth.Auth.query",mock.AsyncMock(return_value = "foobar"))
-    async def test_query_retry(self): #, mock_refresh, mock_validate):
+    @mock.patch(
+        "blinkpy.auth.Auth.validate_response",
+        mock.AsyncMock(side_effect=[UnauthorizedError, "foobar"]),
+    )
+    @mock.patch("blinkpy.auth.Auth.refresh_token", mock.AsyncMock(return_value=True))
+    @mock.patch("blinkpy.auth.Auth.query", mock.AsyncMock(return_value="foobar"))
+    async def test_query_retry(self):  # , mock_refresh, mock_validate):
         """Check handling of request retry."""
         self.auth.session = MockSession()
         self.assertEqual(await self.auth.query(url="http://example.com"), "foobar")
@@ -238,7 +242,11 @@ class TestAuth(IsolatedAsyncioTestCase):
     async def test_query_retry_failed(self, mock_refresh, mock_validate):
         """Check handling of failed retry request."""
         self.auth.session = MockSession()
-        mock_validate.side_effect = [BlinkBadResponse, UnauthorizedError, TokenRefreshFailed]
+        mock_validate.side_effect = [
+            BlinkBadResponse,
+            UnauthorizedError,
+            TokenRefreshFailed,
+        ]
         mock_refresh.return_value = True
         self.assertEqual(await self.auth.query(url="http://example.com"), None)
         self.assertEqual(await self.auth.query(url="http://example.com"), None)
@@ -250,10 +258,11 @@ class MockSession:
     async def get(self, *args, **kwargs):
         """Mock send function."""
         return None
-    
+
     async def post(self, *args, **kwargs):
         """Mock send function."""
         return None
+
 
 class MockBlink:
     """Object to mock basic blink class."""

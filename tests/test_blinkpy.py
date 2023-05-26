@@ -15,12 +15,13 @@ from blinkpy.helpers.constants import __version__
 
 SPECIAL = "!@#$%^&*()_+-=[]{}|/<>?,.'"
 
+
 class TestBlinkSetup(IsolatedAsyncioTestCase):
     """Test the Blink class in blinkpy."""
 
     def setUp(self):
         """Initialize blink test object."""
-        self.blink = Blink(session = mock.AsyncMock())
+        self.blink = Blink(session=mock.AsyncMock())
         self.blink.available = True
 
     def tearDown(self):

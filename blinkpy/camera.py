@@ -153,7 +153,9 @@ class BlinkCamera:
 
     async def record(self):
         """Initiate clip recording."""
-        return await api.request_new_video(self.sync.blink, self.network_id, self.camera_id)
+        return await api.request_new_video(
+            self.sync.blink, self.network_id, self.camera_id
+        )
 
     async def get_media(self, media_type="image"):
         """Download media (image or video)."""

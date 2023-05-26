@@ -7,13 +7,14 @@ from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkOwl
 from blinkpy.camera import BlinkCameraMini
 
+
 @mock.patch("blinkpy.auth.Auth.query")
 class TestBlinkSyncModule(IsolatedAsyncioTestCase):
     """Test BlinkSyncModule functions in blinkpy."""
 
     def setUp(self):
         """Set up Blink module."""
-        self.blink = Blink(motion_interval=0,session = mock.AsyncMock())
+        self.blink = Blink(motion_interval=0, session=mock.AsyncMock())
         self.blink.last_refresh = 0
         self.blink.urls = BlinkURLHandler("test")
         response = {
