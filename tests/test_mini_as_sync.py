@@ -13,7 +13,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
     def setUp(self):
         """Set up Blink module."""
-        self.blink = Blink(motion_interval=0)
+        self.blink = Blink(motion_interval=0,session = mock.AsyncMock())
         self.blink.last_refresh = 0
         self.blink.urls = BlinkURLHandler("test")
         response = {
