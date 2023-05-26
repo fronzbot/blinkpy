@@ -1,3 +1,4 @@
+"""Test blink Utils errors."""
 import unittest
 from blinkpy.helpers.errors import (
     USERNAME,
@@ -10,10 +11,10 @@ from blinkpy.helpers.errors import (
 
 
 class TestBlinkUtilsErrors(unittest.TestCase):
-    """Test BlinkSyncModule functions in blinkpy."""
+    """Test BlinkUtilErros functions in blinkpy."""
 
     def test_helpers_errors(self) -> None:
-        """Test the helper errors"""
+        """Test the helper errors."""
         assert USERNAME
         assert PASSWORD
         assert AUTH_TOKEN

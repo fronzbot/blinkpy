@@ -180,7 +180,7 @@ class TestUtil(unittest.TestCase):
         )
 
     def test_merge_dicts(self):
-        """Test for duplicates message in merge dicts"""
+        """Test for duplicates message in merge dicts."""
         dict_A = {"key1": "value1", "key2": "value2"}
         dict_B = {"key1": "value1"}
 
