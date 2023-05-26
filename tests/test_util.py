@@ -5,7 +5,6 @@ from unittest import mock
 import time
 from blinkpy.helpers.util import json_load, Throttle, time_to_seconds, gen_uid
 
-
 class TestUtil(unittest.TestCase):
     """Test the helpers/util module."""
 

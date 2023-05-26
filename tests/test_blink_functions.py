@@ -11,7 +11,6 @@ from blinkpy.camera import BlinkCamera
 from blinkpy.helpers.util import get_time, BlinkURLHandler
 
 
-
 class MockSyncModule(BlinkSyncModule):
     """Mock blink sync module object."""
 

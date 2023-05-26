@@ -16,7 +16,6 @@ import tests.mock_responses as mresp
 USERNAME = "foobar"
 PASSWORD = "deadbeef"
 
-
 class TestAuth(IsolatedAsyncioTestCase):
     """Test the Auth class in blinkpy."""
 

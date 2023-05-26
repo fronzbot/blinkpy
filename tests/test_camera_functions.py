@@ -25,7 +25,6 @@ CAMERA_CFG = {
     ]
 }
 
-
 @mock.patch("blinkpy.auth.Auth.query")
 class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     """Test the Blink class in blinkpy."""

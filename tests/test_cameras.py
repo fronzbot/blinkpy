@@ -25,14 +25,13 @@ CAMERA_CFG = {
     ]
 }
 
-
 @mock.patch("blinkpy.auth.Auth.query")
 class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     """Test the Blink class in blinkpy."""
 
     def setUp(self):
         """Set up Blink module."""
-        self.blink = Blink()
+        self.blink = Blink(session = mock.AsyncMock())
         self.blink.urls = BlinkURLHandler("test")
         self.blink.sync["test"] = BlinkSyncModule(self.blink, "test", 1234, [])
         self.camera = BlinkCamera(self.blink.sync["test"])
