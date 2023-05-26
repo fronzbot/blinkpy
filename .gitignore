@@ -17,3 +17,5 @@ venv
 .session*
 Pipfile
 Pipfile.lock
+blink.json
+blinktest.py
