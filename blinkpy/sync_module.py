@@ -265,7 +265,7 @@ class BlinkSyncModule:
                 camera_id,
                 unique_info=self.get_unique_info(camera_name),
             )
-            self.cameras[camera_name].update(camera_info, force_cache=force_cache)
+            await self.cameras[camera_name].update(camera_info, force_cache=force_cache)
         self.available = True
 
     async def check_new_videos(self):

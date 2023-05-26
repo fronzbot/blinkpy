@@ -154,8 +154,6 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         """Test ability to do_http_get."""
         blink = blinkpy.Blink()
         blink.urls = BlinkURLHandler("test")
-
-        mock_req.return_value = Response()
         response = await blink.do_http_get("/path/to/request")
         self.assertTrue(response is not None)
 

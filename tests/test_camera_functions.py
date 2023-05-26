@@ -194,12 +194,9 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.camera.expire_recent_clips(delta=datetime.timedelta(minutes=5))
         self.assertEqual(len(self.camera.recent_clips), 1)
 
-    @mock.patch("blinkpy.api.request_motion_detection_enable")
-    @mock.patch("blinkpy.api.request_motion_detection_disable")
-    async def test_motion_detection_enable_disable(self, mock_dis, mock_en, mock_rep):
+    @mock.patch("blinkpy.api.request_motion_detection_enable", mock.AsyncMock(return_value = "enable"))
+    @mock.patch("blinkpy.api.request_motion_detection_disable", mock.AsyncMock(return_value = "disable"))
+    async def test_motion_detection_enable_disable(self, mock_rep):
         """Test setting motion detection enable properly."""
-        mock_dis = mock.AsyncMock(return_value = "disable")
-        mock_en = mock.AsyncMock(return_value = "enable")
-        test = await self.camera.set_motion_detect(True)
         self.assertEqual(await self.camera.set_motion_detect(True), "enable")
         self.assertEqual(await self.camera.set_motion_detect(False), "disable")

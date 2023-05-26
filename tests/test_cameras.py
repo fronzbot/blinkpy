@@ -44,6 +44,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.blink = None
         self.camera = None
 
+    @mock.patch("blinkpy.api.request_motion_detection_enable", mock.AsyncMock(return_value = "enable"))
+    @mock.patch("blinkpy.api.request_motion_detection_disable", mock.AsyncMock(return_value = "disable"))
     async def test_camera_arm_status(self, mock_resp):
         """Test arming and disarming camera."""
         self.camera.motion_enabled = None

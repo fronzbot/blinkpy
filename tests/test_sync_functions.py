@@ -210,7 +210,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         for i in range(0, 10):
             shuffle(test_sync.camera_list)
             mock_resp.side_effect = side_effect
-            self.assertTrue(test_sync.start())
+            self.assertTrue(await test_sync.start())
             debug_msg = f"Iteration: {i}, {test_sync.camera_list}"
             self.assertEqual(
                 test_sync.cameras["foo"].__class__, BlinkCamera, msg=debug_msg

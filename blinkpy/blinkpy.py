@@ -93,7 +93,7 @@ class Blink:
 
             for sync_name, sync_module in self.sync.items():
                 _LOGGER.debug("Attempting refresh of blink.sync['%s']", sync_name)
-                sync_module.refresh(force_cache=(force or force_cache))
+                await sync_module.refresh(force_cache=(force or force_cache))
 
             if not force_cache:
                 # Prevents rapid clearing of motion detect property

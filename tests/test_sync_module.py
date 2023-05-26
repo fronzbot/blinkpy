@@ -1,9 +1,7 @@
 """Tests camera and system functions."""
 import datetime
-import unittest
 from unittest import IsolatedAsyncioTestCase
 from unittest import mock
-import pytest
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler, to_alphanumeric
 from blinkpy.sync_module import BlinkSyncModule
@@ -17,11 +15,12 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
     def setUp(self):
         """Set up Blink module."""
-        self.blink = Blink(motion_interval=0)
+        self.blink: Blink = Blink(motion_interval=0)
         self.blink.last_refresh = 0
         self.blink.urls = BlinkURLHandler("test")
-        self.blink.sync["test"] = BlinkSyncModule(self.blink, "test", "1234", [])
-        self.camera = BlinkCamera(self.blink.sync)
+        self.blink.sync["test"]: (BlinkSyncModule) = BlinkSyncModule(self.blink, "test", "1234", [])
+        self.blink.sync["test"].network_info = {"network": {"armed": True}}
+        self.camera: BlinkCamera = BlinkCamera(self.blink.sync)
         self.mock_start = [
             {
                 "syncmodule": {
@@ -37,7 +36,6 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             None,
             {"devicestatus": {}},
         ]
-        self.blink.sync["test"].network_info = {"network": {"armed": True}}
 
     def tearDown(self):
         """Clean up after test."""
@@ -66,14 +64,16 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
     async def test_get_events(self, mock_resp) -> None:
         """Test get events function."""
         mock_resp.return_value = {"event": True}
-        self.assertEqual(await self.blink.sync["test"].get_events(), True)
+        self.assertEqual(await self.blink.sync["test"].get_events(), True)  
 
-#    @mock.patch("blinkpy.api.request_sync_events")
-    async def test_get_events_fail(self, mock_resp) -> None:
+    @mock.patch("blinkpy.sync_module.BlinkSyncModule.get_events")
+    async def test_get_events_fail(self, mock_get, mock_resp) -> None:
         """Test handling of failed get events function."""
         mock_resp.return_value = None
+        mock_get.return_value = None
         self.assertFalse(await self.blink.sync["test"].get_events())
         mock_resp.return_value = {}
+        mock_get.return_value = {}
         self.assertFalse(await self.blink.sync["test"].get_events())
 
     async def test_get_camera_info(self, mock_resp) -> None:
