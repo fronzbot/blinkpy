@@ -261,7 +261,7 @@ class BlinkSyncModule:
         await self.check_new_videos()
         for camera_name in self.cameras:
             camera_id = self.cameras[camera_name].camera_id
-            camera_info = self.get_camera_info(
+            camera_info = await self.get_camera_info(
                 camera_id,
                 unique_info=self.get_unique_info(camera_name),
             )
