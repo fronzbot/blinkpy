@@ -3,7 +3,17 @@
 import unittest
 from unittest import mock
 import time
-from blinkpy.helpers.util import json_load, json_save, Throttle, time_to_seconds, gen_uid, get_time, merge_dicts, backoff_seconds, BlinkException
+from blinkpy.helpers.util import (
+    json_load,
+    json_save,
+    Throttle,
+    time_to_seconds,
+    gen_uid,
+    get_time,
+    merge_dicts,
+    backoff_seconds,
+    BlinkException,
+)
 from blinkpy.helpers import constants as const
 
 
@@ -131,13 +141,14 @@ class TestUtil(unittest.TestCase):
     def test_json_save(self):
         """Check that the file is saved."""
         with mock.patch("builtins.open", mock.mock_open()):
-            json_save('{"test":1,"test2":2}',"face.file")
-        
+            json_save('{"test":1,"test2":2}', "face.file")
 
     def test_json_load_data(self):
         """Check that bad file is handled."""
         self.assertEqual(json_load("fake.file"), None)
-        with mock.patch("builtins.open", mock.mock_open(read_data='{"test":1,"test2":2}')):
+        with mock.patch(
+            "builtins.open", mock.mock_open(read_data='{"test":1,"test2":2}')
+        ):
             self.assertNotEqual(json_load("fake.file"), None)
 
     def test_json_load_bad_data(self):
@@ -164,27 +175,30 @@ class TestUtil(unittest.TestCase):
 
     def test_get_time(self):
         """Test the get time util."""
-        self.assertEqual(get_time(),time.strftime(const.TIMESTAMP_FORMAT, time.gmtime(time.time())))
+        self.assertEqual(
+            get_time(), time.strftime(const.TIMESTAMP_FORMAT, time.gmtime(time.time()))
+        )
 
     def test_merge_dicts(self):
         """Test for duplicates message in merge dicts"""
-        dict_A = {"key1":"value1",
-                  "key2":"value2"}
-        dict_B = {"key1":"value1"}
-        
+        dict_A = {"key1": "value1", "key2": "value2"}
+        dict_B = {"key1": "value1"}
+
         expected_log = [
-        "WARNING:blinkpy.helpers.util:Duplicates found during merge: ['key1']. " "Renaming is recommended."]
-        
+            "WARNING:blinkpy.helpers.util:Duplicates found during merge: ['key1']. "
+            "Renaming is recommended."
+        ]
+
         with self.assertLogs(level="DEBUG") as merge_log:
             merge_dicts(dict_A, dict_B)
         self.assertListEqual(merge_log.output, expected_log)
 
     def test_backoff_seconds(self):
-        """Test the backoff seconds function."""  
-        self.assertNotEqual(backoff_seconds(),None)
+        """Test the backoff seconds function."""
+        self.assertNotEqual(backoff_seconds(), None)
 
     def test_blink_exception(self):
         """Test the Blink Exception class."""
-        test_exception = BlinkException([1,"No good"])
-        self.assertEqual(test_exception.errid,1)
-        self.assertEqual(test_exception.message,"No good")
+        test_exception = BlinkException([1, "No good"])
+        self.assertEqual(test_exception.errid, 1)
+        self.assertEqual(test_exception.message, "No good")
