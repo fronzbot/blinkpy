@@ -41,7 +41,7 @@ class Auth:
         if session:
             self.session = session
         else:
-            self.session = self.create_session()
+            self.session = ClientSession()
 
     @property
     def login_attributes(self):
@@ -63,15 +63,6 @@ class Auth:
             "user-agent": DEFAULT_USER_AGENT,
             "content-type": "application/json",
         }
-
-    def create_session(self, opts=None, session=None):
-        """Create a session for blink communication."""
-        if opts is None:
-            opts = {}
-        sess = session
-        if not sess:
-            sess = ClientSession()
-        return sess
 
     def validate_login(self):
         """Check login information and prompt if not available."""
