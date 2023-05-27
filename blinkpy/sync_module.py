@@ -349,17 +349,10 @@ class BlinkSyncModule:
                 )
                 # Exit the loop once there are no new videos in the list.
                 if not self.check_new_video_time(iso_timestamp, last_manifest_read):
-                    if num_new > 0:
-                        _LOGGER.info(
-                            f"Found {num_new} new items in local storage manifest "
-                            + f"since last manifest read at {last_read_local}."
-                        )
-                    else:
-                        _LOGGER.info(
-                            f"No new local storage videos since last manifest read at {last_read_local}."
-                        )
+                    _LOGGER.info(
+                        f"No new local storage videos since last manifest read at {last_read_local}."
+                    )
                     break
-
                 _LOGGER.debug(f"Found new item in local storage manifest: {item}")
                 name = item.name
                 clip_url = item.url(last_manifest_id)

@@ -335,3 +335,49 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             "/api/v1/accounts/10111213/networks/1234/sync_modules/1234/local_storage/"
             + "manifest/4321/clip/request/1568781420",
         )
+
+    @mock.patch("blinkpy.sync_module.BlinkSyncModule.check_new_video_time")
+    async def test_check_no_new_videos_with_local_storage(
+        self, mock_check, mock_resp
+    ) -> None:
+        """Test checking new videos in local storage."""
+        self.blink.account_id = 10111213
+        test_sync = self.blink.sync["test"]
+        test_sync._local_storage["status"] = True
+        test_sync.sync_id = 1234
+        mock_check.return_value = False
+
+        test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
+        test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
+        created_at = (
+            datetime.datetime.utcnow() - datetime.timedelta(seconds=60)
+        ).isoformat()
+        mock_resp.side_effect = [
+            {"id": 387372591, "network_id": 123456},
+            {
+                "version": "1.0",
+                "manifest_id": "4321",
+                "clips": [
+                    {
+                        "id": "866333964",
+                        "size": "234",
+                        "camera_name": "BackDoor",
+                        "created_at": f"{created_at}",
+                    },
+                    {
+                        "id": "1568781420",
+                        "size": "430",
+                        "camera_name": "Front_Door",
+                        "created_at": f"{created_at}",
+                    },
+                ],
+            },
+            {"media": []},
+            {"id": 489371591, "network_id": 123456},
+            {"id": 489371592, "network_id": 123456},
+        ]
+        test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
+        test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
+
+        await test_sync.update_local_storage_manifest()
+        self.assertTrue(await test_sync.check_new_videos())
