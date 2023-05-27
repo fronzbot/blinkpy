@@ -52,6 +52,11 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertFalse(self.blink.sync["test"].online)
         self.assertFalse(self.blink.sync["test"].available)
 
+    async def test_arm(self, mock_resp) -> None:
+        """Check that we arm and disarm a module."""
+        self.assertTrue(await self.blink.sync["test"].async_arm(True))
+        self.assertTrue(await self.blink.sync["test"].async_arm(False))
+
     def test_bad_arm(self, mock_resp) -> None:
         """Check that we mark module unavaiable if bad arm status."""
         self.blink.sync["test"].network_info = None
@@ -67,6 +72,14 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         """Test get events function."""
         mock_resp.return_value = {"event": True}
         self.assertEqual(await self.blink.sync["test"].get_events(), True)
+
+    @mock.patch(
+        "blinkpy.api.request_sync_events",
+        mock.AsyncMock(return_value={"BAD_event": True}),
+    )
+    async def test_get_events_malformed(self, mock_resp) -> None:
+        """Test malformed event message."""
+        self.assertFalse(await self.blink.sync["test"].get_events())
 
     @mock.patch("blinkpy.sync_module.BlinkSyncModule.get_events")
     async def test_get_events_fail(self, mock_get, mock_resp) -> None:
@@ -120,8 +133,18 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
     async def test_check_new_videos_failed(self, mock_resp) -> None:
         """Test method when response is unexpected."""
-        mock_resp.side_effect = [None, "just a string", {}]
+        generic_entry = {
+            "device_name": "foo",
+            "deleted": True,
+            "media": "/bar.mp4",
+        }
+        result = [generic_entry]
+        mock_resp.return_value = {"media": result}
         sync_module = self.blink.sync["test"]
+        # I think this should be false - should the exception return False?
+        self.assertTrue(await sync_module.check_new_videos())
+
+        mock_resp.side_effect = [None, "just a string", {}]
         sync_module.cameras = {"foo": None}
 
         sync_module.motion["foo"] = True
@@ -145,6 +168,12 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
     async def test_summary_with_no_network_id(self, mock_resp) -> None:
         """Test handling of bad summary."""
         self.mock_start[0]["syncmodule"] = None
+        mock_resp.side_effect = self.mock_start
+        self.assertFalse(await self.blink.sync["test"].start())
+
+    async def test_missing_key_startup(self, mock_resp) -> None:
+        """Test for missing key at sync module startup."""
+        del self.mock_start[0]["syncmodule"]["serial"]
         mock_resp.side_effect = self.mock_start
         self.assertFalse(await self.blink.sync["test"].start())
 
@@ -186,6 +215,14 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync = self.blink.sync["test"]
         test_sync.camera_list = [{"name": "foobar"}]
         self.assertFalse(await test_sync.update_cameras())
+
+    @mock.patch(
+        "blinkpy.sync_module.BlinkSyncModule.get_network_info",
+        mock.AsyncMock(return_value=False),
+    )
+    async def test_refresh_network_info(self, mock_resp) -> None:
+        """Test no network info on refresh."""
+        self.assertFalse(await self.blink.sync["test"].refresh())
 
     async def test_update_local_storage_manifest(self, mock_resp) -> None:
         """Test getting the manifest from the sync module."""

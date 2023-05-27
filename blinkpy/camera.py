@@ -333,9 +333,9 @@ class BlinkCamera:
 
         # Don't let the recent clips list grow without bound.
         if expire_clips:
-            self.expire_recent_clips()
+            await self.expire_recent_clips()
 
-    def expire_recent_clips(self, delta=datetime.timedelta(hours=1)):
+    async def expire_recent_clips(self, delta=datetime.timedelta(hours=1)):
         """Remove recent clips from list when they get too old."""
         to_keep = []
         for clip in self.recent_clips:
@@ -354,7 +354,7 @@ class BlinkCamera:
             for clip in self.recent_clips:
                 url = clip["clip"]
                 if "local_storage" in url:
-                    api.http_post(self.sync.blink, url)
+                    await api.http_post(self.sync.blink, url)
 
     async def get_liveview(self):
         """Get livewview rtsps link."""
@@ -493,7 +493,7 @@ class BlinkDoorbell(BlinkCamera):
             url = f"{url}/enable"
         else:
             url = f"{url}/disable"
-        return api.http_post(self.sync.blink, url)
+        return await api.http_post(self.sync.blink, url)
 
     async def snap_picture(self):
         """Snap picture for a blink doorbell camera."""

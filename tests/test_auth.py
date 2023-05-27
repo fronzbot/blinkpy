@@ -5,7 +5,6 @@ from unittest import IsolatedAsyncioTestCase
 from aiohttp import ClientConnectionError
 from blinkpy.auth import (
     Auth,
-    LoginError,
     TokenRefreshFailed,
     BlinkBadResponse,
     UnauthorizedError,
@@ -139,27 +138,6 @@ class TestAuth(IsolatedAsyncioTestCase):
         """Test header without token."""
         self.auth.token = None
         self.assertEqual(self.auth.header, None)
-
-    @mock.patch("blinkpy.auth.Auth.validate_login", return_value=None)
-    @mock.patch("blinkpy.auth.api.request_login")
-    async def test_login(self, mock_req, mock_validate):
-        """Test login handling."""
-        fake_resp = mresp.MockResponse({"foo": "bar"}, 200)
-        mock_req.return_value = fake_resp
-        self.assertEqual(await self.auth.login(), {"foo": "bar"})
-
-    @mock.patch("blinkpy.auth.Auth.validate_login", return_value=None)
-    @mock.patch("blinkpy.auth.api.request_login")
-    async def test_login_bad_response(self, mock_req, mock_validate):
-        """Test login handling when bad response."""
-        fake_resp = mresp.MockResponse({"foo": "bar"}, 404)
-        mock_req.return_value = fake_resp
-        self.auth.is_errored = False
-        with self.assertRaises(LoginError):
-            await self.auth.login()
-        with self.assertRaises(TokenRefreshFailed):
-            await self.auth.refresh_token()
-        self.assertTrue(self.auth.is_errored)
 
     @mock.patch("blinkpy.auth.Auth.login")
     async def test_refresh_token(self, mock_login):

@@ -36,7 +36,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
 
     def setUp(self):
         """Set up Blink module."""
-        self.blink = blinkpy.Blink()
+        self.blink = blinkpy.Blink(session=mock.AsyncMock())
         self.blink.urls = BlinkURLHandler("test")
 
     def tearDown(self):
@@ -59,7 +59,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     async def test_download_video_exit(self, mock_req):
         """Test we exit method when provided bad response."""
-        blink = blinkpy.Blink()
+        blink = blinkpy.Blink(session=mock.AsyncMock())
         blink.last_refresh = 0
         mock_req.return_value = {}
         formatted_date = get_time(blink.last_refresh)
@@ -76,7 +76,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     async def test_parse_downloaded_items(self, mock_req):
         """Test ability to parse downloaded items list."""
-        blink = blinkpy.Blink()
+        blink = blinkpy.Blink(session=mock.AsyncMock())
         generic_entry = {
             "created_at": "1970",
             "device_name": "foo",
@@ -125,7 +125,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     async def test_get_videos_metadata(self, mock_req):
         """Test ability to fetch videos metadata."""
-        blink = blinkpy.Blink()
+        blink = blinkpy.Blink(session=mock.AsyncMock())
         generic_entry = {
             "created_at": "1970",
             "device_name": "foo",
@@ -151,7 +151,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.blinkpy.api.http_get")
     async def test_do_http_get(self, mock_req):
         """Test ability to do_http_get."""
-        blink = blinkpy.Blink()
+        blink = blinkpy.Blink(session=mock.AsyncMock())
         blink.urls = BlinkURLHandler("test")
         response = await blink.do_http_get("/path/to/request")
         self.assertTrue(response is not None)
@@ -160,7 +160,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     async def test_parse_camera_not_in_list(self, mock_req):
         """Test ability to parse downloaded items list."""
-        blink = blinkpy.Blink()
+        blink = blinkpy.Blink(session=mock.AsyncMock())
         generic_entry = {
             "created_at": "1970",
             "device_name": "foo",

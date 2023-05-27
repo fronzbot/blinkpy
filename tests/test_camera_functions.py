@@ -32,7 +32,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
 
     def setUp(self):
         """Set up Blink module."""
-        self.blink = Blink()
+        self.blink = Blink(session=mock.AsyncMock())
         self.blink.urls = BlinkURLHandler("test")
         self.blink.sync["test"] = BlinkSyncModule(self.blink, "test", 1234, [])
         self.camera = BlinkCamera(self.blink.sync["test"])
@@ -177,7 +177,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.assertEqual(self.camera.recent_clips[0], record1)
         self.assertEqual(self.camera.recent_clips[1], record2)
 
-    def test_expire_recent_clips(self, mock_resp):
+    async def test_expire_recent_clips(self, mock_resp):
         """Test expiration of recent clips."""
         self.camera.recent_clips = []
         now = datetime.datetime.now()
@@ -193,7 +193,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
                 "clip": "/clip2",
             },
         )
-        self.camera.expire_recent_clips(delta=datetime.timedelta(minutes=5))
+        await self.camera.expire_recent_clips(delta=datetime.timedelta(minutes=5))
         self.assertEqual(len(self.camera.recent_clips), 1)
 
     @mock.patch(
