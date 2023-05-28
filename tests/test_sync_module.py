@@ -4,7 +4,12 @@ from unittest import IsolatedAsyncioTestCase
 from unittest import mock
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler, to_alphanumeric
-from blinkpy.sync_module import BlinkSyncModule
+from blinkpy.sync_module import (
+    BlinkSyncModule,
+    BlinkOwl,
+    BlinkLotus,
+    LocalStorageMediaItem,
+)
 from blinkpy.camera import BlinkCamera
 from tests.test_blink_functions import MockCamera
 
@@ -295,61 +300,9 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
         test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
         created_at = (
-            datetime.datetime.utcnow() + datetime.timedelta(seconds=30)
+            datetime.datetime.utcnow()  # + datetime.timedelta(seconds=30)
         ).isoformat()
-        mock_resp.side_effect = [
-            {"id": 387372591, "network_id": 123456},
-            {
-                "version": "1.0",
-                "manifest_id": "4321",
-                "clips": [
-                    {
-                        "id": "866333964",
-                        "size": "234",
-                        "camera_name": "BackDoor",
-                        "created_at": f"{created_at}",
-                    },
-                    {
-                        "id": "1568781420",
-                        "size": "430",
-                        "camera_name": "Front_Door",
-                        "created_at": f"{created_at}",
-                    },
-                ],
-            },
-            {"media": []},
-            {"id": 489371591, "network_id": 123456},
-            {"id": 489371592, "network_id": 123456},
-        ]
-        test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
-        test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
-        await test_sync.update_local_storage_manifest()
-        self.assertTrue(await test_sync.check_new_videos())
-        self.assertEqual(
-            test_sync.last_records["Back Door"][0]["clip"],
-            "/api/v1/accounts/10111213/networks/1234/sync_modules/1234/local_storage/"
-            + "manifest/4321/clip/request/866333964",
-        )
-        self.assertEqual(
-            test_sync.last_records["Front_Door"][0]["clip"],
-            "/api/v1/accounts/10111213/networks/1234/sync_modules/1234/local_storage/"
-            + "manifest/4321/clip/request/1568781420",
-        )
-
-    @mock.patch("blinkpy.sync_module.BlinkSyncModule.check_new_video_time")
-    async def test_check_no_new_videos_with_local_storage(
-        self, mock_check, mock_resp
-    ) -> None:
-        """Test checking new videos in local storage."""
-        self.blink.account_id = 10111213
-        test_sync = self.blink.sync["test"]
-        test_sync._local_storage["status"] = True
-        test_sync.sync_id = 1234
-        mock_check.return_value = False
-
-        test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
-        test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
-        created_at = (
+        created_at_old = (
             datetime.datetime.utcnow() - datetime.timedelta(seconds=60)
         ).isoformat()
         mock_resp.side_effect = [
@@ -362,6 +315,85 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
                         "id": "866333964",
                         "size": "234",
                         "camera_name": "BackDoor",
+                        "created_at": f"{created_at_old}",
+                    },
+                    {
+                        "id": "1568781420",
+                        "size": "430",
+                        "camera_name": "Front_Door",
+                        "created_at": f"{created_at_old}",
+                    },
+                ],
+            },
+            {"media": []},
+            {"id": 489371591, "network_id": 123456},
+            {"id": 489371592, "network_id": 123456},
+            {"media": []},
+            {"id": 489371592, "network_id": 123456},
+            {"id": 489371592, "network_id": 123456},
+        ]
+
+        test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
+        test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
+        await test_sync.update_local_storage_manifest()
+        self.assertTrue(await test_sync.check_new_videos())
+        self.assertTrue(await test_sync.check_new_videos())
+        self.assertEqual(
+            test_sync.last_records["Back Door"][0]["clip"],
+            "/api/v1/accounts/10111213/networks/1234/sync_modules/1234/local_storage/"
+            + "manifest/4321/clip/request/866333964",
+        )
+        self.assertEqual(
+            test_sync.last_records["Front_Door"][0]["clip"],
+            "/api/v1/accounts/10111213/networks/1234/sync_modules/1234/local_storage/"
+            + "manifest/4321/clip/request/1568781420",
+        )
+
+    @mock.patch("blinkpy.sync_module.BlinkSyncModule.poll_local_storage_manifest")
+    # Need to mock out poll_local_storage_manifest due to retries timing out test
+    async def test_check_no_missing_id_with_update_local_storage_manifest(
+        self, mock_poll, mock_resp
+    ) -> None:
+        """Test checking missing ID in local storage update."""
+        self.blink.account_id = 10111213
+        test_sync = self.blink.sync["test"]
+        test_sync._local_storage["status"] = True
+        test_sync.sync_id = 1234
+
+        test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
+        test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
+        mock_poll.return_value = [
+            {"network_id": 123456},
+        ]
+        test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
+        test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
+
+        self.assertIsNone(await test_sync.update_local_storage_manifest())
+
+    async def test_check_missing_manifest_id_with_update_local_storage_manifest(
+        self, mock_resp
+    ) -> None:
+        """Test checking missing manifest in update."""
+        self.blink.account_id = 10111213
+        test_sync = self.blink.sync["test"]
+        test_sync._local_storage["status"] = True
+        test_sync.sync_id = 1234
+
+        test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
+        test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
+        created_at = (
+            datetime.datetime.utcnow() - datetime.timedelta(seconds=60)
+        ).isoformat()
+
+        mock_resp.side_effect = [
+            {"id": 387372591, "network_id": 123456},
+            {
+                "version": "1.0",
+                "clips": [
+                    {
+                        "id": "866333964",
+                        "size": "234",
+                        "camera_name": "BackDoor",
                         "created_at": f"{created_at}",
                     },
                     {
@@ -372,12 +404,130 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
                     },
                 ],
             },
-            {"media": []},
+        ]
+
+        test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
+        test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
+
+        self.assertIsNone(await test_sync.update_local_storage_manifest())
+
+    async def test_check_malformed_clips_with_update_local_storage_manifest(
+        self, mock_resp
+    ) -> None:
+        """Test checking malformed clips in update."""
+        self.blink.account_id = 10111213
+        test_sync = self.blink.sync["test"]
+        test_sync._local_storage["status"] = True
+        test_sync.sync_id = 1234
+
+        test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
+        test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
+        created_at = (
+            datetime.datetime.utcnow() - datetime.timedelta(seconds=60)
+        ).isoformat()
+
+        mock_resp.side_effect = [
             {"id": 489371591, "network_id": 123456},
-            {"id": 489371592, "network_id": 123456},
+            {
+                "version": "1.0",
+                "manifest_id": "4321",
+                "clips": [
+                    {
+                        "id": "866333964",
+                        "camera_name": "BackDoor",
+                        "created_at": f"{created_at}",
+                    },
+                    {
+                        "id": "1568781420",
+                        "size": "430",
+                        "camera_name": "Front_Door",
+                        "created_at": f"{created_at}",
+                    },
+                ],
+            },
         ]
         test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
         test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
 
-        await test_sync.update_local_storage_manifest()
-        self.assertTrue(await test_sync.check_new_videos())
+        self.assertIsNone(await test_sync.update_local_storage_manifest())
+
+    async def test_check_poll_local_storage_manifest_retry(self, mock_resp) -> None:
+        """Test checking poll local storage manifest retry."""
+        self.blink.account_id = 10111213
+        test_sync = self.blink.sync["test"]
+        test_sync._local_storage["status"] = True
+        test_sync.sync_id = 1234
+
+        test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
+        test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
+
+        mock_resp.side_effect = [
+            {"network_id": 123456},
+        ]
+        test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
+        test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
+
+        response = await test_sync.poll_local_storage_manifest(max_retries=1)
+        self.assertEqual(
+            response,
+            {"network_id": 123456},
+        )
+
+    async def test_sync_owl_init(self, mock_resp):
+        """Test sync owl setup with no serial in response."""
+        self.blink: Blink = Blink(motion_interval=0, session=mock.AsyncMock())
+        self.blink.last_refresh = 0
+        self.blink.urls = BlinkURLHandler("test")
+        response_value = {"id": 489371591, "enabled": 123456, "serial": None}
+        test = BlinkOwl(self.blink, "test", "1234", response=response_value)
+
+        self.assertIsNotNone(test.serial)
+
+        self.blink.homescreen = {"owls": {"enabled": True}}
+        self.assertIsNone(await test.get_camera_info("test"))
+
+    async def test_sync_lotus_init(self, mock_resp):
+        """Test sync lotus setup with no serial in response."""
+        self.blink: Blink = Blink(motion_interval=0, session=mock.AsyncMock())
+        self.blink.last_refresh = 0
+        self.blink.urls = BlinkURLHandler("test")
+        response_value = {"id": 489371591, "enabled": 123456, "serial": None}
+        test = BlinkLotus(self.blink, "test", "1234", response=response_value)
+
+        self.assertIsNotNone(test.serial)
+
+        self.blink.homescreen = {"doorbells": {"enabled": True}}
+        self.assertIsNone(await test.get_camera_info("test"))
+
+    async def test_local_storage_media_item(self, mock_resp):
+        """Test local storage media properties."""
+        blink: Blink = Blink(motion_interval=0, session=mock.AsyncMock())
+        blink.last_refresh = 0
+        blink.urls = BlinkURLHandler("test")
+        item = LocalStorageMediaItem(
+            "1234",
+            "Backdoor",
+            datetime.datetime.utcnow().isoformat(),
+            "432",
+            " manifest_id",
+            "url",
+        )
+        item2 = LocalStorageMediaItem(
+            "1235",
+            "Backdoor",
+            datetime.datetime.utcnow().isoformat(),
+            "432",
+            " manifest_id",
+            "url",
+        )
+        self.assertEqual(item.id, 1234)
+        self.assertEqual(item.size, "432")
+        self.assertFalse(item == item2)
+
+        mock_resp.side_effect = [
+            {"network_id": 123456},
+        ]
+
+        self.assertEquals(
+            await item.prepare_download(blink, max_retries=1), {"network_id": 123456}
+        )
