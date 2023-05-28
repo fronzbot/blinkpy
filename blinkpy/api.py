@@ -352,6 +352,51 @@ def request_local_storage_clip(blink, network, sync_id, manifest_id, clip_id):
     return http_post(blink, url)
 
 
+def request_get_config(blink, network, camera_id, product_type="owl"):
+    """Get camera configuration.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: ID of camera
+    :param product_type: Camera product type "owl" or "catalina"
+    """
+    if product_type == "owl":
+        url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/owls/{camera_id}/config"
+    elif product_type == "catalina":
+        url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/config"
+    else:
+        _LOGGER.info(
+            "Camera %s with product type %s config get not implemented.",
+            camera_id,
+            product_type,
+        )
+        return None
+    return http_get(blink, url)
+
+
+def request_update_config(blink, network, camera_id, product_type="owl", data=None):
+    """Update camera configuration.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: ID of camera
+    :param product_type: Camera product type "owl" or "catalina"
+    :param data: string w/JSON dict of parameters/values to update
+    """
+    if product_type == "owl":
+        url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/owls/{camera_id}/update"
+    elif product_type == "catalina":
+        url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/update"
+    else:
+        _LOGGER.info(
+            "Camera %s with product type %s config update not implemented.",
+            camera_id,
+            product_type,
+        )
+        return None
+    return http_post(blink, url, json=False, data=data)
+
+
 def http_get(blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOUT):
     """Perform an http get request.
 
