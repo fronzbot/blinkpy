@@ -300,9 +300,6 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
         test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
         created_at = (
-            datetime.datetime.utcnow()  # + datetime.timedelta(seconds=30)
-        ).isoformat()
-        created_at_old = (
             datetime.datetime.utcnow() - datetime.timedelta(seconds=60)
         ).isoformat()
         mock_resp.side_effect = [
@@ -315,13 +312,13 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
                         "id": "866333964",
                         "size": "234",
                         "camera_name": "BackDoor",
-                        "created_at": f"{created_at_old}",
+                        "created_at": f"{created_at}",
                     },
                     {
                         "id": "1568781420",
                         "size": "430",
                         "camera_name": "Front_Door",
-                        "created_at": f"{created_at_old}",
+                        "created_at": f"{created_at}",
                     },
                 ],
             },
