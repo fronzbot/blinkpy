@@ -139,18 +139,38 @@ class TestAuth(IsolatedAsyncioTestCase):
         self.auth.token = None
         self.assertEqual(self.auth.header, None)
 
-    @mock.patch("blinkpy.auth.Auth.login")
-    async def test_refresh_token(self, mock_login):
+    @mock.patch("blinkpy.auth.Auth.validate_login")
+    @mock.patch("blinkpy.auth.Auth.refresh_token")
+    async def test_auth_startup(self, mock_validate, mock_refresh):
+        """Test auth startup."""
+        await self.auth.startup()
+
+    @mock.patch("blinkpy.auth.Auth.query")
+    async def test_refresh_token(self, mock_resp):
         """Test refresh token method."""
-        mock_login.return_value = {
-            "account": {"account_id": 5678, "client_id": 1234, "tier": "test"},
-            "auth": {"token": "foobar"},
-        }
+        mock_resp.return_value.json = mock.AsyncMock(
+            return_value={
+                "account": {"account_id": 5678, "client_id": 1234, "tier": "test"},
+                "auth": {"token": "foobar"},
+            }
+        )
+        mock_resp.return_value.status = 200
+
+        self.auth.no_prompt = True
         self.assertTrue(await self.auth.refresh_token())
         self.assertEqual(self.auth.region_id, "test")
         self.assertEqual(self.auth.token, "foobar")
         self.assertEqual(self.auth.client_id, 1234)
         self.assertEqual(self.auth.account_id, 5678)
+
+        mock_resp.return_value.status = 400
+        with self.assertRaises(TokenRefreshFailed):
+            await self.auth.refresh_token()
+
+        mock_resp.return_value.status = 200
+        mock_resp.return_value.json = mock.AsyncMock(side_effect=AttributeError)
+        with self.assertRaises(TokenRefreshFailed):
+            await self.auth.refresh_token()
 
     @mock.patch("blinkpy.auth.Auth.login")
     async def test_refresh_token_failed(self, mock_login):
@@ -203,6 +223,10 @@ class TestAuth(IsolatedAsyncioTestCase):
         self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
         mock_req.return_value = mresp.MockResponse({}, 200)
         self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
+        mock_req.return_value = mresp.MockResponse(
+            {"valid": False, "message": "Not good"}, 200
+        )
+        self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
 
     @mock.patch(
         "blinkpy.auth.Auth.validate_response",
@@ -229,6 +253,23 @@ class TestAuth(IsolatedAsyncioTestCase):
         self.assertEqual(await self.auth.query(url="http://example.com"), None)
         self.assertEqual(await self.auth.query(url="http://example.com"), None)
 
+    @mock.patch("blinkpy.auth.Auth.validate_response")
+    async def test_query(self, mock_validate):
+        """Test query functions."""
+        self.auth.session = MockSession_with_data()
+        await self.auth.query("URL", "data", "headers", "get")
+        await self.auth.query("URL", "data", "headers", "post")
+
+        mock_validate.side_effect = ClientConnectionError
+        self.assertIsNone(await self.auth.query("URL", "data", "headers", "get"))
+
+        mock_validate.side_effect = BlinkBadResponse
+        self.assertIsNone(await self.auth.query("URL", "data", "headers", "post"))
+
+        mock_validate.side_effect = UnauthorizedError
+        self.auth.refresh_token = mock.AsyncMock()
+        self.assertIsNone(await self.auth.query("URL", "data", "headers", "post"))
+
 
 class MockSession:
     """Object to mock a session."""
@@ -240,6 +281,24 @@ class MockSession:
     async def post(self, *args, **kwargs):
         """Mock send function."""
         return None
+
+
+class MockSession_with_data:
+    """Object to mock a session."""
+
+    async def get(self, *args, **kwargs):
+        """Mock send function."""
+        response = mock.AsyncMock
+        response.status = 400
+        response.reason = "Some Reason"
+        return response
+
+    async def post(self, *args, **kwargs):
+        """Mock send function."""
+        response = mock.AsyncMock
+        response.status = 400
+        response.reason = "Some Reason"
+        return response
 
 
 class MockBlink:

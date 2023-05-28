@@ -135,8 +135,6 @@ class Auth:
             if response.status == 404:
                 raise ClientConnectionError
             json_data = await response.json()
-        except KeyError:
-            pass
         except (AttributeError, ValueError) as error:
             raise BlinkBadResponse from error
 
@@ -210,7 +208,7 @@ class Auth:
             try:
                 json_resp = await response.json()
                 blink.available = json_resp["valid"]
-                if not json_resp["valid"]:
+                if not blink.available:
                     _LOGGER.error("%s", json_resp["message"])
                     return False
             except (KeyError, TypeError):
