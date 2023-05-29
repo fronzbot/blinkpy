@@ -120,7 +120,7 @@ class Blink:
         if self.key_required:
             if self.auth.no_prompt:
                 return True
-            self.setup_prompt_2fa()
+            await self.setup_prompt_2fa()
 
         if not self.last_refresh:
             # Initialize last_refresh to be just before the refresh delay period.
