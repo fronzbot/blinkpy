@@ -1,7 +1,6 @@
 """Test various api functions."""
 
-import unittest
-from unittest import mock
+from unittest import mock, IsolatedAsyncioTestCase
 import time
 from blinkpy.helpers.util import (
     json_load,
@@ -17,7 +16,7 @@ from blinkpy.helpers.util import (
 from blinkpy.helpers import constants as const
 
 
-class TestUtil(unittest.TestCase):
+class TestUtil(IsolatedAsyncioTestCase):
     """Test the helpers/util module."""
 
     def setUp(self):
@@ -26,63 +25,63 @@ class TestUtil(unittest.TestCase):
     def tearDown(self):
         """Tear down blink module."""
 
-    def test_throttle(self):
+    async def test_throttle(self):
         """Test the throttle decorator."""
         calls = []
 
         @Throttle(seconds=5)
-        def test_throttle():
+        async def test_throttle():
             calls.append(1)
 
         now = int(time.time())
         now_plus_four = now + 4
         now_plus_six = now + 6
 
-        test_throttle()
+        await test_throttle()
         self.assertEqual(1, len(calls))
 
         # Call again, still shouldn't fire
-        test_throttle()
+        await test_throttle()
         self.assertEqual(1, len(calls))
 
         # Call with force
-        test_throttle(force=True)
+        await test_throttle(force=True)
         self.assertEqual(2, len(calls))
 
         # Call without throttle, shouldn't fire
-        test_throttle()
+        await test_throttle()
         self.assertEqual(2, len(calls))
 
         # Fake time as 4 seconds from now
         with mock.patch("time.time", return_value=now_plus_four):
-            test_throttle()
+            await test_throttle()
         self.assertEqual(2, len(calls))
 
         # Fake time as 6 seconds from now
         with mock.patch("time.time", return_value=now_plus_six):
-            test_throttle()
+            await test_throttle()
         self.assertEqual(3, len(calls))
 
-    def test_throttle_per_instance(self):
+    async def test_throttle_per_instance(self):
         """Test that throttle is done once per instance of class."""
 
         class Tester:
             """A tester class for throttling."""
 
-            def test(self):
+            async def test(self):
                 """Test the throttle."""
                 return True
 
         tester = Tester()
         throttled = Throttle(seconds=1)(tester.test)
-        self.assertEqual(throttled(), True)
-        self.assertEqual(throttled(), None)
+        self.assertEqual(await throttled(), True)
+        self.assertEqual(await throttled(), None)
 
-    def test_throttle_multiple_objects(self):
+    async def test_throttle_multiple_objects(self):
         """Test that function is throttled even if called by multiple objects."""
 
         @Throttle(seconds=5)
-        def test_throttle_method():
+        async def test_throttle_method():
             return True
 
         class Tester:
@@ -94,22 +93,22 @@ class TestUtil(unittest.TestCase):
 
         tester1 = Tester()
         tester2 = Tester()
-        self.assertEqual(tester1.test(), True)
-        self.assertEqual(tester2.test(), None)
+        self.assertEqual(await tester1.test(), True)
+        self.assertEqual(await tester2.test(), None)
 
-    def test_throttle_on_two_methods(self):
+    async def test_throttle_on_two_methods(self):
         """Test that throttle works for multiple methods."""
 
         class Tester:
             """A tester class for throttling."""
 
             @Throttle(seconds=3)
-            def test1(self):
+            async def test1(self):
                 """Test function for throttle."""
                 return True
 
             @Throttle(seconds=5)
-            def test2(self):
+            async def test2(self):
                 """Test function for throttle."""
                 return True
 
@@ -118,18 +117,18 @@ class TestUtil(unittest.TestCase):
         now_plus_4 = now + 4
         now_plus_6 = now + 6
 
-        self.assertEqual(tester.test1(), True)
-        self.assertEqual(tester.test2(), True)
-        self.assertEqual(tester.test1(), None)
-        self.assertEqual(tester.test2(), None)
+        self.assertEqual(await tester.test1(), True)
+        self.assertEqual(await tester.test2(), True)
+        self.assertEqual(await tester.test1(), None)
+        self.assertEqual(await tester.test2(), None)
 
         with mock.patch("time.time", return_value=now_plus_4):
-            self.assertEqual(tester.test1(), True)
-            self.assertEqual(tester.test2(), None)
+            self.assertEqual(await tester.test1(), True)
+            self.assertEqual(await tester.test2(), None)
 
         with mock.patch("time.time", return_value=now_plus_6):
-            self.assertEqual(tester.test1(), None)
-            self.assertEqual(tester.test2(), True)
+            self.assertEqual(await tester.test1(), None)
+            self.assertEqual(await tester.test2(), True)
 
     def test_time_to_seconds(self):
         """Test time to seconds conversion."""

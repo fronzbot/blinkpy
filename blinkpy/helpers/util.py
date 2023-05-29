@@ -150,7 +150,7 @@ class Throttle:
     def __call__(self, method):
         """Throttle caller method."""
 
-        def throttle_method():
+        async def throttle_method():
             """Call when method is throttled."""
             return None
 
