@@ -562,7 +562,8 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         self.assertFalse(await self.blink.start())
 
     def test_setup_login_ids(self):
-        """ "Test setup_login_ids function."""
+        """Test setup_login_ids function."""
+
         self.blink.auth.client_id = 1
         self.blink.auth.account_id = 2
         self.blink.setup_login_ids()
@@ -572,6 +573,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.blinkpy.util.json_save")
     def test_save(self, mock_util):
         """Test save function."""
+
         self.blink.save("blah")
         self.assertEqual(mock_util.call_count, 1)
 
@@ -581,4 +583,5 @@ class MockSync:
 
     def __init__(self, cameras):
         """Initialize fake class."""
+
         self.cameras = cameras
