@@ -152,7 +152,16 @@ class Auth:
         is_retry=False,
         timeout=TIMEOUT,
     ):
-        """Set up an auth query."""
+        """Perform server requests."""
+        """
+        :param url: URL to perform request
+        :param data: Data to send
+        :param headers: Headers to send
+        :param reqtype: Can be 'get' or 'post' (default: 'get')
+        :param stream: Stream response? True/FALSE
+        :param json_resp: Return JSON response? TRUE/False
+        :param is_retry: Is this part of a re-auth attempt? True/FALSE
+        """
         try:
             if reqtype == "get":
                 response = await self.session.get(

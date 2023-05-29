@@ -205,7 +205,7 @@ class BlinkSyncModule:
     def get_unique_info(self, name):
         """Extract unique information for Minis and Doorbells."""
         try:
-            for camera_type, _ in self.type_key_map.items():
+            for camera_type in self.type_key_map:
                 type_key = self.type_key_map[camera_type]
                 for device in self.blink.homescreen[type_key]:
                     if device["name"] == name:
@@ -385,6 +385,10 @@ class BlinkSyncModule:
 
     def check_new_video_time(self, timestamp, reference=None):
         """Check if video has timestamp since last refresh."""
+        """
+        :param timestamp ISO-formatted timestamp string
+        :param reference ISO-formatted reference timestamp string
+        """
         if not reference:
             return time_to_seconds(timestamp) > self.blink.last_refresh
         return time_to_seconds(timestamp) > time_to_seconds(reference)
