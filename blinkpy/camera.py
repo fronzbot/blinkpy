@@ -1,10 +1,11 @@
 """Defines Blink cameras."""
 import copy
 import string
-from shutil import copyfileobj
+from aioshutil import copyfileobj
 import logging
 import datetime
 from json import dumps
+import aiohttp
 import traceback
 from requests.compat import urljoin
 from blinkpy import api
@@ -109,9 +110,9 @@ class BlinkCamera:
         )
 
     @property
-    def night_vision(self):
+    async def night_vision(self):
         """Return night_vision status."""
-        res = api.request_get_config(
+        res = await api.request_get_config(
             self.sync.blink,
             self.network_id,
             self.camera_id,
@@ -132,23 +133,22 @@ class BlinkCamera:
         ]
         return {key: res.get(key) for key in nv_keys}
 
-    @night_vision.setter
-    def night_vision(self, value):
+    async def async_set_night_vision(self, value):
         """Set camera night_vision status."""
         if value not in ["on", "off", "auto"]:
             return None
         if self.product_type == "catalina":
             value = {"off": 0, "on": 1, "auto": 2}.get(value, None)
         data = dumps({"illuminator_enable": value})
-        res = api.request_update_config(
+        res = await api.request_update_config(
             self.sync.blink,
             self.network_id,
             self.camera_id,
             product_type=self.product_type,
             data=data,
         )
-        if res.ok:
-            return res.json()
+        if res.status == 200:
+            return await res.json()
         return None
 
     async def record(self):
@@ -157,7 +157,7 @@ class BlinkCamera:
             self.sync.blink, self.network_id, self.camera_id
         )
 
-    async def get_media(self, media_type="image"):
+    async def get_media(self, media_type="image") -> aiohttp.ClientRequest:
         """Download media (image or video)."""
         if media_type.lower() == "video":
             return await self.get_video_clip()
@@ -264,9 +264,6 @@ class BlinkCamera:
                 # Check that new full api url has not been returned:
                 if thumb_addr.endswith("&ext="):
                     thumb_string = thumb_addr
-            except TypeError:
-                # Thumb address is None
-                pass
 
             if thumb_string is not None:
                 new_thumbnail = urljoin(self.sync.urls.base_url, thumb_string)
@@ -373,7 +370,7 @@ class BlinkCamera:
         response = await self.get_media()
         if response.status == 200:
             with open(path, "wb") as imgfile:
-                copyfileobj(await response.raw(), imgfile)
+                await copyfileobj(await response.read(), imgfile)
         else:
             _LOGGER.error("Cannot write image to file, response %s", response.status)
 
@@ -389,7 +386,7 @@ class BlinkCamera:
             _LOGGER.error("No saved video exists for %s.", self.name)
             return
         with open(path, "wb") as vidfile:
-            copyfileobj(await response.raw(), vidfile)
+            await copyfileobj(await response.read(), vidfile)
 
     async def save_recent_clips(
         self, output_dir="/tmp", file_pattern="${created}_${name}.mp4"
@@ -415,7 +412,7 @@ class BlinkCamera:
             media = await self.get_video_clip(clip_addr)
             if media.status == 200:
                 with open(path, "wb") as clip_file:
-                    copyfileobj(media.raw, clip_file)
+                    await copyfileobj(await media.read(), clip_file)
                 num_saved += 1
                 try:
                     # Remove recent clip from the list once the download has finished.

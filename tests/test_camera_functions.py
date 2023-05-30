@@ -13,6 +13,7 @@ from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera
+import tests.mock_responses as mresp
 
 CAMERA_CFG = {
     "camera": [
@@ -67,6 +68,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             "test",
             "foobar",
         ]
+        self.assertIsNone(self.camera.image_from_cache)
+
         await self.camera.update(config, expire_clips=False)
         self.assertEqual(self.camera.name, "new")
         self.assertEqual(self.camera.camera_id, "1234")
@@ -177,6 +180,30 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.assertEqual(self.camera.recent_clips[0], record1)
         self.assertEqual(self.camera.recent_clips[1], record2)
 
+    async def test_recent_video_clips_missing_key(self, mock_resp):
+        """Tests that the missing key failst."""
+        config = {
+            "name": "new",
+            "id": 1234,
+            "network_id": 5678,
+            "serial": "12345678",
+            "enabled": False,
+            "battery_voltage": 90,
+            "battery_state": "ok",
+            "temperature": 68,
+            "wifi_strength": 4,
+            "thumbnail": "/thumb",
+        }
+        self.camera.sync.last_records["foobar"] = []
+        record2 = {"clip": "/clip2"}
+        self.camera.sync.last_records["foobar"].append(record2)
+        self.camera.sync.motion["foobar"] = True
+
+        with self.assertLogs(level="ERROR") as dl_log:
+            await self.camera.update_images(config, expire_clips=False)
+
+        self.assertIsNotNone(dl_log.output)
+
     async def test_expire_recent_clips(self, mock_resp):
         """Test expiration of recent clips."""
         self.camera.recent_clips = []
@@ -190,7 +217,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.camera.recent_clips.append(
             {
                 "time": (now - datetime.timedelta(minutes=1)).isoformat(),
-                "clip": "/clip2",
+                "clip": "local_storage/clip2",
             },
         )
         await self.camera.expire_recent_clips(delta=datetime.timedelta(minutes=5))
@@ -208,3 +235,82 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         """Test setting motion detection enable properly."""
         self.assertEqual(await self.camera.set_motion_detect(True), "enable")
         self.assertEqual(await self.camera.set_motion_detect(False), "disable")
+
+    async def test_night_vision(self, mock_resp):
+        """Test Night Vision Camera functions."""
+        # MJK - I don't know what the "real" response is supposed to look like
+        # Need to confirm and adjust this test to match reality?
+        mock_resp.return_value = "blah"
+        self.assertIsNone(await self.camera.night_vision)
+
+        self.camera.product_type = "catalina"
+        mock_resp.return_value = {"camera": [{"name": "123", "illuminator_enable": 1}]}
+        self.assertIsNotNone(await self.camera.night_vision)
+
+        self.assertIsNone(await self.camera.async_set_night_vision("0"))
+
+        mock_resp.return_value = mresp.MockResponse({"code": 200}, 200)
+        self.assertIsNotNone(await self.camera.async_set_night_vision("on"))
+
+        mock_resp.return_value = mresp.MockResponse({"code": 400}, 400)
+        self.assertIsNone(await self.camera.async_set_night_vision("on"))
+
+    async def test_record(self, mock_resp):
+        """Test camera record function."""
+        with mock.patch(
+            "blinkpy.api.request_new_video", mock.AsyncMock(return_value=True)
+        ):
+            self.assertTrue(await self.camera.record())
+
+        with mock.patch(
+            "blinkpy.api.request_new_video", mock.AsyncMock(return_value=False)
+        ):
+            self.assertFalse(await self.camera.record())
+
+    async def test_get_thumbnail(self, mock_resp):
+        """Test get thumbnail without URL."""
+        self.assertIsNone(await self.camera.get_thumbnail())
+
+    async def test_get_video(self, mock_resp):
+        """Test get video clip without URL."""
+        self.assertIsNone(await self.camera.get_video_clip())
+
+    async def test_snap_picture(self, mock_resp):
+        """Test camera snap picture function."""
+        with mock.patch(
+            "blinkpy.api.request_new_image", mock.AsyncMock(return_value=True)
+        ):
+            self.assertTrue(await self.camera.snap_picture())
+
+        with mock.patch(
+            "blinkpy.api.request_new_image", mock.AsyncMock(return_value=False)
+        ):
+            self.assertFalse(await self.camera.snap_picture())
+
+    async def test_image_to_file(self, mock_resp):
+        """Test camera image to file function."""
+        self.camera.thumbnail = "/thumb"
+        self.assertIsNone(await self.camera.image_to_file("test.jpg"))
+
+        # with mock.patch("builtins.open", mock.mock_open()) as mock_open, mock.patch("blinkpy.camera.BlinkCamera.get_media", mock.AsyncMock(return_value = MockResponseFile("image.jpg"))):
+        #     await self.camera.image_to_file("test.jpg")
+        #     mock_open.assert_called_once()
+
+
+class MockResponseFile:
+    """Mock a file object."""
+
+    status = 200
+
+    def __init__(self, filename):
+        """Init the file object."""
+        self.filename = filename
+        self.content = "some content"
+
+    async def write(self, string):
+        """Write to the file object."""
+        self.content = string
+
+    async def read(self):
+        """Read from the file object."""
+        return self.content
