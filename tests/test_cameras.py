@@ -111,7 +111,6 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
                 continue
             self.assertEqual(attr[key], None)
 
-    @pytest.mark.asyncio
     async def test_camera_stream(self, mock_resp):
         """Test that camera stream returns correct url."""
         mock_resp.return_value = {"server": "rtsps://foo.bar"}
@@ -121,7 +120,6 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.assertEqual(await mini_camera.get_liveview(), "rtsps://foo.bar")
         self.assertEqual(await doorbell_camera.get_liveview(), "rtsps://foo.bar")
 
-    @pytest.mark.asyncio
     async def test_different_thumb_api(self, mock_resp):
         """Test that the correct url is created with new api."""
         thumb_endpoint = "https://rest-test.immedia-semi.com/api/v3/media/accounts/9999/networks/5678/test/1234/thumbnail/thumbnail.jpg?ts=1357924680&ext="
@@ -146,7 +144,6 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         await self.camera.update(config, expire_clips=False)
         self.assertEqual(self.camera.thumbnail, thumb_endpoint)
 
-    @pytest.mark.asyncio
     async def test_thumb_return_none(self, mock_resp):
         """Test that a 'None" thumbnail is doesn't break system."""
         config = {
@@ -169,7 +166,6 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         await self.camera.update(config, expire_clips=False)
         self.assertEqual(self.camera.thumbnail, None)
 
-    @pytest.mark.asyncio
     async def test_new_thumb_url_returned(self, mock_resp):
         """Test that thumb handled properly if new url returned."""
         thumb_return = "/api/v3/media/accounts/9999/networks/5678/test/1234/thumbnail/thumbnail.jpg?ts=1357924680&ext="
