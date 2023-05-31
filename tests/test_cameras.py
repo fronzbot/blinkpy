@@ -8,7 +8,6 @@ Blink system is set up.
 
 from unittest import mock
 from unittest import IsolatedAsyncioTestCase
-import pytest
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule

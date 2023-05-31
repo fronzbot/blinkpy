@@ -1,6 +1,5 @@
 """Tests camera and system functions."""
-from unittest import mock
-from unittest import IsolatedAsyncioTestCase
+from unittest import mock, IsolatedAsyncioTestCase
 import time
 import random
 
@@ -132,15 +131,14 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         blink.last_refresh = 0
 
         results = await blink.get_videos_metadata(stop=2)
-        expected_results = [
-            {
-                "created_at": "1970",
-                "device_name": "foo",
-                "deleted": True,
-                "media": "/bar.mp4",
-            }
-        ]
-        self.assertListEqual(results, expected_results)
+        self.assertListEqual(results, result)
+
+        results = await blink.get_videos_metadata(since="2018/07/28 12:33:00", stop=2)
+        self.assertListEqual(results, result)
+
+        mock_req.return_value = {"media": None}
+        results = await blink.get_videos_metadata(stop=2)
+        self.assertListEqual(results, [])
 
     @mock.patch("blinkpy.blinkpy.api.http_get")
     async def test_do_http_get(self, mock_req):
@@ -151,8 +149,8 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         self.assertTrue(response is not None)
 
     @mock.patch("blinkpy.blinkpy.api.request_videos")
-    async def test_parse_camera_not_in_list(self, mock_req):
-        """Test ability to parse downloaded items list."""
+    async def test_download_videos_deleted(self, mock_req):
+        """Test ability to download videos."""
         blink = blinkpy.Blink(session=mock.AsyncMock())
         generic_entry = {
             "created_at": "1970",
@@ -167,10 +165,102 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         expected_log = [
             "INFO:blinkpy.blinkpy:Retrieving videos since {}".format(formatted_date),
             "DEBUG:blinkpy.blinkpy:Processing page 1",
+            "DEBUG:blinkpy.blinkpy:foo: /bar.mp4 is marked as deleted.",
+        ]
+        with self.assertLogs(level="DEBUG") as dl_log:
+            await blink.download_videos("/tmp", camera="foo", stop=2, delay=0)
+        self.assertListEqual(dl_log.output, expected_log)
+
+    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    @mock.patch("os.path.isfile")
+    @mock.patch("builtins.open", create=True)
+    @mock.patch("blinkpy.blinkpy.copyfileobj")
+    async def test_download_videos_file(
+        self, mock_cfo, mock_open, mock_isfile, mock_req
+    ):
+        """Test ability to download videos to a file."""
+        generic_entry = {
+            "created_at": "1970",
+            "device_name": "foo",
+            "deleted": False,
+            "media": "/bar.mp4",
+        }
+        result = [generic_entry]
+        mock_req.return_value = {"media": result}
+        mock_isfile.return_value = False
+        mock_cfo.return_value = True
+        self.blink.last_refresh = 0
+        expected_log = [
+            "INFO:blinkpy.blinkpy:Downloaded video to /tmp/foo-1970.mp4",
+        ]
+        with self.assertLogs(level="DEBUG") as dl_log:
+            await self.blink.download_videos("/tmp", camera="foo", stop=2, delay=0)
+        self.assertEquals(dl_log.output[3], expected_log[0])
+
+    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    @mock.patch("os.path.isfile")
+    async def test_download_videos_file_exists(self, mock_isfile, mock_req):
+        """Test ability to download videos with file exists."""
+        generic_entry = {
+            "created_at": "1970",
+            "device_name": "foo",
+            "deleted": False,
+            "media": "/bar.mp4",
+        }
+        result = [generic_entry]
+        mock_req.return_value = {"media": result}
+        mock_isfile.return_value = True
+
+        self.blink.last_refresh = 0
+        formatted_date = get_time(self.blink.last_refresh)
+        expected_log = [
+            "INFO:blinkpy.blinkpy:Retrieving videos since {}".format(formatted_date),
+            "DEBUG:blinkpy.blinkpy:Processing page 1",
+            "INFO:blinkpy.blinkpy:/tmp/foo-1970.mp4 already exists, skipping...",
+        ]
+        with self.assertLogs(level="DEBUG") as dl_log:
+            await self.blink.download_videos("/tmp", camera="foo", stop=2, delay=0)
+        self.assertListEqual(dl_log.output, expected_log)
+
+    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    async def test_parse_camera_not_in_list(self, mock_req):
+        """Test ability to parse downloaded items list."""
+        generic_entry = {
+            "created_at": "1970",
+            "device_name": "foo",
+            "deleted": True,
+            "media": "/bar.mp4",
+        }
+        result = [generic_entry]
+        mock_req.return_value = {"media": result}
+        self.blink.last_refresh = 0
+        formatted_date = get_time(self.blink.last_refresh)
+        expected_log = [
+            "INFO:blinkpy.blinkpy:Retrieving videos since {}".format(formatted_date),
+            "DEBUG:blinkpy.blinkpy:Processing page 1",
             "DEBUG:blinkpy.blinkpy:Skipping videos for foo.",
         ]
         with self.assertLogs(level="DEBUG") as dl_log:
-            await blink.download_videos("/tmp", camera="bar", stop=2, delay=0)
+            await self.blink.download_videos("/tmp", camera="bar", stop=2, delay=0)
+        self.assertListEqual(dl_log.output, expected_log)
+
+    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    async def test_parse_malformed_entry(self, mock_req):
+        """Test ability to parse downloaded items in malformed list."""
+        self.blink.last_refresh = 0
+        formatted_date = get_time(self.blink.last_refresh)
+        generic_entry = {
+            "created_at": "1970",
+        }
+        result = [generic_entry]
+        mock_req.return_value = {"media": result}
+        expected_log = [
+            "INFO:blinkpy.blinkpy:Retrieving videos since {}".format(formatted_date),
+            "DEBUG:blinkpy.blinkpy:Processing page 1",
+            "INFO:blinkpy.blinkpy:Missing clip information, skipping...",
+        ]
+        with self.assertLogs(level="DEBUG") as dl_log:
+            await self.blink.download_videos("/tmp", camera="bar", stop=2, delay=0)
         self.assertListEqual(dl_log.output, expected_log)
 
     @mock.patch("blinkpy.blinkpy.api.request_network_update")

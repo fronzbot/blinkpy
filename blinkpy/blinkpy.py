@@ -415,7 +415,7 @@ class Blink:
 
                 response = await self.do_http_get(address)
                 with open(filename, "wb") as vidfile:
-                    copyfileobj(response.raw, vidfile)
+                    copyfileobj(await response.read(), vidfile)
 
                 _LOGGER.info("Downloaded video to %s", filename)
             else:
