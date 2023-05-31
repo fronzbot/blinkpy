@@ -17,7 +17,7 @@ import os.path
 import time
 import logging
 import datetime
-from shutil import copyfileobj
+from aioshutil import copyfileobj
 
 from requests.structures import CaseInsensitiveDict
 from dateutil.parser import parse
@@ -415,7 +415,7 @@ class Blink:
 
                 response = await self.do_http_get(address)
                 with open(filename, "wb") as vidfile:
-                    copyfileobj(await response.read(), vidfile)
+                    await copyfileobj(await response.read(), vidfile)
 
                 _LOGGER.info("Downloaded video to %s", filename)
             else:

@@ -63,6 +63,11 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.camera.motion_enabled = True
         self.assertTrue(self.camera.arm)
 
+        self.camera = BlinkCameraMini(self.blink.sync["test"])
+        self.camera.motion_enabled = None
+        await self.camera.async_arm(None)
+        self.assertFalse(self.camera.arm)
+
     async def test_doorbell_camera_arm(self, mock_resp):
         """Test arming and disarming camera."""
         self.blink.sync.arm = False

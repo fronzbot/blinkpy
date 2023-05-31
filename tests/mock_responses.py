@@ -1,4 +1,5 @@
 """Simple mock responses definitions."""
+from unittest import mock
 
 
 class MockResponse:
@@ -11,12 +12,8 @@ class MockResponse:
         self.raw_data = raw_data
         self.reason = "foobar"
         self.headers = headers
+        self.read = mock.AsyncMock(return_value=self.raw_data)
 
     async def json(self):
         """Return json data from get_request."""
         return self.json_data
-
-    @property
-    async def read(self):
-        """Return raw data from get request."""
-        return self.raw_data

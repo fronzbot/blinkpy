@@ -1,6 +1,7 @@
 """Defines Blink cameras."""
 import copy
 import string
+import os
 from aioshutil import copyfileobj
 import logging
 import datetime
@@ -405,9 +406,11 @@ class BlinkCamera:
             ).astimezone(tz=None)
             created_at = clip_time_local.strftime("%Y%m%d_%H%M%S")
             clip_addr = clip["clip"]
-            path = output_dir + string.Template(file_pattern).substitute(
+
+            file_name = string.Template(file_pattern).substitute(
                 created=created_at, name=to_alphanumeric(self.name)
             )
+            path = os.path.join(output_dir, file_name)
             _LOGGER.debug(f"Saving {clip_addr} to {path}")
             media = await self.get_video_clip(clip_addr)
             if media.status == 200:
