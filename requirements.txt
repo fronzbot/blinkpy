@@ -3,4 +3,4 @@ requests>=2.24.0
 python-slugify>=4.0.1
 sortedcontainers~=2.4.0
 aiohttp>=3.8.4
-aioshutil>=1.3
+aiofiles>=23.1.0
