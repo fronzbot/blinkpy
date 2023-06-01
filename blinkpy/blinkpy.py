@@ -17,7 +17,8 @@ import os.path
 import time
 import logging
 import datetime
-from aiofiles import open
+import aiofiles
+from aiofiles import ospath
 
 from requests.structures import CaseInsensitiveDict
 from dateutil.parser import parse
@@ -310,9 +311,9 @@ class Blink:
             combined = util.merge_dicts(combined, self.sync[sync].cameras)
         return combined
 
-    def save(self, file_name):
+    async def save(self, file_name):
         """Save login data to file."""
-        util.json_save(self.auth.login_attributes, file_name)
+        await util.json_save(self.auth.login_attributes, file_name)
 
     async def download_videos(
         self, path, since=None, camera="all", stop=10, delay=1, debug=False
@@ -409,12 +410,12 @@ class Blink:
             filename = os.path.join(path, filename)
 
             if not debug:
-                if os.path.isfile(filename):
+                if await ospath.isfile(filename):
                     _LOGGER.info("%s already exists, skipping...", filename)
                     continue
 
                 response = await self.do_http_get(address)
-                async with open(filename, "wb") as vidfile:
+                async with aiofiles.open(filename, "wb") as vidfile:
                     await vidfile.write(await response.read())
 
                 _LOGGER.info("Downloaded video to %s", filename)

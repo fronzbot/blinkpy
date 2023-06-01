@@ -2,7 +2,8 @@
 from unittest import mock, IsolatedAsyncioTestCase
 import time
 import random
-
+from io import BufferedIOBase
+import aiofiles
 from blinkpy import blinkpy
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera
@@ -172,9 +173,8 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         self.assertListEqual(dl_log.output, expected_log)
 
     @mock.patch("blinkpy.blinkpy.api.request_videos")
-    @mock.patch("os.path.isfile")
-    @mock.patch("blinkpy.blinkpy.open", create=True)
-    async def test_download_videos_file(self, mock_open, mock_isfile, mock_req):
+    @mock.patch("aiofiles.ospath.isfile")
+    async def test_download_videos_file(self, mock_isfile, mock_req):
         """Test ability to download videos to a file."""
         generic_entry = {
             "created_at": "1970",
@@ -186,11 +186,19 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         mock_req.return_value = {"media": result}
         mock_isfile.return_value = False
         self.blink.last_refresh = 0
-        await self.blink.download_videos("/tmp", camera="foo", stop=2, delay=0)
-        assert mock_open.call_count == 1
+
+        aiofiles.threadpool.wrap.register(mock.MagicMock)(
+            lambda *args, **kwargs: aiofiles.threadpool.AsyncBufferedIOBase(
+                *args, **kwargs
+            )
+        )
+        mock_file = mock.MagicMock(spec=BufferedIOBase)
+        with mock.patch("aiofiles.threadpool.sync_open", return_value=mock_file):
+            await self.blink.download_videos("/tmp", camera="foo", stop=2, delay=0)
+            assert mock_file.write.call_count == 1
 
     @mock.patch("blinkpy.blinkpy.api.request_videos")
-    @mock.patch("os.path.isfile")
+    @mock.patch("aiofiles.ospath.isfile")
     async def test_download_videos_file_exists(self, mock_isfile, mock_req):
         """Test ability to download videos with file exists."""
         generic_entry = {

@@ -6,6 +6,7 @@ import logging
 import time
 import secrets
 import re
+import aiofiles
 from calendar import timegm
 from functools import wraps
 from getpass import getpass
@@ -16,11 +17,12 @@ from blinkpy.helpers import constants as const
 _LOGGER = logging.getLogger(__name__)
 
 
-def json_load(file_name):
+async def json_load(file_name):
     """Load json credentials from file."""
     try:
-        with open(file_name, "r") as json_file:
-            data = json.load(json_file)
+        async with aiofiles.open(file_name, "r") as json_file:
+            test = await json_file.read()
+            data = json.loads(test)
         return data
     except FileNotFoundError:
         _LOGGER.error("Could not find %s", file_name)
@@ -29,10 +31,10 @@ def json_load(file_name):
     return None
 
 
-def json_save(data, file_name):
+async def json_save(data, file_name):
     """Save data to file location."""
-    with open(file_name, "w") as json_file:
-        json.dump(data, json_file, indent=4)
+    async with aiofiles.open(file_name, "w") as json_file:
+        await json_file.write(json.dumps(data, indent=4))
 
 
 def gen_uid(size, uid_format=False):

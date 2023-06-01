@@ -571,10 +571,9 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         self.assertEqual(self.blink.account_id, 2)
 
     @mock.patch("blinkpy.blinkpy.util.json_save")
-    def test_save(self, mock_util):
+    async def test_save(self, mock_util):
         """Test save function."""
-
-        self.blink.save("blah")
+        await self.blink.save("blah")
         self.assertEqual(mock_util.call_count, 1)
 
 

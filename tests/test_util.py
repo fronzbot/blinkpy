@@ -2,6 +2,8 @@
 
 from unittest import mock, IsolatedAsyncioTestCase
 import time
+import aiofiles
+from io import BufferedIOBase
 from blinkpy.helpers.util import (
     json_load,
     json_save,
@@ -137,24 +139,52 @@ class TestUtil(IsolatedAsyncioTestCase):
         self.assertEqual(time_to_seconds(correct_time), 5)
         self.assertFalse(time_to_seconds(wrong_time))
 
-    def test_json_save(self):
+    async def test_json_save(self):
         """Check that the file is saved."""
-        with mock.patch("builtins.open", mock.mock_open()):
-            json_save('{"test":1,"test2":2}', "face.file")
-
-    def test_json_load_data(self):
-        """Check that bad file is handled."""
-        self.assertEqual(json_load("fake.file"), None)
+        mock_file = mock.MagicMock()
+        aiofiles.threadpool.wrap.register(mock.MagicMock)(
+            lambda *args, **kwargs: aiofiles.threadpool.AsyncBufferedIOBase(
+                *args, **kwargs
+            )
+        )
         with mock.patch(
-            "builtins.open", mock.mock_open(read_data='{"test":1,"test2":2}')
-        ):
-            self.assertNotEqual(json_load("fake.file"), None)
+            "aiofiles.threadpool.sync_open", return_value=mock_file
+        ) as mock_open:
+            await json_save('{"test":1,"test2":2}', "face.file")
+            mock_open.assert_called_once()
 
-    def test_json_load_bad_data(self):
+    async def test_json_load_data(self):
         """Check that bad file is handled."""
-        self.assertEqual(json_load("fake.file"), None)
-        with mock.patch("builtins.open", mock.mock_open(read_data="")):
-            self.assertEqual(json_load("fake.file"), None)
+        filename = "fake.file"
+        aiofiles.threadpool.wrap.register(mock.MagicMock)(
+            lambda *args, **kwargs: aiofiles.threadpool.AsyncBufferedIOBase(
+                *args, **kwargs
+            )
+        )
+        self.assertEqual(await json_load(filename), None)
+
+        mock_file = mock.MagicMock(spec=BufferedIOBase)
+        mock_file.name = filename
+        mock_file.read.return_value = '{"some data":"more"}'
+        with mock.patch("aiofiles.threadpool.sync_open", return_value=mock_file):
+            self.assertNotEqual(await json_load(filename), None)
+
+    async def test_json_load_bad_data(self):
+        """Check that bad file is handled."""
+        self.assertEqual(await json_load("fake.file"), None)
+        filename = "fake.file"
+        aiofiles.threadpool.wrap.register(mock.MagicMock)(
+            lambda *args, **kwargs: aiofiles.threadpool.AsyncBufferedIOBase(
+                *args, **kwargs
+            )
+        )
+        self.assertEqual(await json_load(filename), None)
+
+        mock_file = mock.MagicMock(spec=BufferedIOBase)
+        mock_file.name = filename
+        mock_file.read.return_value = ""
+        with mock.patch("aiofiles.threadpool.sync_open", return_value=mock_file):
+            self.assertEqual(await json_load("fake.file"), None)
 
     def test_gen_uid(self):
         """Test gen_uid formatting."""
