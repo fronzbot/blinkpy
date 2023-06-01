@@ -2,7 +2,7 @@
 import copy
 import string
 import os
-from aioshutil import copyfileobj
+from aiofiles import open
 import logging
 import datetime
 from json import dumps
@@ -370,8 +370,8 @@ class BlinkCamera:
         _LOGGER.debug("Writing image from %s to %s", self.name, path)
         response = await self.get_media()
         if response.status == 200:
-            with open(path, "wb") as imgfile:
-                await copyfileobj(await response.read(), imgfile)
+            async with open(path, "wb") as imgfile:
+                await imgfile.write(await response.read())
         else:
             _LOGGER.error("Cannot write image to file, response %s", response.status)
 
@@ -386,8 +386,8 @@ class BlinkCamera:
         if response is None:
             _LOGGER.error("No saved video exists for %s.", self.name)
             return
-        with open(path, "wb") as vidfile:
-            await copyfileobj(await response.read(), vidfile)
+        async with open(path, "wb") as vidfile:
+            await vidfile.write(await response.read())
 
     async def save_recent_clips(
         self, output_dir="/tmp", file_pattern="${created}_${name}.mp4"
@@ -414,8 +414,8 @@ class BlinkCamera:
             _LOGGER.debug(f"Saving {clip_addr} to {path}")
             media = await self.get_video_clip(clip_addr)
             if media.status == 200:
-                with open(path, "wb") as clip_file:
-                    await copyfileobj(await media.read(), clip_file)
+                async with open(path, "wb") as clip_file:
+                    await clip_file.write(await media.read())
                 num_saved += 1
                 try:
                     # Remove recent clip from the list once the download has finished.

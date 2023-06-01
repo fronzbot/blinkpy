@@ -173,11 +173,8 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
 
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     @mock.patch("os.path.isfile")
-    @mock.patch("builtins.open", create=True)
-    @mock.patch("blinkpy.blinkpy.copyfileobj")
-    async def test_download_videos_file(
-        self, mock_cfo, mock_open, mock_isfile, mock_req
-    ):
+    @mock.patch("blinkpy.blinkpy.open", create=True)
+    async def test_download_videos_file(self, mock_open, mock_isfile, mock_req):
         """Test ability to download videos to a file."""
         generic_entry = {
             "created_at": "1970",
@@ -188,7 +185,6 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         result = [generic_entry]
         mock_req.return_value = {"media": result}
         mock_isfile.return_value = False
-        mock_cfo.return_value = True
         self.blink.last_refresh = 0
         await self.blink.download_videos("/tmp", camera="foo", stop=2, delay=0)
         assert mock_open.call_count == 1

@@ -294,17 +294,15 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.camera = BlinkDoorbell(self.blink.sync["test"])
         self.assertIsNotNone(await self.camera.snap_picture())
 
-    @mock.patch("builtins.open", create=True)
-    @mock.patch("blinkpy.camera.copyfileobj")
-    async def test_image_to_file(self, mock_cfo, mock_open, mock_resp):
+    @mock.patch("blinkpy.camera.open", create=True)
+    async def test_image_to_file(self, mock_open, mock_resp):
         """Test camera image to file."""
         mock_resp.return_value = mresp.MockResponse({}, 200, raw_data="raw data")
         self.camera.thumbnail = "/thumbnail"
         await self.camera.image_to_file("my_path")
 
-    @mock.patch("builtins.open", create=True)
-    @mock.patch("blinkpy.camera.copyfileobj")
-    async def test_image_to_file_error(self, mock_cfo, mock_open, mock_resp):
+    @mock.patch("blinkpy.camera.open", create=True)
+    async def test_image_to_file_error(self, mock_open, mock_resp):
         """Test camera image to file with error."""
         mock_resp.return_value = mresp.MockResponse({}, 400, raw_data="raw data")
         self.camera.thumbnail = "/thumbnail"
@@ -315,9 +313,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             "ERROR:blinkpy.camera:Cannot write image to file, response 400",
         )
 
-    @mock.patch("builtins.open", create=True)
-    @mock.patch("blinkpy.camera.copyfileobj")
-    async def test_video_to_file_none_response(self, mock_cfo, mock_open, mock_resp):
+    @mock.patch("blinkpy.camera.open", create=True)
+    async def test_video_to_file_none_response(self, mock_open, mock_resp):
         """Test camera video to file."""
         mock_resp.return_value = mresp.MockResponse({}, 200, raw_data="raw data")
         with self.assertLogs(level="DEBUG") as dl_log:
@@ -327,19 +324,17 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             f"ERROR:blinkpy.camera:No saved video exists for {self.camera.name}.",
         )
 
-    @mock.patch("builtins.open", create=True)
-    @mock.patch("blinkpy.camera.copyfileobj")
-    async def test_video_to_file(self, mock_cfo, mock_open, mock_resp):
+    @mock.patch("blinkpy.camera.open", create=True)
+    async def test_video_to_file(self, mock_open, mock_resp):
         """Test camera vido to file with error."""
         mock_resp.return_value = mresp.MockResponse({}, 400, raw_data="raw data")
         self.camera.clip = "my_clip"
         await self.camera.video_to_file("my_path")
-        mock_cfo.assert_called_once()
+        mock_open.assert_called_once()
 
-    @mock.patch("builtins.open", create=True)
-    @mock.patch("blinkpy.camera.copyfileobj")
+    @mock.patch("blinkpy.camera.open", create=True)
     @mock.patch("blinkpy.camera.BlinkCamera.get_video_clip")
-    async def test_save_recent_clips(self, mock_clip, mock_cfo, mock_open, mock_resp):
+    async def test_save_recent_clips(self, mock_clip, mock_open, mock_resp):
         """Test camera save recent clips."""
         with self.assertLogs(level="DEBUG") as dl_log:
             await self.camera.save_recent_clips()
