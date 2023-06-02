@@ -324,10 +324,14 @@ class BlinkCamera:
             update_cached_video = True
 
         if new_thumbnail is not None and (update_cached_image or force_cache):
-            self._cached_image = await self.get_media()
+            response = await self.get_media()
+            if response.status == 200:
+                self._cached_image = await response.read()
 
         if clip_addr is not None and (update_cached_video or force_cache):
-            self._cached_video = await self.get_media(media_type="video")
+            response = await self.get_media(media_type="video")
+            if response.status == 200:
+                self._cached_video = await response.read()
 
         # Don't let the recent clips list grow without bound.
         if expire_clips:

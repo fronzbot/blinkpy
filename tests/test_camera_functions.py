@@ -65,8 +65,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         }
         mock_resp.side_effect = [
             {"temp": 71},
-            "test",
-            "foobar",
+            mresp.MockResponse({"test": 200}, 200, raw_data="test"),
+            mresp.MockResponse({"foobar": 200}, 200, raw_data="foobar"),
         ]
         self.assertIsNone(self.camera.image_from_cache)
 
@@ -91,7 +91,9 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.assertEqual(self.camera.video_from_cache, "foobar")
 
         # Check that thumbnail without slash processed properly
-        mock_resp.side_effect = [None]
+        mock_resp.side_effect = [
+            mresp.MockResponse({"test": 200}, 200, raw_data="thumb_no_slash")
+        ]
         await self.camera.update_images(
             {"thumbnail": "thumb_no_slash"}, expire_clips=False
         )
@@ -149,6 +151,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             "wifi_strength": 4,
             "thumbnail": "/foobar",
         }
+        mock_resp.return_value = mresp.MockResponse({"test": 200}, 200, raw_data="")
         self.camera.sync.homescreen = {"devices": []}
         await self.camera.update(config, force_cache=True, expire_clips=False)
         self.assertEqual(self.camera.clip, None)

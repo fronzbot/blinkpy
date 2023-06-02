@@ -12,6 +12,7 @@ from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
+import tests.mock_responses as mresp
 
 CAMERA_CFG = {
     "camera": [
@@ -142,7 +143,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         }
         mock_resp.side_effect = [
             {"temp": 71},
-            "test",
+            mresp.MockResponse({"test": 200}, 200, raw_data="test"),
         ]
         self.camera.sync.blink.account_id = 9999
         await self.camera.update(config, expire_clips=False)
@@ -188,7 +189,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         }
         mock_resp.side_effect = [
             {"temp": 71},
-            "test",
+            mresp.MockResponse({"test": 200}, 200, raw_data="test"),
         ]
         self.camera.sync.blink.account_id = 9999
         await self.camera.update(config, expire_clips=False)
