@@ -163,7 +163,7 @@ class Throttle:
             now = int(time.time())
             last_call_delta = now - self.last_call
             if force or last_call_delta > self.throttle_time:
-                result = method(*args, *kwargs)
+                result = method(*args, **kwargs)
                 self.last_call = now
                 return result
 
