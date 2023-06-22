@@ -32,7 +32,7 @@ class TestUtil(IsolatedAsyncioTestCase):
         calls = []
 
         @Throttle(seconds=5)
-        async def test_throttle():
+        async def test_throttle(force=False):
             calls.append(1)
 
         now = int(time.time())

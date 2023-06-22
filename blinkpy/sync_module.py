@@ -218,7 +218,7 @@ class BlinkSyncModule:
         """Retrieve events from server."""
         force = kwargs.pop("force", False)
         response = await api.request_sync_events(
-            self.blink, self.network_id, force=force
+            self.blink, self.network_id
         )
         try:
             return response["event"]
