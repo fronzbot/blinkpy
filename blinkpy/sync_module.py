@@ -216,10 +216,8 @@ class BlinkSyncModule:
 
     async def get_events(self, **kwargs):
         """Retrieve events from server."""
-        force = kwargs.pop("force", False)
-        response = await api.request_sync_events(
-            self.blink, self.network_id
-        )
+        kwargs.pop("force", False)
+        response = await api.request_sync_events(self.blink, self.network_id)
         try:
             return response["event"]
         except (TypeError, KeyError):
