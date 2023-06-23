@@ -195,10 +195,9 @@ class BlinkSyncModule:
                     camera_config["id"], unique_info=unique_info
                 )
                 self._names_table[to_alphanumeric(name)] = name
-                if camera_info != {}:
-                    await self.cameras[name].update(
-                        camera_info, force_cache=True, force=True
-                    )
+                await self.cameras[name].update(
+                    camera_info, force_cache=True, force=True
+                )
         except KeyError:
             _LOGGER.error("Could not create camera instances for %s", self.name)
             return False
