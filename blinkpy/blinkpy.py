@@ -53,7 +53,7 @@ class Blink:
         Initialize Blink system.
 
         :param refresh_rate: Refresh rate of blink information.
-                             Defaults to 15 (seconds)
+                             Defaults to 30 (seconds)
         :param motion_interval: How far back to register motion in minutes.
                                 Defaults to last refresh time.
                                 Useful for preventing motion_detected property
