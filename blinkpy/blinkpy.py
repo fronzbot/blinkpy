@@ -86,7 +86,7 @@ class Blink:
         :param force: Used to override throttle, resets refresh
         :param force_cache: Used to force update without overriding throttle
         """
-        if self.check_if_ok_to_update() or force or force_cache:
+        if force or force_cache or self.check_if_ok_to_update():
             if not self.available:
                 await self.setup_post_verify()
 
