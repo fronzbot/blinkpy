@@ -2,3 +2,5 @@ python-dateutil>=2.8.1
 requests>=2.24.0
 python-slugify>=4.0.1
 sortedcontainers~=2.4.0
+aiohttp>=3.8.4
+aiofiles>=23.1.0

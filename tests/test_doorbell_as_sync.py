@@ -1,7 +1,7 @@
 """Tests camera and system functions."""
-import unittest
 from unittest import mock
-
+from unittest import IsolatedAsyncioTestCase
+import pytest
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkLotus
@@ -9,12 +9,12 @@ from blinkpy.camera import BlinkDoorbell
 
 
 @mock.patch("blinkpy.auth.Auth.query")
-class TestBlinkDoorbell(unittest.TestCase):
+class TestBlinkDoorbell(IsolatedAsyncioTestCase):
     """Test BlinkDoorbell functions in blinkpy."""
 
     def setUp(self):
         """Set up Blink module."""
-        self.blink = Blink(motion_interval=0)
+        self.blink = Blink(motion_interval=0, session=mock.AsyncMock())
         self.blink.last_refresh = 0
         self.blink.urls = BlinkURLHandler("test")
         response = {
@@ -38,10 +38,11 @@ class TestBlinkDoorbell(unittest.TestCase):
         self.assertEqual(self.blink.sync["test"].attributes["name"], "test")
         self.assertEqual(self.blink.sync["test"].attributes["network_id"], "1234")
 
-    def test_lotus_start(self, mock_resp):
+    @pytest.mark.asyncio
+    async def test_lotus_start(self, mock_resp):
         """Test doorbell instantiation."""
         self.blink.last_refresh = None
         lotus = self.blink.sync["test"]
-        self.assertTrue(lotus.start())
+        self.assertTrue(await lotus.start())
         self.assertTrue("test" in lotus.cameras)
         self.assertEqual(lotus.cameras["test"].__class__, BlinkDoorbell)
