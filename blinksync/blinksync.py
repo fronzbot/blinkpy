@@ -5,9 +5,10 @@ import logging
 import aiohttp
 import sys
 from sortedcontainers import SortedSet
-from forms import LoginDialog, VideosForm, DELAY,CLOSE, DELETE, DOWNLOAD, REFRESH
+from forms import LoginDialog, VideosForm, DELAY, CLOSE, DELETE, DOWNLOAD, REFRESH
 from blinkpy.blinkpy import Blink, BlinkSyncModule
 from blinkpy.auth import Auth
+
 
 async def main():
     """Main loop for blink test."""
@@ -20,8 +21,8 @@ async def main():
                 path = dlg.GetPath()
             else:
                 sys.exit(0)
-        
-        with open(f"{path}/blink.json", "rt",encoding='ascii') as j:
+
+        with open(f"{path}/blink.json", "rt", encoding="ascii") as j:
             blink.auth = Auth(json.loads(j.read()), session=session)
 
     except (StopIteration, FileNotFoundError):
@@ -33,6 +34,9 @@ async def main():
                 userpass,
                 session=session,
             )
+            await blink.save(f"{path}/blink.json")
+        else:
+            sys.exit(0)
     with wx.BusyInfo("Blink is Working....") as working:
         cursor = wx.BusyCursor()
         if await blink.start():
@@ -44,7 +48,9 @@ async def main():
         print(f"Sync :{blink.networks}")
         if len(blink.networks) == 0:
             exit()
-        my_sync: BlinkSyncModule = blink.sync[blink.networks[list(blink.networks)[0]]['name']]
+        my_sync: BlinkSyncModule = blink.sync[
+            blink.networks[list(blink.networks)[0]]["name"]
+        ]
         cursor = None
         working = None
 
@@ -55,7 +61,7 @@ async def main():
                 print(name)
                 print(camera.attributes)
 
-            my_sync._local_storage['manifest'] = SortedSet()
+            my_sync._local_storage["manifest"] = SortedSet()
             await my_sync.refresh()
             if my_sync.local_storage and my_sync.local_storage_manifest_ready:
                 print("Manifest is ready")
@@ -80,7 +86,7 @@ async def main():
                 continue
             # Download and delete all videos from sync module
             for item in reversed(manifest):
-                if item.id in frame.ItemList:               
+                if item.id in frame.ItemList:
                     if button == DOWNLOAD:
                         await item.prepare_download(blink)
                         await item.download_video(
@@ -94,12 +100,10 @@ async def main():
             working = None
         frame = None
     await session.close()
-    
+
 
 # Run the program
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
-
-
