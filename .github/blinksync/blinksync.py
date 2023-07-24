@@ -1,133 +1,13 @@
 import json
 import asyncio
+import wx
+import logging
 import aiohttp
 import sys
-import wx
 from sortedcontainers import SortedSet
+from forms import LoginDialog, VideosForm, DELAY,CLOSE, DELETE, DOWNLOAD, REFRESH
 from blinkpy.blinkpy import Blink, BlinkSyncModule
 from blinkpy.auth import Auth
-import logging
-
-DELETE = 1
-CLOSE = 2
-DOWNLOAD = 3
-REFRESH = 4
-DELAY = 5
-
-class VideosForm(wx.Dialog):
-    """My delete form."""
-    def __init__(self,manifest):
-        wx.Frame.__init__(self, None, wx.ID_ANY, "Select List to Download and Delete",size = (450,550))
-
-        # Add a panel so it looks the correct on all platforms
-        panel = wx.Panel(self, wx.ID_ANY)
-        #self.Bind(wx.EVT,self._when_closed)
-        self.index = 0
-        self.ItemList = []
-        self.list_ctrl = wx.ListCtrl(panel, size=(-1,400),
-                        style=wx.LC_REPORT
-                        |wx.BORDER_SUNKEN
-                        )
-        self.list_ctrl.InsertColumn(0, 'Name')
-        self.list_ctrl.InsertColumn(1, 'Camera')
-        self.list_ctrl.InsertColumn(2, 'Date', width=225)
-        self.list_ctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK,self.download_line)
-
-        btn = wx.Button(panel, label="Download")
-        btn.Bind(wx.EVT_BUTTON, self.download_line)
-
-        deletebtn = wx.Button(panel, label="Delete")
-        deletebtn.Bind(wx.EVT_BUTTON, self.delete_line)
-
-        closeBtn = wx.Button(panel, label="Close")
-        closeBtn.Bind(wx.EVT_BUTTON, self._when_closed)
-
-        refrestBtn = wx.Button(panel, label="Refresh")
-        refrestBtn.Bind(wx.EVT_BUTTON, self._refresh)
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.list_ctrl, 0, wx.ALL|wx.EXPAND, 20)
-        sizer_buttons = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_buttons.Add(btn, 0, wx.ALL|wx.CENTER, 5)
-        sizer_buttons.Add(deletebtn,0,wx.ALL|wx.CENTER,5)
-        sizer_buttons.Add(refrestBtn,0,wx.ALL|wx.CENTER,5)
-        sizer_buttons.Add(closeBtn,0,wx.ALL|wx.CENTER, 5)
-        sizer.Add(sizer_buttons,0,wx.ALL|wx.CENTER,5)
-        panel.SetSizer(sizer)
-
-        for item in reversed(manifest):
-            self.list_ctrl.InsertItem(self.index, str(item.id))
-            self.list_ctrl.SetItem(self.index, 1, item.name)
-            self.list_ctrl.SetItem(self.index, 2, item.created_at.isoformat())
-            self.index += 1
-    #----------------------------------------------------------------------
-    def download_line(self, event):
-        """Add to list and return DOWNLOAD"""
-        for count in range(self.list_ctrl.ItemCount):
-            if self.list_ctrl.IsSelected(count):
-                self.ItemList.append(int(self.list_ctrl.GetItem(count).Text))
-        self.EndModal(DOWNLOAD)
-
-    def delete_line(self, event):
-        """Add to list and return DOWNLOAD"""
-        for count in range(self.list_ctrl.ItemCount):
-            if self.list_ctrl.IsSelected(count):
-                self.ItemList.append(int(self.list_ctrl.GetItem(count).Text))
-        self.EndModal(DELETE)
-
-
-    def _when_closed(self,event):
-        self.EndModal(CLOSE)
-
-    def _refresh(self,event):
-        self.EndModal(REFRESH)
-
-class LoginDialog(wx.Dialog):
-    """
-    Class to define login dialog
-    """
-    #----------------------------------------------------------------------
-    def __init__(self):
-        """Constructor"""
-        wx.Dialog.__init__(self, None, title="Login")
-
-        # user info
-        user_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        user_lbl = wx.StaticText(self, label="Username:")
-        user_sizer.Add(user_lbl, 0, wx.ALL|wx.CENTER, 5)
-        self.user = wx.TextCtrl(self)
-        user_sizer.Add(self.user, 0, wx.ALL, 5)
-
-        # pass info
-        p_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        p_lbl = wx.StaticText(self, label="Password:")
-        p_sizer.Add(p_lbl, 0, wx.ALL|wx.CENTER, 5)
-        self.password = wx.TextCtrl(self, style=wx.TE_PASSWORD|wx.TE_PROCESS_ENTER)
-        p_sizer.Add(self.password, 0, wx.ALL, 5)
-
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(user_sizer, 0, wx.ALL, 5)
-        main_sizer.Add(p_sizer, 0, wx.ALL, 5)
-
-        btn = wx.Button(self, label="Login")
-        btn.Bind(wx.EVT_BUTTON, self.onLogin)
-        main_sizer.Add(btn, 0, wx.ALL|wx.CENTER, 5)
-
-        self.SetSizer(main_sizer)
-
-    #----------------------------------------------------------------------
-    def onLogin(self, event):
-        """
-        Check credentials and login
-        """
-        self.account = {"username":self.user.Value,"password":self.password.Value}
-        self.EndModal(wx.ID_OK) 
-
-    def getUserPassword(self):
-        return self.account
-
 
 async def main():
     """Main loop for blink test."""
@@ -141,7 +21,7 @@ async def main():
             else:
                 sys.exit(0)
         
-        with open(f"{path}/blink.json", "r") as j:
+        with open(f"{path}/blink.json", "rt",encoding='ascii') as j:
             blink.auth = Auth(json.loads(j.read()), session=session)
 
     except (StopIteration, FileNotFoundError):
@@ -153,53 +33,65 @@ async def main():
                 userpass,
                 session=session,
             )
+    with wx.BusyInfo("Blink is Working....") as working:
+        cursor = wx.BusyCursor()
+        if await blink.start():
+            await blink.setup_post_verify()
+        elif blink.auth.check_key_required():
+            print("I failed to authenticate")
 
-    if await blink.start():
-        await blink.setup_post_verify()
-    elif blink.auth.check_key_required():
-        print("I failed to authenticate")
+        print(f"Sync status: {blink.network_ids}")
+        print(f"Sync :{blink.networks}")
+        if len(blink.networks) == 0:
+            exit()
+        my_sync: BlinkSyncModule = blink.sync[blink.networks[list(blink.networks)[0]]['name']]
+        cursor = None
+        working = None
 
-    print(f"Sync status: {blink.network_ids}")
-    print(f"Sync :{blink.networks}")
-    if len(blink.networks) == 0:
-        exit()
-    my_sync: BlinkSyncModule = blink.sync[blink.networks[list(blink.networks)[0]]['name']]
     while True:
-        for name, camera in blink.cameras.items():
-            print(name)
-            print(camera.attributes)
+        with wx.BusyInfo("Blink is Working....") as working:
+            cursor = wx.BusyCursor()
+            for name, camera in blink.cameras.items():
+                print(name)
+                print(camera.attributes)
 
-        my_sync._local_storage['manifest'] = SortedSet()
-        await my_sync.refresh()
-        if my_sync.local_storage and my_sync.local_storage_manifest_ready:
-            print("Manifest is ready")
-            print(f"Manifest {my_sync._local_storage['manifest']}")
-        else:
-            print("Manifest not ready")
-        for name, camera in blink.cameras.items():
-            print(f"{camera.name} status: {blink.cameras[name].arm}")
-        new_vid = await my_sync.check_new_videos()
-        print(f"New videos?: {new_vid}")
+            my_sync._local_storage['manifest'] = SortedSet()
+            await my_sync.refresh()
+            if my_sync.local_storage and my_sync.local_storage_manifest_ready:
+                print("Manifest is ready")
+                print(f"Manifest {my_sync._local_storage['manifest']}")
+            else:
+                print("Manifest not ready")
+            for name, camera in blink.cameras.items():
+                print(f"{camera.name} status: {blink.cameras[name].arm}")
+            new_vid = await my_sync.check_new_videos()
+            print(f"New videos?: {new_vid}")
 
-        manifest = my_sync._local_storage["manifest"]
+            manifest = my_sync._local_storage["manifest"]
+            cursor = None
+            working = None
         frame = VideosForm(manifest)
         button = frame.ShowModal()
-        if button == CLOSE:
-            break
-        if button == REFRESH:
-            continue
-        # Download and delete all videos from sync module
-        for item in reversed(manifest):
-            if item.id in frame.ItemList:               
-                if button == DOWNLOAD:
-                    await item.prepare_download(blink)
-                    await item.download_video(
-                        blink,
-                        f"{path}/{item.name}_{item.created_at.isoformat().replace(':','_')}.mp4",
-                    )
-                if button == DELETE:
-                    await item.delete_video(blink)
-                await asyncio.sleep(DELAY)
+        with wx.BusyInfo("Blink is Working....") as working:
+            cursor = wx.BusyCursor()
+            if button == CLOSE:
+                break
+            if button == REFRESH:
+                continue
+            # Download and delete all videos from sync module
+            for item in reversed(manifest):
+                if item.id in frame.ItemList:               
+                    if button == DOWNLOAD:
+                        await item.prepare_download(blink)
+                        await item.download_video(
+                            blink,
+                            f"{path}/{item.name}_{item.created_at.astimezone().isoformat().replace(':','_')}.mp4",
+                        )
+                    if button == DELETE:
+                        await item.delete_video(blink)
+                    await asyncio.sleep(DELAY)
+            cursor = None
+            working = None
         frame = None
     await session.close()
     
