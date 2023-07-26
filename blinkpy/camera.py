@@ -10,7 +10,6 @@ import aiohttp
 from aiofiles import open
 from requests.compat import urljoin
 from blinkpy import api
-from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
 from blinkpy.helpers.util import to_alphanumeric
 
@@ -20,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 class BlinkCamera:
     """Class to initialize individual camera."""
 
-    def __init__(self, sync: BlinkSyncModule):
+    def __init__(self, sync):
         """Initiailize BlinkCamera."""
         self.sync = sync
         self.name = None
