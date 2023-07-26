@@ -148,7 +148,7 @@ class BlinkCamera:
             product_type=self.product_type,
             data=data,
         )
-        if res.status == 200:
+        if res and res.status == 200:
             return await res.json()
         return None
 
@@ -373,7 +373,7 @@ class BlinkCamera:
         """
         _LOGGER.debug("Writing image from %s to %s", self.name, path)
         response = await self.get_media()
-        if response.status == 200:
+        if response and response.status == 200:
             async with open(path, "wb") as imgfile:
                 await imgfile.write(await response.read())
         else:
@@ -417,7 +417,7 @@ class BlinkCamera:
             path = os.path.join(output_dir, file_name)
             _LOGGER.debug(f"Saving {clip_addr} to {path}")
             media = await self.get_video_clip(clip_addr)
-            if media.status == 200:
+            if media and media.status == 200:
                 async with open(path, "wb") as clip_file:
                     await clip_file.write(await media.read())
                 num_saved += 1
