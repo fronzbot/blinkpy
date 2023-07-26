@@ -2,14 +2,15 @@
 import copy
 import string
 import os
-from aiofiles import open
 import logging
 import datetime
 from json import dumps
-import aiohttp
 import traceback
+import aiohttp
+from aiofiles import open
 from requests.compat import urljoin
 from blinkpy import api
+from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
 from blinkpy.helpers.util import to_alphanumeric
 
@@ -19,7 +20,7 @@ _LOGGER = logging.getLogger(__name__)
 class BlinkCamera:
     """Class to initialize individual camera."""
 
-    def __init__(self, sync):
+    def __init__(self, sync: BlinkSyncModule):
         """Initiailize BlinkCamera."""
         self.sync = sync
         self.name = None
@@ -186,14 +187,13 @@ class BlinkCamera:
             if not url:
                 _LOGGER.warning(f"Video clip URL not available: self.clip={url}")
                 return None
-        response = await api.http_get(
+        return await api.http_get(
             self.sync.blink,
             url=url,
             stream=True,
             json=False,
             timeout=TIMEOUT_MEDIA,
         )
-        return response
 
     async def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
@@ -326,12 +326,12 @@ class BlinkCamera:
 
         if new_thumbnail is not None and (update_cached_image or force_cache):
             response = await self.get_media()
-            if response.status == 200:
+            if response and response.status == 200:
                 self._cached_image = await response.read()
 
         if clip_addr is not None and (update_cached_video or force_cache):
             response = await self.get_media(media_type="video")
-            if response.status == 200:
+            if response and response.status == 200:
                 self._cached_video = await response.read()
 
         # Don't let the recent clips list grow without bound.
