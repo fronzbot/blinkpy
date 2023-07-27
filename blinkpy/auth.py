@@ -1,7 +1,8 @@
 """Login handler for blink."""
 import logging
-from aiohttp import ClientSession, ClientConnectionError
+from aiohttp import ClientSession, ClientConnectionError, ClientResponse
 from blinkpy import api
+from blinkpy.blinkpy import Blink
 from blinkpy.helpers import util
 from blinkpy.helpers.constants import (
     BLINK_URL,
@@ -16,7 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 class Auth:
     """Class to handle login communication."""
 
-    def __init__(self, login_data=None, no_prompt=False, session=None):
+    def __init__(self, login_data: dict | None = None, no_prompt: bool = False, session: ClientSession | None = None) -> None:
         """
         Initialize auth handler.
 
@@ -44,7 +45,7 @@ class Auth:
             self.session = ClientSession()
 
     @property
-    def login_attributes(self):
+    def login_attributes(self) -> dict:
         """Return a dictionary of login attributes."""
         self.data["token"] = self.token
         self.data["host"] = self.host
@@ -54,7 +55,7 @@ class Auth:
         return self.data
 
     @property
-    def header(self):
+    def header(self) -> None:
         """Return authorization header."""
         if self.token is None:
             return None
@@ -64,7 +65,7 @@ class Auth:
             "content-type": "application/json",
         }
 
-    def validate_login(self):
+    def validate_login(self) -> None:
         """Check login information and prompt if not available."""
         self.data["username"] = self.data.get("username", None)
         self.data["password"] = self.data.get("password", None)
@@ -72,7 +73,7 @@ class Auth:
             self.data = util.prompt_login_data(self.data)
         self.data = util.validate_login_data(self.data)
 
-    async def login(self, login_url=LOGIN_ENDPOINT):
+    async def login(self, login_url=LOGIN_ENDPOINT) -> str | None:
         """Attempt login to blink servers."""
         self.validate_login()
         _LOGGER.info("Attempting login with %s", login_url)
@@ -89,11 +90,11 @@ class Auth:
         except AttributeError as error:
             raise LoginError from error
 
-    def logout(self, blink):
+    def logout(self, blink: Blink) -> ClientResponse:
         """Log out."""
         return api.request_logout(blink)
 
-    async def refresh_token(self):
+    async def refresh_token(self) -> bool | None:
         """Refresh auth token."""
         self.is_errored = True
         try:
@@ -109,7 +110,7 @@ class Auth:
             raise TokenRefreshFailed from error
         return True
 
-    def extract_login_info(self):
+    def extract_login_info(self) -> None:
         """Extract login info from login response."""
         self.region_id = self.login_response["account"]["tier"]
         self.host = f"{self.region_id}.{BLINK_URL}"
@@ -117,13 +118,13 @@ class Auth:
         self.client_id = self.login_response["account"]["client_id"]
         self.account_id = self.login_response["account"]["account_id"]
 
-    async def startup(self):
+    async def startup(self) -> bool | None:
         """Initialize tokens for communication."""
         self.validate_login()
         if None in self.login_attributes.values():
             await self.refresh_token()
 
-    async def validate_response(self, response, json_resp):
+    async def validate_response(self, response: ClientResponse, json_resp: bool) -> ClientResponse:
         """Check for valid response."""
         if not json_resp:
             self.is_errored = False
@@ -143,15 +144,15 @@ class Auth:
 
     async def query(
         self,
-        url=None,
-        data=None,
-        headers=None,
-        reqtype="get",
-        stream=False,
-        json_resp=True,
-        is_retry=False,
-        timeout=TIMEOUT,
-    ):
+        url: str = None,
+        data: dict | None = None,
+        headers: str | None = None,
+        reqtype: str = "get",
+        stream: bool = False,
+        json_resp: bool = True,
+        is_retry: bool = False,
+        timeout: int = TIMEOUT,
+    ) -> ClientResponse | None:
         """Perform server requests."""
         """
         :param url: URL to perform request
@@ -210,7 +211,7 @@ class Auth:
                 _LOGGER.error("Unable to refresh token.")
         return None
 
-    async def send_auth_key(self, blink, key):
+    async def send_auth_key(self, blink: Blink, key: str) -> bool:
         """Send 2FA key to blink servers."""
         if key is not None:
             response = await api.request_verify(self, blink, key)
@@ -225,7 +226,7 @@ class Auth:
                 return False
         return True
 
-    def check_key_required(self):
+    def check_key_required(self) -> bool:
         """Check if 2FA key is required."""
         try:
             if self.login_response["account"]["client_verification_required"]:
