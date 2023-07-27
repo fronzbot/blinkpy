@@ -1,4 +1,6 @@
 """Defines Blink cameras."""
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import copy
 import string
 import os
@@ -13,13 +15,16 @@ from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
 from blinkpy.helpers.util import to_alphanumeric
 
+if TYPE_CHECKING:
+    from blinkpy.sync_module import BlinkSyncModule
+
 _LOGGER = logging.getLogger(__name__)
 
 
 class BlinkCamera:
     """Class to initialize individual camera."""
 
-    def __init__(self, sync):
+    def __init__(self, sync: BlinkSyncModule):
         """Initiailize BlinkCamera."""
         self.sync = sync
         self.name = None
@@ -27,15 +32,15 @@ class BlinkCamera:
         self.network_id = None
         self.thumbnail = None
         self.serial = None
-        self.motion_enabled = None
-        self.battery_voltage = None
+        self.motion_enabled: bool = None
+        self.battery_voltage: float = None
         self.clip = None
         # A clip remains in the recent clips list until is has been downloaded or has been expired.
         self.recent_clips = []
-        self.temperature = None
+        self.temperature: float = None
         self.temperature_calibrated = None
-        self.battery_state = None
-        self.motion_detected = None
+        self.battery_state: bool = None
+        self.motion_detected: bool = None
         self.wifi_strength = None
         self.last_record = None
         self._cached_image = None
@@ -69,12 +74,12 @@ class BlinkCamera:
         return attributes
 
     @property
-    def battery(self):
+    def battery(self) -> bool:
         """Return battery as string."""
         return self.battery_state
 
     @property
-    def temperature_c(self):
+    def temperature_c(self) -> float | None:
         """Return temperature in celcius."""
         try:
             return round((self.temperature - 32) / 9.0 * 5.0, 1)
@@ -96,11 +101,11 @@ class BlinkCamera:
         return None
 
     @property
-    def arm(self):
+    def arm(self) -> bool:
         """Return arm status of camera."""
         return self.motion_enabled
 
-    async def async_arm(self, value):
+    async def async_arm(self, value: bool) -> aiohttp.ClientResponse:
         """Set camera arm status."""
         if value:
             return await api.request_motion_detection_enable(
@@ -111,7 +116,7 @@ class BlinkCamera:
         )
 
     @property
-    async def night_vision(self):
+    async def night_vision(self) -> dict | None:
         """Return night_vision status."""
         res = await api.request_get_config(
             self.sync.blink,
@@ -134,7 +139,7 @@ class BlinkCamera:
         ]
         return {key: res.get(key) for key in nv_keys}
 
-    async def async_set_night_vision(self, value):
+    async def async_set_night_vision(self, value: bool) -> str | None:
         """Set camera night_vision status."""
         if value not in ["on", "off", "auto"]:
             return None
@@ -152,7 +157,7 @@ class BlinkCamera:
             return await res.json()
         return None
 
-    async def record(self):
+    async def record(self) -> aiohttp.ClientResponse:
         """Initiate clip recording."""
         return await api.request_new_video(
             self.sync.blink, self.network_id, self.camera_id
@@ -164,7 +169,7 @@ class BlinkCamera:
             return await self.get_video_clip()
         return await self.get_thumbnail()
 
-    async def get_thumbnail(self, url=None):
+    async def get_thumbnail(self, url: str = None) -> aiohttp.ClientResponse | None:
         """Download thumbnail image."""
         if not url:
             url = self.thumbnail
@@ -179,7 +184,7 @@ class BlinkCamera:
             timeout=TIMEOUT_MEDIA,
         )
 
-    async def get_video_clip(self, url=None):
+    async def get_video_clip(self, url: str = None) -> aiohttp.ClientResponse | None:
         """Download video clip."""
         if not url:
             url = self.clip
@@ -194,13 +199,13 @@ class BlinkCamera:
             timeout=TIMEOUT_MEDIA,
         )
 
-    async def snap_picture(self):
+    async def snap_picture(self) -> aiohttp.ClientResponse:
         """Take a picture with camera to create a new thumbnail."""
         return await api.request_new_image(
             self.sync.blink, self.network_id, self.camera_id
         )
 
-    async def set_motion_detect(self, enable):
+    async def set_motion_detect(self, enable: bool) -> aiohttp.ClientResponse | None:
         """Set motion detection."""
         _LOGGER.warning(
             "Method is deprecated as of v0.16.0 and will be removed in a future version. Please use the BlinkCamera.arm property instead."
@@ -213,7 +218,13 @@ class BlinkCamera:
             self.sync.blink, self.network_id, self.camera_id
         )
 
-    async def update(self, config, force_cache=False, expire_clips=True, **kwargs):
+    async def update(
+        self,
+        config: dict,
+        force_cache: bool = False,
+        expire_clips: bool = True,
+        **kwargs,
+    ):
         """Update camera info."""
         if config != {}:
             self.extract_config_info(config)
@@ -222,7 +233,7 @@ class BlinkCamera:
                 config, force_cache=force_cache, expire_clips=expire_clips
             )
 
-    def extract_config_info(self, config):
+    def extract_config_info(self, config: dict) -> None:
         """Extract info from config."""
         self.name = config.get("name", "unknown")
         self.camera_id = str(config.get("id", "unknown"))
@@ -237,7 +248,7 @@ class BlinkCamera:
         self.wifi_strength = config.get("wifi_strength", None)
         self.product_type = config.get("type", None)
 
-    async def get_sensor_info(self):
+    async def get_sensor_info(self) -> NotImplementedError:
         """Retrieve calibrated temperatue from special endpoint."""
         resp = await api.request_camera_sensors(
             self.sync.blink, self.network_id, self.camera_id
@@ -248,7 +259,9 @@ class BlinkCamera:
             self.temperature_calibrated = self.temperature
             _LOGGER.warning("Could not retrieve calibrated temperature.")
 
-    async def update_images(self, config, force_cache=False, expire_clips=True):
+    async def update_images(
+        self, config: dict, force_cache: bool = False, expire_clips: bool = True
+    ) -> None:
         """Update images for camera."""
         new_thumbnail = None
         thumb_addr = None
@@ -337,7 +350,9 @@ class BlinkCamera:
         if expire_clips:
             await self.expire_recent_clips()
 
-    async def expire_recent_clips(self, delta=datetime.timedelta(hours=1)):
+    async def expire_recent_clips(
+        self, delta: datetime.timedelta = datetime.timedelta(hours=1)
+    ) -> None:
         """Remove recent clips from list when they get too old."""
         to_keep = []
         for clip in self.recent_clips:
@@ -358,14 +373,14 @@ class BlinkCamera:
                 if "local_storage" in url:
                     await api.http_post(self.sync.blink, url)
 
-    async def get_liveview(self):
+    async def get_liveview(self) -> str:
         """Get livewview rtsps link."""
         response = await api.request_camera_liveview(
             self.sync.blink, self.sync.network_id, self.camera_id
         )
         return response["server"]
 
-    async def image_to_file(self, path):
+    async def image_to_file(self, path: str) -> None:
         """
         Write image to file.
 
@@ -379,7 +394,7 @@ class BlinkCamera:
         else:
             _LOGGER.error("Cannot write image to file, response %s", response.status)
 
-    async def video_to_file(self, path):
+    async def video_to_file(self, path: str) -> None:
         """
         Write video to file.
 
@@ -394,8 +409,8 @@ class BlinkCamera:
             await vidfile.write(await response.read())
 
     async def save_recent_clips(
-        self, output_dir="/tmp", file_pattern="${created}_${name}.mp4"
-    ):
+        self, output_dir: str = "/tmp", file_pattern: str = "${created}_${name}.mp4"
+    ) -> None:
         """Save all recent clips using timestamp file name pattern."""
         if output_dir[-1] != "/":
             output_dir += "/"
@@ -442,31 +457,31 @@ class BlinkCamera:
 class BlinkCameraMini(BlinkCamera):
     """Define a class for a Blink Mini camera."""
 
-    def __init__(self, sync):
+    def __init__(self, sync: BlinkSyncModule) -> None:
         """Initialize a Blink Mini cameras."""
         super().__init__(sync)
         self.camera_type = "mini"
 
     @property
-    def arm(self):
+    def arm(self) -> bool:
         """Return camera arm status."""
         return self.sync.arm
 
-    async def async_arm(self, value):
+    async def async_arm(self, value: str) -> aiohttp.ClientResponse:
         """Set camera arm status."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/config"
         data = dumps({"enabled": value})
         return await api.http_post(self.sync.blink, url, json=False, data=data)
 
-    async def snap_picture(self):
+    async def snap_picture(self) -> aiohttp.ClientResponse:
         """Snap picture for a blink mini camera."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/thumbnail"
         return await api.http_post(self.sync.blink, url)
 
-    async def get_sensor_info(self):
+    async def get_sensor_info(self) -> None:
         """Get sensor info for blink mini camera."""
 
-    async def get_liveview(self):
+    async def get_liveview(self) -> str:
         """Get liveview link."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/liveview"
         response = await api.http_post(self.sync.blink, url)
@@ -483,14 +498,14 @@ class BlinkDoorbell(BlinkCamera):
     def __init__(self, sync):
         """Initialize a Blink Doorbell."""
         super().__init__(sync)
-        self.camera_type = "doorbell"
+        self.camera_type: str = "doorbell"
 
     @property
-    def arm(self):
+    def arm(self) -> bool:
         """Return camera arm status."""
         return self.motion_enabled
 
-    async def async_arm(self, value):
+    async def async_arm(self, value: bool) -> aiohttp.ClientResponse:
         """Set camera arm status."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}"
         if value:
@@ -499,15 +514,15 @@ class BlinkDoorbell(BlinkCamera):
             url = f"{url}/disable"
         return await api.http_post(self.sync.blink, url)
 
-    async def snap_picture(self):
+    async def snap_picture(self) -> aiohttp.ClientResponse:
         """Snap picture for a blink doorbell camera."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/thumbnail"
         return await api.http_post(self.sync.blink, url)
 
-    async def get_sensor_info(self):
+    async def get_sensor_info(self) -> None:
         """Get sensor info for blink doorbell camera."""
 
-    async def get_liveview(self):
+    async def get_liveview(self) -> str:
         """Get liveview link."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
         response = await api.http_post(self.sync.blink, url)

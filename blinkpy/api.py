@@ -199,7 +199,9 @@ async def request_new_image(
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_new_video(blink: Blink, network: str, camera_id: str):
+async def request_new_video(
+    blink: Blink, network: str, camera_id: str
+) -> ClientResponse:
     """
     Request to capture new video clip.
 
