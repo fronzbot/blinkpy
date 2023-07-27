@@ -1,8 +1,9 @@
 """Login handler for blink."""
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import logging
 from aiohttp import ClientSession, ClientConnectionError, ClientResponse
 from blinkpy import api
-from blinkpy.blinkpy import Blink
 from blinkpy.helpers import util
 from blinkpy.helpers.constants import (
     BLINK_URL,
@@ -11,13 +12,21 @@ from blinkpy.helpers.constants import (
     TIMEOUT,
 )
 
+if TYPE_CHECKING:
+    from blinkpy.blinkpy import Blink
+
 _LOGGER = logging.getLogger(__name__)
 
 
 class Auth:
     """Class to handle login communication."""
 
-    def __init__(self, login_data: dict | None = None, no_prompt: bool = False, session: ClientSession | None = None) -> None:
+    def __init__(
+        self,
+        login_data: dict | None = None,
+        no_prompt: bool = False,
+        session: ClientSession | None = None,
+    ) -> None:
         """
         Initialize auth handler.
 
@@ -124,7 +133,9 @@ class Auth:
         if None in self.login_attributes.values():
             await self.refresh_token()
 
-    async def validate_response(self, response: ClientResponse, json_resp: bool) -> ClientResponse:
+    async def validate_response(
+        self, response: ClientResponse, json_resp: bool
+    ) -> ClientResponse:
         """Check for valid response."""
         if not json_resp:
             self.is_errored = False
