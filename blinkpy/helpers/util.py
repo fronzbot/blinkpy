@@ -1,15 +1,16 @@
 """Useful functions for blinkpy."""
 
+from __future__ import annotations
 import json
 import random
 import logging
 import time
 import secrets
 import re
-import aiofiles
 from calendar import timegm
 from functools import wraps
 from getpass import getpass
+import aiofiles
 import dateutil.parser
 from blinkpy.helpers import constants as const
 
@@ -17,7 +18,7 @@ from blinkpy.helpers import constants as const
 _LOGGER = logging.getLogger(__name__)
 
 
-async def json_load(file_name):
+async def json_load(file_name: str) -> dict | None:
     """Load json credentials from file."""
     try:
         async with aiofiles.open(file_name, "r") as json_file:
@@ -31,13 +32,13 @@ async def json_load(file_name):
     return None
 
 
-async def json_save(data, file_name):
+async def json_save(data: dict, file_name: str) -> None:
     """Save data to file location."""
     async with aiofiles.open(file_name, "w") as json_file:
         await json_file.write(json.dumps(data, indent=4))
 
 
-def gen_uid(size, uid_format=False):
+def gen_uid(size: int, uid_format: bool = False) -> str:
     """Create a random sring."""
     if uid_format:
         token = f"BlinkCamera_{secrets.token_hex(4)}-{secrets.token_hex(2)}-{secrets.token_hex(2)}-{secrets.token_hex(2)}-{secrets.token_hex(6)}"
@@ -46,7 +47,7 @@ def gen_uid(size, uid_format=False):
     return token
 
 
-def time_to_seconds(timestamp):
+def time_to_seconds(timestamp: str) -> int:
     """Convert TIMESTAMP_FORMAT time to seconds."""
     try:
         dtime = dateutil.parser.isoparse(timestamp)
@@ -56,14 +57,14 @@ def time_to_seconds(timestamp):
     return timegm(dtime.timetuple())
 
 
-def get_time(time_to_convert=None):
+def get_time(time_to_convert: float | None = None) -> str:
     """Create blink-compatible timestamp."""
     if time_to_convert is None:
         time_to_convert = time.time()
     return time.strftime(const.TIMESTAMP_FORMAT, time.gmtime(time_to_convert))
 
 
-def merge_dicts(dict_a, dict_b):
+def merge_dicts(dict_a: dict, dict_b: dict) -> dict:
     """Merge two dictionaries into one."""
     duplicates = [val for val in dict_a if val in dict_b]
     if duplicates:
@@ -74,7 +75,7 @@ def merge_dicts(dict_a, dict_b):
     return {**dict_a, **dict_b}
 
 
-def prompt_login_data(data):
+def prompt_login_data(data: dict) -> dict:
     """Prompt user for username and password."""
     if data["username"] is None:
         data["username"] = input("Username:")
@@ -84,7 +85,7 @@ def prompt_login_data(data):
     return data
 
 
-def validate_login_data(data):
+def validate_login_data(data: dict) -> dict:
     """Check for missing keys."""
     data["uid"] = data.get("uid", gen_uid(const.SIZE_UID, uid_format=True))
     data["device_id"] = data.get("device_id", const.DEVICE_ID)
@@ -92,7 +93,7 @@ def validate_login_data(data):
     return data
 
 
-def local_storage_clip_url_template():
+def local_storage_clip_url_template() -> str:
     """Return URL template for local storage clip download location."""
     return (
         "/api/v1/accounts/$account_id/networks/$network_id/sync_modules/$sync_id"
@@ -100,12 +101,12 @@ def local_storage_clip_url_template():
     )
 
 
-def backoff_seconds(retry=0, default_time=1):
+def backoff_seconds(retry: int = 0, default_time: int = 1) -> int:
     """Calculate number of seconds to back off for retry."""
     return default_time * 2**retry + random.uniform(0, 1)
 
 
-def to_alphanumeric(name):
+def to_alphanumeric(name: str) -> str:
     """Convert name to one with only alphanumeric characters."""
     return re.sub(r"\W+", "", name)
 
@@ -113,7 +114,7 @@ def to_alphanumeric(name):
 class BlinkException(Exception):
     """Class to throw general blink exception."""
 
-    def __init__(self, errcode):
+    def __init__(self, errcode) -> None:
         """Initialize BlinkException."""
         super().__init__()
         self.errid = errcode[0]
@@ -127,7 +128,7 @@ class BlinkAuthenticationException(BlinkException):
 class BlinkURLHandler:
     """Class that handles Blink URLS."""
 
-    def __init__(self, region_id):
+    def __init__(self, region_id: str) -> None:
         """Initialize the urls."""
         if region_id is None:
             raise TypeError
@@ -144,7 +145,7 @@ class BlinkURLHandler:
 class Throttle:
     """Class for throttling api calls."""
 
-    def __init__(self, seconds=10):
+    def __init__(self, seconds: int = 10) -> None:
         """Initialize throttle class."""
         self.throttle_time = seconds
         self.last_call = 0
@@ -152,7 +153,7 @@ class Throttle:
     def __call__(self, method):
         """Throttle caller method."""
 
-        async def throttle_method():
+        async def throttle_method() -> None:
             """Call when method is throttled."""
             return None
 
