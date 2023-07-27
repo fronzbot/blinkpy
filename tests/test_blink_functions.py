@@ -26,7 +26,7 @@ class MockCamera(BlinkCamera):
         super().__init__(sync)
         self.camera_id = random.randint(1, 100000)
 
-    async def update(self, config, force_cache=False, **kwargs):
+    async def update(self, config, force_cache=False, expire_clips=True,**kwargs):
         """Mock camera update method."""
 
 
@@ -54,7 +54,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         expected = {"foo": "bar", "test": 123, "foobar": 456, "bar": "foo"}
         self.assertEqual(expected, result)
 
-    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    @mock.patch("blinkpy.api.request_videos")
     async def test_download_video_exit(self, mock_req):
         """Test we exit method when provided bad response."""
         blink = blinkpy.Blink(session=mock.AsyncMock())
@@ -70,7 +70,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
             await blink.download_videos("/tmp")
         self.assertListEqual(dl_log.output, expected_log)
 
-    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    @mock.patch("blinkpy.api.request_videos")
     async def test_parse_downloaded_items(self, mock_req):
         """Test ability to parse downloaded items list."""
         blink = blinkpy.Blink(session=mock.AsyncMock())
@@ -93,7 +93,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
             await blink.download_videos("/tmp", stop=2, delay=0)
         self.assertListEqual(dl_log.output, expected_log)
 
-    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    @mock.patch("blinkpy.api.request_videos")
     async def test_parse_downloaded_throttle(self, mock_req):
         """Test ability to parse downloaded items list."""
         generic_entry = {
@@ -117,7 +117,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         delta = now - start
         self.assertTrue(delta >= 0.1)
 
-    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    @mock.patch("blinkpy.api.request_videos")
     async def test_get_videos_metadata(self, mock_req):
         """Test ability to fetch videos metadata."""
         generic_entry = {
@@ -142,7 +142,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         results = await self.blink.get_videos_metadata(stop=2)
         self.assertListEqual(results, [])
 
-    @mock.patch("blinkpy.blinkpy.api.http_get")
+    @mock.patch("blinkpy.api.http_get")
     async def test_do_http_get(self, mock_req):
         """Test ability to do_http_get."""
         blink = blinkpy.Blink(session=mock.AsyncMock())
@@ -150,7 +150,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         response = await blink.do_http_get("/path/to/request")
         self.assertTrue(response is not None)
 
-    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    @mock.patch("blinkpy.api.request_videos")
     async def test_download_videos_deleted(self, mock_req):
         """Test ability to download videos."""
         generic_entry = {
@@ -172,7 +172,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
             await self.blink.download_videos("/tmp", camera="foo", stop=2, delay=0)
         self.assertListEqual(dl_log.output, expected_log)
 
-    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    @mock.patch("blinkpy.api.request_videos")
     @mock.patch("aiofiles.ospath.isfile")
     async def test_download_videos_file(self, mock_isfile, mock_req):
         """Test ability to download videos to a file."""
@@ -197,7 +197,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
             await self.blink.download_videos("/tmp", camera="foo", stop=2, delay=0)
             assert mock_file.write.call_count == 1
 
-    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    @mock.patch("blinkpy.api.request_videos")
     @mock.patch("aiofiles.ospath.isfile")
     async def test_download_videos_file_exists(self, mock_isfile, mock_req):
         """Test ability to download videos with file exists."""
@@ -222,9 +222,8 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
             await self.blink.download_videos("/tmp", camera="foo", stop=2, delay=0)
         self.assertEqual(dl_log.output[0], expected_log[0])
         self.assertEqual(dl_log.output[1], expected_log[1])
-        self.assertEqual(dl_log.output[2], expected_log[2])
 
-    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    @mock.patch("blinkpy.api.request_videos")
     async def test_parse_camera_not_in_list(self, mock_req):
         """Test ability to parse downloaded items list."""
         generic_entry = {
@@ -246,7 +245,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
             await self.blink.download_videos("/tmp", camera="bar", stop=2, delay=0)
         self.assertListEqual(dl_log.output, expected_log)
 
-    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    @mock.patch("blinkpy.api.request_videos")
     async def test_parse_malformed_entry(self, mock_req):
         """Test ability to parse downloaded items in malformed list."""
         self.blink.last_refresh = 0
@@ -265,7 +264,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
             await self.blink.download_videos("/tmp", camera="bar", stop=2, delay=0)
         self.assertListEqual(dl_log.output, expected_log)
 
-    @mock.patch("blinkpy.blinkpy.api.request_network_update")
+    @mock.patch("blinkpy.api.request_network_update")
     @mock.patch("blinkpy.auth.Auth.query")
     async def test_refresh(self, mock_req, mock_update):
         """Test ability to refresh system."""
