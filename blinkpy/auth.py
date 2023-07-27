@@ -155,9 +155,9 @@ class Auth:
 
     async def query(
         self,
-        url: str = None,
-        data: dict | None = None,
-        headers: str | None = None,
+        url: str | None = None,
+        data: str | None = None,
+        headers: dict[str,str] | None = None,
         reqtype: str = "get",
         stream: bool = False,
         json_resp: bool = True,

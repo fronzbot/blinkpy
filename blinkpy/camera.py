@@ -28,25 +28,25 @@ class BlinkCamera:
         """Initiailize BlinkCamera."""
         self.sync = sync
         self.name = None
-        self.camera_id = None
-        self.network_id = None
+        self.camera_id: str = ""
+        self.network_id: str = ""
         self.thumbnail = None
-        self.serial = None
-        self.motion_enabled: bool = None
-        self.battery_voltage: float = None
+        self.serial: str = ""
+        self.motion_enabled: bool | None = None
+        self.battery_voltage: float | None = None
         self.clip = None
         # A clip remains in the recent clips list until is has been downloaded or has been expired.
-        self.recent_clips = []
-        self.temperature: float = None
+        self.recent_clips: list = []
+        self.temperature: float | None = None
         self.temperature_calibrated = None
-        self.battery_state: bool = None
-        self.motion_detected: bool = None
+        self.battery_state: bool | None = None
+        self.motion_detected: bool | None = None
         self.wifi_strength = None
         self.last_record = None
         self._cached_image = None
         self._cached_video = None
         self.camera_type = ""
-        self.product_type = None
+        self.product_type : str = ""
 
     @property
     def attributes(self):
@@ -74,25 +74,20 @@ class BlinkCamera:
         return attributes
 
     @property
-    def battery(self) -> bool:
+    def battery(self) -> bool | None:
         """Return battery as string."""
         return self.battery_state
 
     @property
     def temperature_c(self) -> float | None:
         """Return temperature in celcius."""
-        try:
-            return round((self.temperature - 32) / 9.0 * 5.0, 1)
-        except TypeError:
-            return None
+        return round((self.temperature - 32) / 9.0 * 5.0, 1) if self.temperature is not None else None    
 
     @property
     def image_from_cache(self):
         """Return the most recently cached image."""
-        if self._cached_image:
-            return self._cached_image
-        return None
-
+        return self._cached_image if self._cached_image else None
+            
     @property
     def video_from_cache(self):
         """Return the most recently cached video."""
@@ -101,7 +96,7 @@ class BlinkCamera:
         return None
 
     @property
-    def arm(self) -> bool:
+    def arm(self) -> bool | None:
         """Return arm status of camera."""
         return self.motion_enabled
 
@@ -127,34 +122,33 @@ class BlinkCamera:
         if res is None:
             return None
         if self.product_type == "catalina":
-            res = res.get("camera", [{}])[0]
-        if res["illuminator_enable"] in [0, 1, 2]:
-            res["illuminator_enable"] = ["off", "on", "auto"][
-                res.get("illuminator_enable")
-            ]
-        nv_keys = [
+            json_value: dict = await res.json()
+            res_json: dict = json_value.get("camera", [{}])[0]
+        if res_json["illuminator_enable"] in [0, 1, 2]:
+            index: int = res_json["illuminator_enable"] 
+            res_json["illuminator_enable"] = ["off", "on", "auto"][index]
+        nv_keys : list = [
             "night_vision_control",
             "illuminator_enable",
             "illuminator_enable_v2",
         ]
-        return {key: res.get(key) for key in nv_keys}
+        return {key: res_json.get(key) for key in nv_keys}
 
-    async def async_set_night_vision(self, value: bool) -> str | None:
+    async def async_set_night_vision(self, value: str) -> str | None:
         """Set camera night_vision status."""
         if value not in ["on", "off", "auto"]:
             return None
         if self.product_type == "catalina":
-            value = {"off": 0, "on": 1, "auto": 2}.get(value, None)
-        data = dumps({"illuminator_enable": value})
-        res = await api.request_update_config(
-            self.sync.blink,
-            self.network_id,
-            self.camera_id,
-            product_type=self.product_type,
-            data=data,
-        )
-        if res and res.status == 200:
-            return await res.json()
+            data = dumps({"illuminator_enable": {"off": 0, "on": 1, "auto": 2}.get(value)})
+            res = await api.request_update_config(
+                self.sync.blink,
+                self.network_id,
+                self.camera_id,
+                product_type=self.product_type,
+                data=data,
+            )
+            if res and res.status == 200:
+                return await res.json()
         return None
 
     async def record(self) -> aiohttp.ClientResponse:
@@ -163,13 +157,13 @@ class BlinkCamera:
             self.sync.blink, self.network_id, self.camera_id
         )
 
-    async def get_media(self, media_type="image") -> aiohttp.ClientRequest:
+    async def get_media(self, media_type="image") -> aiohttp.ClientResponse | None:
         """Download media (image or video)."""
         if media_type.lower() == "video":
             return await self.get_video_clip()
         return await self.get_thumbnail()
 
-    async def get_thumbnail(self, url: str = None) -> aiohttp.ClientResponse | None:
+    async def get_thumbnail(self, url: str | None = None) -> aiohttp.ClientResponse | None:
         """Download thumbnail image."""
         if not url:
             url = self.thumbnail
@@ -184,7 +178,7 @@ class BlinkCamera:
             timeout=TIMEOUT_MEDIA,
         )
 
-    async def get_video_clip(self, url: str = None) -> aiohttp.ClientResponse | None:
+    async def get_video_clip(self, url: str | None = None) -> aiohttp.ClientResponse | None:
         """Download video clip."""
         if not url:
             url = self.clip

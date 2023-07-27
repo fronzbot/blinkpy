@@ -66,6 +66,7 @@ async def request_verify(
     auth: Auth, blink: Blink, verify_key: str
 ) -> ClientResponse | None:
     """Send verification key to blink servers."""
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v4/account/{blink.account_id}/client/{blink.client_id}/pin/verify"
     data = dumps({"pin": verify_key})
     return await auth.query(
@@ -79,12 +80,14 @@ async def request_verify(
 
 async def request_logout(blink: Blink) -> ClientResponse:
     """Logout of blink servers."""
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v4/account/{blink.account_id}/client/{blink.client_id}/logout"
     return await http_post(blink, url=url)
 
 
 async def request_networks(blink: Blink) -> ClientResponse:
     """Request all networks information."""
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/networks"
     return await http_get(blink, url)
 
@@ -96,12 +99,14 @@ async def request_network_update(blink: Blink, network: str) -> ClientResponse:
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/update"
     return await http_post(blink, url)
 
 
-async def request_user(blink):
+async def request_user(blink: Blink) -> ClientResponse:
     """Get user information from blink servers."""
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/user"
     return await http_get(blink, url)
 
@@ -113,6 +118,7 @@ async def request_network_status(blink: Blink, network: str) -> ClientResponse:
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}"
     return await http_get(blink, url)
 
@@ -124,6 +130,7 @@ async def request_syncmodule(blink: Blink, network: str) -> ClientResponse:
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/syncmodules"
     return await http_get(blink, url)
 
@@ -136,6 +143,7 @@ async def request_system_arm(blink: Blink, network: str) -> ClientResponse:
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/state/arm"
     return await http_post(blink, url)
 
@@ -148,6 +156,7 @@ async def request_system_disarm(blink: Blink, network: str) -> ClientResponse:
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/state/disarm"
     return await http_post(blink, url)
 
@@ -160,6 +169,7 @@ async def request_command_status(blink: Blink, network: str, command_id: str):
     :param network: Sync module network id.
     :param command_id: Command id to check.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/command/{command_id}"
     return await http_get(blink, url)
 
@@ -167,6 +177,7 @@ async def request_command_status(blink: Blink, network: str, command_id: str):
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_homescreen(blink: Blink) -> ClientResponse:
     """Request homescreen info."""
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v3/accounts/{blink.account_id}/homescreen"
     return await http_get(blink, url)
 
@@ -179,6 +190,7 @@ async def request_sync_events(blink: Blink, network: str) -> ClientResponse:
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/events/network/{network}"
     return await http_get(blink, url)
 
@@ -194,6 +206,7 @@ async def request_new_image(
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request new image from.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/thumbnail"
     return await http_post(blink, url)
 
@@ -209,6 +222,7 @@ async def request_new_video(
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request new video from.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/clip"
     return await http_post(blink, url)
 
@@ -216,6 +230,7 @@ async def request_new_video(
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_video_count(blink: Blink) -> ClientResponse:
     """Request total video count."""
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v2/videos/count"
     return await http_get(blink, url)
 
@@ -231,6 +246,7 @@ async def request_videos(
     :param page: Page number to get videos from.
     """
     timestamp = get_time(time)
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/media/changed?since={timestamp}&page={page}"
     return await http_get(blink, url)
 
@@ -242,6 +258,7 @@ async def request_cameras(blink: Blink, network: str) -> ClientResponse | None:
     :param Blink: Blink instance.
     :param network: Sync module network id.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/cameras"
     return await http_get(blink, url)
 
@@ -256,6 +273,7 @@ async def request_camera_info(
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request info from.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/config"
     return await http_get(blink, url)
 
@@ -266,6 +284,7 @@ async def request_camera_usage(blink: Blink) -> ClientResponse | None:
 
     :param blink: Blink instance.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v1/camera/usage"
     return await http_get(blink, url)
 
@@ -280,6 +299,7 @@ async def request_camera_liveview(
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request liveview from.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v5/accounts/{blink.account_id}/networks/{network}/cameras/{camera_id}/liveview"
     return await http_post(blink, url)
 
@@ -294,6 +314,7 @@ async def request_camera_sensors(
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request sesnor info from.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/signals"
     return await http_get(blink, url)
 
@@ -309,6 +330,7 @@ async def request_motion_detection_enable(
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to enable.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/enable"
     return await http_post(blink, url)
 
@@ -323,6 +345,7 @@ async def request_motion_detection_disable(
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to disable.
     """
+    assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/disable"
     return await http_post(blink, url)
 
@@ -336,6 +359,7 @@ async def request_local_storage_manifest(
     :param network: Sync module network id.
     :param sync_id: ID of sync module.
     """
+    assert blink.urls is not None
     url = (
         f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
         + "/local_storage/manifest/request"
@@ -353,6 +377,7 @@ async def get_local_storage_manifest(
     :param sync_id: ID of sync module.
     :param manifest_request_id: Request ID of local storage manifest (requested creation of new manifest).
     """
+    assert blink.urls is not None
     url = (
         f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
         + f"/local_storage/manifest/request/{manifest_request_id}"
@@ -371,6 +396,7 @@ async def request_local_storage_clip(
     :param manifest_id: ID of local storage manifest (returned in the manifest response).
     :param clip_id: ID of the clip.
     """
+    assert blink.urls is not None
     url = blink.urls.base_url + string.Template(
         local_storage_clip_url_template()
     ).substitute(
@@ -393,6 +419,7 @@ async def request_get_config(
     :param camera_id: ID of camera
     :param product_type: Camera product type "owl" or "catalina"
     """
+    assert blink.urls is not None
     if product_type == "owl":
         url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/owls/{camera_id}/config"
     elif product_type == "catalina":
@@ -412,7 +439,7 @@ async def request_update_config(
     network: str,
     camera_id: str,
     product_type: str = "owl",
-    data: dict | None = None,
+    data: str | None = None,
 ) -> ClientResponse | None:
     """Update camera configuration.
 
@@ -422,6 +449,7 @@ async def request_update_config(
     :param product_type: Camera product type "owl" or "catalina"
     :param data: string w/JSON dict of parameters/values to update
     """
+    assert blink.urls is not None
     if product_type == "owl":
         url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/owls/{camera_id}/update"
     elif product_type == "catalina":
@@ -443,7 +471,7 @@ async def http_get(
     json: bool = True,
     is_retry: bool = False,
     timeout: int = TIMEOUT,
-) -> ClientResponse:
+) -> ClientResponse | None:
     """Perform an http get request.
 
     :param url: URL to perform get request.
@@ -466,10 +494,10 @@ async def http_post(
     blink: Blink,
     url: str,
     is_retry: bool = False,
-    data: dict | None = None,
+    data: str | None = None,
     json: bool = True,
     timeout: int = TIMEOUT,
-) -> ClientResponse:
+) -> ClientResponse | None:
     """Perform an http post request.
 
     :param url: URL to perfom post request.

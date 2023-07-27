@@ -54,7 +54,7 @@ class BlinkSyncModule:
             "mini": "owls",
             "doorbell": "doorbells",
         }
-        self._names_table = dict()
+        self._names_table = {}
         self._local_storage = {
             "enabled": False,
             "compatible": False,
@@ -198,7 +198,7 @@ class BlinkSyncModule:
                 self.motion[name] = False
                 unique_info = self.get_unique_info(name)
                 if blink_camera_type in type_map:
-                    camera_type = type_map[blink_camera_type]
+                    camera_type = type_map.get(blink_camera_type,None)
                 self.cameras[name] = camera_type(self)
                 camera_info = await self.get_camera_info(
                     camera_config["id"], unique_info=unique_info
