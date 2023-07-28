@@ -16,7 +16,7 @@ def get_date():
     return (datetime.now() - TIMEDELTA).isoformat()
 
 
-async def download_videos(blink, save_dir="/media"):
+async def download_videos(blink: Blink, save_dir="/media"):
     """Make request to download videos."""
     await blink.download_videos(save_dir, since=get_date())
 

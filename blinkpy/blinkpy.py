@@ -227,9 +227,9 @@ class Blink:
         self.network_ids.extend(network_list)
         return camera_list
 
-    async def setup_camera_list(self) -> dict:
+    async def setup_camera_list(self) -> CaseInsensitiveDict:
         """Create camera list for onboarded networks."""
-        all_cameras: dict = {}
+        all_cameras: CaseInsensitiveDict = {}
         response = await api.request_camera_usage(self)
         try:
             for network in response["networks"]: #type: ignore
@@ -391,7 +391,7 @@ class Blink:
             json=False,
             timeout=TIMEOUT_MEDIA,
         )
-        assert isinstance(response,ClientResponse)
+        #assert isinstance(response,ClientResponse)
         return response
 
     async def _parse_downloaded_items(

@@ -481,7 +481,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertIsNotNone(test.serial)
 
         self.blink.homescreen = {"owls": {"enabled": True}}
-        self.assertIsNone(await test.get_camera_info("test"))
+        self.assertEqual(await test.get_camera_info("test"),{})
 
     async def test_sync_lotus_init(self, mock_resp):
         """Test sync lotus setup with no serial in response."""
@@ -494,7 +494,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertIsNotNone(test.serial)
 
         self.blink.homescreen = {"doorbells": {"enabled": True}}
-        self.assertIsNone(await test.get_camera_info("test"))
+        self.assertEqual(await test.get_camera_info("test"),{})
 
     async def test_local_storage_media_item(self, mock_resp):
         """Test local storage media properties."""

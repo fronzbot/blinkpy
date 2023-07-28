@@ -178,7 +178,6 @@ class BlinkCamera:
             json=False,
             timeout=TIMEOUT_MEDIA,
         )
-        assert isinstance(resp,aiohttp.ClientResponse)
         return resp
 
 

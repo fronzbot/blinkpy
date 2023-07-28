@@ -23,7 +23,7 @@ class Auth:
 
     def __init__(
         self,
-        login_data: dict | None = None,
+        login_data: dict = {},
         no_prompt: bool = False,
         session: ClientSession | None = None,
     ) -> None:
@@ -37,8 +37,6 @@ class Auth:
         :param no_prompt: Should any user input prompts
                           be supressed? True/FALSE
         """
-        if login_data is None:
-            login_data = {}
         self.data = login_data
         self.token = login_data.get("token", None)
         self.host = login_data.get("host", None)
@@ -124,12 +122,12 @@ class Auth:
 
     def extract_login_info(self) -> None:
         """Extract login info from login response."""
-        assert self.login_response is not None
-        self.region_id = self.login_response["account"]["tier"]
-        self.host = f"{self.region_id}.{BLINK_URL}"
-        self.token = self.login_response["auth"]["token"]
-        self.client_id = self.login_response["account"]["client_id"]
-        self.account_id = self.login_response["account"]["account_id"]
+        if self.login_response:
+            self.region_id = self.login_response["account"]["tier"]
+            self.host = f"{self.region_id}.{BLINK_URL}"
+            self.token = self.login_response["auth"]["token"]
+            self.client_id = self.login_response["account"]["client_id"]
+            self.account_id = self.login_response["account"]["account_id"]
 
     async def startup(self) -> None:
         """Initialize tokens for communication."""
@@ -167,7 +165,7 @@ class Auth:
         json_resp: bool = True,
         is_retry: bool = False,
         timeout: int = TIMEOUT,
-    ) -> ClientResponse | dict | None:
+    ) -> str | dict | None:
         """Perform server requests."""
         """
         :param url: URL to perform request

@@ -66,9 +66,9 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         """Check throttling functionality."""
         now = self.blink.refresh_rate + 1
         mock_time.return_value = now
-        self.assertEqual(self.blink.last_refresh, None)
+        self.assertEqual(self.blink.last_refresh, 0)
         self.assertEqual(self.blink.check_if_ok_to_update(), True)
-        self.assertEqual(self.blink.last_refresh, None)
+        self.assertEqual(self.blink.last_refresh, 0)
         with mock.patch(
             "blinkpy.sync_module.BlinkSyncModule.refresh", return_value=True
         ), mock.patch("blinkpy.blinkpy.Blink.get_homescreen", return_value=True):
