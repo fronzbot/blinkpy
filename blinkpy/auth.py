@@ -93,15 +93,18 @@ class Auth:
             is_retry=False,
         )
         try:
-            if response and response.status == 200:
+            if isinstance(response,ClientResponse) and response.status == 200:
                 return await response.json()
             raise LoginError
         except AttributeError as error:
             raise LoginError from error
 
-    async def logout(self, blink: Blink) -> ClientResponse:
+    async def logout(self, blink: Blink) -> ClientResponse | None:
         """Log out."""
-        return await api.request_logout(blink)
+        response = await api.request_logout(blink)
+        if isinstance(response,ClientResponse):
+            return response
+        return None
 
     async def refresh_token(self) -> bool | None:
         """Refresh auth token."""
@@ -136,7 +139,7 @@ class Auth:
 
     async def validate_response(
         self, response: ClientResponse, json_resp: bool
-    ) -> ClientResponse:
+    ) -> dict | ClientResponse:
         """Check for valid response."""
         if not json_resp:
             self.is_errored = False
@@ -164,7 +167,7 @@ class Auth:
         json_resp: bool = True,
         is_retry: bool = False,
         timeout: int = TIMEOUT,
-    ) -> ClientResponse | None:
+    ) -> ClientResponse | dict | None:
         """Perform server requests."""
         """
         :param url: URL to perform request

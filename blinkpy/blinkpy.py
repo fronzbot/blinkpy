@@ -47,7 +47,7 @@ class Blink:
         refresh_rate: int = DEFAULT_REFRESH,
         motion_interval: int = DEFAULT_MOTION_INTERVAL,
         no_owls: bool = False,
-        session: ClientSession = None,
+        session: ClientSession | None = None,
     ) -> None:
         """
         Initialize Blink system.
@@ -63,20 +63,20 @@ class Blink:
         self.auth = Auth(session=session)
         self.account_id = None
         self.client_id = None
-        self.network_ids = []
-        self.urls = None
-        self.sync = CaseInsensitiveDict({})
-        self.last_refresh = None
+        self.network_ids: list = []
+        self.urls: util.BlinkURLHandler
+        self.sync: CaseInsensitiveDict = CaseInsensitiveDict({})
+        self.last_refresh: float = 0
         self.refresh_rate: int = refresh_rate
-        self.networks = []
-        self.cameras = CaseInsensitiveDict({})
-        self.video_list = CaseInsensitiveDict({})
+        self.networks: list = []
+        self.cameras: CaseInsensitiveDict = CaseInsensitiveDict({})
+        self.video_list: CaseInsensitiveDict = CaseInsensitiveDict({})
         self.motion_interval = motion_interval
         self.version = __version__
-        self.available = False
-        self.key_required = False
-        self.homescreen = {}
-        self.no_owls = no_owls
+        self.available: bool = False
+        self.key_required: bool = False
+        self.homescreen: dict = {}
+        self.no_owls: bool = no_owls
 
     @util.Throttle(seconds=MIN_THROTTLE_TIME)
     async def refresh(self, force: bool = False, force_cache: bool = False) -> bool:
@@ -160,9 +160,9 @@ class Blink:
         self.key_required = False
         return True
 
-    async def setup_sync_module(self, name: str, network_id: str, cameras: dict):
+    async def setup_sync_module(self, name: str, network_id: str, cameras: CaseInsensitiveDict):
         """Initialize a sync module."""
-        self.sync[name] = BlinkSyncModule(self, name, network_id, cameras)
+        self.sync[name] = BlinkSyncModule(self, name, network_id, [cameras])
         await self.sync[name].start()
 
     async def get_homescreen(self) -> None:
@@ -229,10 +229,10 @@ class Blink:
 
     async def setup_camera_list(self) -> dict:
         """Create camera list for onboarded networks."""
-        all_cameras = {}
+        all_cameras: dict = {}
         response = await api.request_camera_usage(self)
         try:
-            for network in response["networks"]:
+            for network in response["networks"]: #type: ignore
                 camera_network = str(network["network_id"])
                 if camera_network not in all_cameras:
                     all_cameras[camera_network] = []
@@ -272,7 +272,7 @@ class Blink:
         """Get network information."""
         response = await api.request_networks(self)
         try:
-            self.networks = response["summary"]
+            self.networks = response["summary"] #type: ignore
         except (KeyError, TypeError) as ex:
             raise BlinkSetupError from ex
 
@@ -281,7 +281,7 @@ class Blink:
         all_networks = []
         network_dict = {}
         try:
-            for network, status in self.networks.items():
+            for network, status in self.networks.items(): #type: ignore
                 if status["onboarded"]:
                     all_networks.append(f"{network}")
                     network_dict[status["name"]] = network
@@ -304,9 +304,9 @@ class Blink:
             return True
         return False
 
-    def merge_cameras(self) -> dict:
+    def merge_cameras(self) -> CaseInsensitiveDict:
         """Merge all sync camera dicts into one."""
-        combined = CaseInsensitiveDict({})
+        combined: CaseInsensitiveDict = CaseInsensitiveDict({})
         for sync in self.sync:
             combined = util.merge_dicts(combined, self.sync[sync].cameras)
         return combined
@@ -319,7 +319,7 @@ class Blink:
         self,
         path: str,
         since: str | None = None,
-        camera: str = "all",
+        camera: str | list = "all",
         stop: int = 10,
         delay: int = 1,
         debug: bool = False,
@@ -345,7 +345,7 @@ class Blink:
         await self._parse_downloaded_items(results, camera, path, delay, debug)
 
     async def get_videos_metadata(
-        self, since: str = None, camera: str = "all", stop: int = 10
+        self, since: str | None = None, stop: int = 10
     ) -> list:
         """
         Fetch and return video metadata.
@@ -369,7 +369,7 @@ class Blink:
             response = await api.request_videos(self, time=since_epochs, page=page)
             _LOGGER.debug("Processing page %s", page)
             try:
-                result = response["media"]
+                result = response["media"] #type: ignore
                 if not result:
                     raise KeyError
                 videos.extend(result)
@@ -391,10 +391,11 @@ class Blink:
             json=False,
             timeout=TIMEOUT_MEDIA,
         )
+        assert isinstance(response,ClientResponse)
         return response
 
     async def _parse_downloaded_items(
-        self, result: list, camera: dict, path: str, delay: int, debug: bool
+        self, result: list, camera: list, path: str, delay: int, debug: bool
     ) -> None:
         """Parse downloaded videos."""
         for item in result:

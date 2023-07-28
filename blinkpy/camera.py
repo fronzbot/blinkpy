@@ -121,9 +121,9 @@ class BlinkCamera:
         )
         if res is None:
             return None
+        assert isinstance (res,dict)
         if self.product_type == "catalina":
-            json_value: dict = await res.json()
-            res_json: dict = json_value.get("camera", [{}])[0]
+             res_json = res.get("camera", [{}])[0]
         if res_json["illuminator_enable"] in [0, 1, 2]:
             index: int = res_json["illuminator_enable"] 
             res_json["illuminator_enable"] = ["off", "on", "auto"][index]
@@ -147,6 +147,7 @@ class BlinkCamera:
                 product_type=self.product_type,
                 data=data,
             )
+            assert isinstance(res,aiohttp.ClientResponse)
             if res and res.status == 200:
                 return await res.json()
         return None
@@ -170,13 +171,16 @@ class BlinkCamera:
             if not url:
                 _LOGGER.warning(f"Thumbnail URL not available: self.thumbnail={url}")
                 return None
-        return await api.http_get(
+        resp = await api.http_get(
             self.sync.blink,
             url=url,
             stream=True,
             json=False,
             timeout=TIMEOUT_MEDIA,
         )
+        assert isinstance(resp,aiohttp.ClientResponse)
+        return resp
+
 
     async def get_video_clip(self, url: str | None = None) -> aiohttp.ClientResponse | None:
         """Download video clip."""
@@ -185,14 +189,17 @@ class BlinkCamera:
             if not url:
                 _LOGGER.warning(f"Video clip URL not available: self.clip={url}")
                 return None
-        return await api.http_get(
+        resp = await api.http_get(
             self.sync.blink,
             url=url,
             stream=True,
             json=False,
             timeout=TIMEOUT_MEDIA,
         )
-
+        if isinstance(resp, aiohttp.ClientResponse):
+            return resp
+        return None
+    
     async def snap_picture(self) -> aiohttp.ClientResponse | None:
         """Take a picture with camera to create a new thumbnail."""
         return await api.request_new_image(
@@ -373,6 +380,7 @@ class BlinkCamera:
             self.sync.blink, self.sync.network_id, self.camera_id
         )
         if response:
+            assert isinstance(response,aiohttp.ClientResponse)
             json_response = await response.json()
             if json_response:
                 return json_response["server"]
@@ -471,13 +479,19 @@ class BlinkCameraMini(BlinkCamera):
         """Set camera arm status."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/config"
         data = dumps({"enabled": value})
-        return await api.http_post(self.sync.blink, url, json=False, data=data)
+        resp = await api.http_post(self.sync.blink, url, json=False, data=data)
+        if isinstance(resp,aiohttp.ClientResponse):
+            return resp
+        return None
 
     async def snap_picture(self) -> aiohttp.ClientResponse | None:
         """Snap picture for a blink mini camera."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/thumbnail"
-        return await api.http_post(self.sync.blink, url)
-
+        resp = await api.http_post(self.sync.blink, url)
+        if isinstance(resp,aiohttp.ClientResponse):
+            return resp
+        return None
+    
     async def get_sensor_info(self) -> None:
         """Get sensor info for blink mini camera."""
 
@@ -486,13 +500,14 @@ class BlinkCameraMini(BlinkCamera):
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/liveview"
         response = await api.http_post(self.sync.blink, url)
         if response:
-            json_response = await response.json()
-            if json_response:
-                server = json_response["server"]
-                server_split = server.split(":")
-                server_split[0] = "rtsps:"
-                link = "".join(server_split)
-                return link
+            if isinstance(response, aiohttp.ClientResponse):
+                json_response = await response.json()
+                if json_response:
+                    server = json_response["server"]
+                    server_split = server.split(":")
+                    server_split[0] = "rtsps:"
+                    link = "".join(server_split)
+                    return link
         return ""
 
 
@@ -516,12 +531,18 @@ class BlinkDoorbell(BlinkCamera):
             url = f"{url}/enable"
         else:
             url = f"{url}/disable"
-        return await api.http_post(self.sync.blink, url)
-
+        response = await api.http_post(self.sync.blink, url)
+        if isinstance(response,aiohttp.ClientResponse):
+            return response
+        return None
+    
     async def snap_picture(self) -> aiohttp.ClientResponse | None:
         """Snap picture for a blink doorbell camera."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/thumbnail"
-        return await api.http_post(self.sync.blink, url)
+        response = await api.http_post(self.sync.blink, url)
+        if isinstance(response,aiohttp.ClientResponse):
+            return response
+        return None
 
     async def get_sensor_info(self) -> None:
         """Get sensor info for blink doorbell camera."""
@@ -531,9 +552,10 @@ class BlinkDoorbell(BlinkCamera):
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
         response = await api.http_post(self.sync.blink, url)
         if response:
-            json_response = await response.json()
-            if json_response:
-                server = json_response["server"]
-                link = server.replace("immis://", "rtsps://")
-                return link
+            if isinstance(response,aiohttp.ClientResponse):
+                json_response = await response.json()
+                if json_response:
+                    server = json_response["server"]
+                    link = server.replace("immis://", "rtsps://")
+                    return link
         return ""

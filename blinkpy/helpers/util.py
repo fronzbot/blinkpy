@@ -8,6 +8,7 @@ import time
 import secrets
 import re
 from calendar import timegm
+from requests.structures import CaseInsensitiveDict
 from functools import wraps
 from getpass import getpass
 import aiofiles
@@ -64,7 +65,7 @@ def get_time(time_to_convert: float | None = None) -> str:
     return time.strftime(const.TIMESTAMP_FORMAT, time.gmtime(time_to_convert))
 
 
-def merge_dicts(dict_a: dict, dict_b: dict) -> dict:
+def merge_dicts(dict_a: CaseInsensitiveDict , dict_b: CaseInsensitiveDict) -> CaseInsensitiveDict:
     """Merge two dictionaries into one."""
     duplicates = [val for val in dict_a if val in dict_b]
     if duplicates:
@@ -72,7 +73,7 @@ def merge_dicts(dict_a: dict, dict_b: dict) -> dict:
             ("Duplicates found during merge: %s. " "Renaming is recommended."),
             duplicates,
         )
-    return {**dict_a, **dict_b}
+    return CaseInsensitiveDict({**dict_a, **dict_b})
 
 
 def prompt_login_data(data: dict) -> dict:
