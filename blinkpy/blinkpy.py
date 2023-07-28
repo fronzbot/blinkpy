@@ -162,7 +162,7 @@ class Blink:
 
     async def setup_sync_module(self, name: str, network_id: str, cameras: CaseInsensitiveDict):
         """Initialize a sync module."""
-        self.sync[name] = BlinkSyncModule(self, name, network_id, [cameras])
+        self.sync[name] = BlinkSyncModule(self, name, network_id, cameras)
         await self.sync[name].start()
 
     async def get_homescreen(self) -> None:
