@@ -45,7 +45,7 @@ class Auth:
         self.region_id = login_data.get("region_id", None)
         self.client_id = login_data.get("client_id", None)
         self.account_id = login_data.get("account_id", None)
-        self.login_response = None
+        self.login_response: dict | None = None
         self.is_errored = False
         self.no_prompt = no_prompt
         if session:
@@ -64,7 +64,7 @@ class Auth:
         return self.data
 
     @property
-    def header(self) -> None:
+    def header(self) -> dict | None:
         """Return authorization header."""
         if self.token is None:
             return None
@@ -82,7 +82,7 @@ class Auth:
             self.data = util.prompt_login_data(self.data)
         self.data = util.validate_login_data(self.data)
 
-    async def login(self, login_url=LOGIN_ENDPOINT) -> str | None:
+    async def login(self, login_url=LOGIN_ENDPOINT) -> dict | None:
         """Attempt login to blink servers."""
         self.validate_login()
         _LOGGER.info("Attempting login with %s", login_url)
@@ -93,15 +93,15 @@ class Auth:
             is_retry=False,
         )
         try:
-            if response.status == 200:
+            if response and response.status == 200:
                 return await response.json()
             raise LoginError
         except AttributeError as error:
             raise LoginError from error
 
-    def logout(self, blink: Blink) -> ClientResponse:
+    async def logout(self, blink: Blink) -> ClientResponse:
         """Log out."""
-        return api.request_logout(blink)
+        return await api.request_logout(blink)
 
     async def refresh_token(self) -> bool | None:
         """Refresh auth token."""
@@ -121,13 +121,14 @@ class Auth:
 
     def extract_login_info(self) -> None:
         """Extract login info from login response."""
+        assert self.login_response is not None
         self.region_id = self.login_response["account"]["tier"]
         self.host = f"{self.region_id}.{BLINK_URL}"
         self.token = self.login_response["auth"]["token"]
         self.client_id = self.login_response["account"]["client_id"]
         self.account_id = self.login_response["account"]["account_id"]
 
-    async def startup(self) -> bool | None:
+    async def startup(self) -> None:
         """Initialize tokens for communication."""
         self.validate_login()
         if None in self.login_attributes.values():
@@ -155,7 +156,7 @@ class Auth:
 
     async def query(
         self,
-        url: str | None = None,
+        url: str,
         data: str | None = None,
         headers: dict[str,str] | None = None,
         reqtype: str = "get",
@@ -227,7 +228,7 @@ class Auth:
         if key is not None:
             response = await api.request_verify(self, blink, key)
             try:
-                json_resp = await response.json()
+                json_resp = await response.json() # type: ignore
                 blink.available = json_resp["valid"]
                 if not blink.available:
                     _LOGGER.error("%s", json_resp["message"])
@@ -240,7 +241,7 @@ class Auth:
     def check_key_required(self) -> bool:
         """Check if 2FA key is required."""
         try:
-            if self.login_response["account"]["client_verification_required"]:
+            if self.login_response["account"]["client_verification_required"]: # type: ignore
                 return True
         except (KeyError, TypeError):
             pass

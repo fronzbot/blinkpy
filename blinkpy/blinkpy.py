@@ -67,7 +67,7 @@ class Blink:
         self.urls = None
         self.sync = CaseInsensitiveDict({})
         self.last_refresh = None
-        self.refresh_rate = refresh_rate
+        self.refresh_rate: int = refresh_rate
         self.networks = []
         self.cameras = CaseInsensitiveDict({})
         self.video_list = CaseInsensitiveDict({})
