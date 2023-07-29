@@ -98,11 +98,18 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.blink.sync.network_id = None
         self.blink.sync.name = None
         attr = camera.attributes
-        for key in attr:
-            if key == "recent_clips":
+        for key,_ in attr.items():
+            if key in ["recent_clips"]:
                 self.assertEqual(attr[key], [])
                 continue
-            self.assertEqual(attr[key], None)
+            if key in ["name","camera_id","serial","video","type"]:
+                self.assertEqual(attr[key], '')
+                continue
+            if key in ["motion_enabled"]:
+                self.assertEqual(attr[key],False)
+                continue
+            self.assertEqual(attr[key],None)
+
 
     def test_doorbell_missing_attributes(self, mock_resp):
         """Test that attributes return None if missing."""
@@ -110,11 +117,17 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.blink.sync.network_id = None
         self.blink.sync.name = None
         attr = camera.attributes
-        for key in attr:
+        for key,_ in attr.items():
             if key == "recent_clips":
                 self.assertEqual(attr[key], [])
                 continue
-            self.assertEqual(attr[key], None)
+            if key in ["name","camera_id","serial","video","type"]:
+                self.assertEqual(attr[key], '')
+                continue
+            if key in ["motion_enabled"]:
+                self.assertEqual(attr[key],False)
+                continue
+            self.assertEqual(attr[key],None)
 
     async def test_camera_stream(self, mock_resp):
         """Test that camera stream returns correct url."""
@@ -143,7 +156,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         }
         mock_resp.side_effect = [
             {"temp": 71},
-            mresp.MockResponse({"test": 200}, 200, raw_data="test"),
+            mresp.MockResponseDict({"test": 200}, 200, raw_data="test"),
         ]
         self.camera.sync.blink.account_id = 9999
         await self.camera.update(config, expire_clips=False)
@@ -189,7 +202,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         }
         mock_resp.side_effect = [
             {"temp": 71},
-            mresp.MockResponse({"test": 200}, 200, raw_data="test"),
+            mresp.MockResponseDict({"test": 200}, 200, raw_data="test"),
         ]
         self.camera.sync.blink.account_id = 9999
         await self.camera.update(config, expire_clips=False)

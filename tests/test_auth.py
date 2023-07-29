@@ -2,7 +2,7 @@
 
 from unittest import mock
 from unittest import IsolatedAsyncioTestCase
-from aiohttp import ClientConnectionError
+from aiohttp import ClientConnectionError, ClientResponse
 from blinkpy.auth import (
     Auth,
     TokenRefreshFailed,
@@ -21,7 +21,7 @@ class TestAuth(IsolatedAsyncioTestCase):
 
     def setUp(self):
         """Set up Login Handler."""
-        self.auth = Auth()
+        self.auth = Auth(session=mock.AsyncMock())
 
     def tearDown(self):
         """Clean up after test."""
@@ -29,28 +29,28 @@ class TestAuth(IsolatedAsyncioTestCase):
 
     @mock.patch("blinkpy.helpers.util.gen_uid")
     @mock.patch("blinkpy.auth.util.getpass")
-    def test_empty_init(self, getpwd, genuid):
+    def test_empty_init(self, mock_getpwd, mock_genuid):
         """Test initialization with no params."""
-        auth = Auth()
-        self.assertDictEqual(auth.data, {})
-        getpwd.return_value = "bar"
-        genuid.return_value = 1234
+
+        self.assertDictEqual(self.auth.data, {})
+        mock_getpwd.return_value = "bar"
+        mock_genuid.return_value = 1234
         with mock.patch("builtins.input", return_value="foo"):
-            auth.validate_login()
+            self.auth.validate_login()
         expected_data = {
             "username": "foo",
             "password": "bar",
             "uid": 1234,
             "device_id": const.DEVICE_ID,
         }
-        self.assertDictEqual(auth.data, expected_data)
+        self.assertDictEqual(self.auth.data, expected_data)
 
     @mock.patch("blinkpy.helpers.util.gen_uid")
     @mock.patch("blinkpy.auth.util.getpass")
     def test_barebones_init(self, getpwd, genuid):
         """Test basebones initialization."""
         login_data = {"username": "foo", "password": "bar"}
-        auth = Auth(login_data)
+        auth = Auth(login_data,session=mock.AsyncMock())
         self.assertDictEqual(auth.data, login_data)
         getpwd.return_value = "bar"
         genuid.return_value = 1234
@@ -78,7 +78,7 @@ class TestAuth(IsolatedAsyncioTestCase):
             "notification_key": 4321,
             "device_id": "device_id",
         }
-        auth = Auth(login_data)
+        auth = Auth(login_data,session=mock.AsyncMock())
         self.assertEqual(auth.token, "token")
         self.assertEqual(auth.host, "host")
         self.assertEqual(auth.region_id, "region_id")
@@ -90,20 +90,20 @@ class TestAuth(IsolatedAsyncioTestCase):
     async def test_bad_response_code(self):
         """Check bad response code from server."""
         self.auth.is_errored = False
-        fake_resp = mresp.MockResponse({"code": 404}, 404)
+        fake_resp = mresp.MockResponseDict({"code": 404}, 404)
         with self.assertRaises(ClientConnectionError):
             await self.auth.validate_response(fake_resp, True)
         self.assertTrue(self.auth.is_errored)
 
         self.auth.is_errored = False
-        fake_resp = mresp.MockResponse({"code": 101}, 401)
+        fake_resp = mresp.MockResponseDict({"code": 101}, 401)
         with self.assertRaises(UnauthorizedError):
             await self.auth.validate_response(fake_resp, True)
         self.assertTrue(self.auth.is_errored)
 
     async def test_good_response_code(self):
         """Check good response code from server."""
-        fake_resp = mresp.MockResponse({"foo": "bar"}, 200)
+        fake_resp = mresp.MockResponseClient({"foo": "bar"}, 200)
         self.auth.is_errored = True
         self.assertEqual(
             await self.auth.validate_response(fake_resp, True), {"foo": "bar"}
@@ -140,7 +140,7 @@ class TestAuth(IsolatedAsyncioTestCase):
         self.assertEqual(self.auth.header, None)
 
     @mock.patch("blinkpy.auth.Auth.validate_login")
-    @mock.patch("blinkpy.auth.Auth.refresh_token")
+    @mock.patch("blinkpy.auth.Auth.refresh_token")    
     async def test_auth_startup(self, mock_validate, mock_refresh):
         """Test auth startup."""
         await self.auth.startup()
@@ -148,14 +148,12 @@ class TestAuth(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.auth.Auth.query")
     async def test_refresh_token(self, mock_resp):
         """Test refresh token method."""
-        mock_resp.return_value.json = mock.AsyncMock(
-            return_value={
+        mock_resp.return_value = mock.AsyncMock(
+            json= mock.AsyncMock(return_value = {
                 "account": {"account_id": 5678, "client_id": 1234, "tier": "test"},
                 "auth": {"token": "foobar"},
-            }
+            }), status = 200, spec = ClientResponse
         )
-        mock_resp.return_value.status = 200
-
         self.auth.no_prompt = True
         self.assertTrue(await self.auth.refresh_token())
         self.assertEqual(self.auth.region_id, "test")
@@ -196,21 +194,21 @@ class TestAuth(IsolatedAsyncioTestCase):
     async def test_logout(self, mock_req):
         """Test logout method."""
         mock_blink = MockBlink(None)
-        mock_req.return_value = True
+        mock_req.return_value = mock.MagicMock(spec = dict)
         self.assertTrue(await self.auth.logout(mock_blink))
 
     @mock.patch("blinkpy.auth.api.request_verify")
     async def test_send_auth_key(self, mock_req):
         """Check sending of auth key."""
         mock_blink = MockBlink(None)
-        mock_req.return_value = mresp.MockResponse({"valid": True}, 200)
+        mock_req.return_value = mresp.MockResponseClient({"valid": True}, 200)
         self.assertTrue(await self.auth.send_auth_key(mock_blink, 1234))
         self.assertTrue(mock_blink.available)
 
-        mock_req.return_value = mresp.MockResponse(None, 200)
+        mock_req.return_value = mresp.MockResponseClient(None, 200)
         self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
 
-        mock_req.return_value = mresp.MockResponse({}, 200)
+        mock_req.return_value = mresp.MockResponseClient({}, 200)
         self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
 
         self.assertTrue(await self.auth.send_auth_key(mock_blink, None))
@@ -219,11 +217,11 @@ class TestAuth(IsolatedAsyncioTestCase):
     async def test_send_auth_key_fail(self, mock_req):
         """Check handling of auth key failure."""
         mock_blink = MockBlink(None)
-        mock_req.return_value = mresp.MockResponse(None, 200)
+        mock_req.return_value = mresp.MockResponseClient(None, 200)
         self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
-        mock_req.return_value = mresp.MockResponse({}, 200)
+        mock_req.return_value = mresp.MockResponseClient({}, 200)
         self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
-        mock_req.return_value = mresp.MockResponse(
+        mock_req.return_value = mresp.MockResponseClient(
             {"valid": False, "message": "Not good"}, 200
         )
         self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))

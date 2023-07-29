@@ -4,6 +4,7 @@ import time
 import random
 from io import BufferedIOBase
 import aiofiles
+from aiohttp import ClientResponse
 from blinkpy import blinkpy
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera
@@ -145,6 +146,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.api.http_get")
     async def test_do_http_get(self, mock_req):
         """Test ability to do_http_get."""
+        mock_req.return_value = mock.MagicMock(spec = ClientResponse)
         blink = blinkpy.Blink(session=mock.AsyncMock())
         blink.urls = BlinkURLHandler("test")
         response = await blink.do_http_get("/path/to/request")
@@ -172,9 +174,10 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
             await self.blink.download_videos("/tmp", camera="foo", stop=2, delay=0)
         self.assertListEqual(dl_log.output, expected_log)
 
+    @mock.patch("blinkpy.blinkpy.Blink.do_http_get")
     @mock.patch("blinkpy.api.request_videos")
     @mock.patch("aiofiles.ospath.isfile")
-    async def test_download_videos_file(self, mock_isfile, mock_req):
+    async def test_download_videos_file(self, mock_isfile, mock_req, mock_http):
         """Test ability to download videos to a file."""
         generic_entry = {
             "created_at": "1970",
@@ -185,6 +188,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         result = [generic_entry]
         mock_req.return_value = {"media": result}
         mock_isfile.return_value = False
+        mock_http.return_value = mock.MagicMock(spec = ClientResponse)
         self.blink.last_refresh = 0
 
         aiofiles.threadpool.wrap.register(mock.MagicMock)(

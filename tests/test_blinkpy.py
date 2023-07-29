@@ -30,8 +30,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
 
     def test_initialization(self):
         """Verify we can initialize blink."""
-        blink = Blink()
-        self.assertEqual(blink.version, __version__)
+        self.assertEqual(self.blink.version, __version__)
 
     def test_network_id_failure(self):
         """Check that with bad network data a setup error is raised."""

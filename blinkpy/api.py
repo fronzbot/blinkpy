@@ -64,35 +64,43 @@ async def request_login(
 
 async def request_verify(
     auth: Auth, blink: Blink, verify_key: str
-) -> ClientResponse | dict | None:
+) -> ClientResponse | None:
     """Send verification key to blink servers."""
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v4/account/{blink.account_id}/client/{blink.client_id}/pin/verify"
     data = dumps({"pin": verify_key})
-    return await auth.query(
+    response = await auth.query(
         url=url,
         headers=auth.header,
         data=data,
         json_resp=False,
         reqtype="post",
     )
+    if isinstance(response,ClientResponse):
+        return response
+    return None
 
-
-async def request_logout(blink: Blink) -> ClientResponse | dict | None:
+async def request_logout(blink: Blink) -> dict | None:
     """Logout of blink servers."""
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v4/account/{blink.account_id}/client/{blink.client_id}/logout"
-    return await http_post(blink, url=url)
+    response = await http_post(blink, url=url)
+    if isinstance(response,dict):
+        return response
+    return None
 
 
-async def request_networks(blink: Blink) -> ClientResponse | dict | None:
+async def request_networks(blink: Blink) -> dict | None:
     """Request all networks information."""
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/networks"
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
 
 
-async def request_network_update(blink: Blink, network: str) -> ClientResponse | dict | None:
+async def request_network_update(blink: Blink, network: str) -> dict | None:
     """
     Request network update.
 
@@ -101,17 +109,23 @@ async def request_network_update(blink: Blink, network: str) -> ClientResponse |
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/update"
-    return await http_post(blink, url)
+    response = await http_post(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
 
 
-async def request_user(blink: Blink) -> ClientResponse | dict | None:
+async def request_user(blink: Blink) -> dict | None:
     """Get user information from blink servers."""
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/user"
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
 
 
-async def request_network_status(blink: Blink, network: str) -> ClientResponse | dict | None:
+async def request_network_status(blink: Blink, network: str) -> dict | None:
     """
     Request network information.
 
@@ -120,10 +134,13 @@ async def request_network_status(blink: Blink, network: str) -> ClientResponse |
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}"
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
 
 
-async def request_syncmodule(blink: Blink, network: str) -> ClientResponse | dict | None:
+async def request_syncmodule(blink: Blink, network: str) -> dict | None:
     """
     Request sync module info.
 
@@ -132,11 +149,14 @@ async def request_syncmodule(blink: Blink, network: str) -> ClientResponse | dic
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/syncmodules"
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_system_arm(blink: Blink, network: str) -> ClientResponse | dict | None:
+async def request_system_arm(blink: Blink, network: str) -> dict | None:
     """
     Arm system.
 
@@ -145,11 +165,15 @@ async def request_system_arm(blink: Blink, network: str) -> ClientResponse | dic
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/state/arm"
-    return await http_post(blink, url)
+    response = await http_post(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_system_disarm(blink: Blink, network: str) -> ClientResponse | dict | None:
+async def request_system_disarm(blink: Blink, network: str) -> dict | None:
     """
     Disarm system.
 
@@ -158,10 +182,14 @@ async def request_system_disarm(blink: Blink, network: str) -> ClientResponse | 
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/state/disarm"
-    return await http_post(blink, url)
+    response = await http_post(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
 
 
-async def request_command_status(blink: Blink, network: str, command_id: str) -> ClientResponse | dict | None:
+
+async def request_command_status(blink: Blink, network: str, command_id: str) -> dict | None:
     """
     Request command status.
 
@@ -171,19 +199,27 @@ async def request_command_status(blink: Blink, network: str, command_id: str) ->
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/command/{command_id}"
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_homescreen(blink: Blink) -> ClientResponse | dict | None:
+async def request_homescreen(blink: Blink) -> dict | None:
     """Request homescreen info."""
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v3/accounts/{blink.account_id}/homescreen"
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_sync_events(blink: Blink, network: str) -> ClientResponse | dict | None:
+async def request_sync_events(blink: Blink, network: str) -> dict | None:
     """
     Request events from sync module.
 
@@ -192,13 +228,17 @@ async def request_sync_events(blink: Blink, network: str) -> ClientResponse | di
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/events/network/{network}"
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_new_image(
     blink: Blink, network: str, camera_id: str
-) -> ClientResponse | dict | None:
+) ->  dict | None:
     """
     Request to capture new thumbnail for camera.
 
@@ -208,13 +248,17 @@ async def request_new_image(
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/thumbnail"
-    return await http_post(blink, url)
+    response = await http_post(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_new_video(
     blink: Blink, network: str, camera_id: str
-) -> ClientResponse | dict | None:
+) -> dict | None:
     """
     Request to capture new video clip.
 
@@ -224,20 +268,28 @@ async def request_new_video(
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/clip"
-    return await http_post(blink, url)
+    response = await http_post(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_video_count(blink: Blink) -> ClientResponse | dict | None:
+async def request_video_count(blink: Blink) -> dict | None:
     """Request total video count."""
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v2/videos/count"
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 async def request_videos(
     blink: Blink, time: float | None = None, page: int = 0
-) -> ClientResponse | dict | None:
+) -> dict | None:
     """
     Perform a request for videos.
 
@@ -248,10 +300,14 @@ async def request_videos(
     timestamp = get_time(time)
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/media/changed?since={timestamp}&page={page}"
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
 
 
-async def request_cameras(blink: Blink, network: str) -> ClientResponse | dict | None:
+
+async def request_cameras(blink: Blink, network: str) -> dict | None:
     """
     Request all camera information.
 
@@ -260,12 +316,16 @@ async def request_cameras(blink: Blink, network: str) -> ClientResponse | dict |
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/cameras"
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 async def request_camera_info(
     blink: Blink, network: str, camera_id: str
-) -> ClientResponse | dict | None:
+) -> dict | None:
     """
     Request camera info for one camera.
 
@@ -275,10 +335,14 @@ async def request_camera_info(
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/config"
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
 
 
-async def request_camera_usage(blink: Blink) -> ClientResponse | dict | None:
+
+async def request_camera_usage(blink: Blink) -> dict | None:
     """
     Request camera status.
 
@@ -286,12 +350,16 @@ async def request_camera_usage(blink: Blink) -> ClientResponse | dict | None:
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v1/camera/usage"
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 async def request_camera_liveview(
     blink: Blink, network: str, camera_id: str
-) -> ClientResponse | dict | None:
+) -> dict | None:
     """
     Request camera liveview.
 
@@ -301,12 +369,16 @@ async def request_camera_liveview(
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/api/v5/accounts/{blink.account_id}/networks/{network}/cameras/{camera_id}/liveview"
-    return await http_post(blink, url)
+    response = await http_post(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 async def request_camera_sensors(
     blink: Blink, network: str, camera_id: str
-) -> ClientResponse | dict | None:
+) -> dict | None:
     """
     Request camera sensor info for one camera.
 
@@ -316,13 +388,16 @@ async def request_camera_sensors(
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/signals"
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_motion_detection_enable(
     blink: Blink, network: str, camera_id: str
-) -> ClientResponse | dict | None:
+) -> dict | None:
     """
     Enable motion detection for a camera.
 
@@ -332,13 +407,17 @@ async def request_motion_detection_enable(
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/enable"
-    return await http_post(blink, url)
+    response = await http_post(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_motion_detection_disable(
     blink: Blink, network: str, camera_id: str
-) -> ClientResponse | dict | None:
+) -> dict | None:
     """Disable motion detection for a camera.
 
     :param blink: Blink instance.
@@ -347,12 +426,15 @@ async def request_motion_detection_disable(
     """
     assert blink.urls is not None
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/disable"
-    return await http_post(blink, url)
+    response = await http_post(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
 
 
 async def request_local_storage_manifest(
     blink: Blink, network: str, sync_id: str
-) -> ClientResponse | dict | None:
+) -> dict | None:
     """Request creation of an updated manifest of video clips stored in sync module local storage.
 
     :param blink: Blink instance.
@@ -364,12 +446,16 @@ async def request_local_storage_manifest(
         f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
         + "/local_storage/manifest/request"
     )
-    return await http_post(blink, url)
+    response = await http_post(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 async def get_local_storage_manifest(
     blink: Blink, network: str, sync_id: str, manifest_request_id: str
-) -> ClientResponse | dict | None:
+) -> dict | None:
     """Request manifest of video clips stored in sync module local storage.
 
     :param blink: Blink instance.
@@ -382,12 +468,16 @@ async def get_local_storage_manifest(
         f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
         + f"/local_storage/manifest/request/{manifest_request_id}"
     )
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 async def request_local_storage_clip(
     blink: Blink, network: str, sync_id: str, manifest_id: str, clip_id: str
-) -> ClientResponse | dict | None:
+) -> dict | None:
     """Prepare video clip stored in the sync module to be downloaded.
 
     :param blink: Blink instance.
@@ -406,12 +496,16 @@ async def request_local_storage_clip(
         manifest_id=manifest_id,
         clip_id=clip_id,
     )
-    return await http_post(blink, url)
+    response = await http_post(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 async def request_get_config(
     blink: Blink, network: str, camera_id: str, product_type: str = "owl"
-) -> ClientResponse | dict | None:
+) -> dict | None:
     """Get camera configuration.
 
     :param blink: Blink instance.
@@ -431,7 +525,11 @@ async def request_get_config(
             product_type,
         )
         return None
-    return await http_get(blink, url)
+    response = await http_get(blink, url)
+    if isinstance(response,dict):
+        return response
+    return None
+
 
 
 async def request_update_config(
@@ -440,7 +538,7 @@ async def request_update_config(
     camera_id: str,
     product_type: str = "owl",
     data: str | None = None,
-) -> ClientResponse | dict | None:
+) -> ClientResponse | None:
     """Update camera configuration.
 
     :param blink: Blink instance.
@@ -461,7 +559,11 @@ async def request_update_config(
             product_type,
         )
         return None
-    return await http_post(blink, url, json=False, data=data)
+    response = await http_post(blink, url, json=False, data=data)
+    if isinstance(response,ClientResponse):
+        return response
+    return None
+
 
 
 async def http_get(

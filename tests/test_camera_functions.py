@@ -65,8 +65,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         }
         mock_resp.side_effect = [
             {"temp": 71},
-            mresp.MockResponse({"test": 200}, 200, raw_data="test"),
-            mresp.MockResponse({"foobar": 200}, 200, raw_data="foobar"),
+            mresp.MockResponseClient({"test": 200}, 200, raw_data="test"),
+            mresp.MockResponseClient({"foobar": 200}, 200, raw_data="foobar"),
         ]
         self.assertIsNone(self.camera.image_from_cache)
 
@@ -92,7 +92,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
 
         # Check that thumbnail without slash processed properly
         mock_resp.side_effect = [
-            mresp.MockResponse({"test": 200}, 200, raw_data="thumb_no_slash")
+            mresp.MockResponseClient({"test": 200}, 200, raw_data="thumb_no_slash")
         ]
         await self.camera.update_images(
             {"thumbnail": "thumb_no_slash"}, expire_clips=False
@@ -151,10 +151,10 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             "wifi_strength": 4,
             "thumbnail": "/foobar",
         }
-        mock_resp.return_value = mresp.MockResponse({"test": 200}, 200, raw_data="")
+        mock_resp.return_value = mresp.MockResponseDict({"test": 200}, 200, raw_data="")
         self.camera.sync.homescreen = {"devices": []}
         await self.camera.update(config, force_cache=True, expire_clips=False)
-        self.assertEqual(self.camera.clip, None)
+        self.assertEqual(self.camera.clip, '')
         self.assertEqual(self.camera.video_from_cache, None)
 
     async def test_recent_video_clips(self, mock_resp):
@@ -252,10 +252,10 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
 
         self.assertIsNone(await self.camera.async_set_night_vision("0"))
 
-        mock_resp.return_value = mresp.MockResponse({"code": 200}, 200)
+        mock_resp.return_value = mresp.MockResponseClient({"code": 200}, 200)
         self.assertIsNotNone(await self.camera.async_set_night_vision("on"))
 
-        mock_resp.return_value = mresp.MockResponse({"code": 400}, 400)
+        mock_resp.return_value = mresp.MockResponseClient({"code": 400}, 400)
         self.assertIsNone(await self.camera.async_set_night_vision("on"))
 
     async def test_record(self, mock_resp):
@@ -300,14 +300,14 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.camera.open", create=True)
     async def test_image_to_file(self, mock_open, mock_resp):
         """Test camera image to file."""
-        mock_resp.return_value = mresp.MockResponse({}, 200, raw_data="raw data")
+        mock_resp.return_value = mresp.MockResponseClient({}, 200, raw_data="raw data")
         self.camera.thumbnail = "/thumbnail"
         await self.camera.image_to_file("my_path")
 
     @mock.patch("blinkpy.camera.open", create=True)
     async def test_image_to_file_error(self, mock_open, mock_resp):
         """Test camera image to file with error."""
-        mock_resp.return_value = mresp.MockResponse({}, 400, raw_data="raw data")
+        mock_resp.return_value = mresp.MockResponseClient({}, 400, raw_data="raw data")
         self.camera.thumbnail = "/thumbnail"
         with self.assertLogs(level="DEBUG") as dl_log:
             await self.camera.image_to_file("my_path")
@@ -319,7 +319,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.camera.open", create=True)
     async def test_video_to_file_none_response(self, mock_open, mock_resp):
         """Test camera video to file."""
-        mock_resp.return_value = mresp.MockResponse({}, 200, raw_data="raw data")
+        mock_resp.return_value = mresp.MockResponseClient({}, 200, raw_data="raw data")
         with self.assertLogs(level="DEBUG") as dl_log:
             await self.camera.video_to_file("my_path")
         self.assertEqual(
@@ -330,7 +330,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.camera.open", create=True)
     async def test_video_to_file(self, mock_open, mock_resp):
         """Test camera vido to file with error."""
-        mock_resp.return_value = mresp.MockResponse({}, 400, raw_data="raw data")
+        mock_resp.return_value = mresp.MockResponseClient({}, 400, raw_data="raw data")
         self.camera.clip = "my_clip"
         await self.camera.video_to_file("my_path")
         mock_open.assert_called_once()
@@ -361,7 +361,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
                 "clip": "local_storage/clip2",
             },
         )
-        mock_clip.return_value = mresp.MockResponse({}, 200, raw_data="raw data")
+        mock_clip.return_value = mresp.MockResponseClient({}, 200, raw_data="raw data")
         with self.assertLogs(level="DEBUG") as dl_log:
             await self.camera.save_recent_clips()
         self.assertEqual(

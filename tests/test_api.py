@@ -15,7 +15,7 @@ class TestAPI(IsolatedAsyncioTestCase):
     def setUp(self):
         """Set up Login Handler."""
         self.blink = Blink(session=mock.AsyncMock())
-        self.auth = Auth()
+        self.auth = Auth(session=mock.AsyncMock())
         self.blink.available = True
         self.blink.urls = util.BlinkURLHandler("region_id")
         self.blink.account_id = 1234
@@ -28,13 +28,13 @@ class TestAPI(IsolatedAsyncioTestCase):
 
     async def test_request_verify(self, mock_resp):
         """Test api request verify."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.return_value = mresp.MockResponseClient({}, 200)
         response = await api.request_verify(self.auth, self.blink, "test key")
         self.assertEqual(response.status, 200)
 
     async def test_request_logout(self, mock_resp):
         """Test request_logout."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.return_value = mresp.MockResponseDict({}, 200)
         response = await api.request_logout(self.blink)
         self.assertEqual(response.status, 200)
 
@@ -65,13 +65,13 @@ class TestAPI(IsolatedAsyncioTestCase):
 
     async def test_request_new_image(self, mock_resp):
         """Test api request new image."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.return_value = mresp.MockResponseDict({}, 200)
         response = await api.request_new_image(self.blink, "network", "camera")
         self.assertEqual(response.status, 200)
 
     async def test_request_new_video(self, mock_resp):
         """Test api request new Video."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.return_value = mresp.MockResponseDict({}, 200)
         response = await api.request_new_video(self.blink, "network", "camera")
         self.assertEqual(response.status, 200)
 
@@ -97,7 +97,7 @@ class TestAPI(IsolatedAsyncioTestCase):
 
     async def test_request_motion_detection_enable(self, mock_resp):
         """Test  Motion detect enable."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.return_value = mresp.MockResponseDict({}, 200)
         response = await api.request_motion_detection_enable(
             self.blink, "network", "camera"
         )
@@ -105,7 +105,7 @@ class TestAPI(IsolatedAsyncioTestCase):
 
     async def test_request_motion_detection_disable(self, mock_resp):
         """Test  Motion detect enable."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.return_value = mresp.MockResponseDict({}, 200)
         response = await api.request_motion_detection_disable(
             self.blink, "network", "camera"
         )
@@ -113,7 +113,7 @@ class TestAPI(IsolatedAsyncioTestCase):
 
     async def test_request_local_storage_clip(self, mock_resp):
         """Test Motion detect enable."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.return_value = mresp.MockResponseDict({}, 200)
         response = await api.request_local_storage_clip(
             self.blink, "network", "sync_id", "manifest_id", "clip_id"
         )
@@ -135,7 +135,7 @@ class TestAPI(IsolatedAsyncioTestCase):
 
     async def test_request_update_config(self, mock_resp):
         """Test Motion detect enable."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.return_value = mresp.MockResponseClient({}, 200)
         response = await api.request_update_config(
             self.blink, "network", "camera_id", "owl"
         )

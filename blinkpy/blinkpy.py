@@ -12,6 +12,7 @@ Published under the MIT license - See LICENSE file for more details.
 owned by Immedia Inc., see www.blinkforhome.com for more information.
 blinkpy is in no way affiliated with Blink, nor Immedia Inc.
 """
+from __future__ import annotations
 import os.path
 import time
 import logging
@@ -160,7 +161,7 @@ class Blink:
         self.key_required = False
         return True
 
-    async def setup_sync_module(self, name: str, network_id: str, cameras: CaseInsensitiveDict):
+    async def setup_sync_module(self, name: str, network_id: str, cameras: list):
         """Initialize a sync module."""
         self.sync[name] = BlinkSyncModule(self, name, network_id, cameras)
         await self.sync[name].start()
@@ -229,7 +230,7 @@ class Blink:
 
     async def setup_camera_list(self) -> CaseInsensitiveDict:
         """Create camera list for onboarded networks."""
-        all_cameras: CaseInsensitiveDict = {}
+        all_cameras: CaseInsensitiveDict = CaseInsensitiveDict({})
         response = await api.request_camera_usage(self)
         try:
             for network in response["networks"]: #type: ignore
@@ -378,7 +379,7 @@ class Blink:
                 break
         return videos
 
-    async def do_http_get(self, address: str) -> ClientResponse:
+    async def do_http_get(self, address: str) -> ClientResponse | None:
         """
         Do an http_get on address.
 
@@ -391,8 +392,9 @@ class Blink:
             json=False,
             timeout=TIMEOUT_MEDIA,
         )
-        #assert isinstance(response,ClientResponse)
-        return response
+        if isinstance(response,ClientResponse):
+            return response
+        return None
 
     async def _parse_downloaded_items(
         self, result: list, camera: list, path: str, delay: int, debug: bool
@@ -426,10 +428,11 @@ class Blink:
                     continue
 
                 response = await self.do_http_get(address)
-                async with aiofiles.open(filename, "wb") as vidfile:
-                    await vidfile.write(await response.read())
+                if isinstance(response,ClientResponse):
+                    async with aiofiles.open(filename, "wb") as vidfile:
+                        await vidfile.write(await response.read())
 
-                _LOGGER.info("Downloaded video to %s", filename)
+                    _LOGGER.info("Downloaded video to %s", filename)
             else:
                 print(
                     (

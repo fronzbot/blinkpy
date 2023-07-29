@@ -12,6 +12,7 @@ from blinkpy.sync_module import (
 )
 from blinkpy.camera import BlinkCamera
 from tests.test_blink_functions import MockCamera
+import tests.mock_responses as mresp
 
 
 @mock.patch("blinkpy.auth.Auth.query")
@@ -59,8 +60,9 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
     async def test_arm(self, mock_resp) -> None:
         """Check that we arm and disarm a module."""
-        self.assertTrue(await self.blink.sync["test"].async_arm(True))
-        self.assertTrue(await self.blink.sync["test"].async_arm(False))
+        mock_resp.return_value = mresp.MockResponseDict({"code": 200}, 200)
+        self.assertIsNotNone(await self.blink.sync["test"].async_arm(True))
+        self.assertIsNotNone(await self.blink.sync["test"].async_arm(False))
 
     def test_bad_arm(self, mock_resp) -> None:
         """Check that we mark module unavaiable if bad arm status."""

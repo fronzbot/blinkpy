@@ -507,7 +507,7 @@ class BlinkOwl(BlinkSyncModule):
         self, blink: Blink, name: str, network_id: str, response: dict
     ) -> None:
         """Initialize a sync-less object."""
-        cameras = [{"name": name, "id": response["id"]}]
+        cameras: list = [{"name": name, "id": response["id"]}]
         super().__init__(blink, name, network_id, cameras)
         self.sync_id = response["id"]
         self.serial = response["serial"]
@@ -574,7 +574,7 @@ class BlinkLotus(BlinkSyncModule):
         self, blink: Blink, name: str, network_id: str, response: dict
     ) -> None:
         """Initialize a sync-less object."""
-        cameras = [{"name": name, "id": response["id"]}]
+        cameras: list = [{"name": name, "id": response["id"]}]
         super().__init__(blink, name, network_id, cameras)
         self.sync_id = response["id"]
         self.serial = response["serial"]
