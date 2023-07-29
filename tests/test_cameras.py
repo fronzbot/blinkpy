@@ -209,3 +209,25 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.assertEqual(
             self.camera.thumbnail, f"https://rest-test.immedia-semi.com{thumb_return}"
         )
+    async def test_wrong_types(self, mock_resp):
+        """Test worng return types from http_post."""
+        with mock.patch("blinkpy.api.request_camera_liveview",return_value = ""):
+            self.assertEqual(await self.camera.get_liveview(),"")
+        with mock.patch("blinkpy.camera.BlinkCamera.get_media",return_value = None):
+            await self.camera.image_to_file("path")
+        self.camera = BlinkCameraMini(self.blink.sync["test"])
+        with mock.patch("blinkpy.api.http_post",return_value={}):
+            self.assertEqual(await self.camera.async_arm("on"),{})
+        with mock.patch("blinkpy.api.http_post",return_value=""):
+            self.assertIsNone(await self.camera.snap_picture())
+            self.assertEqual(await self.camera.get_liveview(),"")
+            self.assertIsNone(await self.camera.async_arm(True))
+
+        self.camera = BlinkDoorbell(self.blink.sync["test"])
+        with mock.patch("blinkpy.api.http_post",return_value=""):
+            self.assertIsNone(await self.camera.snap_picture())
+            self.assertEqual(await self.camera.get_liveview(),"")
+            self.assertIsNone(await self.camera.async_arm(True))
+
+        with mock.patch("blinkpy.api.http_post",return_value={"blah":1}):
+            self.assertIsNotNone(await self.camera.async_arm(True)) 

@@ -12,6 +12,7 @@ import time
 from blinkpy.blinkpy import Blink, BlinkSetupError, LoginError, TokenRefreshFailed
 from blinkpy.sync_module import BlinkOwl, BlinkLotus
 from blinkpy.helpers.constants import __version__
+from blinkpy.helpers.util import BlinkURLHandler
 
 SPECIAL = "!@#$%^&*()_+-=[]{}|/<>?,.'"
 
@@ -569,12 +570,22 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         self.assertEqual(self.blink.client_id, 1)
         self.assertEqual(self.blink.account_id, 2)
 
+    async def test_check_if_ok_to_update(self):
+        """Test check if ok to update."""
+        self.blink.last_refresh = None
+        self.assertTrue(self.blink.check_if_ok_to_update())
+
+    async def test_do_http_get_wrong(self):
+        """Test wrong response from http_get."""
+        self.blink.urls = BlinkURLHandler("reg-id")
+        with mock.patch("blinkpy.api.http_get",return_value=""):
+            self.assertIsNone(await self.blink.do_http_get("link"))
+
     @mock.patch("blinkpy.blinkpy.util.json_save")
     async def test_save(self, mock_util):
         """Test save function."""
         await self.blink.save("blah")
         self.assertEqual(mock_util.call_count, 1)
-
 
 class MockSync:
     """Mock sync module class."""

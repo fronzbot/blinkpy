@@ -196,6 +196,13 @@ class TestAuth(IsolatedAsyncioTestCase):
         mock_blink = MockBlink(None)
         mock_req.return_value = mock.MagicMock(spec = dict)
         self.assertTrue(await self.auth.logout(mock_blink))
+        
+    @mock.patch("blinkpy.auth.api.request_logout")
+    async def test_logout_client_response(self, mock_req):
+        """Test logout method with incorrect response type."""
+        mock_blink = MockBlink(None)
+        mock_req.return_value = mock.MagicMock(spec = ClientResponse)
+        self.assertFalse(await self.auth.logout(mock_blink))
 
     @mock.patch("blinkpy.auth.api.request_verify")
     async def test_send_auth_key(self, mock_req):

@@ -149,13 +149,12 @@ class BlinkSyncModule:
             self.summary: dict = response["syncmodule"] # type: ignore
             self.network_id = self.summary["network_id"] # type: ignore
             await self._init_local_storage(self.summary["id"])
+            if isinstance(response,dict):
+                return response
         except (TypeError, KeyError):
             _LOGGER.error(
                 "Could not retrieve sync module information with response: %s", response
             )
-            return False
-        if isinstance(response,dict):
-            return response
         return False
 
     async def _init_local_storage(self, sync_id: str) -> dict | bool:

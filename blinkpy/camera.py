@@ -495,13 +495,12 @@ class BlinkCameraMini(BlinkCamera):
         """Get liveview link."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/liveview"
         response = await api.http_post(self.sync.blink, url)
-        if response:
-            if isinstance(response, dict):
-                server = response["server"]
-                server_split = server.split(":")
-                server_split[0] = "rtsps:"
-                link = "".join(server_split)
-                return link
+        if isinstance(response, dict):
+            server = response["server"]
+            server_split = server.split(":")
+            server_split[0] = "rtsps:"
+            link = "".join(server_split)
+            return link
         return ""
 
 

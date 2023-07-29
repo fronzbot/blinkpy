@@ -530,3 +530,12 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertEquals(
             await item.prepare_download(blink, max_retries=1), {"network_id": 123456}
         )
+
+        with mock.patch("blinkpy.api.http_post",return_value = ""):
+            self.assertDictEqual(await item2.prepare_download(blink,max_retries = 0),{})
+
+    async def test_poll_local_storage_manifest(self,mock_resp):
+        """Test incorrect response."""
+        with mock.patch("blinkpy.api.request_local_storage_manifest",return_value=""):
+            self.assertDictEqual(await self.blink.sync["test"].poll_local_storage_manifest(max_retries=0),{})
+
