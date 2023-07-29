@@ -100,7 +100,7 @@ class BlinkCamera:
         """Return arm status of camera."""
         return self.motion_enabled
 
-    async def async_arm(self, value: bool) -> aiohttp.ClientResponse | None:
+    async def async_arm(self, value: bool) -> dict | None:
         """Set camera arm status."""
         if value:
             return await api.request_motion_detection_enable(
