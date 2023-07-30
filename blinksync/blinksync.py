@@ -1,9 +1,10 @@
 import json
 import asyncio
+import sys
 import wx
 import logging
 import aiohttp
-import sys
+
 from sortedcontainers import SortedSet
 from forms import LoginDialog, VideosForm, DELAY,CLOSE, DELETE, DOWNLOAD, REFRESH
 from blinkpy.blinkpy import Blink, BlinkSyncModule
@@ -83,7 +84,7 @@ async def main():
                 if item.id in frame.ItemList:               
                     if button == DOWNLOAD:
                         await item.prepare_download(blink)
-                        await item.download_video(
+                        await item.download_videos(
                             blink,
                             f"{path}/{item.name}_{item.created_at.astimezone().isoformat().replace(':','_')}.mp4",
                         )
