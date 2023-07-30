@@ -233,7 +233,7 @@ class Blink:
         all_cameras: CaseInsensitiveDict = CaseInsensitiveDict({})
         response = await api.request_camera_usage(self)
         try:
-            for network in response["networks"]: #type: ignore
+            for network in response["networks"]:  # type: ignore
                 camera_network = str(network["network_id"])
                 if camera_network not in all_cameras:
                     all_cameras[camera_network] = []
@@ -273,7 +273,7 @@ class Blink:
         """Get network information."""
         response = await api.request_networks(self)
         try:
-            self.networks = response["summary"] #type: ignore
+            self.networks = response["summary"]  # type: ignore
         except (KeyError, TypeError) as ex:
             raise BlinkSetupError from ex
 
@@ -282,7 +282,7 @@ class Blink:
         all_networks = []
         network_dict = {}
         try:
-            for network, status in self.networks.items(): #type: ignore
+            for network, status in self.networks.items():  # type: ignore
                 if status["onboarded"]:
                     all_networks.append(f"{network}")
                     network_dict[status["name"]] = network
@@ -370,7 +370,7 @@ class Blink:
             response = await api.request_videos(self, time=since_epochs, page=page)
             _LOGGER.debug("Processing page %s", page)
             try:
-                result = response["media"] #type: ignore
+                result = response["media"]  # type: ignore
                 if not result:
                     raise KeyError
                 videos.extend(result)
@@ -392,7 +392,7 @@ class Blink:
             json=False,
             timeout=TIMEOUT_MEDIA,
         )
-        if isinstance(response,ClientResponse):
+        if isinstance(response, ClientResponse):
             return response
         return None
 
@@ -428,7 +428,7 @@ class Blink:
                     continue
 
                 response = await self.do_http_get(address)
-                if isinstance(response,ClientResponse):
+                if isinstance(response, ClientResponse):
                     async with aiofiles.open(filename, "wb") as vidfile:
                         await vidfile.write(await response.read())
 

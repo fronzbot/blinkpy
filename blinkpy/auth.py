@@ -93,7 +93,7 @@ class Auth:
             is_retry=False,
         )
         try:
-            if isinstance(response,ClientResponse) and response.status == 200:
+            if isinstance(response, ClientResponse) and response.status == 200:
                 return await response.json()
             raise LoginError
         except AttributeError as error:
@@ -102,7 +102,7 @@ class Auth:
     async def logout(self, blink: Blink) -> bool:
         """Log out."""
         response = await api.request_logout(blink)
-        if isinstance(response,dict):
+        if isinstance(response, dict):
             return True
         return False
 
@@ -163,7 +163,7 @@ class Auth:
         self,
         url: str,
         data: str | None = None,
-        headers: dict[str,str] | None = None,
+        headers: dict[str, str] | None = None,
         reqtype: str = "get",
         stream: bool = False,
         json_resp: bool = True,
@@ -233,7 +233,7 @@ class Auth:
         if key is not None:
             response = await api.request_verify(self, blink, key)
             try:
-                json_resp = await response.json() # type: ignore
+                json_resp = await response.json()  # type: ignore
                 blink.available = json_resp["valid"]
                 if not blink.available:
                     _LOGGER.error("%s", json_resp["message"])
@@ -246,7 +246,7 @@ class Auth:
     def check_key_required(self) -> bool:
         """Check if 2FA key is required."""
         try:
-            if self.login_response["account"]["client_verification_required"]: # type: ignore
+            if self.login_response["account"]["client_verification_required"]:  # type: ignore
                 return True
         except (KeyError, TypeError):
             pass

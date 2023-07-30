@@ -26,7 +26,7 @@ PROJECT_LONG_DESCRIPTION = (
     "automation platforms."
 )
 if os.path.exists("README.rst"):
-    PROJECT_LONG_DESCRIPTION = open("README.rst",encoding = "ascii").read()
+    PROJECT_LONG_DESCRIPTION = open("README.rst", encoding="ascii").read()
 PROJECT_CLASSIFIERS = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",

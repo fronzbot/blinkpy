@@ -46,7 +46,7 @@ class BlinkCamera:
         self._cached_image: bytes | None = None
         self._cached_video: bytes | None = None
         self.camera_type: str = ""
-        self.product_type : str = ""
+        self.product_type: str = ""
 
     @property
     def attributes(self):
@@ -81,13 +81,17 @@ class BlinkCamera:
     @property
     def temperature_c(self) -> float | None:
         """Return temperature in celcius."""
-        return round((self.temperature - 32) / 9.0 * 5.0, 1) if self.temperature is not None else None    
+        return (
+            round((self.temperature - 32) / 9.0 * 5.0, 1)
+            if self.temperature is not None
+            else None
+        )
 
     @property
     def image_from_cache(self):
         """Return the most recently cached image."""
         return self._cached_image if self._cached_image else None
-            
+
     @property
     def video_from_cache(self):
         """Return the most recently cached video."""
@@ -121,13 +125,13 @@ class BlinkCamera:
         )
         if res is None:
             return None
-        assert isinstance (res,dict)
+        assert isinstance(res, dict)
         if self.product_type == "catalina":
-             res_json = res.get("camera", [{}])[0]
+            res_json = res.get("camera", [{}])[0]
         if res_json["illuminator_enable"] in [0, 1, 2]:
-            index: int = res_json["illuminator_enable"] 
+            index: int = res_json["illuminator_enable"]
             res_json["illuminator_enable"] = ["off", "on", "auto"][index]
-        nv_keys : list = [
+        nv_keys: list = [
             "night_vision_control",
             "illuminator_enable",
             "illuminator_enable_v2",
@@ -139,7 +143,9 @@ class BlinkCamera:
         if value not in ["on", "off", "auto"]:
             return None
         if self.product_type == "catalina":
-            data = dumps({"illuminator_enable": {"off": 0, "on": 1, "auto": 2}.get(value)})
+            data = dumps(
+                {"illuminator_enable": {"off": 0, "on": 1, "auto": 2}.get(value)}
+            )
             response = await api.request_update_config(
                 self.sync.blink,
                 self.network_id,
@@ -147,7 +153,7 @@ class BlinkCamera:
                 product_type=self.product_type,
                 data=data,
             )
-            if isinstance(response,aiohttp.ClientResponse) and response.status == 200:
+            if isinstance(response, aiohttp.ClientResponse) and response.status == 200:
                 return await response.json()
         return None
 
@@ -163,7 +169,9 @@ class BlinkCamera:
             return await self.get_video_clip()
         return await self.get_thumbnail()
 
-    async def get_thumbnail(self, url: str | None = None) -> aiohttp.ClientResponse | None:
+    async def get_thumbnail(
+        self, url: str | None = None
+    ) -> aiohttp.ClientResponse | None:
         """Download thumbnail image."""
         if not url:
             url = self.thumbnail
@@ -177,11 +185,13 @@ class BlinkCamera:
             json=False,
             timeout=TIMEOUT_MEDIA,
         )
-        if isinstance(response,aiohttp.ClientResponse):
+        if isinstance(response, aiohttp.ClientResponse):
             return response
         return None
 
-    async def get_video_clip(self, url: str | None = None) -> aiohttp.ClientResponse | None:
+    async def get_video_clip(
+        self, url: str | None = None
+    ) -> aiohttp.ClientResponse | None:
         """Download video clip."""
         if not url:
             url = self.clip
@@ -198,14 +208,14 @@ class BlinkCamera:
         if isinstance(resp, aiohttp.ClientResponse):
             return resp
         return None
-    
+
     async def snap_picture(self) -> dict | None:
         """Take a picture with camera to create a new thumbnail."""
         return await api.request_new_image(
             self.sync.blink, self.network_id, self.camera_id
         )
 
-    async def set_motion_detect(self, enable: bool) -> dict| None:
+    async def set_motion_detect(self, enable: bool) -> dict | None:
         """Set motion detection."""
         _LOGGER.warning(
             "Method is deprecated as of v0.16.0 and will be removed in a future version. Please use the BlinkCamera.arm property instead."
@@ -254,7 +264,7 @@ class BlinkCamera:
             self.sync.blink, self.network_id, self.camera_id
         )
         try:
-            self.temperature_calibrated = resp["temp"] # type: ignore
+            self.temperature_calibrated = resp["temp"]  # type: ignore
         except (TypeError, KeyError):
             self.temperature_calibrated = self.temperature
             _LOGGER.warning("Could not retrieve calibrated temperature.")
@@ -286,7 +296,7 @@ class BlinkCamera:
             _LOGGER.warning("Could not find thumbnail for camera %s", self.name)
 
         try:
-            self.motion_detected = self.sync.motion[self.name] # type: ignore
+            self.motion_detected = self.sync.motion[self.name]  # type: ignore
         except KeyError:
             self.motion_detected = False
 
@@ -378,10 +388,10 @@ class BlinkCamera:
         response = await api.request_camera_liveview(
             self.sync.blink, self.sync.network_id, self.camera_id
         )
-        if isinstance(response,dict):
+        if isinstance(response, dict):
             return response["server"]
         return ""
-    
+
     async def image_to_file(self, path: str) -> None:
         """
         Write image to file.
@@ -390,7 +400,7 @@ class BlinkCamera:
         """
         _LOGGER.debug("Writing image from %s to %s", self.name, path)
         response = await self.get_media()
-        if isinstance (response,aiohttp.ClientResponse) and response.status == 200:
+        if isinstance(response, aiohttp.ClientResponse) and response.status == 200:
             async with open(path, "wb") as imgfile:
                 await imgfile.write(await response.read())
         elif response:
@@ -406,7 +416,7 @@ class BlinkCamera:
         """
         _LOGGER.debug("Writing video from %s to %s", self.name, path)
         response = await self.get_media(media_type="video")
-        if not isinstance(response,aiohttp.ClientResponse):
+        if not isinstance(response, aiohttp.ClientResponse):
             _LOGGER.error("No saved video exists for %s.", self.name)
             return
         async with open(path, "wb") as vidfile:
@@ -475,8 +485,8 @@ class BlinkCameraMini(BlinkCamera):
         """Set camera arm status."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/config"
         data = dumps({"enabled": value})
-        response = await api.http_post(self.sync.blink, url)
-        if isinstance(response,dict):
+        response = await api.http_post(self.sync.blink, url, data=data)
+        if isinstance(response, dict):
             return response
         return None
 
@@ -484,10 +494,10 @@ class BlinkCameraMini(BlinkCamera):
         """Snap picture for a blink mini camera."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/thumbnail"
         resp = await api.http_post(self.sync.blink, url)
-        if isinstance(resp,dict):
+        if isinstance(resp, dict):
             return resp
         return None
-    
+
     async def get_sensor_info(self) -> None:
         """Get sensor info for blink mini camera."""
 
@@ -525,15 +535,15 @@ class BlinkDoorbell(BlinkCamera):
         else:
             url = f"{url}/disable"
         response = await api.http_post(self.sync.blink, url)
-        if isinstance(response,dict):
+        if isinstance(response, dict):
             return response
         return None
-    
+
     async def snap_picture(self) -> dict | None:
         """Snap picture for a blink doorbell camera."""
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/thumbnail"
         response = await api.http_post(self.sync.blink, url)
-        if isinstance(response,dict):
+        if isinstance(response, dict):
             return response
         return None
 
@@ -545,7 +555,7 @@ class BlinkDoorbell(BlinkCamera):
         url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
         response = await api.http_post(self.sync.blink, url)
         if response:
-            if isinstance(response,dict):
+            if isinstance(response, dict):
                 server = response["server"]
                 link = server.replace("immis://", "rtsps://")
                 return link

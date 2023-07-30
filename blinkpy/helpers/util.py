@@ -65,7 +65,9 @@ def get_time(time_to_convert: float | None = None) -> str:
     return time.strftime(const.TIMESTAMP_FORMAT, time.gmtime(time_to_convert))
 
 
-def merge_dicts(dict_a: CaseInsensitiveDict , dict_b: CaseInsensitiveDict) -> CaseInsensitiveDict:
+def merge_dicts(
+    dict_a: CaseInsensitiveDict, dict_b: CaseInsensitiveDict
+) -> CaseInsensitiveDict:
     """Merge two dictionaries into one."""
     duplicates = [val for val in dict_a if val in dict_b]
     if duplicates:
