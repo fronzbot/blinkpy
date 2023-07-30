@@ -8,9 +8,9 @@ import time
 import secrets
 import re
 from calendar import timegm
-from requests.structures import CaseInsensitiveDict
 from functools import wraps
 from getpass import getpass
+from requests.structures import CaseInsensitiveDict
 import aiofiles
 import dateutil.parser
 from blinkpy.helpers import constants as const
