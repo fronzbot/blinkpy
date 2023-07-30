@@ -585,7 +585,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         )
         with mock.patch(
             "aiofiles.threadpool.sync_open", return_value=mock_file
-        ) as mock_open:
+        ):
             mock_resp.return_value = mresp.MockResponseClient({"status": 200}, 200)
             self.assertTrue(await item.download_video(blink, "filename.mp4"))
 
