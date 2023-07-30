@@ -27,7 +27,7 @@ class MockCamera(BlinkCamera):
         super().__init__(sync)
         self.camera_id = random.randint(1, 100000)
 
-    async def update(self, config, force_cache=False, expire_clips=True,**kwargs):
+    async def update(self, config, force_cache=False, expire_clips=True, **kwargs):
         """Mock camera update method."""
 
 
@@ -146,7 +146,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.api.http_get")
     async def test_do_http_get(self, mock_req):
         """Test ability to do_http_get."""
-        mock_req.return_value = mock.MagicMock(spec = ClientResponse)
+        mock_req.return_value = mock.MagicMock(spec=ClientResponse)
         blink = blinkpy.Blink(session=mock.AsyncMock())
         blink.urls = BlinkURLHandler("test")
         response = await blink.do_http_get("/path/to/request")
@@ -188,7 +188,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         result = [generic_entry]
         mock_req.return_value = {"media": result}
         mock_isfile.return_value = False
-        mock_http.return_value = mock.MagicMock(spec = ClientResponse)
+        mock_http.return_value = mock.MagicMock(spec=ClientResponse)
         self.blink.last_refresh = 0
 
         aiofiles.threadpool.wrap.register(mock.MagicMock)(

@@ -578,7 +578,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
     async def test_do_http_get_wrong(self):
         """Test wrong response from http_get."""
         self.blink.urls = BlinkURLHandler("reg-id")
-        with mock.patch("blinkpy.api.http_get",return_value=""):
+        with mock.patch("blinkpy.api.http_get", return_value=""):
             self.assertIsNone(await self.blink.do_http_get("link"))
 
     @mock.patch("blinkpy.blinkpy.util.json_save")
@@ -586,6 +586,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         """Test save function."""
         await self.blink.save("blah")
         self.assertEqual(mock_util.call_count, 1)
+
 
 class MockSync:
     """Mock sync module class."""

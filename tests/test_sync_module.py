@@ -484,7 +484,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertIsNotNone(test.serial)
 
         self.blink.homescreen = {"owls": {"enabled": True}}
-        self.assertEqual(await test.get_camera_info("test"),{})
+        self.assertEqual(await test.get_camera_info("test"), {})
 
     async def test_sync_lotus_init(self, mock_resp):
         """Test sync lotus setup with no serial in response."""
@@ -497,7 +497,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertIsNotNone(test.serial)
 
         self.blink.homescreen = {"doorbells": {"enabled": True}}
-        self.assertEqual(await test.get_camera_info("test"),{})
+        self.assertEqual(await test.get_camera_info("test"), {})
 
     async def test_local_storage_media_item(self, mock_resp):
         """Test local storage media properties."""
@@ -532,13 +532,18 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             await item.prepare_download(blink, max_retries=1), {"network_id": 123456}
         )
 
-        with mock.patch("blinkpy.api.http_post",return_value = ""):
-            self.assertDictEqual(await item2.prepare_download(blink,max_retries = 0),{})
+        with mock.patch("blinkpy.api.http_post", return_value=""):
+            self.assertDictEqual(await item2.prepare_download(blink, max_retries=0), {})
 
-    async def test_poll_local_storage_manifest(self,mock_resp):
+    async def test_poll_local_storage_manifest(self, mock_resp):
         """Test incorrect response."""
-        with mock.patch("blinkpy.api.request_local_storage_manifest",return_value=""):
-            self.assertDictEqual(await self.blink.sync["test"].poll_local_storage_manifest(max_retries=0),{})
+        with mock.patch("blinkpy.api.request_local_storage_manifest", return_value=""):
+            self.assertDictEqual(
+                await self.blink.sync["test"].poll_local_storage_manifest(
+                    max_retries=0
+                ),
+                {},
+            )
 
     async def test_delete_video(self, mock_resp):
         """Test item delete."""
@@ -553,11 +558,11 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             " manifest_id",
             "url",
         )
-        mock_resp.return_value = mresp.MockResponseClient({"status":200},200)
+        mock_resp.return_value = mresp.MockResponseClient({"status": 200}, 200)
         self.assertTrue(await item.delete_video(blink))
 
-        mock_resp.return_value = mresp.MockResponseClient({"status":400},400)
-        self.assertFalse(await item.delete_video(blink,1))
+        mock_resp.return_value = mresp.MockResponseClient({"status": 400}, 400)
+        self.assertFalse(await item.delete_video(blink, 1))
 
     async def test_download_video(self, mock_resp):
         """Test item download."""
@@ -581,11 +586,11 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         with mock.patch(
             "aiofiles.threadpool.sync_open", return_value=mock_file
         ) as mock_open:
-            mock_resp.return_value = mresp.MockResponseClient({"status":200},200)
-            self.assertTrue(await item.download_video(blink,"filename.mp4"))
+            mock_resp.return_value = mresp.MockResponseClient({"status": 200}, 200)
+            self.assertTrue(await item.download_video(blink, "filename.mp4"))
 
-            mock_resp.return_value = mresp.MockResponseClient({"status":400},400)
-            self.assertFalse(await item.download_video(blink,"filename.mp4",1))
+            mock_resp.return_value = mresp.MockResponseClient({"status": 400}, 400)
+            self.assertFalse(await item.download_video(blink, "filename.mp4", 1))
 
     @mock.patch("blinkpy.sync_module.LocalStorageMediaItem.download_video")
     @mock.patch("blinkpy.sync_module.LocalStorageMediaItem.delete_video")
@@ -604,15 +609,15 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             "url",
         )
 
-        self.assertTrue(await item.download_video_delete(self.blink,"filename.mp4"))
+        self.assertTrue(await item.download_video_delete(self.blink, "filename.mp4"))
 
         mock_prepdl.return_value = False
-        self.assertFalse(await item.download_video_delete(self.blink,"filename.mp4"))
+        self.assertFalse(await item.download_video_delete(self.blink, "filename.mp4"))
 
         mock_prepdl.return_value = mock.AsyncMock()
         mock_del.return_value = False
-        self.assertFalse(await item.download_video_delete(self.blink,"filename.mp4"))
+        self.assertFalse(await item.download_video_delete(self.blink, "filename.mp4"))
 
         mock_del.return_value = mock.AsyncMock()
         mock_dl.return_value = False
-        self.assertFalse(await item.download_video_delete(self.blink,"filename.mp4"))
+        self.assertFalse(await item.download_video_delete(self.blink, "filename.mp4"))

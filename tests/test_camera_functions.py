@@ -154,7 +154,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         mock_resp.return_value = mresp.MockResponseDict({"test": 200}, 200, raw_data="")
         self.camera.sync.homescreen = {"devices": []}
         await self.camera.update(config, force_cache=True, expire_clips=False)
-        self.assertEqual(self.camera.clip, '')
+        self.assertEqual(self.camera.clip, "")
         self.assertEqual(self.camera.video_from_cache, None)
 
     async def test_recent_video_clips(self, mock_resp):

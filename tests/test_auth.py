@@ -50,7 +50,7 @@ class TestAuth(IsolatedAsyncioTestCase):
     def test_barebones_init(self, getpwd, genuid):
         """Test basebones initialization."""
         login_data = {"username": "foo", "password": "bar"}
-        auth = Auth(login_data,session=mock.AsyncMock())
+        auth = Auth(login_data, session=mock.AsyncMock())
         self.assertDictEqual(auth.data, login_data)
         getpwd.return_value = "bar"
         genuid.return_value = 1234
@@ -78,7 +78,7 @@ class TestAuth(IsolatedAsyncioTestCase):
             "notification_key": 4321,
             "device_id": "device_id",
         }
-        auth = Auth(login_data,session=mock.AsyncMock())
+        auth = Auth(login_data, session=mock.AsyncMock())
         self.assertEqual(auth.token, "token")
         self.assertEqual(auth.host, "host")
         self.assertEqual(auth.region_id, "region_id")
@@ -140,7 +140,7 @@ class TestAuth(IsolatedAsyncioTestCase):
         self.assertEqual(self.auth.header, None)
 
     @mock.patch("blinkpy.auth.Auth.validate_login")
-    @mock.patch("blinkpy.auth.Auth.refresh_token")    
+    @mock.patch("blinkpy.auth.Auth.refresh_token")
     async def test_auth_startup(self, mock_validate, mock_refresh):
         """Test auth startup."""
         await self.auth.startup()
@@ -149,10 +149,14 @@ class TestAuth(IsolatedAsyncioTestCase):
     async def test_refresh_token(self, mock_resp):
         """Test refresh token method."""
         mock_resp.return_value = mock.AsyncMock(
-            json= mock.AsyncMock(return_value = {
-                "account": {"account_id": 5678, "client_id": 1234, "tier": "test"},
-                "auth": {"token": "foobar"},
-            }), status = 200, spec = ClientResponse
+            json=mock.AsyncMock(
+                return_value={
+                    "account": {"account_id": 5678, "client_id": 1234, "tier": "test"},
+                    "auth": {"token": "foobar"},
+                }
+            ),
+            status=200,
+            spec=ClientResponse,
         )
         self.auth.no_prompt = True
         self.assertTrue(await self.auth.refresh_token())
@@ -194,14 +198,14 @@ class TestAuth(IsolatedAsyncioTestCase):
     async def test_logout(self, mock_req):
         """Test logout method."""
         mock_blink = MockBlink(None)
-        mock_req.return_value = mock.MagicMock(spec = dict)
+        mock_req.return_value = mock.MagicMock(spec=dict)
         self.assertTrue(await self.auth.logout(mock_blink))
-        
+
     @mock.patch("blinkpy.auth.api.request_logout")
     async def test_logout_client_response(self, mock_req):
         """Test logout method with incorrect response type."""
         mock_blink = MockBlink(None)
-        mock_req.return_value = mock.MagicMock(spec = ClientResponse)
+        mock_req.return_value = mock.MagicMock(spec=ClientResponse)
         self.assertFalse(await self.auth.logout(mock_blink))
 
     @mock.patch("blinkpy.auth.api.request_verify")

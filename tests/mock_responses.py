@@ -2,6 +2,7 @@
 from unittest import mock
 from aiohttp import ClientResponse
 
+
 class MockResponseDict(dict):
     """Class for mock request response."""
 
@@ -13,7 +14,8 @@ class MockResponseDict(dict):
         self.reason = "foobar"
         self.headers = headers
         self.read = mock.AsyncMock(return_value=self.raw_data)
- 
+
+
 class MockResponseClient(ClientResponse):
     """Class for mock request response."""
 
@@ -24,7 +26,7 @@ class MockResponseClient(ClientResponse):
         self.raw_data = raw_data
         self.reason = "foobar"
         self.read = mock.AsyncMock(return_value=self.raw_data)
- 
+
     async def json(self):
         """Return json data from get_request."""
         return self.json_data
