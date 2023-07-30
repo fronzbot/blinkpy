@@ -155,7 +155,6 @@ async def request_syncmodule(blink: Blink, network: str) -> dict | None:
     return None
 
 
-@Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_system_arm(blink: Blink, network: str) -> dict | None:
     """
     Arm system.
@@ -172,7 +171,6 @@ async def request_system_arm(blink: Blink, network: str) -> dict | None:
 
 
 
-@Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_system_disarm(blink: Blink, network: str) -> dict | None:
     """
     Disarm system.
@@ -204,8 +202,6 @@ async def request_command_status(blink: Blink, network: str, command_id: str) ->
         return response
     return None
 
-
-
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_homescreen(blink: Blink) -> dict | None:
     """Request homescreen info."""
@@ -215,8 +211,6 @@ async def request_homescreen(blink: Blink) -> dict | None:
     if isinstance(response,dict):
         return response
     return None
-
-
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_sync_events(blink: Blink, network: str) -> dict | None:

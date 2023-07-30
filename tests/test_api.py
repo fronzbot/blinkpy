@@ -87,8 +87,7 @@ class TestAPI(IsolatedAsyncioTestCase):
         self.assertEqual(response.status, 200)
 
         mock_resp.return_value = mresp.MockResponseClient({}, 200)
-        self.assertIsNone(await api.request_new_image(self.blink, "network", "camera"))
-
+        self.assertIsNone(await api.request_new_image(self.blink,"Network","Camera",force=True))
 
     async def test_request_new_video(self, mock_resp):
         """Test api request new Video."""
@@ -97,7 +96,7 @@ class TestAPI(IsolatedAsyncioTestCase):
         self.assertEqual(response.status, 200)
 
         mock_resp.return_value = mresp.MockResponseClient({}, 200)
-        self.assertIsNone(await api.request_new_video(self.blink, "network", "camera"))
+        self.assertIsNone(await api.request_new_video(self.blink, "network", "camera",force=True))
 
 
     async def test_request_video_count(self, mock_resp):
@@ -106,7 +105,7 @@ class TestAPI(IsolatedAsyncioTestCase):
         self.assertEqual(await api.request_video_count(self.blink), {"count": "10"})
 
         mock_resp.return_value = mresp.MockResponseClient({}, 200)
-        self.assertIsNone(await api.request_video_count(self.blink))
+        self.assertIsNone(await api.request_video_count(self.blink,force=True))
 
 
     async def test_request_cameras(self, mock_resp):
@@ -139,7 +138,7 @@ class TestAPI(IsolatedAsyncioTestCase):
 
         mock_resp.return_value = mresp.MockResponseClient({}, 200)
         self.assertIsNone(await api.request_motion_detection_enable(
-            self.blink, "network", "camera"
+            self.blink, "network", "camera",force=True
         ))
 
     async def test_request_motion_detection_disable(self, mock_resp):
@@ -152,7 +151,7 @@ class TestAPI(IsolatedAsyncioTestCase):
 
         mock_resp.return_value = mresp.MockResponseClient({}, 200)
         self.assertIsNone(await api.request_motion_detection_disable(
-            self.blink, "network", "camera"
+            self.blink, "network", "camera",force=True
         ))
 
     async def test_request_local_storage_clip(self, mock_resp):
@@ -205,7 +204,54 @@ class TestAPI(IsolatedAsyncioTestCase):
             )
         )
 
-        mock_resp.return_value = mresp.MockResponseClient({}, 200)
         self.assertIsNone(await api.request_update_config(
                 self.blink, "network", "camera_id", "other_camera"
             ))
+        
+        mock_resp.return_value = mresp.MockResponseDict({}, 200)
+        self.assertIsNone(await api.request_update_config(
+                self.blink, "network", "camera_id", "catalina"
+            ))
+    async def test_request_system_arm_disarm(self,mock_resp):
+        """Test system arm/disarm functions fail with bad response."""
+        with mock.patch("blinkpy.api.http_post", return_value = {"1":"2"}):
+            self.assertEqual(await api.request_system_arm(self.blink,"network"),{"1":"2"})
+            self.assertEqual(await api.request_system_disarm(self.blink,"network"),{"1":"2"})
+        with mock.patch("blinkpy.api.http_post", return_value = ""):
+            self.assertIsNone(await api.request_system_arm(self.blink,"network"))
+            self.assertIsNone(await api.request_system_disarm(self.blink,"network"))
+            
+    async def test_request_homescreen(self,mock_resp):
+        """Test system homescreen functions fail with bad response."""
+        with mock.patch("blinkpy.api.http_get", return_value = {"1":"2"}):
+            self.assertEqual(await api.request_homescreen(self.blink),{"1":"2"})
+        with mock.patch("blinkpy.api.http_get", return_value = ""):
+            self.assertIsNone(await api.request_homescreen(self.blink,force=True))
+    
+    async def test_request_sync_events(self,mock_resp):
+        """Test request sync events api."""
+        with mock.patch("blinkpy.api.http_get", return_value = {"1":"2"}):
+            self.assertEqual(await api.request_sync_events(self.blink,"Network"),{"1":"2"})
+        with mock.patch("blinkpy.api.http_get", return_value = ""):
+            self.assertIsNone(await api.request_sync_events(self.blink,"Network",force=True))
+
+    async def test_request_camera_liveview(self,mock_resp):
+        """Test request camera liveview api."""
+        with mock.patch("blinkpy.api.http_post",return_value = {"1":"2"}):
+            self.assertEqual(await api.request_camera_liveview(self.blink,"Network","Camera"),{"1":"2"})
+        with mock.patch("blinkpy.api.http_post", return_value = ""):
+            self.assertIsNone(await api.request_camera_liveview(self.blink,"Network","Camera"))
+
+    async def test_request_local_manifest(self,mock_resp):
+        """Test request camera liveview api."""
+        with mock.patch("blinkpy.api.http_post",return_value = {"1":"2"}):
+            self.assertEqual(await api.request_local_storage_manifest(self.blink,"Network","Camera"),{"1":"2"})
+        with mock.patch("blinkpy.api.http_post", return_value = ""):
+            self.assertIsNone(await api.request_local_storage_manifest(self.blink,"Network","Camera"))
+
+    async def test_get_local_storage_manifest(self,mock_resp):
+        """Test request camera liveview api."""
+        with mock.patch("blinkpy.api.http_get",return_value = {"1":"2"}):
+            self.assertEqual(await api.get_local_storage_manifest(self.blink,"Network","sync","manifest"),{"1":"2"})
+        with mock.patch("blinkpy.api.http_get", return_value = ""):
+            self.assertIsNone(await api.get_local_storage_manifest(self.blink,"Network","sync","manifest"))
