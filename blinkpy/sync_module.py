@@ -7,6 +7,7 @@ import datetime
 import traceback
 import asyncio
 import aiofiles
+from aiohttp import ClientResponse
 from sortedcontainers import SortedSet #type: ignore
 from requests.structures import CaseInsensitiveDict
 from blinkpy import api
@@ -17,7 +18,6 @@ from blinkpy.helpers.constants import ONLINE
 if TYPE_CHECKING:
     from blinkpy.blinkpy import Blink
     from blinkpy.helpers.util import BlinkURLHandler
-    from aiohttp import ClientResponse
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -114,7 +114,7 @@ class BlinkSyncModule:
         """Indicate if the manifest is up-to-date."""
         return not self._local_storage["manifest_stale"]
 
-    async def async_arm(self, value: bool) -> ClientResponse:
+    async def async_arm(self, value: bool) -> dict | None:
         """Arm or disarm camera."""
         if value:
             return await api.request_system_arm(self.blink, self.network_id)
@@ -746,7 +746,7 @@ class LocalStorageMediaItem:
 
         for retry in range(max_retries):
             delete = await api.http_post(blink,delete_url,json=False) # Delete the video
-            if delete.status == 200:
+            if isinstance(delete,ClientResponse) and delete.status == 200:
                 return True
             seconds = backoff_seconds(retry=retry, default_time=3)
             _LOGGER.debug(
