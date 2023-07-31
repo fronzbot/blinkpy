@@ -27,6 +27,11 @@ class TestAuth(IsolatedAsyncioTestCase):
         """Clean up after test."""
         self.auth = None
 
+    def test_init_without_session(self):
+        """Test initialization with no session provided."""
+        auth = Auth()
+        self.assertIsNotNone(auth.session)
+
     @mock.patch("blinkpy.helpers.util.gen_uid")
     @mock.patch("blinkpy.auth.util.getpass")
     def test_empty_init(self, mock_getpwd, mock_genuid):
