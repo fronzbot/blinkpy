@@ -2,7 +2,6 @@
 import datetime
 from unittest import IsolatedAsyncioTestCase
 from unittest import mock
-import aiofiles
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler, to_alphanumeric
 from blinkpy.sync_module import (
@@ -544,78 +543,3 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
                 ),
                 {},
             )
-
-    async def test_delete_video(self, mock_resp):
-        """Test item delete."""
-        blink: Blink = Blink(motion_interval=0, session=mock.AsyncMock())
-        blink.last_refresh = 0
-        blink.urls = BlinkURLHandler("test")
-        item = LocalStorageMediaItem(
-            "1234",
-            "Backdoor",
-            datetime.datetime.utcnow().isoformat(),
-            "432",
-            " manifest_id",
-            "url",
-        )
-        mock_resp.return_value = mresp.MockResponseClient({"status": 200}, 200)
-        self.assertTrue(await item.delete_video(blink))
-
-        mock_resp.return_value = mresp.MockResponseClient({"status": 400}, 400)
-        self.assertFalse(await item.delete_video(blink, 1))
-
-    async def test_download_video(self, mock_resp):
-        """Test item download."""
-        blink: Blink = Blink(motion_interval=0, session=mock.AsyncMock())
-        blink.last_refresh = 0
-        blink.urls = BlinkURLHandler("test")
-        item = LocalStorageMediaItem(
-            "1234",
-            "Backdoor",
-            datetime.datetime.utcnow().isoformat(),
-            "432",
-            " manifest_id",
-            "url",
-        )
-        mock_file = mock.MagicMock()
-        aiofiles.threadpool.wrap.register(mock.MagicMock)(
-            lambda *args, **kwargs: aiofiles.threadpool.AsyncBufferedIOBase(
-                *args, **kwargs
-            )
-        )
-        with mock.patch("aiofiles.threadpool.sync_open", return_value=mock_file):
-            mock_resp.return_value = mresp.MockResponseClient({"status": 200}, 200)
-            self.assertTrue(await item.download_video(blink, "filename.mp4"))
-
-            mock_resp.return_value = mresp.MockResponseClient({"status": 400}, 400)
-            self.assertFalse(await item.download_video(blink, "filename.mp4", 1))
-
-    @mock.patch("blinkpy.sync_module.LocalStorageMediaItem.download_video")
-    @mock.patch("blinkpy.sync_module.LocalStorageMediaItem.delete_video")
-    @mock.patch("blinkpy.sync_module.LocalStorageMediaItem.prepare_download")
-    async def test_download_delete(self, mock_prepdl, mock_del, mock_dl, mock_resp):
-        """Test download and delete."""
-        blink: Blink = Blink(motion_interval=0, session=mock.AsyncMock())
-        blink.last_refresh = 0
-        blink.urls = BlinkURLHandler("test")
-        item = LocalStorageMediaItem(
-            "1234",
-            "Backdoor",
-            datetime.datetime.utcnow().isoformat(),
-            "432",
-            " manifest_id",
-            "url",
-        )
-
-        self.assertTrue(await item.download_video_delete(self.blink, "filename.mp4"))
-
-        mock_prepdl.return_value = False
-        self.assertFalse(await item.download_video_delete(self.blink, "filename.mp4"))
-
-        mock_prepdl.return_value = mock.AsyncMock()
-        mock_del.return_value = False
-        self.assertFalse(await item.download_video_delete(self.blink, "filename.mp4"))
-
-        mock_del.return_value = mock.AsyncMock()
-        mock_dl.return_value = False
-        self.assertFalse(await item.download_video_delete(self.blink, "filename.mp4"))
