@@ -538,9 +538,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         """Test incorrect response."""
         with mock.patch("blinkpy.api.request_local_storage_manifest", return_value=""):
             self.assertIsNone(
-                await self.blink.sync["test"].poll_local_storage_manifest(
-                    max_retries=0
-                )
+                await self.blink.sync["test"].poll_local_storage_manifest(max_retries=0)
             )
 
     async def test_delete_video(self, mock_resp):

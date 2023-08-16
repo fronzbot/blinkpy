@@ -693,8 +693,7 @@ class LocalStorageMediaItem:
             if delete.status == 200:
                 return True
             seconds = backoff_seconds(retry=retry, default_time=3)
-            _LOGGER.debug(
-                "[retry=%d] Retrying in %d seconds", retry + 1, seconds)
+            _LOGGER.debug("[retry=%d] Retrying in %d seconds", retry + 1, seconds)
             await asyncio.sleep(seconds)
         return False
 
@@ -708,9 +707,7 @@ class LocalStorageMediaItem:
                     await vidfile.write(await video.read())  # download the video
                     return True
             seconds = backoff_seconds(retry=retry, default_time=3)
-            _LOGGER.debug(
-                "[retry=%d] Retrying in %d seconds: %s", retry + 1, seconds, url
-            )
+            _LOGGER.debug("[retry=%d] Retrying in %d seconds: %s", retry + 1, seconds, url)
             await asyncio.sleep(seconds)
         return False
 
