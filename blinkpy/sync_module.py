@@ -331,7 +331,6 @@ class BlinkSyncModule:
         )
         _LOGGER.debug(f"last_manifest_read = {last_manifest_read}")
         _LOGGER.debug(f"Manifest ready? {self.local_storage_manifest_ready}")
-        clips = False
         if self.local_storage and self.local_storage_manifest_ready:
             _LOGGER.debug("Processing updated manifest")
             manifest = self._local_storage["manifest"]
@@ -368,7 +367,6 @@ class BlinkSyncModule:
 
             # The manifest became ready, and we read recent clips from it.
             if num_new > 0:
-                clips = True
                 last_manifest_read = (
                     datetime.datetime.utcnow() - datetime.timedelta(seconds=10)
                 ).isoformat()
