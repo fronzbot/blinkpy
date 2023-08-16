@@ -2,12 +2,12 @@
 import copy
 import string
 import os
-from aiofiles import open
 import logging
 import datetime
 from json import dumps
-import aiohttp
 import traceback
+import aiohttp
+from aiofiles import open
 from requests.compat import urljoin
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
@@ -148,7 +148,7 @@ class BlinkCamera:
             product_type=self.product_type,
             data=data,
         )
-        if res.status == 200:
+        if res and res.status == 200:
             return await res.json()
         return None
 
@@ -186,14 +186,13 @@ class BlinkCamera:
             if not url:
                 _LOGGER.warning(f"Video clip URL not available: self.clip={url}")
                 return None
-        response = await api.http_get(
+        return await api.http_get(
             self.sync.blink,
             url=url,
             stream=True,
             json=False,
             timeout=TIMEOUT_MEDIA,
         )
-        return response
 
     async def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
@@ -326,12 +325,12 @@ class BlinkCamera:
 
         if new_thumbnail is not None and (update_cached_image or force_cache):
             response = await self.get_media()
-            if response.status == 200:
+            if response and response.status == 200:
                 self._cached_image = await response.read()
 
         if clip_addr is not None and (update_cached_video or force_cache):
             response = await self.get_media(media_type="video")
-            if response.status == 200:
+            if response and response.status == 200:
                 self._cached_video = await response.read()
 
         # Don't let the recent clips list grow without bound.
@@ -374,7 +373,7 @@ class BlinkCamera:
         """
         _LOGGER.debug("Writing image from %s to %s", self.name, path)
         response = await self.get_media()
-        if response.status == 200:
+        if response and response.status == 200:
             async with open(path, "wb") as imgfile:
                 await imgfile.write(await response.read())
         else:
@@ -418,7 +417,7 @@ class BlinkCamera:
             path = os.path.join(output_dir, file_name)
             _LOGGER.debug(f"Saving {clip_addr} to {path}")
             media = await self.get_video_clip(clip_addr)
-            if media.status == 200:
+            if media and media.status == 200:
                 async with open(path, "wb") as clip_file:
                     await clip_file.write(await media.read())
                 num_saved += 1
