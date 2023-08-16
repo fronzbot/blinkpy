@@ -686,10 +686,10 @@ class LocalStorageMediaItem:
     async def delete_video(self, blink, max_retries=4) -> bool:
         """Delete video from sync module."""
         delete_url = blink.urls.base_url + self.url()
-        delete_url = delete_url.replace("request","delete")
+        delete_url = delete_url.replace("request", "delete")
 
         for retry in range(max_retries):
-            delete = await api.http_post(blink,delete_url,json=False) # Delete the video
+            delete = await api.http_post(blink, delete_url, json=False)  # Delete the video
             if delete.status == 200:
                 return True
             seconds = backoff_seconds(retry=retry, default_time=3)
@@ -697,7 +697,7 @@ class LocalStorageMediaItem:
                 "[retry=%d] Retrying in %d seconds", retry + 1, seconds)
             await asyncio.sleep(seconds)
         return False
-    
+
     async def download_video(self, blink, file_name, max_retries=4) -> bool:
         """Download a previously prepared video from sync module."""
         for retry in range(max_retries):
@@ -705,7 +705,7 @@ class LocalStorageMediaItem:
             video = await api.http_get(blink, url, json=False)
             if video.status == 200:
                 async with aiofiles.open(file_name, "wb") as vidfile:
-                    await vidfile.write(await video.read()) # download the video
+                    await vidfile.write(await video.read())  # download the video
                     return True
             seconds = backoff_seconds(retry=retry, default_time=3)
             _LOGGER.debug(
@@ -717,12 +717,10 @@ class LocalStorageMediaItem:
     async def download_video_delete(self, blink, file_name, max_retries=4) -> bool:
         """Initiate upload of media item from the sync module to Blink cloud servers then download to local filesystem and delete from sync."""
         if await self.prepare_download(blink):
-            if await self.download_video(blink,file_name):
+            if await self.download_video(blink, file_name):
                 if await self.delete_video(blink):
                     return True
         return False
-
-             
 
     def __repr__(self):
         """Create string representation."""
