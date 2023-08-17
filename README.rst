@@ -6,7 +6,7 @@ Like the library? Consider buying me a cup of coffee!
 
 `Buy me a Coffee! <https://buymeacoffee.com/kevinfronczak>`__
 
-**BREAKING CHANGE WARNING:***
+**BREAKING CHANGE WARNING:**
 As of ``0.22.0`` the library uses asyncio which will break any user scripts used prior to this version. Please see the updated examples below and the ``blinkapp.py`` or ``blinksync.py`` examples in the ``blinkapp/`` directory for examples on how to migrate.
 
 **Disclaimer:**
