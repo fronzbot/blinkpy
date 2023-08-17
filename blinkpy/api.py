@@ -57,7 +57,10 @@ async def request_login(
 
 async def request_verify(auth, blink, verify_key):
     """Send verification key to blink servers."""
-    url = f"{blink.urls.base_url}/api/v4/account/{blink.account_id}/client/{blink.client_id}/pin/verify"
+    url = (
+        f"{blink.urls.base_url}/api/v4/account/{blink.account_id}"
+        f"/client/{blink.client_id}/pin/verify"
+    )
     data = dumps({"pin": verify_key})
     return await auth.query(
         url=url,
@@ -70,7 +73,10 @@ async def request_verify(auth, blink, verify_key):
 
 async def request_logout(blink):
     """Logout of blink servers."""
-    url = f"{blink.urls.base_url}/api/v4/account/{blink.account_id}/client/{blink.client_id}/logout"
+    url = (
+        f"{blink.urls.base_url}/api/v4/account/{blink.account_id}"
+        f"/client/{blink.client_id}/logout"
+    )
     return await http_post(blink, url=url)
 
 
@@ -127,7 +133,10 @@ async def request_system_arm(blink, network):
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
-    url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/state/arm"
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/networks/{network}/state/arm"
+    )
     return await http_post(blink, url)
 
 
@@ -139,7 +148,10 @@ async def request_system_disarm(blink, network):
     :param blink: Blink instance.
     :param network: Sync module network id.
     """
-    url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/state/disarm"
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/networks/{network}/state/disarm"
+    )
     return await http_post(blink, url)
 
 
@@ -216,7 +228,10 @@ async def request_videos(blink, time=None, page=0):
     :param page: Page number to get videos from.
     """
     timestamp = get_time(time)
-    url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/media/changed?since={timestamp}&page={page}"
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/media/changed?since={timestamp}&page={page}"
+    )
     return await http_get(blink, url)
 
 
@@ -261,7 +276,10 @@ async def request_camera_liveview(blink, network, camera_id):
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request liveview from.
     """
-    url = f"{blink.urls.base_url}/api/v5/accounts/{blink.account_id}/networks/{network}/cameras/{camera_id}/liveview"
+    url = (
+        f"{blink.urls.base_url}/api/v5/accounts/{blink.account_id}"
+        f"/networks/{network}/cameras/{camera_id}/liveview"
+    )
     return await http_post(blink, url)
 
 
@@ -303,15 +321,19 @@ async def request_motion_detection_disable(blink, network, camera_id):
 
 
 async def request_local_storage_manifest(blink, network, sync_id):
-    """Request creation of an updated manifest of video clips stored in sync module local storage.
+    """Update local manifest.
+
+    Request creation of an updated manifest of video clips stored in
+    sync module local storage.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param sync_id: ID of sync module.
     """
     url = (
-        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
-        + "/local_storage/manifest/request"
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/networks/{network}/sync_modules/{sync_id}"
+        f"/local_storage/manifest/request"
     )
     return await http_post(blink, url)
 
@@ -322,11 +344,13 @@ async def get_local_storage_manifest(blink, network, sync_id, manifest_request_i
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param sync_id: ID of sync module.
-    :param manifest_request_id: Request ID of local storage manifest (requested creation of new manifest).
+    :param manifest_request_id: Request ID of local storage manifest \
+                                (requested creation of new manifest).
     """
     url = (
-        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/sync_modules/{sync_id}"
-        + f"/local_storage/manifest/request/{manifest_request_id}"
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/networks/{network}/sync_modules/{sync_id}"
+        f"/local_storage/manifest/request/{manifest_request_id}"
     )
     return await http_get(blink, url)
 
@@ -337,7 +361,7 @@ async def request_local_storage_clip(blink, network, sync_id, manifest_id, clip_
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param sync_id: ID of sync module.
-    :param manifest_id: ID of local storage manifest (returned in the manifest response).
+    :param manifest_id: ID of local storage manifest (returned in manifest response).
     :param clip_id: ID of the clip.
     """
     url = blink.urls.base_url + string.Template(
@@ -361,7 +385,10 @@ async def request_get_config(blink, network, camera_id, product_type="owl"):
     :param product_type: Camera product type "owl" or "catalina"
     """
     if product_type == "owl":
-        url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/owls/{camera_id}/config"
+        url = (
+            f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+            f"/networks/{network}/owls/{camera_id}/config"
+        )
     elif product_type == "catalina":
         url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/config"
     else:
@@ -386,7 +413,10 @@ async def request_update_config(
     :param data: string w/JSON dict of parameters/values to update
     """
     if product_type == "owl":
-        url = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/owls/{camera_id}/update"
+        url = (
+            f"{blink.urls.base_url}/api/v1/accounts/"
+            f"{blink.account_id}/networks/{network}/owls/{camera_id}/update"
+        )
     elif product_type == "catalina":
         url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/update"
     else:

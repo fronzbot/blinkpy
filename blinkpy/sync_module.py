@@ -38,7 +38,8 @@ class BlinkSyncModule:
         self.cameras = CaseInsensitiveDict({})
         self.motion_interval = blink.motion_interval
         self.motion = {}
-        # A dictionary where keys are the camera names, and values are lists of recent clips.
+        # A dictionary where keys are the camera names, and
+        # values are lists of recent clips.
         self.last_records = {}
         self.camera_list = camera_list
         self.available = False
@@ -46,7 +47,7 @@ class BlinkSyncModule:
             "mini": "owls",
             "doorbell": "doorbells",
         }
-        self._names_table = dict()
+        self._names_table = {}
         self._local_storage = {
             "enabled": False,
             "compatible": False,
@@ -294,7 +295,7 @@ class BlinkSyncModule:
         resp = await api.request_videos(self.blink, time=interval, page=1)
 
         last_record = {}
-        for camera in self.cameras.keys():
+        for camera in self.cameras:
             # Initialize the list if doesn't exist yet.
             if camera not in self.last_records:
                 self.last_records[camera] = []
@@ -377,7 +378,7 @@ class BlinkSyncModule:
                 _LOGGER.debug(f"Updated last_manifest_read to {last_manifest_read}")
                 _LOGGER.debug(f"Last clip time was {last_clip_time}")
         # We want to keep the last record when no new motion was detected.
-        for camera in self.cameras.keys():
+        for camera in self.cameras:
             # Check if there are no new records, indicating motion.
             if len(self.last_records[camera]) == 0:
                 # If no new records, check if we had a previous last record.
@@ -664,8 +665,9 @@ class LocalStorageMediaItem:
         return self._size
 
     def url(self, manifest_id=None):
-        """
-        Build the URL new each time since the media item is cached,
+        """Build the URL.
+
+        Builds the url new each time since the media item is cached,
         and the manifest is possibly rebuilt each refresh.
 
         :param manifest_id: ID of new manifest (if it changed)
@@ -723,7 +725,8 @@ class LocalStorageMediaItem:
         return False
 
     async def download_video_delete(self, blink, file_name, max_retries=4) -> bool:
-        """
+        """Delete local videos.
+
         Initiate upload of media item from the sync module to
         Blink cloud servers then download to local filesystem and delete from sync.
         """

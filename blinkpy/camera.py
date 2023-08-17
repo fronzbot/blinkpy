@@ -30,7 +30,8 @@ class BlinkCamera:
         self.motion_enabled = None
         self.battery_voltage = None
         self.clip = None
-        # A clip remains in the recent clips list until is has been downloaded or has been expired.
+        # A clip remains in the recent clips list until is has
+        # been downloaded or has been expired.
         self.recent_clips = []
         self.temperature = None
         self.temperature_calibrated = None
@@ -203,7 +204,8 @@ class BlinkCamera:
     async def set_motion_detect(self, enable):
         """Set motion detection."""
         _LOGGER.warning(
-            "Method is deprecated as of v0.16.0 and will be removed in a future version. Please use the BlinkCamera.arm property instead."
+            "Method is deprecated as of v0.16.0 and will be removed in "
+            "a future version. Please use the BlinkCamera.arm property instead."
         )
         if enable:
             return await api.request_motion_detection_enable(

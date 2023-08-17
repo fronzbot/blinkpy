@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 blinkpy is an unofficial api for the Blink security camera system.
 
@@ -58,7 +57,9 @@ class Blink:
                                 Defaults to last refresh time.
                                 Useful for preventing motion_detected property
                                 from de-asserting too quickly.
-        :param no_owls: Disable searching for owl entries (blink mini cameras only known entity).  Prevents an uneccessary API call if you don't have these in your network.
+        :param no_owls: Disable searching for owl entries (blink mini cameras \
+                        only known entity).  Prevents an uneccessary API call \
+                        if you don't have these in your network.
         """
         self.auth = Auth(session=session)
         self.account_id = None
@@ -128,7 +129,7 @@ class Blink:
             self.last_refresh = int(time.time() - self.refresh_rate * 1.05)
             _LOGGER.debug(
                 f"Initialized last_refresh to {self.last_refresh} == "
-                + f"{datetime.datetime.fromtimestamp(self.last_refresh)}"
+                f"{datetime.datetime.fromtimestamp(self.last_refresh)}"
             )
 
         return await self.setup_post_verify()
@@ -421,10 +422,8 @@ class Blink:
                 _LOGGER.info("Downloaded video to %s", filename)
             else:
                 print(
-                    (
-                        f"Camera: {camera_name}, Timestamp: {created_at}, "
-                        f"Address: {address}, Filename: {filename}"
-                    )
+                    f"Camera: {camera_name}, Timestamp: {created_at}, "
+                    f"Address: {address}, Filename: {filename}"
                 )
             if delay > 0:
                 time.sleep(delay)
