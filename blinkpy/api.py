@@ -410,7 +410,7 @@ async def http_get(
     :param is_retry: Is this part of a re-auth attempt?
     """
     _LOGGER.debug("Making GET request to %s", url)
-    response = await blink.auth.query(
+    return await blink.auth.query(
         url=url,
         headers=blink.auth.header,
         reqtype="get",
@@ -418,7 +418,6 @@ async def http_get(
         json_resp=json,
         is_retry=is_retry,
     )
-    return response
 
 
 async def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TIMEOUT):
