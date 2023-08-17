@@ -4,6 +4,28 @@ Changelog
 
 A list of changes between each release
 
+0.22.0 (2023-08-16)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes**
+
+-None
+
+**New Features**
+
+- Asyncio conversion (`@mkmer #723 <https://github.com/fronzbot/blinkpy/pull/723>`__)
+
+**Other Changes**
+
+- Various fixes to codebase to support asyncio
+- Upgrade flake8 to 6.1.0
+- Upgrade pylint to 2.17.5
+- Upgrade pytest to 7.4.0
+- Upgrade black to 23.7.0
+- Upgrade pytest-cov to 4.1.0
+- Upgrade pygments to 2.16.1
+- Upgrade coverage to 7.3.0
+
 0.21.0 (2023-05-28)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
