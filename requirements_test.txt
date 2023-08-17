@@ -6,7 +6,7 @@ flake8-docstrings==1.7.0
 pylint==2.17.5
 pydocstyle==6.3.0
 pytest==7.4.0
-pytest-cov==3.0.0
+pytest-cov==4.1.0
 pytest-sugar==0.9.7
 pytest-timeout==2.1.0
 restructuredtext-lint==1.4.0
