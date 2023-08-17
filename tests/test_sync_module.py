@@ -527,7 +527,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             {"network_id": 123456},
         ]
 
-        self.assertEquals(
+        self.assertEqual(
             await item.prepare_download(blink, max_retries=1), {"network_id": 123456}
         )
 

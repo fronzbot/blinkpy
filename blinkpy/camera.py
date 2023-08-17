@@ -30,7 +30,8 @@ class BlinkCamera:
         self.motion_enabled = None
         self.battery_voltage = None
         self.clip = None
-        # A clip remains in the recent clips list until is has been downloaded or has been expired.
+        # A clip remains in the recent clips list until is has
+        # been downloaded or has been expired.
         self.recent_clips = []
         self.temperature = None
         self.temperature_calibrated = None
@@ -203,7 +204,8 @@ class BlinkCamera:
     async def set_motion_detect(self, enable):
         """Set motion detection."""
         _LOGGER.warning(
-            "Method is deprecated as of v0.16.0 and will be removed in a future version. Please use the BlinkCamera.arm property instead."
+            "Method is deprecated as of v0.16.0 and will be removed in "
+            "a future version. Please use the BlinkCamera.arm property instead."
         )
         if enable:
             return await api.request_motion_detection_enable(
@@ -258,7 +260,13 @@ class BlinkCamera:
             try:
                 # API update only returns the timestamp!
                 int(thumb_addr)
-                thumb_string = f"/api/v3/media/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/{self.product_type}/{self.camera_id}/thumbnail/thumbnail.jpg?ts={thumb_addr}&ext="
+                thumb_string = (
+                    "/api/v3/media/accounts/"
+                    f"{self.sync.blink.account_id}/networks/"
+                    f"{self.network_id}/{self.product_type}/"
+                    f"{self.camera_id}/thumbnail/"
+                    f"thumbnail.jpg?ts={thumb_addr}&ext="
+                )
             except ValueError:
                 # This is the old API and has the full url
                 thumb_string = f"{thumb_addr}.jpg"
@@ -305,7 +313,8 @@ class BlinkCamera:
                         f"Found {len(self.recent_clips)} recent clips for {self.name}"
                     )
                     _LOGGER.debug(
-                        f"Most recent clip for {self.name} was created at {self.last_record}: {self.clip}"
+                        f"Most recent clip for {self.name} was created at "
+                        f"{self.last_record}: {self.clip}"
                     )
         except (KeyError, IndexError):
             ex = traceback.format_exc()
@@ -351,7 +360,8 @@ class BlinkCamera:
         self.recent_clips = copy.deepcopy(to_keep)
         if len(self.recent_clips) > 0:
             _LOGGER.info(
-                f"'{self.name}' has {len(self.recent_clips)} clips available for download"
+                f"'{self.name}' has {len(self.recent_clips)} "
+                "clips available for download"
             )
             for clip in self.recent_clips:
                 url = clip["clip"]
@@ -435,7 +445,8 @@ class BlinkCamera:
             _LOGGER.info(f"No recent clips to save for '{self.name}'.")
         else:
             _LOGGER.info(
-                f"Saved {num_saved} of {len(recent)} recent clips from '{self.name}' to directory {output_dir}"
+                f"Saved {num_saved} of {len(recent)} recent clips from "
+                f"'{self.name}' to directory {output_dir}"
             )
 
 
@@ -454,13 +465,21 @@ class BlinkCameraMini(BlinkCamera):
 
     async def async_arm(self, value):
         """Set camera arm status."""
-        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/config"
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.network_id}/owls/{self.camera_id}/config"
+        )
         data = dumps({"enabled": value})
         return await api.http_post(self.sync.blink, url, json=False, data=data)
 
     async def snap_picture(self):
         """Snap picture for a blink mini camera."""
-        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/thumbnail"
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.network_id}/owls/{self.camera_id}/thumbnail"
+        )
         return await api.http_post(self.sync.blink, url)
 
     async def get_sensor_info(self):
@@ -468,7 +487,11 @@ class BlinkCameraMini(BlinkCamera):
 
     async def get_liveview(self):
         """Get liveview link."""
-        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.network_id}/owls/{self.camera_id}/liveview"
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.network_id}/owls/{self.camera_id}/liveview"
+        )
         response = await api.http_post(self.sync.blink, url)
         server = response["server"]
         server_split = server.split(":")
@@ -492,7 +515,11 @@ class BlinkDoorbell(BlinkCamera):
 
     async def async_arm(self, value):
         """Set camera arm status."""
-        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}"
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.sync.network_id}/doorbells/{self.camera_id}"
+        )
         if value:
             url = f"{url}/enable"
         else:
@@ -501,7 +528,11 @@ class BlinkDoorbell(BlinkCamera):
 
     async def snap_picture(self):
         """Snap picture for a blink doorbell camera."""
-        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/thumbnail"
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.sync.network_id}/doorbells/{self.camera_id}/thumbnail"
+        )
         return await api.http_post(self.sync.blink, url)
 
     async def get_sensor_info(self):
@@ -509,7 +540,11 @@ class BlinkDoorbell(BlinkCamera):
 
     async def get_liveview(self):
         """Get liveview link."""
-        url = f"{self.sync.urls.base_url}/api/v1/accounts/{self.sync.blink.account_id}/networks/{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
+        )
         response = await api.http_post(self.sync.blink, url)
         server = response["server"]
         link = server.replace("immis://", "rtsps://")

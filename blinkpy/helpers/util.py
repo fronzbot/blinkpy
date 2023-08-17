@@ -40,7 +40,11 @@ async def json_save(data, file_name):
 def gen_uid(size, uid_format=False):
     """Create a random sring."""
     if uid_format:
-        token = f"BlinkCamera_{secrets.token_hex(4)}-{secrets.token_hex(2)}-{secrets.token_hex(2)}-{secrets.token_hex(2)}-{secrets.token_hex(6)}"
+        token = (
+            f"BlinkCamera_{secrets.token_hex(4)}-"
+            f"{secrets.token_hex(2)}-{secrets.token_hex(2)}-"
+            f"{secrets.token_hex(2)}-{secrets.token_hex(6)}"
+        )
     else:
         token = secrets.token_hex(size)
     return token
