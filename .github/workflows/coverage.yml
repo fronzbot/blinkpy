@@ -10,14 +10,14 @@ jobs:
   coverage:
     runs-on: ${{ matrix.platform }}
     strategy:
-      max-parallel: 4
+      max-parallel: 1
       matrix:
         platform:
           - ubuntu-latest
-        python-version: [3.9]
+        python-version: ['3.9']
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
