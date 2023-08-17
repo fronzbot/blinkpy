@@ -6,6 +6,9 @@ Like the library? Consider buying me a cup of coffee!
 
 `Buy me a Coffee! <https://buymeacoffee.com/kevinfronczak>`__
 
+**BREAKING CHANGE WARNING:**
+As of ``0.22.0`` the library uses asyncio which will break any user scripts used prior to this version. Please see the updated examples below and the ``blinkapp.py`` or ``blinksync.py`` examples in the ``blinkapp/`` directory for examples on how to migrate.
+
 **Disclaimer:**
 Published under the MIT license - See LICENSE file for more details.
 
@@ -47,11 +50,17 @@ Quick Start
 The simplest way to use this package from a terminal is to call ``await Blink.start()`` which will prompt for your Blink username and password and then log you in.  In addition, http requests are throttled internally via use of the ``Blink.refresh_rate`` variable, which can be set at initialization and defaults to 30 seconds.
 
 .. code:: python
-
+    
+    import asyncio
+    from aiohttp import ClientSession
     from blinkpy.blinkpy import Blink
    
-    blink = Blink()
-    await blink.start()
+    async def start():
+        blink = Blink(session=ClientSession())
+        await blink.start()
+        return blink
+
+    blink = asyncio.run(start()) 
 
 
 This flow will prompt you for your username and password.  Once entered, if you likely will need to send a 2FA key to the blink servers (this pin is sent to your email address).  When you receive this pin, enter at the prompt and the Blink library will proceed with setup.
@@ -62,14 +71,20 @@ In some cases, having an interactive command-line session is not desired.  In th
 
 .. code:: python
 
+    import asyncio
+    from aiohttp import ClientSession
     from blinkpy.blinkpy import Blink
     from blinkpy.auth import Auth
 
-    blink = Blink()
-    # Can set no_prompt when initializing auth handler
-    auth = Auth({"username": <your username>, "password": <your password>}, no_prompt=True)
-    blink.auth = auth
-    await blink.start()
+    async def start():
+        blink = Blink(session=ClientSession())
+        # Can set no_prompt when initializing auth handler
+        auth = Auth({"username": <your username>, "password": <your password>}, no_prompt=True)
+        blink.auth = auth
+        await blink.start()
+        return blink
+
+    blink = asyncio.run(start())
 
 
 Since you will not be prompted for any 2FA pin, you must call the ``blink.auth.send_auth_key`` function.  There are two required parameters: the ``blink`` object as well as the ``key`` you received from Blink for 2FA:
@@ -86,14 +101,20 @@ Other use cases may involved loading credentials from a file.  This file must be
 
 .. code:: python
 
+    import asyncio
+    from aiohttp import ClientSession
     from blinkpy.blinkpy import Blink
     from blinkpy.auth import Auth
     from blinkpy.helpers.util import json_load
 
-    blink = Blink()
-    auth = Auth(await json_load("<File Location>"))
-    blink.auth = auth
-    await blink.start()
+    async def start():
+        blink = Blink()
+        auth = Auth(await json_load("<File Location>"))
+        blink.auth = auth
+        await blink.start()
+        return blink
+
+    blink = asyncio.run(start())
 
 
 Saving credentials
