@@ -283,7 +283,8 @@ class BlinkSyncModule:
             # No need to check for motion.
             ex = traceback.format_exc()
             _LOGGER.error(
-                f"Error calculating interval (last_refresh={self.blink.last_refresh}): {ex}"
+                "Error calculating interval "
+                f"(last_refresh={self.blink.last_refresh}): {ex}"
             )
             trace = "".join(traceback.format_stack())
             _LOGGER.debug(f"\n{trace}")
@@ -347,12 +348,14 @@ class BlinkSyncModule:
                 iso_timestamp = item.created_at.isoformat()
 
                 _LOGGER.debug(
-                    f"Checking '{item.name}': clip_time={iso_timestamp}, manifest_read={last_manifest_read}"
+                    f"Checking '{item.name}': clip_time={iso_timestamp}, "
+                    f"manifest_read={last_manifest_read}"
                 )
                 # Exit the loop once there are no new videos in the list.
                 if not self.check_new_video_time(iso_timestamp, last_manifest_read):
                     _LOGGER.info(
-                        f"No new local storage videos since last manifest read at {last_read_local}."
+                        "No new local storage videos since last manifest "
+                        f"read at {last_read_local}."
                     )
                     break
                 _LOGGER.debug(f"Found new item in local storage manifest: {item}")
@@ -446,7 +449,8 @@ class BlinkSyncModule:
             num_added = len(self._local_storage["manifest"]) - num_stored
             if num_added > 0:
                 _LOGGER.info(
-                    f"Found {num_added} new clip(s) in local storage manifest id={manifest_id}"
+                    f"Found {num_added} new clip(s) in local storage "
+                    f"manifest id={manifest_id}"
                 )
         except (TypeError, KeyError):
             ex = traceback.format_exc()
@@ -463,7 +467,8 @@ class BlinkSyncModule:
         self, manifest_request_id=None, max_retries=4
     ):
         """Poll for local storage manifest."""
-        # The sync module may be busy processing another request (like saving a new clip).
+        # The sync module may be busy processing another request
+        # (like saving a new clip).
         # Poll the endpoint until it is ready, backing off each retry.
         response = None
         for retry in range(max_retries):
@@ -659,7 +664,9 @@ class LocalStorageMediaItem:
         return self._size
 
     def url(self, manifest_id=None):
-        """Build the URL new each time since the media item is cached, and the manifest is possibly rebuilt each refresh.
+        """
+        Build the URL new each time since the media item is cached,
+        and the manifest is possibly rebuilt each refresh.
 
         :param manifest_id: ID of new manifest (if it changed)
         :return: URL for clip retrieval
@@ -716,7 +723,10 @@ class LocalStorageMediaItem:
         return False
 
     async def download_video_delete(self, blink, file_name, max_retries=4) -> bool:
-        """Initiate upload of media item from the sync module to Blink cloud servers then download to local filesystem and delete from sync."""
+        """
+        Initiate upload of media item from the sync module to
+        Blink cloud servers then download to local filesystem and delete from sync.
+        """
         if await self.prepare_download(blink):
             if await self.download_video(blink, file_name):
                 if await self.delete_video(blink):
@@ -726,8 +736,10 @@ class LocalStorageMediaItem:
     def __repr__(self):
         """Create string representation."""
         return (
-            f"LocalStorageMediaItem(id={self._id}, camera_name={self._camera_name}, created_at={self._created_at}"
-            + f", size={self._size}, manifest_id={self._manifest_id}, url_template={self._url_template})"
+            f"LocalStorageMediaItem(id={self._id}, camera_name={self._camera_name}, "
+            f"created_at={self._created_at}"
+            + f", size={self._size}, manifest_id={self._manifest_id}, "
+            f"url_template={self._url_template})"
         )
 
     def __str__(self):
