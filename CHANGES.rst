@@ -4,6 +4,29 @@ Changelog
 
 A list of changes between each release
 
+0.21.0 (2023-05-28)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes**
+
+- None
+
+**New Features**
+
+- Add get_videos_metadata function (`@rhhayward #685 <https://github.com/fronzbot/blinkpy/pull/685>`__)
+- Add night vision toggling support (`@jrhunger #717 <https://github.com/fronzbot/blinkpy/pull/717>`__)
+- Add doorbell arming functionality (`@mkmer #719 <https://github.com/fronzbot/blinkpy/pull/719>`__)
+
+**Other Changes**
+
+- Upgrade pylint to 2.17.4
+- Upgrade coverage to 7.2.5
+- Upgrade pygments to 2.15.1
+- Upgrade pytest to 7.3.1
+- Upgrade pytest-sugar to 0.9.7
+- Upgrade black to 23.3.0
+
+
 0.20.0 (2023-01-29)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

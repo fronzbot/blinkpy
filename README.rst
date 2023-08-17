@@ -1,6 +1,6 @@
 blinkpy |Build Status| |Coverage Status| |Docs| |PyPi Version| |Codestyle|
 =============================================================================================
-A Python library for the Blink Camera system (Python 3.7+)
+A Python library for the Blink Camera system (Python 3.8+)
 
 Like the library? Consider buying me a cup of coffee!
 
@@ -44,14 +44,14 @@ This library was built with the intention of allowing easy communication with Bl
 
 Quick Start
 =============
-The simplest way to use this package from a terminal is to call ``Blink.start()`` which will prompt for your Blink username and password and then log you in.  In addition, http requests are throttled internally via use of the ``Blink.refresh_rate`` variable, which can be set at initialization and defaults to 30 seconds.
+The simplest way to use this package from a terminal is to call ``await Blink.start()`` which will prompt for your Blink username and password and then log you in.  In addition, http requests are throttled internally via use of the ``Blink.refresh_rate`` variable, which can be set at initialization and defaults to 30 seconds.
 
 .. code:: python
 
     from blinkpy.blinkpy import Blink
    
     blink = Blink()
-    blink.start()
+    await blink.start()
 
 
 This flow will prompt you for your username and password.  Once entered, if you likely will need to send a 2FA key to the blink servers (this pin is sent to your email address).  When you receive this pin, enter at the prompt and the Blink library will proceed with setup.
@@ -69,15 +69,15 @@ In some cases, having an interactive command-line session is not desired.  In th
     # Can set no_prompt when initializing auth handler
     auth = Auth({"username": <your username>, "password": <your password>}, no_prompt=True)
     blink.auth = auth
-    blink.start()
+    await blink.start()
 
 
 Since you will not be prompted for any 2FA pin, you must call the ``blink.auth.send_auth_key`` function.  There are two required parameters: the ``blink`` object as well as the ``key`` you received from Blink for 2FA:
 
 .. code:: python
 
-    auth.send_auth_key(blink, <your key>)
-    blink.setup_post_verify()
+    await auth.send_auth_key(blink, <your key>)
+    await blink.setup_post_verify()
 
 
 Supplying credentials from file
@@ -91,9 +91,9 @@ Other use cases may involved loading credentials from a file.  This file must be
     from blinkpy.helpers.util import json_load
 
     blink = Blink()
-    auth = Auth(json_load("<File Location>"))
+    auth = Auth(await json_load("<File Location>"))
     blink.auth = auth
-    blink.start()
+    await blink.start()
 
 
 Saving credentials
@@ -102,7 +102,7 @@ This library also allows you to save your credentials to use in future sessions.
 
 .. code:: python
 
-    blink.save("<File location>")
+    await blink.save("<File location>")
 
 
 Getting cameras
@@ -123,19 +123,19 @@ The most recent images and videos can be accessed as a bytes-object via internal
 .. code:: python
     
     camera = blink.cameras['SOME CAMERA NAME']
-    blink.refresh(force=True)  # force a cache update USE WITH CAUTION
-    camera.image_from_cache.raw  # bytes-like image object (jpg)
-    camera.video_from_cache.raw  # bytes-like video object (mp4)
+    await blink.refresh(force=True)  # force a cache update USE WITH CAUTION
+    camera.image_from_cache  # bytes-like image object (jpg)
+    camera.video_from_cache  # bytes-like video object (mp4)
 
 The ``blinkpy`` api also allows for saving images and videos to a file and snapping a new picture from the camera remotely:
 
 .. code:: python
 
     camera = blink.cameras['SOME CAMERA NAME']
-    camera.snap_picture()       # Take a new picture with the camera
-    blink.refresh()             # Get new information from server
-    camera.image_to_file('/local/path/for/image.jpg')
-    camera.video_to_file('/local/path/for/video.mp4')
+    await camera.snap_picture()       # Take a new picture with the camera
+    await blink.refresh()             # Get new information from server
+    await camera.image_to_file('/local/path/for/image.jpg')
+    await camera.video_to_file('/local/path/for/video.mp4')
 
 
 Arming Blink
@@ -145,13 +145,13 @@ Methods exist to arm/disarm the sync module, as well as enable/disable motion de
 .. code:: python
 
     # Arm a sync module
-    blink.sync["SYNC MODULE NAME"].arm = True
+    await blink.sync["SYNC MODULE NAME"].async_arm(True)
 
     # Disarm a sync module
-    blink.sync["SYNC MODULE NAME"].arm = False
+    await blink.sync["SYNC MODULE NAME"].async_arm(False)
 
     # Print arm status of a sync module - a system refresh should be performed first
-    blink.refresh()
+    await blink.refresh()
     sync = blink.sync["SYNC MODULE NAME"]
     print(f"{sync.name} status: {sync.arm}")
 
@@ -162,13 +162,13 @@ Similar methods exist for individual cameras:
    camera = blink.cameras["SOME CAMERA NAME"]
 
    # Enable motion detection on a camera
-   camera.arm = True
+   await camera.async_arm(True)
 
    # Disable motion detection on a camera
-   camera.arm = False
+   await camera.async_arm( False)
 
    # Print arm status of a sync module - a system refresh should be performed first
-   blink.refresh()
+   await blink.refresh()
    print(f"{camera.name} status: {camera.arm}")
 
 
@@ -180,7 +180,7 @@ Example usage, which downloads all videos recorded since July 4th, 2018 at 9:34a
 
 .. code:: python
 
-    blink.download_videos('/home/blink', since='2018/07/04 09:34', delay=2)
+    await blink.download_videos('/home/blink', since='2018/07/04 09:34', delay=2)
 
 
 Sync Module Local Storage
