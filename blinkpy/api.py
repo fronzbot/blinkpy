@@ -415,7 +415,7 @@ async def request_update_config(
     if product_type == "owl":
         url = (
             f"{blink.urls.base_url}/api/v1/accounts/"
-            f"{blink.account_id}/networks/{network}/owls/{camera_id}/update"
+            f"{blink.account_id}/networks/{network}/owls/{camera_id}/config"
         )
     elif product_type == "catalina":
         url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/update"
