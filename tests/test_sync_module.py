@@ -15,6 +15,9 @@ from blinkpy.camera import BlinkCamera
 from tests.test_blink_functions import MockCamera
 import tests.mock_responses as mresp
 
+COMMAND_RESPONSE = {"network_id": "12345", "id": "54321"}
+COMMAND_COMPLETE = {"complete": True, "status_code": 908}
+COMMAND_NOT_COMPLETE = {"complete": False, "status_code": 908}
 
 @mock.patch("blinkpy.auth.Auth.query")
 class TestBlinkSyncModule(IsolatedAsyncioTestCase):
@@ -123,12 +126,12 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
     async def test_get_network_info_failure(self, mock_resp) -> None:
         """Test failed network retrieval."""
-        mock_resp.return_value = {}
+        mock_resp.side_effect = (COMMAND_RESPONSE, COMMAND_COMPLETE)
         self.blink.sync["test"].available = True
         self.assertFalse(await self.blink.sync["test"].get_network_info())
         self.assertFalse(self.blink.sync["test"].available)
         self.blink.sync["test"].available = True
-        mock_resp.return_value = None
+        mock_resp.side_effect = None
         self.assertFalse(await self.blink.sync["test"].get_network_info())
         self.assertFalse(self.blink.sync["test"].available)
 
@@ -238,7 +241,8 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync._local_storage["status"] = True
         test_sync.sync_id = 1234
         mock_resp.side_effect = [
-            {"id": 387372591, "network_id": 123456},
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
             {
                 "version": "1.0",
                 "manifest_id": "4321",
@@ -305,7 +309,8 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             datetime.datetime.utcnow() - datetime.timedelta(seconds=60)
         ).isoformat()
         mock_resp.side_effect = [
-            {"id": 387372591, "network_id": 123456},
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
             {
                 "version": "1.0",
                 "manifest_id": "4321",
@@ -325,11 +330,15 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
                 ],
             },
             {"media": []},
-            {"id": 489371591, "network_id": 123456},
-            {"id": 489371592, "network_id": 123456},
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
             {"media": []},
-            {"id": 489371592, "network_id": 123456},
-            {"id": 489371592, "network_id": 123456},
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
         ]
 
         test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
@@ -385,7 +394,8 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         ).isoformat()
 
         mock_resp.side_effect = [
-            {"id": 387372591, "network_id": 123456},
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
             {
                 "version": "1.0",
                 "clips": [
@@ -426,7 +436,8 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         ).isoformat()
 
         mock_resp.side_effect = [
-            {"id": 489371591, "network_id": 123456},
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
             {
                 "version": "1.0",
                 "manifest_id": "4321",
@@ -483,7 +494,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertIsNotNone(test.serial)
 
         self.blink.homescreen = {"owls": {"enabled": True}}
-        self.assertIsNone(await test.get_camera_info("test"))
+        self.assertEqual(await test.get_camera_info("test"),{})
 
     async def test_sync_lotus_init(self, mock_resp):
         """Test sync lotus setup with no serial in response."""
@@ -496,7 +507,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertIsNotNone(test.serial)
 
         self.blink.homescreen = {"doorbells": {"enabled": True}}
-        self.assertIsNone(await test.get_camera_info("test"))
+        self.assertEqual(await test.get_camera_info("test"),{})
 
     async def test_local_storage_media_item(self, mock_resp):
         """Test local storage media properties."""

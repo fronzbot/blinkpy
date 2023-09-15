@@ -26,6 +26,10 @@ CAMERA_CFG = {
     ]
 }
 
+COMMAND_RESPONSE = {"network_id": "12345", "id": "54321"}
+COMMAND_COMPLETE = {"complete": True, "status_code": 908}
+COMMAND_NOT_COMPLETE = {"complete": False, "status_code": 908}
+
 
 @mock.patch("blinkpy.auth.Auth.query")
 class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
@@ -154,7 +158,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         mock_resp.return_value = mresp.MockResponse({"test": 200}, 200, raw_data="")
         self.camera.sync.homescreen = {"devices": []}
         await self.camera.update(config, force_cache=True, expire_clips=False)
-        self.assertEqual(self.camera.clip, None)
+        self.assertEqual(self.camera.clip, "")
         self.assertEqual(self.camera.video_from_cache, None)
 
     async def test_recent_video_clips(self, mock_resp):

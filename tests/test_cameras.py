@@ -98,11 +98,11 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.blink.sync.network_id = None
         self.blink.sync.name = None
         attr = camera.attributes
-        for key in attr:
+        for key, value in attr.items():
             if key == "recent_clips":
-                self.assertEqual(attr[key], [])
+                self.assertEqual(value, [])
                 continue
-            self.assertEqual(attr[key], None)
+            self.assertIn(value, ("", None, False))
 
     def test_doorbell_missing_attributes(self, mock_resp):
         """Test that attributes return None if missing."""
@@ -110,11 +110,11 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.blink.sync.network_id = None
         self.blink.sync.name = None
         attr = camera.attributes
-        for key in attr:
+        for key, value in attr.items():
             if key == "recent_clips":
-                self.assertEqual(attr[key], [])
+                self.assertEqual(value, [])
                 continue
-            self.assertEqual(attr[key], None)
+            self.assertIn(value, ("", None, False))
 
     async def test_camera_stream(self, mock_resp):
         """Test that camera stream returns correct url."""

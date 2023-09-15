@@ -1,16 +1,22 @@
 """Defines a sync module for Blink."""
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import logging
 import string
 import datetime
 import traceback
 import asyncio
 import aiofiles
-from sortedcontainers import SortedSet
+from sortedcontainers import SortedSet  # type: ignore
 from requests.structures import CaseInsensitiveDict
 from blinkpy import api
 from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
 from blinkpy.helpers.util import time_to_seconds, backoff_seconds, to_alphanumeric
 from blinkpy.helpers.constants import ONLINE
+
+if TYPE_CHECKING:
+    from blinkpy.blinkpy import Blink
+    from blinkpy.helpers.util import BlinkURLHandler
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,7 +24,9 @@ _LOGGER = logging.getLogger(__name__)
 class BlinkSyncModule:
     """Class to initialize sync module."""
 
-    def __init__(self, blink, network_name, network_id, camera_list):
+    def __init__(
+        self, blink: Blink, network_name: str, network_id: str, camera_list: list
+    ) -> None:
         """
         Initialize Blink sync module.
 
@@ -27,28 +35,27 @@ class BlinkSyncModule:
         self.blink = blink
         self.network_id = network_id
         self.region_id = blink.auth.region_id
-        self.name = network_name
-        self.serial = None
+        self.name: str = network_name
+        self.serial: str = ""
         self.status = "offline"
-        self.sync_id = None
-        self.host = None
-        self.summary = None
-        self.network_info = None
-        self.events = []
-        self.cameras = CaseInsensitiveDict({})
-        self.motion_interval = blink.motion_interval
-        self.motion = {}
-        # A dictionary where keys are the camera names, and
-        # values are lists of recent clips.
-        self.last_records = {}
-        self.camera_list = camera_list
-        self.available = False
-        self.type_key_map = {
+        self.sync_id: str = ""
+        self.host: str = ""
+        self.summary: dict = {}
+        self.network_info: dict = {}
+        self.events: list = []
+        self.cameras: CaseInsensitiveDict = CaseInsensitiveDict({})
+        self.motion_interval: int = blink.motion_interval
+        self.motion: dict = {}
+        # A dictionary where keys are the camera names, and values are lists of recent clips.
+        self.last_records: dict = {}
+        self.camera_list: list = camera_list
+        self.available: bool = False
+        self.type_key_map: dict = {
             "mini": "owls",
             "doorbell": "doorbells",
         }
-        self._names_table = {}
-        self._local_storage = {
+        self._names_table: dict = {}
+        self._local_storage: dict = {
             "enabled": False,
             "compatible": False,
             "status": False,
@@ -59,7 +66,7 @@ class BlinkSyncModule:
         }
 
     @property
-    def attributes(self):
+    def attributes(self) -> dict:
         """Return sync attributes."""
         attr = {
             "name": self.name,
@@ -73,12 +80,12 @@ class BlinkSyncModule:
         return attr
 
     @property
-    def urls(self):
+    def urls(self) -> BlinkURLHandler:
         """Return device urls."""
         return self.blink.urls
 
     @property
-    def online(self):
+    def online(self) -> bool:
         """Return boolean system online status."""
         try:
             return ONLINE[self.status]
@@ -88,7 +95,7 @@ class BlinkSyncModule:
             return False
 
     @property
-    def arm(self):
+    def arm(self) -> bool | None:
         """Return status of sync module: armed/disarmed."""
         try:
             return self.network_info["network"]["armed"]
@@ -97,22 +104,22 @@ class BlinkSyncModule:
             return None
 
     @property
-    def local_storage(self):
+    def local_storage(self) -> str:
         """Indicate if local storage is activated or not (True/False)."""
         return self._local_storage["status"]
 
     @property
-    def local_storage_manifest_ready(self):
+    def local_storage_manifest_ready(self) -> bool:
         """Indicate if the manifest is up-to-date."""
         return not self._local_storage["manifest_stale"]
 
-    async def async_arm(self, value):
+    async def async_arm(self, value: bool) -> dict | None:
         """Arm or disarm camera."""
         if value:
             return await api.request_system_arm(self.blink, self.network_id)
         return await api.request_system_disarm(self.blink, self.network_id)
 
-    async def start(self):
+    async def start(self) -> bool:
         """Initialize the system."""
         _LOGGER.debug("Initializing the sync module")
         response = await self.sync_initialize()
@@ -134,7 +141,7 @@ class BlinkSyncModule:
         self.available = True
         return True
 
-    async def sync_initialize(self):
+    async def sync_initialize(self) -> dict | bool:
         """Initialize a sync module."""
         # Doesn't include local store info for some reason.
         response = await api.request_syncmodule(self.blink, self.network_id)
@@ -149,10 +156,10 @@ class BlinkSyncModule:
             return False
         return response
 
-    async def _init_local_storage(self, sync_id):
+    async def _init_local_storage(self, sync_id: str) -> dict | bool:
         """Initialize local storage from homescreen dictionary."""
         home_screen = self.blink.homescreen
-        sync_module = None
+        sync_module: dict = {}
         try:
             sync_modules = home_screen["sync_modules"]
             for mod in sync_modules:
@@ -174,7 +181,7 @@ class BlinkSyncModule:
             return False
         return sync_module
 
-    async def update_cameras(self, camera_type=BlinkCamera):
+    async def update_cameras(self, camera_type=BlinkCamera) -> bool:
         """Update cameras from server."""
         type_map = {
             "mini": BlinkCameraMini,
@@ -191,7 +198,7 @@ class BlinkSyncModule:
                 self.motion[name] = False
                 unique_info = self.get_unique_info(name)
                 if blink_camera_type in type_map:
-                    camera_type = type_map[blink_camera_type]
+                    camera_type = type_map.get(blink_camera_type, None)
                 self.cameras[name] = camera_type(self)
                 camera_info = await self.get_camera_info(
                     camera_config["id"], unique_info=unique_info
@@ -205,7 +212,7 @@ class BlinkSyncModule:
             return False
         return True
 
-    def get_unique_info(self, name):
+    def get_unique_info(self, name: str) -> dict | None:
         """Extract unique information for Minis and Doorbells."""
         try:
             for camera_type in self.type_key_map:
@@ -217,7 +224,7 @@ class BlinkSyncModule:
             pass
         return None
 
-    async def get_events(self, **kwargs):
+    async def get_events(self, **kwargs) -> dict | bool:
         """Retrieve events from server."""
         force = kwargs.pop("force", False)
         response = await api.request_sync_events(
@@ -229,21 +236,21 @@ class BlinkSyncModule:
             _LOGGER.error("Could not extract events: %s", response)
             return False
 
-    async def get_camera_info(self, camera_id, **kwargs):
+    async def get_camera_info(self, camera_id: str, **kwargs) -> dict:
         """Retrieve camera information."""
         unique = kwargs.get("unique_info", None)
         if unique is not None:
             return unique
         response = await api.request_camera_info(self.blink, self.network_id, camera_id)
         try:
-            return response["camera"][0]
+            return response["camera"][0]  # type: ignore
         except (TypeError, KeyError):
             _LOGGER.error(
                 "Could not extract camera info for %s: %s", camera_id, response
             )
             return {}
 
-    async def get_network_info(self):
+    async def get_network_info(self) -> bool:
         """Retrieve network status."""
         self.network_info = await api.request_network_update(
             self.blink, self.network_id
@@ -256,7 +263,7 @@ class BlinkSyncModule:
             return False
         return True
 
-    async def refresh(self, force_cache=False):
+    async def refresh(self, force_cache: bool = False) -> None:
         """Get all blink cameras and pulls their most recent status."""
         if not await self.get_network_info():
             return
@@ -271,7 +278,7 @@ class BlinkSyncModule:
             await self.cameras[camera_name].update(camera_info, force_cache=force_cache)
         self.available = True
 
-    async def check_new_videos(self):
+    async def check_new_videos(self) -> bool:
         """Check if new videos since last refresh."""
         _LOGGER.debug("Checking for new videos")
         try:
@@ -328,10 +335,10 @@ class BlinkSyncModule:
                 )
 
         # Process local storage if active and if the manifest is ready.
-        last_manifest_read = datetime.datetime.fromisoformat(
+        last_manifest_read_local = datetime.datetime.fromisoformat(
             self._local_storage["last_manifest_read"]
         )
-        _LOGGER.debug(f"last_manifest_read = {last_manifest_read}")
+        _LOGGER.debug(f"last_manifest_read = {last_manifest_read_local}")
         _LOGGER.debug(f"Manifest ready? {self.local_storage_manifest_ready}")
         if self.local_storage and self.local_storage_manifest_ready:
             _LOGGER.debug("Processing updated manifest")
@@ -388,7 +395,9 @@ class BlinkSyncModule:
 
         return True
 
-    def check_new_video_time(self, timestamp, reference=None):
+    def check_new_video_time(
+        self, timestamp: str, reference: str | None = None
+    ) -> bool:
         """Check if video has timestamp since last refresh."""
         """
         :param timestamp ISO-formatted timestamp string
@@ -398,7 +407,7 @@ class BlinkSyncModule:
             return time_to_seconds(timestamp) > self.blink.last_refresh
         return time_to_seconds(timestamp) > time_to_seconds(reference)
 
-    async def update_local_storage_manifest(self):
+    async def update_local_storage_manifest(self) -> bool | None:
         """Update local storage manifest, which lists all stored clips."""
         if not self.local_storage:
             self._local_storage["manifest_stale"] = True
@@ -465,8 +474,8 @@ class BlinkSyncModule:
         return True
 
     async def poll_local_storage_manifest(
-        self, manifest_request_id=None, max_retries=4
-    ):
+        self, manifest_request_id: str | None = None, max_retries: int = 4
+    ) -> dict:
         """Poll for local storage manifest."""
         # The sync module may be busy processing another request
         # (like saving a new clip).
@@ -496,9 +505,11 @@ class BlinkSyncModule:
 class BlinkOwl(BlinkSyncModule):
     """Representation of a sync-less device."""
 
-    def __init__(self, blink, name, network_id, response):
+    def __init__(
+        self, blink: Blink, name: str, network_id: str, response: dict
+    ) -> None:
         """Initialize a sync-less object."""
-        cameras = [{"name": name, "id": response["id"]}]
+        cameras: list = [{"name": name, "id": response["id"]}]
         super().__init__(blink, name, network_id, cameras)
         self.sync_id = response["id"]
         self.serial = response["serial"]
@@ -506,7 +517,7 @@ class BlinkOwl(BlinkSyncModule):
         if not self.serial:
             self.serial = f"{network_id}-{self.sync_id}"
 
-    async def sync_initialize(self):
+    async def sync_initialize(self) -> dict | bool:
         """Initialize a sync-less module."""
         self.summary = {
             "id": self.sync_id,
@@ -519,11 +530,11 @@ class BlinkOwl(BlinkSyncModule):
         }
         return self.summary
 
-    async def update_cameras(self, camera_type=BlinkCameraMini):
+    async def update_cameras(self, camera_type=BlinkCameraMini) -> bool:
         """Update sync-less cameras."""
         return await super().update_cameras(camera_type=BlinkCameraMini)
 
-    async def get_camera_info(self, camera_id, **kwargs):
+    async def get_camera_info(self, camera_id: str, **kwargs) -> dict:
         """Retrieve camera information."""
         try:
             for owl in self.blink.homescreen["owls"]:
@@ -532,14 +543,14 @@ class BlinkOwl(BlinkSyncModule):
                     return owl
         except (TypeError, KeyError):
             pass
-        return None
+        return {}
 
-    async def get_network_info(self):
+    async def get_network_info(self) -> bool:
         """Get network info for sync-less module."""
         return True
 
     @property
-    def network_info(self):
+    def network_info(self) -> dict:
         """Format owl response to resemble sync module."""
         return {
             "network": {
@@ -552,16 +563,18 @@ class BlinkOwl(BlinkSyncModule):
         }
 
     @network_info.setter
-    def network_info(self, value):
+    def network_info(self, value: str):
         """Set network_info property."""
 
 
 class BlinkLotus(BlinkSyncModule):
     """Representation of a sync-less device."""
 
-    def __init__(self, blink, name, network_id, response):
+    def __init__(
+        self, blink: Blink, name: str, network_id: str, response: dict
+    ) -> None:
         """Initialize a sync-less object."""
-        cameras = [{"name": name, "id": response["id"]}]
+        cameras: list = [{"name": name, "id": response["id"]}]
         super().__init__(blink, name, network_id, cameras)
         self.sync_id = response["id"]
         self.serial = response["serial"]
@@ -569,7 +582,7 @@ class BlinkLotus(BlinkSyncModule):
         if not self.serial:
             self.serial = f"{network_id}-{self.sync_id}"
 
-    async def sync_initialize(self):
+    async def sync_initialize(self) -> dict | bool:
         """Initialize a sync-less module."""
         self.summary = {
             "id": self.sync_id,
@@ -582,11 +595,11 @@ class BlinkLotus(BlinkSyncModule):
         }
         return self.summary
 
-    async def update_cameras(self, camera_type=BlinkDoorbell):
+    async def update_cameras(self, camera_type=BlinkDoorbell) -> bool:
         """Update sync-less cameras."""
         return await super().update_cameras(camera_type=BlinkDoorbell)
 
-    async def get_camera_info(self, camera_id, **kwargs):
+    async def get_camera_info(self, camera_id: str, **kwargs) -> dict:
         """Retrieve camera information."""
         try:
             for doorbell in self.blink.homescreen["doorbells"]:
@@ -595,14 +608,14 @@ class BlinkLotus(BlinkSyncModule):
                     return doorbell
         except (TypeError, KeyError):
             pass
-        return None
+        return {}
 
-    async def get_network_info(self):
+    async def get_network_info(self) -> bool:
         """Get network info for sync-less module."""
         return True
 
     @property
-    def network_info(self):
+    def network_info(self) -> dict:
         """Format lotus response to resemble sync module."""
         return {
             "network": {
@@ -615,7 +628,7 @@ class BlinkLotus(BlinkSyncModule):
         }
 
     @network_info.setter
-    def network_info(self, value):
+    def network_info(self, value: str):
         """Set network_info property."""
 
 
@@ -623,8 +636,14 @@ class LocalStorageMediaItem:
     """Metadata of media item in the local storage manifest."""
 
     def __init__(
-        self, item_id, camera_name, created_at, size, manifest_id, url_template
-    ):
+        self,
+        item_id: str,
+        camera_name: str,
+        created_at: str,
+        size: str,
+        manifest_id: str,
+        url_template: str,
+    ) -> None:
         """Initialize media item.
 
         :param item_id: ID of the manifest item.
@@ -639,32 +658,32 @@ class LocalStorageMediaItem:
         self._url_template = url_template
         self._manifest_id = manifest_id
 
-    def _build_url(self, manifest_id, clip_id):
+    def _build_url(self, manifest_id: str, clip_id: str) -> str:
         return string.Template(self._url_template).substitute(
             manifest_id=manifest_id, clip_id=clip_id
         )
 
     @property
-    def id(self):
+    def id(self) -> int:
         """Return media item ID."""
         return self._id
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return name of camera that captured this media item."""
         return self._camera_name
 
     @property
-    def created_at(self):
+    def created_at(self) -> datetime.datetime:
         """Return the ISO-formatted creation time stamp of this media item."""
         return self._created_at
 
     @property
-    def size(self):
+    def size(self) -> str:
         """Return the reported size of this media item."""
         return self._size
 
-    def url(self, manifest_id=None):
+    def url(self, manifest_id: str = "") -> str:
         """Build the URL.
 
         Builds the url new each time since the media item is cached,
@@ -675,14 +694,15 @@ class LocalStorageMediaItem:
         """
         if manifest_id:
             self._manifest_id = manifest_id
-        return self._build_url(self._manifest_id, self._id)
+        return self._build_url(self._manifest_id, str(self._id))
 
-    async def prepare_download(self, blink, max_retries=4):
+    async def prepare_download(self, blink: Blink, max_retries: int = 4) -> dict | None:
         """Initiate upload of media item from the sync module to Blink cloud servers."""
         url = blink.urls.base_url + self.url()
         response = None
         for retry in range(max_retries):
             response = await api.http_post(blink, url)
+            await api.wait_for_command(blink, response)
             if "id" in response:
                 break
             seconds = backoff_seconds(retry=retry, default_time=3)
@@ -701,6 +721,7 @@ class LocalStorageMediaItem:
             delete = await api.http_post(
                 blink, delete_url, json=False
             )  # Delete the video
+            await api.wait_for_command(blink, await delete.json())
             if delete.status == 200:
                 return True
             seconds = backoff_seconds(retry=retry, default_time=3)
@@ -708,7 +729,9 @@ class LocalStorageMediaItem:
             await asyncio.sleep(seconds)
         return False
 
-    async def download_video(self, blink, file_name, max_retries=4) -> bool:
+    async def download_video(
+        self, blink: Blink, file_name: str, max_retries: int = 4
+    ) -> bool:
         """Download a previously prepared video from sync module."""
         for retry in range(max_retries):
             url = blink.urls.base_url + self.url()
@@ -724,7 +747,9 @@ class LocalStorageMediaItem:
             await asyncio.sleep(seconds)
         return False
 
-    async def download_video_delete(self, blink, file_name, max_retries=4) -> bool:
+    async def download_video_delete(
+        self, blink: Blink, file_name: str, max_retries: int = 4
+    ) -> bool:
         """Delete local videos.
 
         Initiate upload of media item from the sync module to
