@@ -460,7 +460,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertIsNone(await test_sync.update_local_storage_manifest())
 
     async def test_check_poll_local_storage_manifest_retry(self, mock_resp) -> None:
-        """Test checking poll local storage manifest retry."""
+        """Test checking poll local storage manifest retry logic."""
         self.blink.account_id = 10111213
         test_sync = self.blink.sync["test"]
         test_sync._local_storage["status"] = True
@@ -470,16 +470,17 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
 
         mock_resp.side_effect = [
+            {"bad": "stuff"},  # bad command response, fall back to retry logic
             COMMAND_RESPONSE,
             COMMAND_COMPLETE,
         ]
         test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
         test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
 
-        response = await test_sync.poll_local_storage_manifest(max_retries=1)
+        response = await test_sync.poll_local_storage_manifest(max_retries=2)
         self.assertEqual(
             response,
-            {"network_id": "12345", "id": "54321"},
+            COMMAND_RESPONSE,
         )
 
     async def test_sync_owl_init(self, mock_resp):
