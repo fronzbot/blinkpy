@@ -369,7 +369,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
         test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
         mock_poll.return_value = [
-            {"network_id": "12345", "id": "54321"},
+            COMMAND_RESPONSE,
         ]
         test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
         test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
@@ -541,7 +541,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
         self.assertEqual(
             await item.prepare_download(blink, max_retries=1),
-            {"network_id": "12345", "id": "54321"},
+            COMMAND_RESPONSE,
         )
 
         with mock.patch("blinkpy.api.http_post", return_value=""):
