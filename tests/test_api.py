@@ -9,6 +9,7 @@ import tests.mock_responses as mresp
 
 COMMAND_RESPONSE = {"network_id": "12345", "id": "54321"}
 COMMAND_COMPLETE = {"complete": True, "status_code": 908}
+COMMAND_COMPLETE_BAD = {"complete": True, "status_code": 999}
 COMMAND_NOT_COMPLETE = {"complete": False, "status_code": 908}
 
 
@@ -176,5 +177,9 @@ class TestAPI(IsolatedAsyncioTestCase):
         assert response
 
         mock_resp.side_effect = (COMMAND_NOT_COMPLETE, {})
+        response = await api.wait_for_command(self.blink, COMMAND_RESPONSE)
+        self.assertFalse(response)
+
+        mock_resp.side_effect = (COMMAND_COMPLETE_BAD, {})
         response = await api.wait_for_command(self.blink, COMMAND_RESPONSE)
         self.assertFalse(response)
