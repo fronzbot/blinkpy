@@ -7,7 +7,7 @@ name: Stale
 
 on:
   schedule:
-  - cron: '13 7 * * *'
+    - cron: '13 7 * * *'
   issues:
     types: [opened, edited]
 
