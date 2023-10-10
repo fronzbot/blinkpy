@@ -7,7 +7,7 @@ name: Stale
 
 on:
   schedule:
-  - cron: '20 12 * * *'
+  - cron: '0 * * * *'
 
 jobs:
   stale:
@@ -21,7 +21,7 @@ jobs:
     - name: stale-issues
       uses: actions/stale@v5
       with:
-        #repo-token: ${{ secrets.GITHUB_TOKEN }}
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
         days-before-stale: 60
         days-before-close: 7
         days-before-pr-stale: -1
