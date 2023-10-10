@@ -5,7 +5,7 @@ coverage==7.3.2
 pytest==7.4.2
 pytest-cov==4.1.0
 pytest-sugar==0.9.7
-pytest-timeout==2.1.0
+pytest-timeout==2.2.0
 restructuredtext-lint==1.4.0
 pygments==2.16.1
 testtools>=2.4.0
