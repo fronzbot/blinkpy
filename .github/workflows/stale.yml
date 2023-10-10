@@ -8,12 +8,9 @@ name: Stale
 on:
   schedule:
     - cron: '13 * * * *'
-  issues:
-    types: [opened, edited]
 
 jobs:
   stale:
-
     runs-on: ubuntu-latest
     permissions:
       issues: write
