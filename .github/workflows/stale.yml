@@ -8,6 +8,9 @@ jobs:
   stale:
     if: github.repository_owner == 'fronzbot'
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
       - name: stale-issues
         uses: actions/stale@v8.0.0
