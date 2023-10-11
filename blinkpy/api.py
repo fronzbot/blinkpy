@@ -15,6 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 
 MIN_THROTTLE_TIME = 5
 COMMAND_POLL_TIME = 1
+MAX_RETRY = 120
 
 
 async def request_login(
@@ -497,7 +498,7 @@ async def wait_for_command(blink, json_data: dict) -> bool:
     network_id = json_data.get("network_id")
     command_id = json_data.get("id")
     if command_id and network_id:
-        while True:
+        for _ in range(0, MAX_RETRY):
             _LOGGER.debug("Making GET request waiting for command")
             status = await request_command_status(blink, network_id, command_id)
             _LOGGER.debug("command status %s", status)
