@@ -38,7 +38,8 @@ class BlinkSyncModule:
         self.cameras = CaseInsensitiveDict({})
         self.motion_interval = blink.motion_interval
         self.motion = {}
-        # A dictionary where keys are the camera names, and values are lists of recent clips.
+        # A dictionary where keys are the camera names, and
+        # values are lists of recent clips.
         self.last_records = {}
         self.camera_list = camera_list
         self.available = False
@@ -46,7 +47,7 @@ class BlinkSyncModule:
             "mini": "owls",
             "doorbell": "doorbells",
         }
-        self._names_table = dict()
+        self._names_table = {}
         self._local_storage = {
             "enabled": False,
             "compatible": False,
@@ -283,7 +284,8 @@ class BlinkSyncModule:
             # No need to check for motion.
             ex = traceback.format_exc()
             _LOGGER.error(
-                f"Error calculating interval (last_refresh={self.blink.last_refresh}): {ex}"
+                "Error calculating interval "
+                f"(last_refresh={self.blink.last_refresh}): {ex}"
             )
             trace = "".join(traceback.format_stack())
             _LOGGER.debug(f"\n{trace}")
@@ -293,7 +295,7 @@ class BlinkSyncModule:
         resp = await api.request_videos(self.blink, time=interval, page=1)
 
         last_record = {}
-        for camera in self.cameras.keys():
+        for camera in self.cameras:
             # Initialize the list if doesn't exist yet.
             if camera not in self.last_records:
                 self.last_records[camera] = []
@@ -347,12 +349,14 @@ class BlinkSyncModule:
                 iso_timestamp = item.created_at.isoformat()
 
                 _LOGGER.debug(
-                    f"Checking '{item.name}': clip_time={iso_timestamp}, manifest_read={last_manifest_read}"
+                    f"Checking '{item.name}': clip_time={iso_timestamp}, "
+                    f"manifest_read={last_manifest_read}"
                 )
                 # Exit the loop once there are no new videos in the list.
                 if not self.check_new_video_time(iso_timestamp, last_manifest_read):
                     _LOGGER.info(
-                        f"No new local storage videos since last manifest read at {last_read_local}."
+                        "No new local storage videos since last manifest "
+                        f"read at {last_read_local}."
                     )
                     break
                 _LOGGER.debug(f"Found new item in local storage manifest: {item}")
@@ -374,7 +378,7 @@ class BlinkSyncModule:
                 _LOGGER.debug(f"Updated last_manifest_read to {last_manifest_read}")
                 _LOGGER.debug(f"Last clip time was {last_clip_time}")
         # We want to keep the last record when no new motion was detected.
-        for camera in self.cameras.keys():
+        for camera in self.cameras:
             # Check if there are no new records, indicating motion.
             if len(self.last_records[camera]) == 0:
                 # If no new records, check if we had a previous last record.
@@ -446,7 +450,8 @@ class BlinkSyncModule:
             num_added = len(self._local_storage["manifest"]) - num_stored
             if num_added > 0:
                 _LOGGER.info(
-                    f"Found {num_added} new clip(s) in local storage manifest id={manifest_id}"
+                    f"Found {num_added} new clip(s) in local storage "
+                    f"manifest id={manifest_id}"
                 )
         except (TypeError, KeyError):
             ex = traceback.format_exc()
@@ -463,7 +468,8 @@ class BlinkSyncModule:
         self, manifest_request_id=None, max_retries=4
     ):
         """Poll for local storage manifest."""
-        # The sync module may be busy processing another request (like saving a new clip).
+        # The sync module may be busy processing another request
+        # (like saving a new clip).
         # Poll the endpoint until it is ready, backing off each retry.
         response = None
         for retry in range(max_retries):
@@ -659,7 +665,10 @@ class LocalStorageMediaItem:
         return self._size
 
     def url(self, manifest_id=None):
-        """Build the URL new each time since the media item is cached, and the manifest is possibly rebuilt each refresh.
+        """Build the URL.
+
+        Builds the url new each time since the media item is cached,
+        and the manifest is possibly rebuilt each refresh.
 
         :param manifest_id: ID of new manifest (if it changed)
         :return: URL for clip retrieval
@@ -670,17 +679,11 @@ class LocalStorageMediaItem:
 
     async def prepare_download(self, blink, max_retries=4):
         """Initiate upload of media item from the sync module to Blink cloud servers."""
+        if max_retries == 0:
+            return None
         url = blink.urls.base_url + self.url()
-        response = None
-        for retry in range(max_retries):
-            response = await api.http_post(blink, url)
-            if "id" in response:
-                break
-            seconds = backoff_seconds(retry=retry, default_time=3)
-            _LOGGER.debug(
-                "[retry=%d] Retrying in %d seconds: %s", retry + 1, seconds, url
-            )
-            await asyncio.sleep(seconds)
+        response = await api.http_post(blink, url)
+        await api.wait_for_command(blink, response)
         return response
 
     async def delete_video(self, blink, max_retries=4) -> bool:
@@ -716,7 +719,11 @@ class LocalStorageMediaItem:
         return False
 
     async def download_video_delete(self, blink, file_name, max_retries=4) -> bool:
-        """Initiate upload of media item from the sync module to Blink cloud servers then download to local filesystem and delete from sync."""
+        """Delete local videos.
+
+        Initiate upload of media item from the sync module to
+        Blink cloud servers then download to local filesystem and delete from sync.
+        """
         if await self.prepare_download(blink):
             if await self.download_video(blink, file_name):
                 if await self.delete_video(blink):
@@ -726,8 +733,10 @@ class LocalStorageMediaItem:
     def __repr__(self):
         """Create string representation."""
         return (
-            f"LocalStorageMediaItem(id={self._id}, camera_name={self._camera_name}, created_at={self._created_at}"
-            + f", size={self._size}, manifest_id={self._manifest_id}, url_template={self._url_template})"
+            f"LocalStorageMediaItem(id={self._id}, camera_name={self._camera_name}, "
+            f"created_at={self._created_at}"
+            + f", size={self._size}, manifest_id={self._manifest_id}, "
+            f"url_template={self._url_template})"
         )
 
     def __str__(self):

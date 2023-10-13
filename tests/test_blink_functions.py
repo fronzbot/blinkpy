@@ -62,7 +62,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         mock_req.return_value = {}
         formatted_date = get_time(blink.last_refresh)
         expected_log = [
-            "INFO:blinkpy.blinkpy:Retrieving videos since {}".format(formatted_date),
+            f"INFO:blinkpy.blinkpy:Retrieving videos since {formatted_date}",
             "DEBUG:blinkpy.blinkpy:Processing page 1",
             "INFO:blinkpy.blinkpy:No videos found on page 1. Exiting.",
         ]
@@ -85,7 +85,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         blink.last_refresh = 0
         formatted_date = get_time(blink.last_refresh)
         expected_log = [
-            "INFO:blinkpy.blinkpy:Retrieving videos since {}".format(formatted_date),
+            f"INFO:blinkpy.blinkpy:Retrieving videos since {formatted_date}",
             "DEBUG:blinkpy.blinkpy:Processing page 1",
             "DEBUG:blinkpy.blinkpy:foo: /bar.mp4 is marked as deleted.",
         ]
@@ -164,7 +164,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         self.blink.last_refresh = 0
         formatted_date = get_time(self.blink.last_refresh)
         expected_log = [
-            "INFO:blinkpy.blinkpy:Retrieving videos since {}".format(formatted_date),
+            f"INFO:blinkpy.blinkpy:Retrieving videos since {formatted_date}",
             "DEBUG:blinkpy.blinkpy:Processing page 1",
             "DEBUG:blinkpy.blinkpy:foo: /bar.mp4 is marked as deleted.",
         ]
@@ -214,7 +214,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         self.blink.last_refresh = 0
         formatted_date = get_time(self.blink.last_refresh)
         expected_log = [
-            "INFO:blinkpy.blinkpy:Retrieving videos since {}".format(formatted_date),
+            f"INFO:blinkpy.blinkpy:Retrieving videos since {formatted_date}",
             "DEBUG:blinkpy.blinkpy:Processing page 1",
             "INFO:blinkpy.blinkpy:/tmp/foo-1970.mp4 already exists, skipping...",
         ]
@@ -236,7 +236,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         self.blink.last_refresh = 0
         formatted_date = get_time(self.blink.last_refresh)
         expected_log = [
-            "INFO:blinkpy.blinkpy:Retrieving videos since {}".format(formatted_date),
+            f"INFO:blinkpy.blinkpy:Retrieving videos since {formatted_date}",
             "DEBUG:blinkpy.blinkpy:Processing page 1",
             "DEBUG:blinkpy.blinkpy:Skipping videos for foo.",
         ]
@@ -255,7 +255,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         result = [generic_entry]
         mock_req.return_value = {"media": result}
         expected_log = [
-            "INFO:blinkpy.blinkpy:Retrieving videos since {}".format(formatted_date),
+            f"INFO:blinkpy.blinkpy:Retrieving videos since {formatted_date}",
             "DEBUG:blinkpy.blinkpy:Processing page 1",
             "INFO:blinkpy.blinkpy:Missing clip information, skipping...",
         ]

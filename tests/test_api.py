@@ -7,6 +7,11 @@ from blinkpy.blinkpy import Blink, util
 from blinkpy.auth import Auth
 import tests.mock_responses as mresp
 
+COMMAND_RESPONSE = {"network_id": "12345", "id": "54321"}
+COMMAND_COMPLETE = {"complete": True, "status_code": 908}
+COMMAND_COMPLETE_BAD = {"complete": True, "status_code": 999}
+COMMAND_NOT_COMPLETE = {"complete": False, "status_code": 908}
+
 
 @mock.patch("blinkpy.auth.Auth.query")
 class TestAPI(IsolatedAsyncioTestCase):
@@ -57,7 +62,7 @@ class TestAPI(IsolatedAsyncioTestCase):
 
     async def test_request_command_status(self, mock_resp):
         """Test command_status."""
-        mock_resp.return_value = {"command": "done"}
+        mock_resp.side_effect = ({"command": "done"}, COMMAND_COMPLETE)
         self.assertEqual(
             await api.request_command_status(self.blink, "network", "command"),
             {"command": "done"},
@@ -65,13 +70,19 @@ class TestAPI(IsolatedAsyncioTestCase):
 
     async def test_request_new_image(self, mock_resp):
         """Test api request new image."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.side_effect = (
+            mresp.MockResponse(COMMAND_RESPONSE, 200),
+            COMMAND_COMPLETE,
+        )
         response = await api.request_new_image(self.blink, "network", "camera")
         self.assertEqual(response.status, 200)
 
     async def test_request_new_video(self, mock_resp):
         """Test api request new Video."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.side_effect = (
+            mresp.MockResponse(COMMAND_RESPONSE, 200),
+            COMMAND_COMPLETE,
+        )
         response = await api.request_new_video(self.blink, "network", "camera")
         self.assertEqual(response.status, 200)
 
@@ -97,7 +108,10 @@ class TestAPI(IsolatedAsyncioTestCase):
 
     async def test_request_motion_detection_enable(self, mock_resp):
         """Test  Motion detect enable."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.side_effect = (
+            mresp.MockResponse(COMMAND_RESPONSE, 200),
+            COMMAND_COMPLETE,
+        )
         response = await api.request_motion_detection_enable(
             self.blink, "network", "camera"
         )
@@ -105,7 +119,10 @@ class TestAPI(IsolatedAsyncioTestCase):
 
     async def test_request_motion_detection_disable(self, mock_resp):
         """Test  Motion detect enable."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.side_effect = (
+            mresp.MockResponse(COMMAND_RESPONSE, 200),
+            COMMAND_COMPLETE,
+        )
         response = await api.request_motion_detection_disable(
             self.blink, "network", "camera"
         )
@@ -113,7 +130,10 @@ class TestAPI(IsolatedAsyncioTestCase):
 
     async def test_request_local_storage_clip(self, mock_resp):
         """Test Motion detect enable."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.side_effect = (
+            mresp.MockResponse(COMMAND_RESPONSE, 200),
+            COMMAND_COMPLETE,
+        )
         response = await api.request_local_storage_clip(
             self.blink, "network", "sync_id", "manifest_id", "clip_id"
         )
@@ -135,7 +155,7 @@ class TestAPI(IsolatedAsyncioTestCase):
 
     async def test_request_update_config(self, mock_resp):
         """Test Motion detect enable."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
+        mock_resp.return_value = mresp.MockResponse(COMMAND_RESPONSE, 200)
         response = await api.request_update_config(
             self.blink, "network", "camera_id", "owl"
         )
@@ -149,3 +169,17 @@ class TestAPI(IsolatedAsyncioTestCase):
                 self.blink, "network", "camera_id", "other_camera"
             )
         )
+
+    async def test_wait_for_command(self, mock_resp):
+        """Test Motion detect enable."""
+        mock_resp.side_effect = (COMMAND_NOT_COMPLETE, COMMAND_COMPLETE)
+        response = await api.wait_for_command(self.blink, COMMAND_RESPONSE)
+        assert response
+
+        mock_resp.side_effect = (COMMAND_NOT_COMPLETE, {})
+        response = await api.wait_for_command(self.blink, COMMAND_RESPONSE)
+        self.assertFalse(response)
+
+        mock_resp.side_effect = (COMMAND_COMPLETE_BAD, {})
+        response = await api.wait_for_command(self.blink, COMMAND_RESPONSE)
+        self.assertFalse(response)

@@ -14,6 +14,7 @@ from blinkpy.sync_module import (
 from blinkpy.camera import BlinkCamera
 from tests.test_blink_functions import MockCamera
 import tests.mock_responses as mresp
+from .test_api import COMMAND_RESPONSE, COMMAND_COMPLETE
 
 
 @mock.patch("blinkpy.auth.Auth.query")
@@ -123,12 +124,12 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
     async def test_get_network_info_failure(self, mock_resp) -> None:
         """Test failed network retrieval."""
-        mock_resp.return_value = {}
+        mock_resp.side_effect = (COMMAND_RESPONSE, COMMAND_COMPLETE)
         self.blink.sync["test"].available = True
         self.assertFalse(await self.blink.sync["test"].get_network_info())
         self.assertFalse(self.blink.sync["test"].available)
         self.blink.sync["test"].available = True
-        mock_resp.return_value = None
+        mock_resp.side_effect = None
         self.assertFalse(await self.blink.sync["test"].get_network_info())
         self.assertFalse(self.blink.sync["test"].available)
 
@@ -238,7 +239,8 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync._local_storage["status"] = True
         test_sync.sync_id = 1234
         mock_resp.side_effect = [
-            {"id": 387372591, "network_id": 123456},
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
             {
                 "version": "1.0",
                 "manifest_id": "4321",
@@ -305,7 +307,8 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             datetime.datetime.utcnow() - datetime.timedelta(seconds=60)
         ).isoformat()
         mock_resp.side_effect = [
-            {"id": 387372591, "network_id": 123456},
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
             {
                 "version": "1.0",
                 "manifest_id": "4321",
@@ -325,11 +328,15 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
                 ],
             },
             {"media": []},
-            {"id": 489371591, "network_id": 123456},
-            {"id": 489371592, "network_id": 123456},
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
             {"media": []},
-            {"id": 489371592, "network_id": 123456},
-            {"id": 489371592, "network_id": 123456},
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
         ]
 
         test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
@@ -362,7 +369,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
         test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
         mock_poll.return_value = [
-            {"network_id": 123456},
+            COMMAND_RESPONSE,
         ]
         test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
         test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
@@ -385,7 +392,8 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         ).isoformat()
 
         mock_resp.side_effect = [
-            {"id": 387372591, "network_id": 123456},
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
             {
                 "version": "1.0",
                 "clips": [
@@ -426,7 +434,8 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         ).isoformat()
 
         mock_resp.side_effect = [
-            {"id": 489371591, "network_id": 123456},
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
             {
                 "version": "1.0",
                 "manifest_id": "4321",
@@ -451,7 +460,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertIsNone(await test_sync.update_local_storage_manifest())
 
     async def test_check_poll_local_storage_manifest_retry(self, mock_resp) -> None:
-        """Test checking poll local storage manifest retry."""
+        """Test checking poll local storage manifest retry logic."""
         self.blink.account_id = 10111213
         test_sync = self.blink.sync["test"]
         test_sync._local_storage["status"] = True
@@ -461,15 +470,17 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
 
         mock_resp.side_effect = [
-            {"network_id": 123456},
+            {"bad": "stuff"},  # bad command response, fall back to retry logic
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
         ]
         test_sync._names_table[to_alphanumeric("Front_Door")] = "Front_Door"
         test_sync._names_table[to_alphanumeric("Back Door")] = "Back Door"
 
-        response = await test_sync.poll_local_storage_manifest(max_retries=1)
+        response = await test_sync.poll_local_storage_manifest(max_retries=2)
         self.assertEqual(
             response,
-            {"network_id": 123456},
+            COMMAND_RESPONSE,
         )
 
     async def test_sync_owl_init(self, mock_resp):
@@ -524,11 +535,13 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertFalse(item == item2)
 
         mock_resp.side_effect = [
-            {"network_id": 123456},
+            COMMAND_RESPONSE,
+            COMMAND_COMPLETE,
         ]
 
-        self.assertEquals(
-            await item.prepare_download(blink, max_retries=1), {"network_id": 123456}
+        self.assertEqual(
+            await item.prepare_download(blink, max_retries=1),
+            COMMAND_RESPONSE,
         )
 
         with mock.patch("blinkpy.api.http_post", return_value=""):

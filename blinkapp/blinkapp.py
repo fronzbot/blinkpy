@@ -24,7 +24,7 @@ async def download_videos(blink, save_dir="/media"):
 async def start(session: ClientSession):
     """Startup blink app."""
     blink = Blink(session=session)
-    blink.auth = Auth(await json_load(CREDFILE))
+    blink.auth = Auth(await json_load(CREDFILE), session=session)
     await blink.start()
     return blink
 
@@ -34,7 +34,7 @@ async def main():
     session = ClientSession()
     blink = await start(session)
     await download_videos(blink)
-    blink.save(CREDFILE)
+    await blink.save(CREDFILE)
     await session.close()
 
 

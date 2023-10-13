@@ -158,7 +158,11 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.assertEqual(self.camera.video_from_cache, None)
 
     async def test_recent_video_clips(self, mock_resp):
-        """Tests that the last records in the sync module are added to the camera recent clips list."""
+        """Test recent video clips.
+
+        Tests that the last records in the sync module are added
+        to the camera recent clips list.
+        """
         config = {
             "name": "new",
             "id": 1234,
@@ -311,7 +315,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.camera.thumbnail = "/thumbnail"
         with self.assertLogs(level="DEBUG") as dl_log:
             await self.camera.image_to_file("my_path")
-        self.assertEquals(
+        self.assertEqual(
             dl_log.output[2],
             "ERROR:blinkpy.camera:Cannot write image to file, response 400",
         )
@@ -366,6 +370,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             await self.camera.save_recent_clips()
         self.assertEqual(
             dl_log.output[4],
-            f"INFO:blinkpy.camera:Saved 2 of 2 recent clips from '{self.camera.name}' to directory /tmp/",
+            "INFO:blinkpy.camera:Saved 2 of 2 recent clips from "
+            f"'{self.camera.name}' to directory /tmp/",
         )
         assert mock_open.call_count == 2

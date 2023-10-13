@@ -28,6 +28,6 @@ jobs:
         pip install -r requirements.txt
         pip install -r requirements_test.txt
         pip install tox
-    - name: Test
+    - name: Tests
       run: |
         tox -r
