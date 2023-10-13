@@ -34,7 +34,7 @@ async def main():
     session = ClientSession()
     blink = await start(session)
     await download_videos(blink)
-    blink.save(CREDFILE)
+    await blink.save(CREDFILE)
     await session.close()
 
 
