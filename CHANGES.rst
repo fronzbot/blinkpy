@@ -4,6 +4,28 @@ Changelog
 
 A list of changes between each release
 
+0.22.1 (2023-10-13)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes**
+
+- Fix night vision toggling for older devices (owl) (`@cocasema #756 <https://github.com/fronzbot/blinkpy/pull/756>`__)
+- Add missing await to blinkapp.py (`@mkmer #768 <https://github.com/fronzbot/blinkpy/pull/768>`__)
+- Add check command to POST commands (`@mkmer #772 <https://github.com/fronzbot/blinkpy/pull/772>`__)
+- Fix blinkapp session call (`@mkmer #783 <https://github.com/fronzbot/blinkpy/pull/783>`__)
+
+**Other Changes**
+
+- Cleanup readme, add breaking change warning
+- Migrate to puproject.toml + ruff
+- Bump ruff to 0.0.292
+- Bump black to 23.9.1
+- Bump coverage to 7.3.2
+- Bump build to 1.0.3
+- Bump pytest to 7.4.2
+- Bump pytest-timeout to 2.2.0
+- Fix 'stale' github action
+
 0.22.0 (2023-08-16)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
