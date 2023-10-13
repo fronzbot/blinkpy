@@ -679,17 +679,11 @@ class LocalStorageMediaItem:
 
     async def prepare_download(self, blink, max_retries=4):
         """Initiate upload of media item from the sync module to Blink cloud servers."""
+        if max_retries == 0:
+            return None
         url = blink.urls.base_url + self.url()
-        response = None
-        for retry in range(max_retries):
-            response = await api.http_post(blink, url)
-            if "id" in response:
-                break
-            seconds = backoff_seconds(retry=retry, default_time=3)
-            _LOGGER.debug(
-                "[retry=%d] Retrying in %d seconds: %s", retry + 1, seconds, url
-            )
-            await asyncio.sleep(seconds)
+        response = await api.http_post(blink, url)
+        await api.wait_for_command(blink, response)
         return response
 
     async def delete_video(self, blink, max_retries=4) -> bool:

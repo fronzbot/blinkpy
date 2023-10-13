@@ -17,3 +17,7 @@ class MockResponse:
     async def json(self):
         """Return json data from get_request."""
         return self.json_data
+
+    def get(self, name):
+        """Return field for json."""
+        return self.json_data[name]

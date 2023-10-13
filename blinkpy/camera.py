@@ -471,7 +471,9 @@ class BlinkCameraMini(BlinkCamera):
             f"{self.network_id}/owls/{self.camera_id}/config"
         )
         data = dumps({"enabled": value})
-        return await api.http_post(self.sync.blink, url, json=False, data=data)
+        response = await api.http_post(self.sync.blink, url, data=data)
+        await api.wait_for_command(self.sync.blink, response)
+        return response
 
     async def snap_picture(self):
         """Snap picture for a blink mini camera."""
@@ -480,7 +482,9 @@ class BlinkCameraMini(BlinkCamera):
             f"{self.sync.blink.account_id}/networks/"
             f"{self.network_id}/owls/{self.camera_id}/thumbnail"
         )
-        return await api.http_post(self.sync.blink, url)
+        response = await api.http_post(self.sync.blink, url)
+        await api.wait_for_command(self.sync.blink, response)
+        return response
 
     async def get_sensor_info(self):
         """Get sensor info for blink mini camera."""
@@ -493,6 +497,7 @@ class BlinkCameraMini(BlinkCamera):
             f"{self.network_id}/owls/{self.camera_id}/liveview"
         )
         response = await api.http_post(self.sync.blink, url)
+        await api.wait_for_command(self.sync.blink, response)
         server = response["server"]
         server_split = server.split(":")
         server_split[0] = "rtsps:"
@@ -524,7 +529,10 @@ class BlinkDoorbell(BlinkCamera):
             url = f"{url}/enable"
         else:
             url = f"{url}/disable"
-        return await api.http_post(self.sync.blink, url)
+
+        response = await api.http_post(self.sync.blink, url)
+        await api.wait_for_command(self.sync.blink, response)
+        return response
 
     async def snap_picture(self):
         """Snap picture for a blink doorbell camera."""
@@ -533,7 +541,10 @@ class BlinkDoorbell(BlinkCamera):
             f"{self.sync.blink.account_id}/networks/"
             f"{self.sync.network_id}/doorbells/{self.camera_id}/thumbnail"
         )
-        return await api.http_post(self.sync.blink, url)
+
+        response = await api.http_post(self.sync.blink, url)
+        await api.wait_for_command(self.sync.blink, response)
+        return response
 
     async def get_sensor_info(self):
         """Get sensor info for blink doorbell camera."""
@@ -546,6 +557,7 @@ class BlinkDoorbell(BlinkCamera):
             f"{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
         )
         response = await api.http_post(self.sync.blink, url)
+        await api.wait_for_command(self.sync.blink, response)
         server = response["server"]
         link = server.replace("immis://", "rtsps://")
         return link
