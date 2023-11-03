@@ -217,7 +217,7 @@ class BlinkCamera:
 
     async def update(self, config, force_cache=False, expire_clips=True, **kwargs):
         """Update camera info."""
-        if config != {}:
+        if bool(config):
             self.extract_config_info(config)
             await self.get_sensor_info()
             await self.update_images(
