@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "blinkpy"
-version = "0.22.3"
+version = "0.23.0b0"
 license = {text = "MIT"}
 description = "A Blink camera Python Library."
 readme = "README.rst"
@@ -19,6 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Home Automation",
 ]
 requires-python = ">=3.8.0"
@@ -85,7 +86,7 @@ ignore = [
 
 line-length = 88
 
-target-version = "py39"
+target-version = "py312"
 
 [tool.ruff.per-file-ignores]
 
