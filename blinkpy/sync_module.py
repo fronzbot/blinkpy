@@ -114,7 +114,7 @@ class BlinkSyncModule:
             result = await api.request_system_disarm(self.blink, self.network_id)
         await self.get_network_info()
         return result
-    
+
     async def start(self):
         """Initialize the system."""
         _LOGGER.debug("Initializing the sync module")
