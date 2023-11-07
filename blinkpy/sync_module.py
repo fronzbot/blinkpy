@@ -109,11 +109,12 @@ class BlinkSyncModule:
     async def async_arm(self, value):
         """Arm or disarm camera."""
         if value:
-            self.network_info["network"]["armed"] = True
-            return await api.request_system_arm(self.blink, self.network_id)
-        self.network_info["network"]["armed"] = False
-        return await api.request_system_disarm(self.blink, self.network_id)
-
+            result = await api.request_system_arm(self.blink, self.network_id)
+        else:
+            result = await api.request_system_disarm(self.blink, self.network_id)
+        await self.get_network_info()
+        return result
+    
     async def start(self):
         """Initialize the system."""
         _LOGGER.debug("Initializing the sync module")
