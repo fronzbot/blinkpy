@@ -4,6 +4,25 @@ Changelog
 
 A list of changes between each release
 
+0.22.3 (2023-11-05)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes**
+
+- Check for none and empty dict (fix of home-assistant/core#103312) (`@mkmer #800 <https://github.com/fronzbot/blinkpy/pull/800>`__)
+
+** Other Changes **
+
+- Bump ruff to 0.1.3
+- Bump pytest to 7.4.3
+- Bump black to 23.10.1
+
+
+0.22.2 (2023-10-13)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Same as 0.22.1 (pypi upload issue)
+
 0.22.1 (2023-10-13)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
