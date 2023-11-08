@@ -79,7 +79,6 @@ class Blink:
         self.homescreen = {}
         self.no_owls = no_owls
 
-    @util.Throttle(seconds=MIN_THROTTLE_TIME)
     async def refresh(self, force=False, force_cache=False):
         """
         Perform a system refresh.
