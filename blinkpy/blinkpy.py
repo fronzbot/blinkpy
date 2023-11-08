@@ -29,7 +29,6 @@ from blinkpy.helpers import util
 from blinkpy.helpers.constants import (
     DEFAULT_MOTION_INTERVAL,
     DEFAULT_REFRESH,
-    MIN_THROTTLE_TIME,
     TIMEOUT_MEDIA,
 )
 from blinkpy.helpers.constants import __version__
