@@ -37,8 +37,13 @@ async def json_save(data, file_name):
         await json_file.write(json.dumps(data, indent=4))
 
 
+def json_dumps(json_in, indent=2):
+    """Return a well formated json string."""
+    return json.dumps(json_in, indent=indent)
+
+
 def gen_uid(size, uid_format=False):
-    """Create a random sring."""
+    """Create a random string."""
     if uid_format:
         token = (
             f"BlinkCamera_{secrets.token_hex(4)}-"

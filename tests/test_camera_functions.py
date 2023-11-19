@@ -130,9 +130,13 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             [
                 (
                     "WARNING:blinkpy.camera:Could not retrieve calibrated "
-                    "temperature."
+                    f"temperature response {mock_resp.return_value}."
                 ),
-                ("WARNING:blinkpy.camera:Could not find thumbnail for camera new"),
+                (
+                    f"WARNING:blinkpy.camera:for network_id ({config['network_id']}) "
+                    f"and camera_id ({self.camera.camera_id})"
+                ),
+                ("WARNING:blinkpy.camera:Could not find thumbnail for camera new."),
             ],
         )
 
@@ -374,3 +378,33 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             f"'{self.camera.name}' to directory /tmp/",
         )
         assert mock_open.call_count == 2
+
+    def remove_clip(self):
+        """Remove all clips to raise an exception on second removal."""
+        self[0] *= 0
+        return mresp.MockResponse({}, 200, raw_data="raw data")
+
+    @mock.patch("blinkpy.camera.open", create=True)
+    @mock.patch(
+        "blinkpy.camera.BlinkCamera.get_video_clip",
+        create=True,
+        side_effect=remove_clip,
+    )
+    async def test_save_recent_clips_exception(self, mock_clip, mock_open, mock_resp):
+        """Test corruption in recent clip list."""
+        self.camera.recent_clips = []
+        now = datetime.datetime.now()
+        self.camera.recent_clips.append(
+            {
+                "time": (now - datetime.timedelta(minutes=20)).isoformat(),
+                "clip": [self.camera.recent_clips],
+            },
+        )
+        with self.assertLogs(level="ERROR") as dl_log:
+            await self.camera.save_recent_clips()
+        print(f"Output = {dl_log.output}")
+        self.assertTrue(
+            "ERROR:blinkpy.camera:Error removing clip from list:"
+            in "\t".join(dl_log.output)
+        )
+        assert mock_open.call_count == 1

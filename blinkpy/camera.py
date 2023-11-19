@@ -20,7 +20,7 @@ class BlinkCamera:
     """Class to initialize individual camera."""
 
     def __init__(self, sync):
-        """Initiailize BlinkCamera."""
+        """Initialize BlinkCamera."""
         self.sync = sync
         self.name = None
         self.camera_id = None
@@ -76,7 +76,7 @@ class BlinkCamera:
 
     @property
     def temperature_c(self):
-        """Return temperature in celcius."""
+        """Return temperature in celsius."""
         try:
             return round((self.temperature - 32) / 9.0 * 5.0, 1)
         except TypeError:
@@ -170,7 +170,7 @@ class BlinkCamera:
         if not url:
             url = self.thumbnail
             if not url:
-                _LOGGER.warning(f"Thumbnail URL not available: self.thumbnail={url}")
+                _LOGGER.warning("Thumbnail URL not available: self.thumbnail=%s", url)
                 return None
         return await api.http_get(
             self.sync.blink,
@@ -185,7 +185,7 @@ class BlinkCamera:
         if not url:
             url = self.clip
             if not url:
-                _LOGGER.warning(f"Video clip URL not available: self.clip={url}")
+                _LOGGER.warning("Video clip URL not available: self.clip=%s", url)
                 return None
         return await api.http_get(
             self.sync.blink,
@@ -240,7 +240,7 @@ class BlinkCamera:
         self.product_type = config.get("type", None)
 
     async def get_sensor_info(self):
-        """Retrieve calibrated temperatue from special endpoint."""
+        """Retrieve calibrated temperature from special endpoint."""
         resp = await api.request_camera_sensors(
             self.sync.blink, self.network_id, self.camera_id
         )
@@ -248,7 +248,14 @@ class BlinkCamera:
             self.temperature_calibrated = resp["temp"]
         except (TypeError, KeyError):
             self.temperature_calibrated = self.temperature
-            _LOGGER.warning("Could not retrieve calibrated temperature.")
+            _LOGGER.warning(
+                "Could not retrieve calibrated temperature response %s.", resp
+            )
+            _LOGGER.warning(
+                "for network_id (%s) and camera_id (%s)",
+                self.network_id,
+                self.camera_id,
+            )
 
     async def update_images(self, config, force_cache=False, expire_clips=True):
         """Update images for camera."""
@@ -278,7 +285,7 @@ class BlinkCamera:
                 new_thumbnail = urljoin(self.sync.urls.base_url, thumb_string)
 
         else:
-            _LOGGER.warning("Could not find thumbnail for camera %s", self.name)
+            _LOGGER.warning("Could not find thumbnail for camera %s.", self.name)
 
         try:
             self.motion_detected = self.sync.motion[self.name]
@@ -288,7 +295,7 @@ class BlinkCamera:
         clip_addr = None
         try:
 
-            def timest(record):
+            def timesort(record):
                 rec_time = record["time"]
                 iso_time = datetime.datetime.fromisoformat(rec_time)
                 stamp = int(iso_time.timestamp())
@@ -298,7 +305,7 @@ class BlinkCamera:
                 len(self.sync.last_records) > 0
                 and len(self.sync.last_records[self.name]) > 0
             ):
-                last_records = sorted(self.sync.last_records[self.name], key=timest)
+                last_records = sorted(self.sync.last_records[self.name], key=timesort)
                 for rec in last_records:
                     clip_addr = rec["clip"]
                     self.clip = f"{self.sync.urls.base_url}{clip_addr}"
@@ -310,17 +317,21 @@ class BlinkCamera:
                             self.recent_clips.append(recent)
                 if len(self.recent_clips) > 0:
                     _LOGGER.debug(
-                        f"Found {len(self.recent_clips)} recent clips for {self.name}"
+                        "Found %s recent clips for %s",
+                        len(self.recent_clips),
+                        self.name,
                     )
                     _LOGGER.debug(
-                        f"Most recent clip for {self.name} was created at "
-                        f"{self.last_record}: {self.clip}"
+                        "Most recent clip for %s was created at %s : %s",
+                        self.name,
+                        self.last_record,
+                        self.clip,
                     )
         except (KeyError, IndexError):
             ex = traceback.format_exc()
             trace = "".join(traceback.format_stack())
-            _LOGGER.error(f"Error getting last records for '{self.name}': {ex}")
-            _LOGGER.debug(f"\n{trace}")
+            _LOGGER.error("Error getting last records for '%s': %s", self.name, ex)
+            _LOGGER.debug("\n%s", trace)
 
         # If the thumbnail or clip have changed, update the cache
         update_cached_image = False
@@ -356,12 +367,13 @@ class BlinkCamera:
                 to_keep.append(clip)
         num_expired = len(self.recent_clips) - len(to_keep)
         if num_expired > 0:
-            _LOGGER.info(f"Expired {num_expired} clips from '{self.name}'")
+            _LOGGER.info("Expired %s clips from '%s'", num_expired, self.name)
         self.recent_clips = copy.deepcopy(to_keep)
         if len(self.recent_clips) > 0:
             _LOGGER.info(
-                f"'{self.name}' has {len(self.recent_clips)} "
-                "clips available for download"
+                "'%s' has %s clips available for download",
+                self.name,
+                len(self.recent_clips),
             )
             for clip in self.recent_clips:
                 url = clip["clip"]
@@ -369,7 +381,7 @@ class BlinkCamera:
                     await api.http_post(self.sync.blink, url)
 
     async def get_liveview(self):
-        """Get livewview rtsps link."""
+        """Get liveview rtsps link."""
         response = await api.request_camera_liveview(
             self.sync.blink, self.sync.network_id, self.camera_id
         )
@@ -384,8 +396,8 @@ class BlinkCamera:
         _LOGGER.debug("Writing image from %s to %s", self.name, path)
         response = await self.get_media()
         if response and response.status == 200:
-            async with open(path, "wb") as imgfile:
-                await imgfile.write(await response.read())
+            async with open(path, "wb") as imagefile:
+                await imagefile.write(await response.read())
         else:
             _LOGGER.error("Cannot write image to file, response %s", response.status)
 
@@ -425,7 +437,7 @@ class BlinkCamera:
                 created=created_at, name=to_alphanumeric(self.name)
             )
             path = os.path.join(output_dir, file_name)
-            _LOGGER.debug(f"Saving {clip_addr} to {path}")
+            _LOGGER.debug("Saving %s to %s", clip_addr, path)
             media = await self.get_video_clip(clip_addr)
             if media and media.status == 200:
                 async with open(path, "wb") as clip_file:
@@ -434,19 +446,22 @@ class BlinkCamera:
                 try:
                     # Remove recent clip from the list once the download has finished.
                     self.recent_clips.remove(clip)
-                    _LOGGER.debug(f"Removed {clip} from recent clips")
+                    _LOGGER.debug("Removed %s from recent clips", clip)
                 except ValueError:
                     ex = traceback.format_exc()
-                    _LOGGER.error(f"Error removing clip from list: {ex}")
+                    _LOGGER.error("Error removing clip from list: %s", ex)
                     trace = "".join(traceback.format_stack())
-                    _LOGGER.debug(f"\n{trace}")
+                    _LOGGER.debug("\n%s", trace)
 
         if len(recent) == 0:
-            _LOGGER.info(f"No recent clips to save for '{self.name}'.")
+            _LOGGER.info("No recent clips to save for '%s'.", self.name)
         else:
             _LOGGER.info(
-                f"Saved {num_saved} of {len(recent)} recent clips from "
-                f"'{self.name}' to directory {output_dir}"
+                "Saved %s of %s recent clips from '%s' to directory %s",
+                num_saved,
+                len(recent),
+                self.name,
+                output_dir,
             )
 
 

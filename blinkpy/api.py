@@ -304,7 +304,7 @@ async def request_camera_sensors(blink, network, camera_id):
 
     :param blink: Blink instance.
     :param network: Sync module network id.
-    :param camera_id: Camera ID of camera to request sesnor info from.
+    :param camera_id: Camera ID of camera to request sensor info from.
     """
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/signals"
     return await http_get(blink, url)
@@ -476,7 +476,7 @@ async def http_get(
 async def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TIMEOUT):
     """Perform an http post request.
 
-    :param url: URL to perfom post request.
+    :param url: URL to perform post request.
     :param is_retry: Is this part of a re-auth attempt?
     :param data: str body for post request
     :param json: Return json response? TRUE/False
