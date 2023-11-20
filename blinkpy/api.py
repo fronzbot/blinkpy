@@ -327,7 +327,8 @@ async def request_motion_detection_enable(blink, network, camera_id):
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_motion_detection_disable(blink, network, camera_id):
-    """Disable motion detection for a camera.
+    """
+    Disable motion detection for a camera.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
@@ -340,7 +341,8 @@ async def request_motion_detection_disable(blink, network, camera_id):
 
 
 async def request_local_storage_manifest(blink, network, sync_id):
-    """Update local manifest.
+    """
+    Update local manifest.
 
     Request creation of an updated manifest of video clips stored in
     sync module local storage.
@@ -360,7 +362,8 @@ async def request_local_storage_manifest(blink, network, sync_id):
 
 
 async def get_local_storage_manifest(blink, network, sync_id, manifest_request_id):
-    """Request manifest of video clips stored in sync module local storage.
+    """
+    Request manifest of video clips stored in sync module local storage.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
@@ -377,7 +380,8 @@ async def get_local_storage_manifest(blink, network, sync_id, manifest_request_i
 
 
 async def request_local_storage_clip(blink, network, sync_id, manifest_id, clip_id):
-    """Prepare video clip stored in the sync module to be downloaded.
+    """
+    Prepare video clip stored in the sync module to be downloaded.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
@@ -400,7 +404,8 @@ async def request_local_storage_clip(blink, network, sync_id, manifest_id, clip_
 
 
 async def request_get_config(blink, network, camera_id, product_type="owl"):
-    """Get camera configuration.
+    """
+    Get camera configuration.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
@@ -427,7 +432,8 @@ async def request_get_config(blink, network, camera_id, product_type="owl"):
 async def request_update_config(
     blink, network, camera_id, product_type="owl", data=None
 ):
-    """Update camera configuration.
+    """
+    Update camera configuration.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
@@ -455,7 +461,8 @@ async def request_update_config(
 async def http_get(
     blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOUT
 ):
-    """Perform an http get request.
+    """
+    Perform an http get request.
 
     :param url: URL to perform get request.
     :param stream: Stream response? True/FALSE
@@ -474,7 +481,8 @@ async def http_get(
 
 
 async def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TIMEOUT):
-    """Perform an http post request.
+    """
+    Perform an http post request.
 
     :param url: URL to perform post request.
     :param is_retry: Is this part of a re-auth attempt?
