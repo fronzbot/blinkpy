@@ -476,7 +476,7 @@ class BlinkCameraMini(BlinkCamera):
     @property
     def arm(self):
         """Return camera arm status."""
-        return self.sync.arm
+        return self.motion_enabled
 
     async def async_arm(self, value):
         """Set camera arm status."""
