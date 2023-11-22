@@ -162,10 +162,6 @@ class Throttle:
     def __call__(self, method):
         """Throttle caller method."""
 
-        async def throttle_method():
-            """Call when method is throttled."""
-            return None
-
         @wraps(method)
         async def wrapper(*args, **kwargs):
             """Wrap that checks for throttling."""
@@ -179,4 +175,5 @@ class Throttle:
                 await sleep(last_call_delta)
 
             return await method(*args, **kwargs)
+
         return wrapper
