@@ -168,7 +168,7 @@ class Throttle:
         @wraps(method)
         def wrapper(*args, **kwargs):
             """Wrap that checks for throttling."""
-            force = kwargs.pop("force", False)
+            force = kwargs.get("force", False)
             now = int(time.time())
             last_call_delta = now - self.last_call
             if force or last_call_delta > self.throttle_time:
