@@ -1,5 +1,6 @@
 """Tests camera and system functions."""
 import datetime
+import logging
 from unittest import IsolatedAsyncioTestCase
 from unittest import mock
 import aiofiles
@@ -15,6 +16,10 @@ from blinkpy.camera import BlinkCamera
 from tests.test_blink_functions import MockCamera
 import tests.mock_responses as mresp
 from .test_api import COMMAND_RESPONSE, COMMAND_COMPLETE
+
+_LOGGER = logging.getLogger(__name__)
+logging.basicConfig(filename="blinkpy_test.log", level=logging.DEBUG)
+_LOGGER.setLevel(logging.DEBUG)
 
 
 @mock.patch("blinkpy.auth.Auth.query")
@@ -75,6 +80,24 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.blink.sync["test"].available = True
         self.assertEqual(self.blink.sync["test"].arm, None)
         self.assertFalse(self.blink.sync["test"].available)
+
+    def test_get_unique_info_valid_device(self, mock_resp) -> None:
+        """Check that we get the correct info."""
+        device = {
+            "enabled": True,
+            "name": "doorbell1",
+        }
+        self.blink.homescreen = {"doorbells": [device], "owls": []}
+        self.assertEqual(self.blink.sync["test"].get_unique_info("doorbell1"), device)
+
+    def test_get_unique_info_invalid_device(self, mock_resp) -> None:
+        """Check what happens if the devide does not exist."""
+        device = {
+            "enabled": True,
+            "name": "doorbell1",
+        }
+        self.blink.homescreen = {"doorbells": [device], "owls": []}
+        self.assertEqual(self.blink.sync["test"].get_unique_info("doorbell2"), None)
 
     async def test_get_events(self, mock_resp) -> None:
         """Test get events function."""

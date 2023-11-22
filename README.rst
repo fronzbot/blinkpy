@@ -1,4 +1,4 @@
-blinkpy |Build Status| |Coverage Status| |Docs| |PyPi Version| |Codestyle|
+blinkpy |Build Status| |Coverage Status| |PyPi Version| |Codestyle|
 =============================================================================================
 A Python library for the Blink Camera system (Python 3.8+)
 
@@ -39,7 +39,6 @@ To install the current development version, perform the following steps.  Note t
 
 If you'd like to contribute to this library, please read the `contributing instructions <https://github.com/fronzbot/blinkpy/blob/dev/CONTRIBUTING.rst>`__.
 
-For more information on how to use this library, please `read the docs <https://blinkpy.readthedocs.io/en/latest/>`__.
 
 Purpose
 -------
@@ -249,7 +248,5 @@ API steps
     :target: https://codecov.io/gh/fronzbot/blinkpy
 .. |PyPi Version| image:: https://img.shields.io/pypi/v/blinkpy.svg
     :target: https://pypi.python.org/pypi/blinkpy
-.. |Docs| image:: https://readthedocs.org/projects/blinkpy/badge/?version=latest
-   :target: http://blinkpy.readthedocs.io/en/latest/?badge=latest   
 .. |Codestyle| image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
