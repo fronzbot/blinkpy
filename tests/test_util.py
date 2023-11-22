@@ -39,16 +39,16 @@ class TestUtil(IsolatedAsyncioTestCase):
         now_plus_four = now + 4
         now_plus_six = now + 6
 
-        #First call should fire
+        # First call should fire
         await test_throttle()
         self.assertEqual(1, len(calls))
 
         # Call again, still should fire with delay
         await test_throttle()
         self.assertEqual(2, len(calls))
-        assert int(time.time())-now >= 5
+        assert int(time.time()) - now >= 5
 
-        # Call with force 
+        # Call with force
         await test_throttle(force=True)
         self.assertEqual(3, len(calls))
 
@@ -56,20 +56,19 @@ class TestUtil(IsolatedAsyncioTestCase):
         now = int(time.time())
         await test_throttle()
         self.assertEqual(4, len(calls))
-        assert int(time.time())-now >= 5
-        
+        assert int(time.time()) - now >= 5
+
         # Fake time as 4 seconds from now
         with mock.patch("time.time", return_value=now_plus_four):
             await test_throttle()
         self.assertEqual(5, len(calls))
-        assert int(time.time())-now >= 1
-        
+        assert int(time.time()) - now >= 1
+
         # Fake time as 6 seconds from now
         with mock.patch("time.time", return_value=now_plus_six):
             await test_throttle()
         self.assertEqual(6, len(calls))
 
-        
     async def test_throttle_per_instance(self):
         """Test that throttle is done once per instance of class."""
 
@@ -133,7 +132,7 @@ class TestUtil(IsolatedAsyncioTestCase):
         assert int(time.time()) - now >= 3
         self.assertEqual(await tester.test2(), True)
         assert int(time.time()) - now >= 5
-        
+
     def test_time_to_seconds(self):
         """Test time to seconds conversion."""
         correct_time = "1970-01-01T00:00:05+00:00"
