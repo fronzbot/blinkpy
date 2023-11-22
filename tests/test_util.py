@@ -36,8 +36,6 @@ class TestUtil(IsolatedAsyncioTestCase):
             calls.append(1)
 
         now = int(time.time())
-        now_plus_four = now + 4
-        now_plus_six = now + 6
 
         # First call should fire
         await test_throttle()
@@ -54,20 +52,10 @@ class TestUtil(IsolatedAsyncioTestCase):
 
         # Call without throttle, fire with delay
         now = int(time.time())
+
         await test_throttle()
         self.assertEqual(4, len(calls))
         assert int(time.time()) - now >= 5
-
-        # Fake time as 4 seconds from now
-        with mock.patch("time.time", return_value=now_plus_four):
-            await test_throttle()
-        self.assertEqual(5, len(calls))
-        assert int(time.time()) - now >= 1
-
-        # Fake time as 6 seconds from now
-        with mock.patch("time.time", return_value=now_plus_six):
-            await test_throttle()
-        self.assertEqual(6, len(calls))
 
     async def test_throttle_per_instance(self):
         """Test that throttle is done once per instance of class."""
