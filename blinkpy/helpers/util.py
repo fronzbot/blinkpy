@@ -7,6 +7,7 @@ import time
 import secrets
 import re
 import aiofiles
+from asyncio import sleep
 from calendar import timegm
 from functools import wraps
 from getpass import getpass
@@ -166,7 +167,7 @@ class Throttle:
             return None
 
         @wraps(method)
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             """Wrap that checks for throttling."""
             force = kwargs.get("force", False)
             now = int(time.time())
@@ -174,8 +175,9 @@ class Throttle:
             if force or last_call_delta > self.throttle_time:
                 result = method(*args, **kwargs)
                 self.last_call = now
-                return result
+            else:
+                self.last_call = now + last_call_delta
+                await sleep(last_call_delta)
 
-            return throttle_method()
-
+            return await method(*args, **kwargs)
         return wrapper
