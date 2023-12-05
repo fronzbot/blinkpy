@@ -51,6 +51,7 @@ class BlinkSyncModule:
         self.type_key_map = {
             "mini": "owls",
             "doorbell": "doorbells",
+            "outdoor": "cameras",
         }
         self._names_table = {}
         self._local_storage = {
