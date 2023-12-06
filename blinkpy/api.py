@@ -131,7 +131,7 @@ async def request_syncmodule(blink, network):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_system_arm(blink, network):
+async def request_system_arm(blink, network, **kwargs):
     """
     Arm system.
 
@@ -148,7 +148,7 @@ async def request_system_arm(blink, network):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_system_disarm(blink, network):
+async def request_system_disarm(blink, network, **kwargs):
     """
     Disarm system.
 
@@ -177,14 +177,14 @@ async def request_command_status(blink, network, command_id):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_homescreen(blink):
+async def request_homescreen(blink, **kwargs):
     """Request homescreen info."""
     url = f"{blink.urls.base_url}/api/v3/accounts/{blink.account_id}/homescreen"
     return await http_get(blink, url)
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_sync_events(blink, network):
+async def request_sync_events(blink, network, **kwargs):
     """
     Request events from sync module.
 
@@ -196,7 +196,7 @@ async def request_sync_events(blink, network):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_new_image(blink, network, camera_id):
+async def request_new_image(blink, network, camera_id, **kwargs):
     """
     Request to capture new thumbnail for camera.
 
@@ -211,7 +211,7 @@ async def request_new_image(blink, network, camera_id):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_new_video(blink, network, camera_id):
+async def request_new_video(blink, network, camera_id, **kwargs):
     """
     Request to capture new video clip.
 
@@ -226,7 +226,7 @@ async def request_new_video(blink, network, camera_id):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_video_count(blink):
+async def request_video_count(blink, **kwargs):
     """Request total video count."""
     url = f"{blink.urls.base_url}/api/v2/videos/count"
     return await http_get(blink, url)
@@ -311,7 +311,7 @@ async def request_camera_sensors(blink, network, camera_id):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_motion_detection_enable(blink, network, camera_id):
+async def request_motion_detection_enable(blink, network, camera_id, **kwargs):
     """
     Enable motion detection for a camera.
 
@@ -326,7 +326,7 @@ async def request_motion_detection_enable(blink, network, camera_id):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_motion_detection_disable(blink, network, camera_id):
+async def request_motion_detection_disable(blink, network, camera_id, **kwargs):
     """
     Disable motion detection for a camera.
 

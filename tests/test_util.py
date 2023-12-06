@@ -36,33 +36,26 @@ class TestUtil(IsolatedAsyncioTestCase):
             calls.append(1)
 
         now = int(time.time())
-        now_plus_four = now + 4
-        now_plus_six = now + 6
 
+        # First call should fire
         await test_throttle()
         self.assertEqual(1, len(calls))
 
-        # Call again, still shouldn't fire
+        # Call again, still should fire with delay
         await test_throttle()
-        self.assertEqual(1, len(calls))
+        self.assertEqual(2, len(calls))
+        assert int(time.time()) - now >= 5
 
         # Call with force
         await test_throttle(force=True)
-        self.assertEqual(2, len(calls))
-
-        # Call without throttle, shouldn't fire
-        await test_throttle()
-        self.assertEqual(2, len(calls))
-
-        # Fake time as 4 seconds from now
-        with mock.patch("time.time", return_value=now_plus_four):
-            await test_throttle()
-        self.assertEqual(2, len(calls))
-
-        # Fake time as 6 seconds from now
-        with mock.patch("time.time", return_value=now_plus_six):
-            await test_throttle()
         self.assertEqual(3, len(calls))
+
+        # Call without throttle, fire with delay
+        now = int(time.time())
+
+        await test_throttle()
+        self.assertEqual(4, len(calls))
+        assert int(time.time()) - now >= 5
 
     async def test_throttle_per_instance(self):
         """Test that throttle is done once per instance of class."""
@@ -76,8 +69,10 @@ class TestUtil(IsolatedAsyncioTestCase):
 
         tester = Tester()
         throttled = Throttle(seconds=1)(tester.test)
+        now = int(time.time())
         self.assertEqual(await throttled(), True)
-        self.assertEqual(await throttled(), None)
+        self.assertEqual(await throttled(), True)
+        assert int(time.time()) - now >= 1
 
     async def test_throttle_multiple_objects(self):
         """Test that function is throttled even if called by multiple objects."""
@@ -95,8 +90,10 @@ class TestUtil(IsolatedAsyncioTestCase):
 
         tester1 = Tester()
         tester2 = Tester()
+        now = int(time.time())
         self.assertEqual(await tester1.test(), True)
-        self.assertEqual(await tester2.test(), None)
+        self.assertEqual(await tester2.test(), True)
+        assert int(time.time()) - now >= 5
 
     async def test_throttle_on_two_methods(self):
         """Test that throttle works for multiple methods."""
@@ -115,22 +112,14 @@ class TestUtil(IsolatedAsyncioTestCase):
                 return True
 
         tester = Tester()
-        now = time.time()
-        now_plus_4 = now + 4
-        now_plus_6 = now + 6
+        now = int(time.time())
 
         self.assertEqual(await tester.test1(), True)
         self.assertEqual(await tester.test2(), True)
-        self.assertEqual(await tester.test1(), None)
-        self.assertEqual(await tester.test2(), None)
-
-        with mock.patch("time.time", return_value=now_plus_4):
-            self.assertEqual(await tester.test1(), True)
-            self.assertEqual(await tester.test2(), None)
-
-        with mock.patch("time.time", return_value=now_plus_6):
-            self.assertEqual(await tester.test1(), None)
-            self.assertEqual(await tester.test2(), True)
+        self.assertEqual(await tester.test1(), True)
+        assert int(time.time()) - now >= 3
+        self.assertEqual(await tester.test2(), True)
+        assert int(time.time()) - now >= 5
 
     def test_time_to_seconds(self):
         """Test time to seconds conversion."""
