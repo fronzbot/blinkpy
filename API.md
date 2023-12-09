@@ -58,7 +58,7 @@ Probably not strictly needed but checking result can verify that the sync module
 
 
 ## Arm
- 
+
 Arm the given network (start recording/reporting motion events)
 
 **Request:**
@@ -116,12 +116,12 @@ Not necessary to as part of issuing arm/disarm commands, but contains good summa
 ## Events, thumbnails & video captures
 
 **Request**
-Get events for a given network (sync module) -- Need network ID from home 
+Get events for a given network (sync module) -- Need network ID from home
 
 >curl -H "Host: prod.immedia-semi.com" -H "TOKEN_AUTH: *authtoken from login*" --compressed https://rest.prod.immedia-semi.com/events/network/*network__id*
 
 **Response**
-A json list of evets incluing URL's.   Replace the "mp4" with "jpg" extension to get the thumbnail of each clip
+A json list of events including URL's.   Replace the "mp4" with "jpg" extension to get the thumbnail of each clip
 
 
 **Request**
@@ -138,7 +138,7 @@ Get a thumbnail from the events list
 >curl -H "Host: prod.immedia-semi.com" -H "TOKEN_AUTH: *authtoken from login*" --compressed **video url from events list.jpg** > video_thumb.jpg
 
 **Response**
-The jpg bytes. 
+The jpg bytes.
 
 **Notes**
 Note that you replace the 'mp4' with a 'jpg' to get the thumbnail
@@ -149,7 +149,7 @@ Captures a new thumbnail for a camera
 >curl -H "Host: prod.immedia-semi.com" -H "TOKEN_AUTH: *authtoken from login*" --data-binary --compressed https://rest.prod.immedia-semi.com/network/*network_id*/camera/*camera_id*/thumbnail
 
 **Response**
-Command information. 
+Command information.
 
 **Request**
 Captures a new video for a camera

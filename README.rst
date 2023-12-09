@@ -7,7 +7,8 @@ Like the library? Consider buying me a cup of coffee!
 `Buy me a Coffee! <https://buymeacoffee.com/kevinfronczak>`__
 
 **BREAKING CHANGE WARNING:**
-As of ``0.22.0`` the library uses asyncio which will break any user scripts used prior to this version. Please see the updated examples below and the ``blinkapp.py`` or ``blinksync.py`` examples in the ``blinkapp/`` directory for examples on how to migrate.
+As of ``0.22.0`` the library uses asyncio which will break any user scripts used prior to this version.
+Please see the updated examples below and the ``blinkapp.py`` or ``blinksync.py`` examples in the ``blinkapp/`` directory for examples on how to migrate.
 
 **Disclaimer:**
 Published under the MIT license - See LICENSE file for more details.
@@ -17,7 +18,8 @@ I am in no way affiliated with Blink, nor Immedia Inc.
 
 Original protocol hacking by MattTW : https://github.com/MattTW/BlinkMonitorProtocol
 
-API calls faster than 60 seconds is not recommended as it can overwhelm Blink's servers.  Please use this module responsibly.
+API calls faster than 60 seconds is not recommended as it can overwhelm Blink's servers.
+Please use this module responsibly.
 
 Installation
 -------------
@@ -25,7 +27,8 @@ Installation
 
 Installing Development Version
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-To install the current development version, perform the following steps.  Note that the following will create a blinkpy directory in your home area:
+To install the current development version, perform the following steps.
+Note that the following will create a blinkpy directory in your home area:
 
 .. code:: bash
 
@@ -46,27 +49,33 @@ This library was built with the intention of allowing easy communication with Bl
 
 Quick Start
 =============
-The simplest way to use this package from a terminal is to call ``await Blink.start()`` which will prompt for your Blink username and password and then log you in.  In addition, http requests are throttled internally via use of the ``Blink.refresh_rate`` variable, which can be set at initialization and defaults to 30 seconds.
+The simplest way to use this package from a terminal is to call ``await Blink.start()`` which will prompt for your Blink username and password and then log you in.
+In addition, http requests are throttled internally via use of the ``Blink.refresh_rate`` variable, which can be set at initialization and defaults to 30 seconds.
 
 .. code:: python
-    
+
     import asyncio
     from aiohttp import ClientSession
     from blinkpy.blinkpy import Blink
-   
+
     async def start():
         blink = Blink(session=ClientSession())
         await blink.start()
         return blink
 
-    blink = asyncio.run(start()) 
+    blink = asyncio.run(start())
 
 
-This flow will prompt you for your username and password.  Once entered, if you likely will need to send a 2FA key to the blink servers (this pin is sent to your email address).  When you receive this pin, enter at the prompt and the Blink library will proceed with setup.
+This flow will prompt you for your username and password.
+Once entered, if you likely will need to send a 2FA key to the blink servers (this pin is sent to your email address).
+When you receive this pin, enter at the prompt and the Blink library will proceed with setup.
 
 Starting blink without a prompt
 -------------------------------
-In some cases, having an interactive command-line session is not desired.  In this case, you will need to set the ``Blink.auth.no_prompt`` value to ``True``.  In addition, since you will not be prompted with a username and password, you must supply the login data to the blink authentication handler.  This is best done by instantiating your own auth handler with a dictionary containing at least your username and password.
+In some cases, having an interactive command-line session is not desired.
+In this case, you will need to set the ``Blink.auth.no_prompt`` value to ``True``.
+In addition, since you will not be prompted with a username and password, you must supply the login data to the blink authentication handler.
+This is best done by instantiating your own auth handler with a dictionary containing at least your username and password.
 
 .. code:: python
 
@@ -86,7 +95,8 @@ In some cases, having an interactive command-line session is not desired.  In th
     blink = asyncio.run(start())
 
 
-Since you will not be prompted for any 2FA pin, you must call the ``blink.auth.send_auth_key`` function.  There are two required parameters: the ``blink`` object as well as the ``key`` you received from Blink for 2FA:
+Since you will not be prompted for any 2FA pin, you must call the ``blink.auth.send_auth_key`` function.
+There are two required parameters: the ``blink`` object as well as the ``key`` you received from Blink for 2FA:
 
 .. code:: python
 
@@ -96,7 +106,10 @@ Since you will not be prompted for any 2FA pin, you must call the ``blink.auth.s
 
 Supplying credentials from file
 --------------------------------
-Other use cases may involved loading credentials from a file.  This file must be ``json`` formatted and contain a minimum of ``username`` and ``password``.  A built in function in the ``blinkpy.helpers.util`` module can aid in loading this file.  Note, if ``no_prompt`` is desired, a similar flow can be followed as above.
+Other use cases may involved loading credentials from a file.
+This file must be ``json`` formatted and contain a minimum of ``username`` and ``password``.
+A built in function in the ``blinkpy.helpers.util`` module can aid in loading this file.
+Note, if ``no_prompt`` is desired, a similar flow can be followed as above.
 
 .. code:: python
 
@@ -118,7 +131,9 @@ Other use cases may involved loading credentials from a file.  This file must be
 
 Saving credentials
 -------------------
-This library also allows you to save your credentials to use in future sessions.  Saved information includes authentication tokens as well as unique ids which should allow for a more streamlined experience and limits the frequency of login requests.  This data can be saved as follows (it can then be loaded by following the instructions above for supplying credentials from a file):
+This library also allows you to save your credentials to use in future sessions.
+Saved information includes authentication tokens as well as unique ids which should allow for a more streamlined experience and limits the frequency of login requests.
+This data can be saved as follows (it can then be loaded by following the instructions above for supplying credentials from a file):
 
 .. code:: python
 
@@ -127,7 +142,8 @@ This library also allows you to save your credentials to use in future sessions.
 
 Getting cameras
 ----------------
-Cameras are instantiated as individual ``BlinkCamera`` classes within a ``BlinkSyncModule`` instance.  All of your sync modules are stored within the ``Blink.sync`` dictionary and can be accessed using the name of the sync module as the key (this is the name of your sync module in the Blink App).
+Cameras are instantiated as individual ``BlinkCamera`` classes within a ``BlinkSyncModule`` instance.
+All of your sync modules are stored within the ``Blink.sync`` dictionary and can be accessed using the name of the sync module as the key (this is the name of your sync module in the Blink App).
 
 The below code will display cameras and their available attributes:
 
@@ -138,10 +154,12 @@ The below code will display cameras and their available attributes:
       print(camera.attributes)      # Print available attributes of camera
 
 
-The most recent images and videos can be accessed as a bytes-object via internal variables.  These can be updated with calls to ``Blink.refresh()`` but will only make a request if motion has been detected or other changes have been found.  This can be overridden with the ``force`` flag, but this should be used for debugging only since it overrides the internal request throttling.
+The most recent images and videos can be accessed as a bytes-object via internal variables.
+These can be updated with calls to ``Blink.refresh()`` but will only make a request if motion has been detected or other changes have been found.
+This can be overridden with the ``force`` flag, but this should be used for debugging only since it overrides the internal request throttling.
 
 .. code:: python
-    
+
     camera = blink.cameras['SOME CAMERA NAME']
     await blink.refresh(force=True)  # force a cache update USE WITH CAUTION
     camera.image_from_cache  # bytes-like image object (jpg)
@@ -160,7 +178,8 @@ The ``blinkpy`` api also allows for saving images and videos to a file and snapp
 
 Arming Blink
 -------------
-Methods exist to arm/disarm the sync module, as well as enable/disable motion detection for individual cameras.  This is done as follows:
+Methods exist to arm/disarm the sync module, as well as enable/disable motion detection for individual cameras.
+This is done as follows:
 
 .. code:: python
 
@@ -194,7 +213,15 @@ Similar methods exist for individual cameras:
 
 Download videos
 ----------------
-You can also use this library to download all videos from the server.  In order to do this, you must specify a ``path``.  You may also specifiy a how far back in time to go to retrieve videos via the ``since=`` variable (a simple string such as ``"2017/09/21"`` is sufficient), as well as how many pages to traverse via the ``stop=`` variable.  Note that by default, the library will search the first ten pages which is sufficient in most use cases.  Additionally, you can specify one or more cameras via the ``camera=`` property.  This can be a single string indicating the name of the camera, or a list of camera names.  By default, it is set to the string ``'all'`` to grab videos from all cameras. If you are downloading many items, setting the ``delay`` parameter is advised in order to throttle sequential calls to the API. By default this is set to ``1`` but can be any integer representing the number of seconds to delay between calls.
+You can also use this library to download all videos from the server.
+In order to do this, you must specify a ``path``.
+You may also specify a how far back in time to go to retrieve videos via the ``since=`` variable (a simple string such as ``"2017/09/21"`` is sufficient), as well as how many pages to traverse via the ``stop=`` variable.
+Note that by default, the library will search the first ten pages which is sufficient in most use cases.
+Additionally, you can specify one or more cameras via the ``camera=`` property.
+This can be a single string indicating the name of the camera, or a list of camera names.
+By default, it is set to the string ``'all'`` to grab videos from all cameras.
+If you are downloading many items, setting the ``delay`` parameter is advised in order to throttle sequential calls to the API.
+By default this is set to ``1`` but can be any integer representing the number of seconds to delay between calls.
 
 Example usage, which downloads all videos recorded since July 4th, 2018 at 9:34am to the ``/home/blink`` directory with a 2s delay between calls:
 
@@ -209,14 +236,14 @@ Sync Module Local Storage
 Description of how I think the local storage API is used by Blink
 -----------------------------------------------------------------
 
-Since local storage is within a customer's residence, there are no guarantees for latency
-and availability.  As a result, the API seems to be built to deal with these conditions.
+Since local storage is within a customer's residence, there are no guarantees for latency and availability.
+As a result, the API seems to be built to deal with these conditions.
 
-In general, the approach appears to be this:  The Blink app has to query the sync
-module for all information regarding the stored clips.  On a click to view a clip, the app asks
-for the full list of stored clips, finds the clip in question, uploads the clip to the
-cloud, and then downloads the clip back from a cloud URL. Each interaction requires polling for
-the response since networking conditions are uncertain.  The app also caches recent clips and the manifest.
+In general, the approach appears to be this:
+The Blink app has to query the sync module for all information regarding the stored clips.
+On a click to view a clip, the app asks for the full list of stored clips, finds the clip in question, uploads the clip to the cloud, and then downloads the clip back from a cloud URL.
+Each interaction requires polling for the response since networking conditions are uncertain.
+The app also caches recent clips and the manifest.
 
 API steps
 ---------

@@ -11,7 +11,7 @@ from blinkpy.helpers.errors import (
 
 
 class TestBlinkUtilsErrors(unittest.TestCase):
-    """Test BlinkUtilErros functions in blinkpy."""
+    """Test BlinkUtilErrors functions in blinkpy."""
 
     def test_helpers_errors(self) -> None:
         """Test the helper errors."""

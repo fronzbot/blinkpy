@@ -192,7 +192,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.assertEqual(self.camera.recent_clips[1], record2)
 
     async def test_recent_video_clips_missing_key(self, mock_resp):
-        """Tests that the missing key failst."""
+        """Tests that the missing key fails."""
         config = {
             "name": "new",
             "id": 1234,
@@ -337,7 +337,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
 
     @mock.patch("blinkpy.camera.open", create=True)
     async def test_video_to_file(self, mock_open, mock_resp):
-        """Test camera vido to file with error."""
+        """Test camera video to file with error."""
         mock_resp.return_value = mresp.MockResponse({}, 400, raw_data="raw data")
         self.camera.clip = "my_clip"
         await self.camera.video_to_file("my_path")

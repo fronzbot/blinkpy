@@ -36,7 +36,7 @@ Same as 0.22.1 (pypi upload issue)
 **Other Changes**
 
 - Cleanup readme, add breaking change warning
-- Migrate to puproject.toml + ruff
+- Migrate to pyproject.toml + ruff
 - Bump ruff to 0.0.292
 - Bump black to 23.9.1
 - Bump coverage to 7.3.2
@@ -287,12 +287,12 @@ Same as 0.22.1 (pypi upload issue)
 **New Features:**
 
 - Add is_errored property to Auth class (`@fronzbot #275 <https://github.com/fronzbot/blinkpy/pull/275>`__)
-- Add new endpoint to get user infor (`@fronzbot #280 <https://github.com/fronzbot/blinkpy/pull/280>`__)
+- Add new endpoint to get user info (`@fronzbot #280 <https://github.com/fronzbot/blinkpy/pull/280>`__)
 - Add get_liveview command to camera module (`@fronzbot #289 <https://github.com/fronzbot/blinkpy/pull/289>`__)
 - Add blink Mini Camera support (`@fronzbot #290 <https://github.com/fronzbot/blinkpy/pull/290>`__)
 - Add option to skip homescreen check (`@fronzbot #305 <https://github.com/fronzbot/blinkpy/pull/305>`__)
 - Add different timeout for video and image retrieval (`@fronzbot #323 <https://github.com/fronzbot/blinkpy/pull/323>`__)
-- Modifiy session to use HTTPAdapter and handle retries (`@fronzbot #324 <https://github.com/fronzbot/blinkpy/pull/324>`__)
+- Modify session to use HTTPAdapter and handle retries (`@fronzbot #324 <https://github.com/fronzbot/blinkpy/pull/324>`__)
 - Add retry option overrides (`@fronzbot #339 <https://github.com/fronzbot/blinkpy/pull/339>`__)
 
 **All changes:**
@@ -316,7 +316,7 @@ Please see the change list in the (`Release Notes <https://github.com/fronzbot/r
 
 - Add ``device_id`` override when logging in (for debug and to differentiate applications) (`@fronzbot #245 <https://github.com/fronzbot/blinkpy/pull/245>`__)
 
-This can be used by instantiating the Blink class with the ``device_id`` parameter. 
+This can be used by instantiating the Blink class with the ``device_id`` parameter.
 
 **All Changes:**
 
@@ -326,7 +326,7 @@ This can be used by instantiating the Blink class with the ``device_id`` paramet
 - Bump requests from 2.22.0 to 2.23.0 (`@fronzbot #231 <https://github.com/fronzbot/blinkpy/pull/231>`__)
 - Refactor login logic in preparation for 2FA (`@fronzbot #241 <https://github.com/fronzbot/blinkpy/pull/241>`__)
 - Add 2FA Support (`@fronzbot #242 <https://github.com/fronzbot/blinkpy/pull/242>`__) (fixes (`#210 <https://github.com/fronzbot/blinkpy/pull/210>`__))
-- Re-set key_required and available variables after setup (`@fronzbot #245 <https://github.com/fronzbot/blinkpy/pull/245>`__) 
+- Re-set key_required and available variables after setup (`@fronzbot #245 <https://github.com/fronzbot/blinkpy/pull/245>`__)
 - Perform system refresh after setup (`@fronzbot #245 <https://github.com/fronzbot/blinkpy/pull/245>`__)
 - Fix typos (`@fronzbot #244 <https://github.com/fronzbot/blinkpy/pull/244>`__)
 
@@ -429,7 +429,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 
 0.10.3 (2018-11-18)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- Use networks endpoint rather than homecreen to retrieve arm/disarm status (`@md-reddevil <https://github.com/fronzbot/blinkpy/pull/119>`__)
+- Use networks endpoint rather than homescreen to retrieve arm/disarm status (`@md-reddevil <https://github.com/fronzbot/blinkpy/pull/119>`__)
 - Fix incorrect command status endpoint (`@md-reddevil <https://github.com/fronzbot/blinkpy/pull/118>`__)
 - Add extra debug logging
 - Remove error prior to re-authorization (only log error when re-auth failed)
@@ -438,7 +438,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 0.10.2 (2018-10-30)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Set minimum required version of the requests library to 2.20.0 due to vulnerability in earlier releases.
-- When multiple networks detected, changed log level to ``warning`` from ``error`` 
+- When multiple networks detected, changed log level to ``warning`` from ``error``
 
 
 0.10.1 (2018-10-18)
@@ -450,7 +450,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Moved all API calls to own module for easier maintainability
 - Added network ids to sync module and cameras to allow for multi-network use
-- Removed dependency on video existance prior to camera setup (fixes `#93 <https://github.com/fronzbot/blinkpy/issues/#93>`__)
+- Removed dependency on video existence prior to camera setup (fixes `#93 <https://github.com/fronzbot/blinkpy/issues/#93>`__)
 - Camera wifi_strength now reported in wifi "bars" rather than dBm due to API endpoint change
 - Use homescreen thumbnail as fallback in case it's not in the camera endpoint
 - Removed "armed" and "status" attributes from camera (status of camera only reported by "motion_enabled" now)
@@ -490,7 +490,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 - Added support for battery voltage level (fixes `#64 <https://github.com/fronzbot/blinkpy/issues/64>`__)
 - Added motion detection per camera
 - Added fully accessible camera configuration dict
-- Added celcius property to camera (fixes `#60 <https://github.com/fronzbot/blinkpy/issues/60>`__)
+- Added celsius property to camera (fixes `#60 <https://github.com/fronzbot/blinkpy/issues/60>`__)
 
 0.7.1 (2018-05-09)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -512,7 +512,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 
 0.6.0 (2017-05-12)
 ~~~~~~~~~~~~~~~~~~
-- Removed redundent properties that only called hidden variables
+- Removed redundant properties that only called hidden variables
 - Revised request wrapper function to be more intelligent
 - Added tests to ensure exceptions are caught and handled (100% coverage!)
 - Added auto-reauthorization (token refresh) when a request fails due to an expired token (`@tySwift93 <https://github.com/fronzbot/blinkpy/pull/24>`__)
