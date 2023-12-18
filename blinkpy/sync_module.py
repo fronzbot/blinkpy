@@ -9,7 +9,12 @@ from sortedcontainers import SortedSet
 from requests.structures import CaseInsensitiveDict
 from blinkpy import api
 from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
-from blinkpy.helpers.util import time_to_seconds, backoff_seconds, to_alphanumeric
+from blinkpy.helpers.util import (
+    time_to_seconds,
+    backoff_seconds,
+    to_alphanumeric,
+    json_dumps,
+)
 from blinkpy.helpers.constants import ONLINE
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,6 +51,7 @@ class BlinkSyncModule:
         self.type_key_map = {
             "mini": "owls",
             "doorbell": "doorbells",
+            "outdoor": "cameras",
         }
         self._names_table = {}
         self._local_storage = {
@@ -184,6 +190,7 @@ class BlinkSyncModule:
         try:
             _LOGGER.debug("Updating cameras")
             for camera_config in self.camera_list:
+                _LOGGER.debug("Updating camera_config %s", json_dumps(camera_config))
                 if "name" not in camera_config:
                     break
                 blink_camera_type = camera_config.get("type", "")
@@ -208,10 +215,11 @@ class BlinkSyncModule:
     def get_unique_info(self, name):
         """Extract unique information for Minis and Doorbells."""
         try:
-            for camera_type in self.type_key_map:
-                type_key = self.type_key_map[camera_type]
+            for type_key in self.type_key_map.values():
                 for device in self.blink.homescreen[type_key]:
+                    _LOGGER.debug("checking device %s", device)
                     if device["name"] == name:
+                        _LOGGER.debug("Found unique_info %s", device)
                         return device
         except (TypeError, KeyError):
             pass
@@ -277,18 +285,19 @@ class BlinkSyncModule:
         try:
             interval = self.blink.last_refresh - self.motion_interval * 60
             last_refresh = datetime.datetime.fromtimestamp(self.blink.last_refresh)
-            _LOGGER.debug(f"last_refresh = {last_refresh}")
-            _LOGGER.debug(f"interval={interval}")
+            _LOGGER.debug("last_refresh = %s", last_refresh)
+            _LOGGER.debug("interval = %s", interval)
         except TypeError:
             # This is the first start, so refresh hasn't happened yet.
             # No need to check for motion.
             ex = traceback.format_exc()
             _LOGGER.error(
-                "Error calculating interval "
-                f"(last_refresh={self.blink.last_refresh}): {ex}"
+                "Error calculating interval (last_refresh = %s): %s",
+                self.blink.last_refresh,
+                ex,
             )
             trace = "".join(traceback.format_stack())
-            _LOGGER.debug(f"\n{trace}")
+            _LOGGER.debug("\n%s", trace)
             _LOGGER.info("No new videos since last refresh.")
             return False
 
@@ -324,15 +333,17 @@ class BlinkSyncModule:
             except KeyError:
                 last_refresh = datetime.datetime.fromtimestamp(self.blink.last_refresh)
                 _LOGGER.debug(
-                    f"No new videos for {entry} since last refresh at {last_refresh}."
+                    "No new videos for %s since last refresh at %s.",
+                    entry,
+                    last_refresh,
                 )
 
         # Process local storage if active and if the manifest is ready.
         last_manifest_read = datetime.datetime.fromisoformat(
             self._local_storage["last_manifest_read"]
         )
-        _LOGGER.debug(f"last_manifest_read = {last_manifest_read}")
-        _LOGGER.debug(f"Manifest ready? {self.local_storage_manifest_ready}")
+        _LOGGER.debug("last_manifest_read = %s", last_manifest_read)
+        _LOGGER.debug("Manifest ready? %s", self.local_storage_manifest_ready)
         if self.local_storage and self.local_storage_manifest_ready:
             _LOGGER.debug("Processing updated manifest")
             manifest = self._local_storage["manifest"]
@@ -349,17 +360,20 @@ class BlinkSyncModule:
                 iso_timestamp = item.created_at.isoformat()
 
                 _LOGGER.debug(
-                    f"Checking '{item.name}': clip_time={iso_timestamp}, "
-                    f"manifest_read={last_manifest_read}"
+                    "Checking '%s': clip_time = %s, manifest_read = %s",
+                    item.name,
+                    iso_timestamp,
+                    last_manifest_read,
                 )
                 # Exit the loop once there are no new videos in the list.
                 if not self.check_new_video_time(iso_timestamp, last_manifest_read):
                     _LOGGER.info(
                         "No new local storage videos since last manifest "
-                        f"read at {last_read_local}."
+                        "read at %s.",
+                        last_read_local,
                     )
                     break
-                _LOGGER.debug(f"Found new item in local storage manifest: {item}")
+                _LOGGER.debug("Found new item in local storage manifest: %s", item)
                 name = item.name
                 clip_url = item.url(last_manifest_id)
                 await item.prepare_download(self.blink)
@@ -375,8 +389,8 @@ class BlinkSyncModule:
                     datetime.datetime.utcnow() - datetime.timedelta(seconds=10)
                 ).isoformat()
                 self._local_storage["last_manifest_read"] = last_manifest_read
-                _LOGGER.debug(f"Updated last_manifest_read to {last_manifest_read}")
-                _LOGGER.debug(f"Last clip time was {last_clip_time}")
+                _LOGGER.debug("Updated last_manifest_read to %s", last_manifest_read)
+                _LOGGER.debug("Last clip time was %s", last_clip_time)
         # We want to keep the last record when no new motion was detected.
         for camera in self.cameras:
             # Check if there are no new records, indicating motion.
@@ -389,8 +403,8 @@ class BlinkSyncModule:
         return True
 
     def check_new_video_time(self, timestamp, reference=None):
-        """Check if video has timestamp since last refresh."""
-        """
+        """Check if video has timestamp since last refresh.
+
         :param timestamp ISO-formatted timestamp string
         :param reference ISO-formatted reference timestamp string
         """
@@ -450,14 +464,15 @@ class BlinkSyncModule:
             num_added = len(self._local_storage["manifest"]) - num_stored
             if num_added > 0:
                 _LOGGER.info(
-                    f"Found {num_added} new clip(s) in local storage "
-                    f"manifest id={manifest_id}"
+                    "Found %s new clip(s) in local storage manifest id = %s",
+                    num_added,
+                    manifest_id,
                 )
         except (TypeError, KeyError):
             ex = traceback.format_exc()
-            _LOGGER.error(f"Could not extract clips list from response: {ex}")
+            _LOGGER.error("Could not extract clips list from response: %s", ex)
             trace = "".join(traceback.format_stack())
-            _LOGGER.debug(f"\n{trace}")
+            _LOGGER.debug("\n%s", trace)
             self._local_storage["manifest_stale"] = True
             return None
 

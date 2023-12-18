@@ -25,7 +25,7 @@ class Auth:
                              - username
                              - password
         :param no_prompt: Should any user input prompts
-                          be supressed? True/FALSE
+                          be suppressed? True/FALSE
         """
         if login_data is None:
             login_data = {}
@@ -152,8 +152,8 @@ class Auth:
         is_retry=False,
         timeout=TIMEOUT,
     ):
-        """Perform server requests."""
-        """
+        """Perform server requests.
+
         :param url: URL to perform request
         :param data: Data to send
         :param headers: Headers to send

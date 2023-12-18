@@ -131,7 +131,7 @@ async def request_syncmodule(blink, network):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_system_arm(blink, network):
+async def request_system_arm(blink, network, **kwargs):
     """
     Arm system.
 
@@ -148,7 +148,7 @@ async def request_system_arm(blink, network):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_system_disarm(blink, network):
+async def request_system_disarm(blink, network, **kwargs):
     """
     Disarm system.
 
@@ -177,14 +177,14 @@ async def request_command_status(blink, network, command_id):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_homescreen(blink):
+async def request_homescreen(blink, **kwargs):
     """Request homescreen info."""
     url = f"{blink.urls.base_url}/api/v3/accounts/{blink.account_id}/homescreen"
     return await http_get(blink, url)
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_sync_events(blink, network):
+async def request_sync_events(blink, network, **kwargs):
     """
     Request events from sync module.
 
@@ -196,7 +196,7 @@ async def request_sync_events(blink, network):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_new_image(blink, network, camera_id):
+async def request_new_image(blink, network, camera_id, **kwargs):
     """
     Request to capture new thumbnail for camera.
 
@@ -211,7 +211,7 @@ async def request_new_image(blink, network, camera_id):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_new_video(blink, network, camera_id):
+async def request_new_video(blink, network, camera_id, **kwargs):
     """
     Request to capture new video clip.
 
@@ -226,7 +226,7 @@ async def request_new_video(blink, network, camera_id):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_video_count(blink):
+async def request_video_count(blink, **kwargs):
     """Request total video count."""
     url = f"{blink.urls.base_url}/api/v2/videos/count"
     return await http_get(blink, url)
@@ -304,14 +304,14 @@ async def request_camera_sensors(blink, network, camera_id):
 
     :param blink: Blink instance.
     :param network: Sync module network id.
-    :param camera_id: Camera ID of camera to request sesnor info from.
+    :param camera_id: Camera ID of camera to request sensor info from.
     """
     url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/signals"
     return await http_get(blink, url)
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_motion_detection_enable(blink, network, camera_id):
+async def request_motion_detection_enable(blink, network, camera_id, **kwargs):
     """
     Enable motion detection for a camera.
 
@@ -326,8 +326,9 @@ async def request_motion_detection_enable(blink, network, camera_id):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_motion_detection_disable(blink, network, camera_id):
-    """Disable motion detection for a camera.
+async def request_motion_detection_disable(blink, network, camera_id, **kwargs):
+    """
+    Disable motion detection for a camera.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
@@ -340,7 +341,8 @@ async def request_motion_detection_disable(blink, network, camera_id):
 
 
 async def request_local_storage_manifest(blink, network, sync_id):
-    """Update local manifest.
+    """
+    Update local manifest.
 
     Request creation of an updated manifest of video clips stored in
     sync module local storage.
@@ -360,7 +362,8 @@ async def request_local_storage_manifest(blink, network, sync_id):
 
 
 async def get_local_storage_manifest(blink, network, sync_id, manifest_request_id):
-    """Request manifest of video clips stored in sync module local storage.
+    """
+    Request manifest of video clips stored in sync module local storage.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
@@ -377,7 +380,8 @@ async def get_local_storage_manifest(blink, network, sync_id, manifest_request_i
 
 
 async def request_local_storage_clip(blink, network, sync_id, manifest_id, clip_id):
-    """Prepare video clip stored in the sync module to be downloaded.
+    """
+    Prepare video clip stored in the sync module to be downloaded.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
@@ -400,7 +404,8 @@ async def request_local_storage_clip(blink, network, sync_id, manifest_id, clip_
 
 
 async def request_get_config(blink, network, camera_id, product_type="owl"):
-    """Get camera configuration.
+    """
+    Get camera configuration.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
@@ -427,7 +432,8 @@ async def request_get_config(blink, network, camera_id, product_type="owl"):
 async def request_update_config(
     blink, network, camera_id, product_type="owl", data=None
 ):
-    """Update camera configuration.
+    """
+    Update camera configuration.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
@@ -455,7 +461,8 @@ async def request_update_config(
 async def http_get(
     blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOUT
 ):
-    """Perform an http get request.
+    """
+    Perform an http get request.
 
     :param url: URL to perform get request.
     :param stream: Stream response? True/FALSE
@@ -474,9 +481,10 @@ async def http_get(
 
 
 async def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TIMEOUT):
-    """Perform an http post request.
+    """
+    Perform an http post request.
 
-    :param url: URL to perfom post request.
+    :param url: URL to perform post request.
     :param is_retry: Is this part of a re-auth attempt?
     :param data: str body for post request
     :param json: Return json response? TRUE/False

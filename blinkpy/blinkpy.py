@@ -58,7 +58,7 @@ class Blink:
                                 Useful for preventing motion_detected property
                                 from de-asserting too quickly.
         :param no_owls: Disable searching for owl entries (blink mini cameras \
-                        only known entity).  Prevents an uneccessary API call \
+                        only known entity).  Prevents an unnecessary API call \
                         if you don't have these in your network.
         """
         self.auth = Auth(session=session)
@@ -101,7 +101,7 @@ class Blink:
                 # Prevents rapid clearing of motion detect property
                 self.last_refresh = int(time.time())
                 last_refresh = datetime.datetime.fromtimestamp(self.last_refresh)
-                _LOGGER.debug(f"last_refresh={last_refresh}")
+                _LOGGER.debug("last_refresh = %s", last_refresh)
 
             return True
         return False
@@ -128,8 +128,9 @@ class Blink:
             # Initialize last_refresh to be just before the refresh delay period.
             self.last_refresh = int(time.time() - self.refresh_rate * 1.05)
             _LOGGER.debug(
-                f"Initialized last_refresh to {self.last_refresh} == "
-                f"{datetime.datetime.fromtimestamp(self.last_refresh)}"
+                "Initialized last_refresh to %s == %s",
+                self.last_refresh,
+                datetime.datetime.fromtimestamp(self.last_refresh),
             )
 
         return await self.setup_post_verify()
@@ -167,12 +168,13 @@ class Blink:
         await self.sync[name].start()
 
     async def get_homescreen(self):
-        """Get homecreen information."""
+        """Get homescreen information."""
         if self.no_owls:
             _LOGGER.debug("Skipping owl extraction.")
             self.homescreen = {}
             return
         self.homescreen = await api.request_homescreen(self)
+        _LOGGER.debug("homescreen = %s", util.json_dumps(self.homescreen))
 
     async def setup_owls(self):
         """Check for mini cameras."""
@@ -234,6 +236,7 @@ class Blink:
         response = await api.request_camera_usage(self)
         try:
             for network in response["networks"]:
+                _LOGGER.info("network = %s", util.json_dumps(network))
                 camera_network = str(network["network_id"])
                 if camera_network not in all_cameras:
                     all_cameras[camera_network] = []
