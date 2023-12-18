@@ -4,6 +4,24 @@ Changelog
 
 A list of changes between each release
 
+0.22.4 (2023-12-18)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes**
+
+- Allow kwargs to throttled functions, await sleep in throttle (`mkmer #823 <https://github.com/fronzbot/blinkpy/pull/800>`__)
+- add missing entry in type_key_map (`@Rosi2143 <https://github.com/fronzbot/blinkpy/pull/813>`__)
+
+** Other Changes **
+
+- Delete ReadTheDocs
+- python formatter
+- docstring format changes
+- Bump ruff to 0.1.8
+- Bump black to 23.12.0
+- Bump pygments to 2.17.2
+
+
 0.22.3 (2023-11-05)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
