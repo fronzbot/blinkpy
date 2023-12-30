@@ -56,7 +56,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             "battery_voltage": 90,
             "battery_state": "ok",
             "temperature": 68,
-            "wifi_strength": 4,
+            "signals": {"lfr":5,"wifi":4,"battery":3},
             "thumbnail": "/thumb",
         }
         self.camera.last_record = ["1"]
