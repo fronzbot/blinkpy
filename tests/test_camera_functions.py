@@ -80,7 +80,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.assertEqual(self.camera.temperature, 68)
         self.assertEqual(self.camera.temperature_c, 20)
         self.assertEqual(self.camera.temperature_calibrated, 71)
-        self.assertEqual(self.camera.wifi_strength, 4)
+        self.assertEqual(self.camera.wifi_strength, 80)
         self.assertEqual(
             self.camera.thumbnail, "https://rest-test.immedia-semi.com/thumb.jpg"
         )
