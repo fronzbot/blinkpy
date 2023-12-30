@@ -408,3 +408,26 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             in "\t".join(dl_log.output)
         )
         assert mock_open.call_count == 1
+
+    async def test_missing_keys(self, mock_resp):
+        """Tests missing signal keys."""
+        config = {
+            "name": "new",
+            "id": 1234,
+            "network_id": 5678,
+            "serial": "12345678",
+            "enabled": False,
+            "battery_state": "ok",
+            "temperature": 68,
+            "signals": {"junk": 1},
+            "thumbnail": "",
+        }
+        self.camera.sync.homescreen = {"devices": []}
+        mock_resp.side_effect = [
+            {"temp": 71},
+            mresp.MockResponse({"test": 200}, 200, raw_data="test"),
+            mresp.MockResponse({"foobar": 200}, 200, raw_data="foobar"),
+        ]
+        await self.camera.update(config, expire_clips=False, force=True)
+        self.assertEqual(self.camera.wifi_strength, None)
+        self.assertEqual(self.camera.battery_voltage, None)
