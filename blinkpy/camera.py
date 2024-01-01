@@ -233,22 +233,12 @@ class BlinkCamera:
         self.network_id = str(config.get("network_id", "unknown"))
         self.serial = config.get("serial")
         self.motion_enabled = config.get("enabled", "unknown")
-        self.battery_voltage = config.get("battery_voltage")
         self.battery_state = config.get("battery_state") or config.get("battery")
         self.temperature = config.get("temperature")
         if signals := config.get("signals"):
-            try:  # x / 5 * 100 = x * 20 for percentage
-                self.wifi_strength = signals.get("wifi") * 20
-            except TypeError:
-                self.wifi_strength = None
-            try:
-                self.battery_voltage = signals.get("battery") * 20
-            except TypeError:
-                self.battery_voltage = None
-            try:
-                self.sync_signal = signals.get("lfr") * 20
-            except TypeError:
-                self.sync_signal = None
+            self.wifi_strength = signals.get("wifi")
+            self.battery_voltage = signals.get("battery")
+            self.sync_signal = signals.get("lfr")
         else:
             self.wifi_strength = config.get("wifi_strength")
             self.battery_voltage = config.get("battery_voltage")
