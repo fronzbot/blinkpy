@@ -95,10 +95,9 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         """Tests that thumbnail is 'None' if none found."""
         mock_resp.return_value = "foobar"
         self.camera.last_record = ["1"]
-        config = CONFIG
-        config.update({
+        config = CONFIG | {
             "thumbnail": "",
-        })
+        }
 
         self.camera.sync.homescreen = {"devices": []}
         self.assertEqual(self.camera.temperature_calibrated, None)
@@ -125,10 +124,9 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     async def test_no_video_clips(self, mock_resp):
         """Tests that we still proceed with camera setup with no videos."""
         mock_resp.return_value = "foobar"
-        config = CONFIG
-        config.update({
+        config = CONFIG | {
             "thumbnail": "/foobar",
-        })
+        }
         mock_resp.return_value = mresp.MockResponse({"test": 200}, 200, raw_data="")
         self.camera.sync.homescreen = {"devices": []}
         await self.camera.update(config, force_cache=True, expire_clips=False)
@@ -141,17 +139,13 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         Tests that the last records in the sync module are added
         to the camera recent clips list.
         """
-        config = CONFIG
-        config.update({
-            "thumbnail": "/thumb",
-        })
         self.camera.sync.last_records["foobar"] = []
         record2 = {"clip": "/clip2", "time": "2022-12-01 00:00:10+00:00"}
         self.camera.sync.last_records["foobar"].append(record2)
         record1 = {"clip": "/clip1", "time": "2022-12-01 00:00:00+00:00"}
         self.camera.sync.last_records["foobar"].append(record1)
         self.camera.sync.motion["foobar"] = True
-        await self.camera.update_images(config, expire_clips=False)
+        await self.camera.update_images(CONFIG, expire_clips=False)
         record1["clip"] = self.blink.urls.base_url + "/clip1"
         record2["clip"] = self.blink.urls.base_url + "/clip2"
         self.assertEqual(self.camera.recent_clips[0], record1)
@@ -365,11 +359,10 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
 
     async def test_missing_keys(self, mock_resp):
         """Tests missing signal keys."""
-        config = CONFIG
-        config.update({
+        config = CONFIG | {
             "signals": {"junk": 1},
             "thumbnail": "",
-        })
+        }
         self.camera.sync.homescreen = {"devices": []}
         mock_resp.side_effect = [
             {"temp": 71},
