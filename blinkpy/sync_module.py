@@ -351,7 +351,7 @@ class BlinkSyncModule:
             last_manifest_read = self._local_storage["last_manifest_read"]
             last_read_local = (
                 datetime.datetime.fromisoformat(last_manifest_read)
-                .replace(tzinfo=datetime.timezone.utc)
+                .replace(tzinfo=datetime.UTC)
                 .astimezone(tz=None)
             )
             last_clip_time = None
