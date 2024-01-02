@@ -21,12 +21,12 @@ CONFIG = {
     "network_id": 5678,
     "serial": "12345678",
     "enabled": False,
-    "battery_level": 5,
     "battery_state": "ok",
     "temperature": 68,
     "signals": {"lfr": 5, "wifi": 4, "battery": 3},
     "thumbnail": "/thumb",
 }
+
 
 @mock.patch("blinkpy.auth.Auth.query")
 class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
