@@ -14,15 +14,17 @@ from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
 import tests.mock_responses as mresp
 
-CAMERA_CFG = {
-    "camera": [
-        {
-            "battery_voltage": 90,
-            "motion_alert": True,
-            "wifi_strength": -30,
-            "temperature": 68,
-        }
-    ]
+CONFIG = {
+    "name": "new",
+    "id": 1234,
+    "network_id": 5678,
+    "serial": "12345678",
+    "enabled": False,
+    "battery_state": "ok",
+    "temperature": 68,
+    "thumbnail": 1357924680,
+    "signals": {"lfr": 5, "wifi": 4, "battery": 3},
+    "type": "test",
 }
 
 
@@ -128,41 +130,21 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     async def test_different_thumb_api(self, mock_resp):
         """Test that the correct url is created with new api."""
         thumb_endpoint = "https://rest-test.immedia-semi.com/api/v3/media/accounts/9999/networks/5678/test/1234/thumbnail/thumbnail.jpg?ts=1357924680&ext="
-        config = {
-            "name": "new",
-            "id": 1234,
-            "network_id": 5678,
-            "serial": "12345678",
-            "enabled": False,
-            "battery_voltage": 90,
-            "battery_state": "ok",
-            "temperature": 68,
-            "wifi_strength": 4,
-            "thumbnail": 1357924680,
-            "type": "test",
-        }
         mock_resp.side_effect = [
             {"temp": 71},
             mresp.MockResponse({"test": 200}, 200, raw_data="test"),
         ]
         self.camera.sync.blink.account_id = 9999
-        await self.camera.update(config, expire_clips=False)
+        await self.camera.update(CONFIG, expire_clips=False)
         self.assertEqual(self.camera.thumbnail, thumb_endpoint)
 
     async def test_thumb_return_none(self, mock_resp):
         """Test that a 'None" thumbnail is doesn't break system."""
         config = {
-            "name": "new",
-            "id": 1234,
-            "network_id": 5678,
-            "serial": "12345678",
-            "enabled": False,
-            "battery_voltage": 90,
-            "battery_state": "ok",
-            "temperature": 68,
-            "wifi_strength": 4,
-            "thumbnail": None,
-            "type": "test",
+            **CONFIG,
+            **{
+                "thumbnail": None,
+            },
         }
         mock_resp.side_effect = [
             {"temp": 71},
@@ -178,17 +160,10 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             "test/1234/thumbnail/thumbnail.jpg?ts=1357924680&ext="
         )
         config = {
-            "name": "new",
-            "id": 1234,
-            "network_id": 5678,
-            "serial": "12345678",
-            "enabled": False,
-            "battery_voltage": 90,
-            "battery_state": "ok",
-            "temperature": 68,
-            "wifi_strength": 4,
-            "thumbnail": thumb_return,
-            "type": "test",
+            **CONFIG,
+            **{
+                "thumbnail": thumb_return,
+            },
         }
         mock_resp.side_effect = [
             {"temp": 71},
