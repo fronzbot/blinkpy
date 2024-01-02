@@ -43,7 +43,7 @@ class BlinkCamera:
         self._cached_video = None
         self.camera_type = ""
         self.product_type = None
-        self.sync_signal = None
+        self.sync_signal_strength = None
 
     @property
     def attributes(self):
@@ -56,7 +56,7 @@ class BlinkCamera:
             "temperature_c": self.temperature_c,
             "temperature_calibrated": self.temperature_calibrated,
             "battery": self.battery,
-            "battery_voltage": self.battery_voltage,
+            "battery_level": self.battery_level,
             "thumbnail": self.thumbnail,
             "video": self.clip,
             "recent_clips": self.recent_clips,
