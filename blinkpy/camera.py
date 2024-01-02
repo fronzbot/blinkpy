@@ -65,7 +65,7 @@ class BlinkCamera:
             "wifi_strength": self.wifi_strength,
             "network_id": self.sync.network_id,
             "sync_module": self.sync.name,
-            "sync_signal": self.sync_signal,
+            "sync_signal_strength": self.sync_signal_strength,
             "last_record": self.last_record,
             "type": self.product_type,
         }
@@ -238,7 +238,7 @@ class BlinkCamera:
         if signals := config.get("signals"):
             self.wifi_strength = signals.get("wifi")
             self.battery_voltage = signals.get("battery")
-            self.sync_signal = signals.get("lfr")
+            self.sync_signal_strength = signals.get("lfr")
         else:
             self.wifi_strength = config.get("wifi_strength")
             self.battery_voltage = config.get("battery_voltage")
