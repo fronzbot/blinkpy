@@ -17,7 +17,7 @@ import tests.mock_responses as mresp
 CAMERA_CFG = {
     "camera": [
         {
-            "battery_voltage": 90,
+            "battery_level": 5,
             "motion_alert": True,
             "wifi_strength": -30,
             "temperature": 68,
@@ -134,7 +134,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             "network_id": 5678,
             "serial": "12345678",
             "enabled": False,
-            "battery_voltage": 90,
+            "battery_level": 5,
             "battery_state": "ok",
             "temperature": 68,
             "wifi_strength": 4,
@@ -157,7 +157,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             "network_id": 5678,
             "serial": "12345678",
             "enabled": False,
-            "battery_voltage": 90,
+            "battery_level": 5,
             "battery_state": "ok",
             "temperature": 68,
             "wifi_strength": 4,
@@ -183,7 +183,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             "network_id": 5678,
             "serial": "12345678",
             "enabled": False,
-            "battery_voltage": 90,
+            "battery_level": 5,
             "battery_state": "ok",
             "temperature": 68,
             "wifi_strength": 4,
