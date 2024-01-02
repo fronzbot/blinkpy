@@ -22,7 +22,7 @@ logging.basicConfig(filename="blinkpy_test.log", level=logging.DEBUG)
 _LOGGER.setLevel(logging.DEBUG)
 
 
-@mock.patch("blinkpy.auth.Auth.query")
+@mock.patch("blinkpy.auth.Auth.query", return_value={"status": 200})
 class TestBlinkSyncModule(IsolatedAsyncioTestCase):
     """Test BlinkSyncModule functions in blinkpy."""
 
