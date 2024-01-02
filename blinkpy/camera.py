@@ -43,6 +43,7 @@ class BlinkCamera:
         self._cached_video = None
         self.camera_type = ""
         self.product_type = None
+        self.sync_signal_strength = None
 
     @property
     def attributes(self):
@@ -64,6 +65,7 @@ class BlinkCamera:
             "wifi_strength": self.wifi_strength,
             "network_id": self.sync.network_id,
             "sync_module": self.sync.name,
+            "sync_signal_strength": self.sync_signal_strength,
             "last_record": self.last_record,
             "type": self.product_type,
         }
@@ -229,15 +231,19 @@ class BlinkCamera:
         self.name = config.get("name", "unknown")
         self.camera_id = str(config.get("id", "unknown"))
         self.network_id = str(config.get("network_id", "unknown"))
-        self.serial = config.get("serial", None)
+        self.serial = config.get("serial")
         self.motion_enabled = config.get("enabled", "unknown")
-        self.battery_voltage = config.get("battery_voltage", None)
-        self.battery_state = config.get("battery_state", None) or config.get(
-            "battery", None
-        )
-        self.temperature = config.get("temperature", None)
-        self.wifi_strength = config.get("wifi_strength", None)
-        self.product_type = config.get("type", None)
+        self.battery_state = config.get("battery_state") or config.get("battery")
+        self.temperature = config.get("temperature")
+        if signals := config.get("signals"):
+            self.wifi_strength = signals.get("wifi")
+            self.battery_voltage = signals.get("battery")
+            self.sync_signal_strength = signals.get("lfr")
+        else:
+            self.wifi_strength = config.get("wifi_strength")
+            self.battery_voltage = config.get("battery_voltage")
+
+        self.product_type = config.get("type")
 
     async def get_sensor_info(self):
         """Retrieve calibrated temperature from special endpoint."""
