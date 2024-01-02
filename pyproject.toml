@@ -79,6 +79,7 @@ ignore = [
     "UP006",  # keep type annotation style as is
     "UP007",  # keep type annotation style as is
     "UP015",  # Unnecessary open mode parameters
+    "UP017",  # UTC stuff
     # Ignored due to performance: https://github.com/charliermarsh/ruff/issues/2923
     "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`
 ]

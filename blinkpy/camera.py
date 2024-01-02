@@ -431,7 +431,9 @@ class BlinkCamera:
         num_saved = 0
         for clip in recent:
             clip_time = datetime.datetime.fromisoformat(clip["time"])
-            clip_time_local = clip_time.replace(tzinfo=datetime.UTC).astimezone(tz=None)
+            clip_time_local = clip_time.replace(
+                tzinfo=datetime.timezone.utc
+            ).astimezone(tz=None)
             created_at = clip_time_local.strftime("%Y%m%d_%H%M%S")
             clip_addr = clip["clip"]
 
