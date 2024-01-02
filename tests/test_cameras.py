@@ -140,8 +140,11 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
 
     async def test_thumb_return_none(self, mock_resp):
         """Test that a 'None" thumbnail is doesn't break system."""
-        config = CONFIG | {
-            "thumbnail": None,
+        config = {
+            **CONFIG,
+            **{
+                "thumbnail": None,
+            },
         }
         mock_resp.side_effect = [
             {"temp": 71},
@@ -156,8 +159,11 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             "/api/v3/media/accounts/9999/networks/5678/"
             "test/1234/thumbnail/thumbnail.jpg?ts=1357924680&ext="
         )
-        config = CONFIG | {
-            "thumbnail": thumb_return,
+        config = {
+            **CONFIG,
+            **{
+                "thumbnail": thumb_return,
+            },
         }
         mock_resp.side_effect = [
             {"temp": 71},

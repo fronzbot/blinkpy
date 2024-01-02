@@ -95,8 +95,11 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         """Tests that thumbnail is 'None' if none found."""
         mock_resp.return_value = "foobar"
         self.camera.last_record = ["1"]
-        config = CONFIG | {
-            "thumbnail": "",
+        config = {
+            **CONFIG,
+            **{
+                "thumbnail": "",
+            },
         }
 
         self.camera.sync.homescreen = {"devices": []}
@@ -124,8 +127,11 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     async def test_no_video_clips(self, mock_resp):
         """Tests that we still proceed with camera setup with no videos."""
         mock_resp.return_value = "foobar"
-        config = CONFIG | {
-            "thumbnail": "/foobar",
+        config = {
+            **CONFIG,
+            **{
+                "thumbnail": "/foobar",
+            },
         }
         mock_resp.return_value = mresp.MockResponse({"test": 200}, 200, raw_data="")
         self.camera.sync.homescreen = {"devices": []}
@@ -359,9 +365,12 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
 
     async def test_missing_keys(self, mock_resp):
         """Tests missing signal keys."""
-        config = CONFIG | {
-            "signals": {"junk": 1},
-            "thumbnail": "",
+        config = {
+            **CONFIG,
+            **{
+                "signals": {"junk": 1},
+                "thumbnail": "",
+            },
         }
         self.camera.sync.homescreen = {"devices": []}
         mock_resp.side_effect = [
