@@ -34,6 +34,7 @@ class BlinkSyncModule:
         self.region_id = blink.auth.region_id
         self.name = network_name
         self.serial = None
+        self.version = None
         self.status = "offline"
         self.sync_id = None
         self.host = None
@@ -72,6 +73,7 @@ class BlinkSyncModule:
             "id": self.sync_id,
             "network_id": self.network_id,
             "serial": self.serial,
+            "version": self.version,
             "status": self.status,
             "region_id": self.region_id,
             "local_storage": self.local_storage,
@@ -153,6 +155,7 @@ class BlinkSyncModule:
                 "Could not retrieve sync module information with response: %s", response
             )
             return False
+        self.version = self.summary.get("fw_version")
         return response
 
     async def _init_local_storage(self, sync_id):
