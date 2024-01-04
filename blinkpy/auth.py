@@ -1,6 +1,6 @@
 """Login handler for blink."""
 import logging
-from aiohttp import ClientSession, ClientConnectionError
+from aiohttp import ClientSession, ClientConnectionError, ContentTypeError
 from blinkpy import api
 from blinkpy.helpers import util
 from blinkpy.helpers.constants import (
@@ -220,7 +220,7 @@ class Auth:
                 if not blink.available:
                     _LOGGER.error("%s", json_resp["message"])
                     return False
-            except (KeyError, TypeError):
+            except (KeyError, TypeError, ContentTypeError):
                 _LOGGER.error("Did not receive valid response from server.")
                 return False
         return True
