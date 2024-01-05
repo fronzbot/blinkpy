@@ -172,10 +172,11 @@ class Auth:
                     url=url, data=data, headers=headers, timeout=timeout
                 )
             return await self.validate_response(response, json_resp)
-        except (ClientConnectionError, TimeoutError):
+        except (ClientConnectionError, TimeoutError) as er:
             _LOGGER.error(
-                "Connection error. Endpoint %s possibly down or throttled.",
+                "Connection error. Endpoint %s possibly down or throttled. Error: %s",
                 url,
+                er,
             )
         except BlinkBadResponse:
             code = None
@@ -220,8 +221,11 @@ class Auth:
                 if not blink.available:
                     _LOGGER.error("%s", json_resp["message"])
                     return False
-            except (KeyError, TypeError, ContentTypeError):
-                _LOGGER.error("Did not receive valid response from server.")
+            except (KeyError, TypeError, ContentTypeError) as er:
+                _LOGGER.error(
+                    "Did not receive valid response from server. Error: %s",
+                    er,
+                )
                 return False
         return True
 
