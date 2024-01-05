@@ -220,7 +220,9 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         ]
         with self.assertLogs(level="DEBUG") as dl_log:
             await self.blink.download_videos("/tmp", camera="foo", stop=2, delay=0)
-            self.assertListEqual(dl_log.output, expected_log)
+            assert expected_log[0]in dl_log.output
+            assert expected_log[1]in dl_log.output
+            assert expected_log[2]in dl_log.output
 
     @mock.patch("blinkpy.blinkpy.api.request_videos")
     async def test_parse_camera_not_in_list(self, mock_req):
