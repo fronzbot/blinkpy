@@ -100,6 +100,7 @@ async def main():
             working = None
         frame = None
     await session.close()
+    await blink.save(f"{path}/blink.json")
 
 
 # Run the program
