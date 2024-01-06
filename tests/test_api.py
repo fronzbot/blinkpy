@@ -184,5 +184,5 @@ class TestAPI(IsolatedAsyncioTestCase):
         response = await api.wait_for_command(self.blink, COMMAND_RESPONSE)
         self.assertFalse(response)
 
-        response = await api.wait_for_command(self.blink, {})
+        response = await api.wait_for_command(self.blink, None)
         self.assertFalse(response)
