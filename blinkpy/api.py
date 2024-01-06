@@ -503,8 +503,11 @@ async def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TI
 async def wait_for_command(blink, json_data: dict) -> bool:
     """Wait for command to complete."""
     _LOGGER.debug("Command Wait %s", json_data)
-    network_id = json_data.get("network_id")
-    command_id = json_data.get("id")
+    try:
+        network_id = json_data.get("network_id")
+        command_id = json_data.get("id")
+    except AttributeError:
+        return False
     if command_id and network_id:
         for _ in range(0, MAX_RETRY):
             _LOGGER.debug("Making GET request waiting for command")
