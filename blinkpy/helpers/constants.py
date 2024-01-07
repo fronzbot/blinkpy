@@ -21,9 +21,9 @@ ONLINE = {"online": True, "offline": False}
 OTHER
 """
 DEFAULT_USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) "
+    "Mozilla/5.0 (Linux; Android 14) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/71.0.3578.98 Safari/537.36"
+    "Chrome/120.0.6099.193 Mobile Safari/537.36"
 )
 DEVICE_ID = "Blinkpy"
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
