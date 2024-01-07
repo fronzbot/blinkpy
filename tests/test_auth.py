@@ -2,7 +2,7 @@
 
 from unittest import mock
 from unittest import IsolatedAsyncioTestCase
-from aiohttp import ClientConnectionError
+from aiohttp import ClientConnectionError, ContentTypeError
 from blinkpy.auth import (
     Auth,
     TokenRefreshFailed,
@@ -98,6 +98,10 @@ class TestAuth(IsolatedAsyncioTestCase):
         self.auth.is_errored = False
         fake_resp = mresp.MockResponse({"code": 101}, 401)
         with self.assertRaises(UnauthorizedError):
+            await self.auth.validate_response(fake_resp, True)
+        self.assertTrue(self.auth.is_errored)
+        fake_resp = mresp.MockResponse({"code": 101}, 406, raise_error=ContentTypeError)
+        with self.assertRaises(BlinkBadResponse):
             await self.auth.validate_response(fake_resp, True)
         self.assertTrue(self.auth.is_errored)
 

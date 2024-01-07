@@ -14,10 +14,10 @@ jobs:
       matrix:
         platform:
           - ubuntu-latest
-        python-version: ['3.9']
+        python-version: ['3.11']
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
@@ -33,7 +33,7 @@ jobs:
       run: |
         tox -r -e cov
     - name: Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         flags: unittests

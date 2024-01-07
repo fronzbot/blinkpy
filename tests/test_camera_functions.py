@@ -15,19 +15,20 @@ from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
 import tests.mock_responses as mresp
 
-CAMERA_CFG = {
-    "camera": [
-        {
-            "battery_voltage": 90,
-            "motion_alert": True,
-            "wifi_strength": -30,
-            "temperature": 68,
-        }
-    ]
+CONFIG = {
+    "name": "new",
+    "id": 1234,
+    "network_id": 5678,
+    "serial": "12345678",
+    "enabled": False,
+    "battery_state": "ok",
+    "temperature": 68,
+    "signals": {"lfr": 5, "wifi": 4, "battery": 3},
+    "thumbnail": "/thumb",
 }
 
 
-@mock.patch("blinkpy.auth.Auth.query")
+@mock.patch("blinkpy.auth.Auth.query", return_value={})
 class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     """Test the Blink class in blinkpy."""
 
@@ -47,18 +48,6 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
 
     async def test_camera_update(self, mock_resp):
         """Test that we can properly update camera properties."""
-        config = {
-            "name": "new",
-            "id": 1234,
-            "network_id": 5678,
-            "serial": "12345678",
-            "enabled": False,
-            "battery_voltage": 90,
-            "battery_state": "ok",
-            "temperature": 68,
-            "wifi_strength": 4,
-            "thumbnail": "/thumb",
-        }
         self.camera.last_record = ["1"]
         self.camera.sync.last_records = {
             "new": [{"clip": "/test.mp4", "time": "1970-01-01T00:00:00"}]
@@ -70,7 +59,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         ]
         self.assertIsNone(self.camera.image_from_cache)
 
-        await self.camera.update(config, expire_clips=False)
+        await self.camera.update(CONFIG, expire_clips=False)
         self.assertEqual(self.camera.name, "new")
         self.assertEqual(self.camera.camera_id, "1234")
         self.assertEqual(self.camera.network_id, "5678")
@@ -107,17 +96,12 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         mock_resp.return_value = "foobar"
         self.camera.last_record = ["1"]
         config = {
-            "name": "new",
-            "id": 1234,
-            "network_id": 5678,
-            "serial": "12345678",
-            "enabled": False,
-            "battery_voltage": 90,
-            "battery_state": "ok",
-            "temperature": 68,
-            "wifi_strength": 4,
-            "thumbnail": "",
+            **CONFIG,
+            **{
+                "thumbnail": "",
+            },
         }
+
         self.camera.sync.homescreen = {"devices": []}
         self.assertEqual(self.camera.temperature_calibrated, None)
         with self.assertLogs() as logrecord:
@@ -144,16 +128,10 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         """Tests that we still proceed with camera setup with no videos."""
         mock_resp.return_value = "foobar"
         config = {
-            "name": "new",
-            "id": 1234,
-            "network_id": 5678,
-            "serial": "12345678",
-            "enabled": False,
-            "battery_voltage": 90,
-            "battery_state": "ok",
-            "temperature": 68,
-            "wifi_strength": 4,
-            "thumbnail": "/foobar",
+            **CONFIG,
+            **{
+                "thumbnail": "/foobar",
+            },
         }
         mock_resp.return_value = mresp.MockResponse({"test": 200}, 200, raw_data="")
         self.camera.sync.homescreen = {"devices": []}
@@ -167,25 +145,13 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         Tests that the last records in the sync module are added
         to the camera recent clips list.
         """
-        config = {
-            "name": "new",
-            "id": 1234,
-            "network_id": 5678,
-            "serial": "12345678",
-            "enabled": False,
-            "battery_voltage": 90,
-            "battery_state": "ok",
-            "temperature": 68,
-            "wifi_strength": 4,
-            "thumbnail": "/thumb",
-        }
         self.camera.sync.last_records["foobar"] = []
         record2 = {"clip": "/clip2", "time": "2022-12-01 00:00:10+00:00"}
         self.camera.sync.last_records["foobar"].append(record2)
         record1 = {"clip": "/clip1", "time": "2022-12-01 00:00:00+00:00"}
         self.camera.sync.last_records["foobar"].append(record1)
         self.camera.sync.motion["foobar"] = True
-        await self.camera.update_images(config, expire_clips=False)
+        await self.camera.update_images(CONFIG, expire_clips=False)
         record1["clip"] = self.blink.urls.base_url + "/clip1"
         record2["clip"] = self.blink.urls.base_url + "/clip2"
         self.assertEqual(self.camera.recent_clips[0], record1)
@@ -193,25 +159,13 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
 
     async def test_recent_video_clips_missing_key(self, mock_resp):
         """Tests that the missing key failst."""
-        config = {
-            "name": "new",
-            "id": 1234,
-            "network_id": 5678,
-            "serial": "12345678",
-            "enabled": False,
-            "battery_voltage": 90,
-            "battery_state": "ok",
-            "temperature": 68,
-            "wifi_strength": 4,
-            "thumbnail": "/thumb",
-        }
         self.camera.sync.last_records["foobar"] = []
         record2 = {"clip": "/clip2"}
         self.camera.sync.last_records["foobar"].append(record2)
         self.camera.sync.motion["foobar"] = True
 
         with self.assertLogs(level="ERROR") as dl_log:
-            await self.camera.update_images(config, expire_clips=False)
+            await self.camera.update_images(CONFIG, expire_clips=False)
 
         self.assertIsNotNone(dl_log.output)
 
@@ -408,3 +362,22 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             in "\t".join(dl_log.output)
         )
         assert mock_open.call_count == 1
+
+    async def test_missing_keys(self, mock_resp):
+        """Tests missing signal keys."""
+        config = {
+            **CONFIG,
+            **{
+                "signals": {"junk": 1},
+                "thumbnail": "",
+            },
+        }
+        self.camera.sync.homescreen = {"devices": []}
+        mock_resp.side_effect = [
+            {"temp": 71},
+            mresp.MockResponse({"test": 200}, 200, raw_data="test"),
+            mresp.MockResponse({"foobar": 200}, 200, raw_data="foobar"),
+        ]
+        await self.camera.update(config, expire_clips=False, force=True)
+        self.assertEqual(self.camera.wifi_strength, None)
+        self.assertEqual(self.camera.battery_level, None)

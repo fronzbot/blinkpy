@@ -1,6 +1,6 @@
 blinkpy |Build Status| |Coverage Status| |PyPi Version| |Codestyle|
 =============================================================================================
-A Python library for the Blink Camera system (Python 3.8+)
+A Python library for the Blink Camera system (Python 3.9+)
 
 Like the library? Consider buying me a cup of coffee!
 
@@ -32,9 +32,7 @@ To install the current development version, perform the following steps.  Note t
     $ cd ~
     $ git clone https://github.com/fronzbot/blinkpy.git
     $ cd blinkpy
-    $ rm -rf build dist
-    $ python3 setup.py bdist_wheel
-    $ pip3 install --upgrade dist/*.whl
+    $ pip install .
 
 
 If you'd like to contribute to this library, please read the `contributing instructions <https://github.com/fronzbot/blinkpy/blob/dev/CONTRIBUTING.rst>`__.

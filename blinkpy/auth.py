@@ -1,6 +1,11 @@
 """Login handler for blink."""
 import logging
-from aiohttp import ClientSession, ClientConnectionError
+from aiohttp import (
+    ClientSession,
+    ClientConnectionError,
+    ContentTypeError,
+    ClientResponse,
+)
 from blinkpy import api
 from blinkpy.helpers import util
 from blinkpy.helpers.constants import (
@@ -123,7 +128,7 @@ class Auth:
         if None in self.login_attributes.values():
             await self.refresh_token()
 
-    async def validate_response(self, response, json_resp):
+    async def validate_response(self, response: ClientResponse, json_resp):
         """Check for valid response."""
         if not json_resp:
             self.is_errored = False
@@ -136,6 +141,9 @@ class Auth:
                 raise ClientConnectionError
             json_data = await response.json()
         except (AttributeError, ValueError) as error:
+            raise BlinkBadResponse from error
+        except ContentTypeError as error:
+            _LOGGER.warning("Got text for JSON response: %s", await response.text())
             raise BlinkBadResponse from error
 
         self.is_errored = False
@@ -172,10 +180,11 @@ class Auth:
                     url=url, data=data, headers=headers, timeout=timeout
                 )
             return await self.validate_response(response, json_resp)
-        except (ClientConnectionError, TimeoutError):
+        except (ClientConnectionError, TimeoutError) as er:
             _LOGGER.error(
-                "Connection error. Endpoint %s possibly down or throttled.",
+                "Connection error. Endpoint %s possibly down or throttled. Error: %s",
                 url,
+                er,
             )
         except BlinkBadResponse:
             code = None
@@ -220,8 +229,11 @@ class Auth:
                 if not blink.available:
                     _LOGGER.error("%s", json_resp["message"])
                     return False
-            except (KeyError, TypeError):
-                _LOGGER.error("Did not receive valid response from server.")
+            except (KeyError, TypeError, ContentTypeError) as er:
+                _LOGGER.error(
+                    "Did not receive valid response from server. Error: %s",
+                    er,
+                )
                 return False
         return True
 
