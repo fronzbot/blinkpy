@@ -4,13 +4,42 @@ Changelog
 
 A list of changes between each release
 
+0.22.5 (2024-01-07)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Warning: This release removes support for Python 3.8 and adds Python 3.12 support.
+
+**Bugfixes**
+
+- Add new keys for wifi, lfr, and battery (`mkmer #835 <https://github.com/fronzbot/blinkpy/pull/835>`__)
+- Battery level (`mkmer #837 <https://github.com/fronzbot/blinkpy/pull/837>`__)
+- Address not awaited warning (`mkmer #838 <https://github.com/fronzbot/blinkpy/pull/838>`__)
+- Catch ContentTypeError in 2FA (`mkmer #843 <https://github.com/fronzbot/blinkpy/pull/843>`__)
+- Handle empty put response in wait_command (`mkmer #847 <https://github.com/fronzbot/blinkpy/pull/847>`__)
+- Change default user agent to fix API calls (`gingerm0nkey #848 <https://github.com/fronzbot/blinkpy/pull/848>`__)
+- Android for new user agent (`mkmer #850 <https://github.com/fronzbot/blinkpy/pull/850>`__)
+
+**Other changes**
+
+- Remove Py3.8, add 3.12 (`fronzbot #839 <https://github.com/fronzbot/blinkpy/pull/839>`__)
+- Deprecate py38 (`fronzbot #840 <https://github.com/fronzbot/blinkpy/pull/840>`__)
+- Add/extract firmware version (`mkmer #842 <https://github.com/fronzbot/blinkpy/pull/842>`__)
+- Additional logging, fix blinksync json (`mkmer #844 <https://github.com/fronzbot/blinkpy/pull/844>`__)
+- Log text response (`mkmer #845 <https://github.com/fronzbot/blinkpy/pull/845>`__)
+- Add tests for logging (`mkmer #846 <https://github.com/fronzbot/blinkpy/pull/846>`__)
+- Bump ruff to 0.1.11
+- Bump black to 23.12.1
+- Bump coverage to 7.4.0
+- Bump pytest to 7.4.4
+
+
 0.22.4 (2023-12-18)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Bugfixes**
 
-- Allow kwargs to throttled functions, await sleep in throttle (`mkmer #823 <https://github.com/fronzbot/blinkpy/pull/800>`__)
-- add missing entry in type_key_map (`@Rosi2143 <https://github.com/fronzbot/blinkpy/pull/813>`__)
+- Allow kwargs to throttled functions, await sleep in throttle (`mkmer #823 <https://github.com/fronzbot/blinkpy/pull/823>`__)
+- add missing entry in type_key_map (`@Rosi2143 #813 <https://github.com/fronzbot/blinkpy/pull/813>`__)
 
 ** Other Changes **
 
