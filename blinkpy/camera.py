@@ -27,7 +27,7 @@ class BlinkCamera:
         self.network_id = None
         self.thumbnail = None
         self.serial = None
-        self.version = None
+        self._version = None
         self.motion_enabled = None
         self.battery_level = None
         self.clip = None
@@ -53,7 +53,7 @@ class BlinkCamera:
             "name": self.name,
             "camera_id": self.camera_id,
             "serial": self.serial,
-            "version": self.version,
+            "version": self._version,
             "temperature": self.temperature,
             "temperature_c": self.temperature_c,
             "temperature_calibrated": self.temperature_calibrated,
@@ -99,6 +99,11 @@ class BlinkCamera:
         if self._cached_video:
             return self._cached_video
         return None
+
+    @property
+    def version(self):
+        """Return the camera Firmware version."""
+        return self._version
 
     @property
     def arm(self):
@@ -234,7 +239,7 @@ class BlinkCamera:
         self.camera_id = str(config.get("id", "unknown"))
         self.network_id = str(config.get("network_id", "unknown"))
         self.serial = config.get("serial")
-        self.version = config.get("fw_version")
+        self._version = config.get("fw_version")
         self.motion_enabled = config.get("enabled", "unknown")
         self.battery_state = config.get("battery_state") or config.get("battery")
         self.temperature = config.get("temperature")
