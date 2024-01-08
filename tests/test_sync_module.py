@@ -128,7 +128,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertEqual(
             await self.blink.sync["test"].get_camera_info("1234"), "foobar"
         )
-        self.assertEqual(self.blink.sync["test"].version,None)
+        self.assertEqual(self.blink.sync["test"].version, None)
 
     async def test_get_camera_info_fail(self, mock_resp) -> None:
         """Test handling of failed get camera info function."""

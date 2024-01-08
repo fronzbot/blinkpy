@@ -94,8 +94,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.assertEqual(attr["serial"], None)
         self.assertEqual(attr["temperature"], None)
         self.assertEqual(attr["temperature_c"], None)
-        self.assertEqual(attr["version"],None)
-        self.assertEqual(self.camera.version,None)
+        self.assertEqual(attr["version"], None)
+        self.assertEqual(self.camera.version, None)
 
     def test_mini_missing_attributes(self, mock_resp):
         """Test that attributes return None if missing."""
