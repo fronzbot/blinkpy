@@ -20,7 +20,7 @@ ONLINE = {"online": True, "offline": False}
 """
 OTHER
 """
-
+APP_BUILD = "ANDROID_28373244"
 DEFAULT_USER_AGENT = "27.0ANDROID_28373244"
 DEVICE_ID = "Blinkpy"
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
