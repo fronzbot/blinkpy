@@ -132,9 +132,10 @@ class TestAuth(IsolatedAsyncioTestCase):
         """Test header data."""
         self.auth.token = "bar"
         expected_header = {
+            "APP-BUILD": const.APP_BUILD,
             "TOKEN_AUTH": "bar",
-            "user-agent": const.DEFAULT_USER_AGENT,
-            "content-type": "application/json",
+            "User-Agent": const.DEFAULT_USER_AGENT,
+            "Content-Type": "application/json",
         }
         self.assertDictEqual(self.auth.header, expected_header)
 

@@ -10,6 +10,7 @@ from blinkpy import api
 from blinkpy.helpers import util
 from blinkpy.helpers.constants import (
     BLINK_URL,
+    APP_BUILD,
     DEFAULT_USER_AGENT,
     LOGIN_ENDPOINT,
     TIMEOUT,
@@ -64,9 +65,10 @@ class Auth:
         if self.token is None:
             return None
         return {
+            "APP-BUILD": APP_BUILD,
             "TOKEN_AUTH": self.token,
-            "user-agent": DEFAULT_USER_AGENT,
-            "content-type": "application/json",
+            "User-Agent": DEFAULT_USER_AGENT,
+            "Content-Type": "application/json",
         }
 
     def validate_login(self):
