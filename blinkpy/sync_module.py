@@ -501,14 +501,14 @@ class BlinkSyncModule:
                 response = await api.request_local_storage_manifest(
                     self.blink, self.network_id, self.sync_id
                 )
-                if "id" in response:
+                if response and "id" in response:
                     break
             # Get the manifest.
             else:
                 response = await api.get_local_storage_manifest(
                     self.blink, self.network_id, self.sync_id, manifest_request_id
                 )
-                if "clips" in response:
+                if response and "clips" in response:
                     break
             seconds = backoff_seconds(retry=retry, default_time=3)
             _LOGGER.debug("[retry=%d] Retrying in %d seconds", retry + 1, seconds)
