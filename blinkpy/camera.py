@@ -206,9 +206,14 @@ class BlinkCamera:
 
     async def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
-        return await api.request_new_image(
+        ret_val = await api.request_new_image(
             self.sync.blink, self.network_id, self.camera_id
         )
+        response = await self.get_media()
+        if response and response.status == 200:
+            self._cached_image = await response.read()
+
+        return ret_val
 
     async def set_motion_detect(self, enable):
         """Set motion detection."""
