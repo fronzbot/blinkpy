@@ -21,7 +21,7 @@ class TestAuth(IsolatedAsyncioTestCase):
 
     def setUp(self):
         """Set up Login Handler."""
-        self.auth = Auth(notificaiton_key="testkey")
+        self.auth = Auth()
 
     def tearDown(self):
         """Clean up after test."""

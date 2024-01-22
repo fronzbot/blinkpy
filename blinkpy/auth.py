@@ -29,7 +29,6 @@ class Auth:
         session=None,
         agent=DEFAULT_USER_AGENT,
         app_build=APP_BUILD,
-        notificaiton_key=None,
     ):
         """
         Initialize auth handler.
@@ -55,7 +54,6 @@ class Auth:
         self._agent = agent
         self._app_build = app_build
         self.session = session if session else ClientSession()
-        self._notification_key = notificaiton_key
 
     @property
     def login_attributes(self):
@@ -96,7 +94,6 @@ class Auth:
             login_url,
             self.data,
             is_retry=False,
-            notification_key=self._notification_key,
         )
         try:
             if response.status == 200:
