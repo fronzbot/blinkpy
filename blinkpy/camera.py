@@ -247,13 +247,14 @@ class BlinkCamera:
         self._version = config.get("fw_version")
         self.motion_enabled = config.get("enabled", "unknown")
         self.battery_state = config.get("battery_state") or config.get("battery")
-        self.temperature = config.get("temperature")
         if signals := config.get("signals"):
             self.wifi_strength = signals.get("wifi")
             self.battery_level = signals.get("battery")
             self.sync_signal_strength = signals.get("lfr")
+            self.temperature = signals.get("temp")
         else:
             self.wifi_strength = config.get("wifi_strength")
+            self.temperature = config.get("temperature")
         self.product_type = config.get("type")
 
     async def get_sensor_info(self):
