@@ -37,6 +37,7 @@ async def request_login(
         "Content-Type": "application/json",
         "user-agent": DEFAULT_USER_AGENT,
     }
+
     data = dumps(
         {
             "email": login_data["username"],

@@ -22,8 +22,7 @@ CONFIG = {
     "serial": "12345678",
     "enabled": False,
     "battery_state": "ok",
-    "temperature": 68,
-    "signals": {"lfr": 5, "wifi": 4, "battery": 3},
+    "signals": {"lfr": 5, "wifi": 4, "battery": 3, "temp": 68},
     "thumbnail": "/thumb",
 }
 

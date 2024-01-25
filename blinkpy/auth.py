@@ -10,6 +10,7 @@ from blinkpy import api
 from blinkpy.helpers import util
 from blinkpy.helpers.constants import (
     BLINK_URL,
+    APP_BUILD,
     DEFAULT_USER_AGENT,
     LOGIN_ENDPOINT,
     TIMEOUT,
@@ -21,7 +22,14 @@ _LOGGER = logging.getLogger(__name__)
 class Auth:
     """Class to handle login communication."""
 
-    def __init__(self, login_data=None, no_prompt=False, session=None):
+    def __init__(
+        self,
+        login_data=None,
+        no_prompt=False,
+        session=None,
+        agent=DEFAULT_USER_AGENT,
+        app_build=APP_BUILD,
+    ):
         """
         Initialize auth handler.
 
@@ -43,10 +51,9 @@ class Auth:
         self.login_response = None
         self.is_errored = False
         self.no_prompt = no_prompt
-        if session:
-            self.session = session
-        else:
-            self.session = ClientSession()
+        self._agent = agent
+        self._app_build = app_build
+        self.session = session if session else ClientSession()
 
     @property
     def login_attributes(self):
@@ -64,9 +71,10 @@ class Auth:
         if self.token is None:
             return None
         return {
+            "APP-BUILD": self._app_build,
             "TOKEN_AUTH": self.token,
-            "user-agent": DEFAULT_USER_AGENT,
-            "content-type": "application/json",
+            "User-Agent": self._agent,
+            "Content-Type": "application/json",
         }
 
     def validate_login(self):

@@ -34,7 +34,7 @@ class BlinkSyncModule:
         self.region_id = blink.auth.region_id
         self.name = network_name
         self.serial = None
-        self.version = None
+        self._version = None
         self.status = "offline"
         self.sync_id = None
         self.host = None
@@ -73,7 +73,7 @@ class BlinkSyncModule:
             "id": self.sync_id,
             "network_id": self.network_id,
             "serial": self.serial,
-            "version": self.version,
+            "version": self._version,
             "status": self.status,
             "region_id": self.region_id,
             "local_storage": self.local_storage,
@@ -94,6 +94,11 @@ class BlinkSyncModule:
             _LOGGER.error("Unknown sync module status %s", self.status)
             self.available = False
             return False
+
+    @property
+    def version(self):
+        """Return the Syncmodule Firmware version."""
+        return self._version
 
     @property
     def arm(self):
@@ -155,7 +160,7 @@ class BlinkSyncModule:
                 "Could not retrieve sync module information with response: %s", response
             )
             return False
-        self.version = self.summary.get("fw_version")
+        self._version = self.summary.get("fw_version")
         return response
 
     async def _init_local_storage(self, sync_id):
@@ -496,14 +501,14 @@ class BlinkSyncModule:
                 response = await api.request_local_storage_manifest(
                     self.blink, self.network_id, self.sync_id
                 )
-                if "id" in response:
+                if response and "id" in response:
                     break
             # Get the manifest.
             else:
                 response = await api.get_local_storage_manifest(
                     self.blink, self.network_id, self.sync_id, manifest_request_id
                 )
-                if "clips" in response:
+                if response and "clips" in response:
                     break
             seconds = backoff_seconds(retry=retry, default_time=3)
             _LOGGER.debug("[retry=%d] Retrying in %d seconds", retry + 1, seconds)

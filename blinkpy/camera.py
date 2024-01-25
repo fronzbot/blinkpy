@@ -27,7 +27,7 @@ class BlinkCamera:
         self.network_id = None
         self.thumbnail = None
         self.serial = None
-        self.version = None
+        self._version = None
         self.motion_enabled = None
         self.battery_level = None
         self.clip = None
@@ -53,7 +53,7 @@ class BlinkCamera:
             "name": self.name,
             "camera_id": self.camera_id,
             "serial": self.serial,
-            "version": self.version,
+            "version": self._version,
             "temperature": self.temperature,
             "temperature_c": self.temperature_c,
             "temperature_calibrated": self.temperature_calibrated,
@@ -99,6 +99,11 @@ class BlinkCamera:
         if self._cached_video:
             return self._cached_video
         return None
+
+    @property
+    def version(self):
+        """Return the camera Firmware version."""
+        return self._version
 
     @property
     def arm(self):
@@ -201,9 +206,14 @@ class BlinkCamera:
 
     async def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
-        return await api.request_new_image(
+        ret_val = await api.request_new_image(
             self.sync.blink, self.network_id, self.camera_id
         )
+        response = await self.get_media()
+        if response and response.status == 200:
+            self._cached_image = await response.read()
+
+        return ret_val
 
     async def set_motion_detect(self, enable):
         """Set motion detection."""
@@ -234,16 +244,17 @@ class BlinkCamera:
         self.camera_id = str(config.get("id", "unknown"))
         self.network_id = str(config.get("network_id", "unknown"))
         self.serial = config.get("serial")
-        self.version = config.get("fw_version")
+        self._version = config.get("fw_version")
         self.motion_enabled = config.get("enabled", "unknown")
         self.battery_state = config.get("battery_state") or config.get("battery")
-        self.temperature = config.get("temperature")
         if signals := config.get("signals"):
             self.wifi_strength = signals.get("wifi")
             self.battery_level = signals.get("battery")
             self.sync_signal_strength = signals.get("lfr")
+            self.temperature = signals.get("temp")
         else:
             self.wifi_strength = config.get("wifi_strength")
+            self.temperature = config.get("temperature")
         self.product_type = config.get("type")
 
     async def get_sensor_info(self):
@@ -522,8 +533,8 @@ class BlinkCameraMini(BlinkCamera):
         await api.wait_for_command(self.sync.blink, response)
         server = response["server"]
         server_split = server.split(":")
-        server_split[0] = "rtsps:"
-        link = "".join(server_split)
+        server_split[0] = "rtsps"
+        link = ":".join(server_split)
         return link
 
 
