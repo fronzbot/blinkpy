@@ -4,6 +4,27 @@ Changelog
 
 A list of changes between each release
 
+
+0.22.6 (2024-01-24)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes**
+
+- Test for None type in poll_local_storage_manifest (`@mkmer #859 <https://github.com/fronzbot/blinkpy/pull/859>`__)
+- Update image after snap by (`@mkmer #861 <https://github.com/fronzbot/blinkpy/pull/861>`__)
+- fix missing ':' before port number in rtsps adress (`@Rosi2143 #863 <https://github.com/fronzbot/blinkpy/pull/863>`__)
+- New temperature location (`@mkmer #867 <https://github.com/fronzbot/blinkpy/pull/867>`__)
+
+**Other changes**
+
+- Add properties for version information (`@mkmer #854 <https://github.com/fronzbot/blinkpy/pull/854>`__)
+- Complete header match (`@mkmer #856 <https://github.com/fronzbot/blinkpy/pull/856>`__)
+- Bump ruff from 0.1.11 to 0.1.13 (`@dependabot #858 <https://github.com/fronzbot/blinkpy/pull/858>`__)
+- Add option to change agent from Auth() init (`@mkmer #860 <https://github.com/fronzbot/blinkpy/pull/860>`__)
+- Add notification key to login (`@mkmer #862 <https://github.com/fronzbot/blinkpy/pull/862>`__)
+- Bump ruff from 0.1.13 to 0.1.14 (`@dependabot #868 <https://github.com/fronzbot/blinkpy/pull/868>`__)
+
+
 0.22.5 (2024-01-07)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -11,22 +32,22 @@ Warning: This release removes support for Python 3.8 and adds Python 3.12 suppor
 
 **Bugfixes**
 
-- Add new keys for wifi, lfr, and battery (`mkmer #835 <https://github.com/fronzbot/blinkpy/pull/835>`__)
-- Battery level (`mkmer #837 <https://github.com/fronzbot/blinkpy/pull/837>`__)
-- Address not awaited warning (`mkmer #838 <https://github.com/fronzbot/blinkpy/pull/838>`__)
-- Catch ContentTypeError in 2FA (`mkmer #843 <https://github.com/fronzbot/blinkpy/pull/843>`__)
-- Handle empty put response in wait_command (`mkmer #847 <https://github.com/fronzbot/blinkpy/pull/847>`__)
-- Change default user agent to fix API calls (`gingerm0nkey #848 <https://github.com/fronzbot/blinkpy/pull/848>`__)
-- Android for new user agent (`mkmer #850 <https://github.com/fronzbot/blinkpy/pull/850>`__)
+- Add new keys for wifi, lfr, and battery (`@mkmer #835 <https://github.com/fronzbot/blinkpy/pull/835>`__)
+- Battery level (`@mkmer #837 <https://github.com/fronzbot/blinkpy/pull/837>`__)
+- Address not awaited warning (`@mkmer #838 <https://github.com/fronzbot/blinkpy/pull/838>`__)
+- Catch ContentTypeError in 2FA (`@mkmer #843 <https://github.com/fronzbot/blinkpy/pull/843>`__)
+- Handle empty put response in wait_command (`@mkmer #847 <https://github.com/fronzbot/blinkpy/pull/847>`__)
+- Change default user agent to fix API calls (`@gingerm0nkey #848 <https://github.com/fronzbot/blinkpy/pull/848>`__)
+- Android for new user agent (`@mkmer #850 <https://github.com/fronzbot/blinkpy/pull/850>`__)
 
 **Other changes**
 
-- Remove Py3.8, add 3.12 (`fronzbot #839 <https://github.com/fronzbot/blinkpy/pull/839>`__)
-- Deprecate py38 (`fronzbot #840 <https://github.com/fronzbot/blinkpy/pull/840>`__)
-- Add/extract firmware version (`mkmer #842 <https://github.com/fronzbot/blinkpy/pull/842>`__)
-- Additional logging, fix blinksync json (`mkmer #844 <https://github.com/fronzbot/blinkpy/pull/844>`__)
-- Log text response (`mkmer #845 <https://github.com/fronzbot/blinkpy/pull/845>`__)
-- Add tests for logging (`mkmer #846 <https://github.com/fronzbot/blinkpy/pull/846>`__)
+- Remove Py3.8, add 3.12 (`@fronzbot #839 <https://github.com/fronzbot/blinkpy/pull/839>`__)
+- Deprecate py38 (`@fronzbot #840 <https://github.com/fronzbot/blinkpy/pull/840>`__)
+- Add/extract firmware version (`@mkmer #842 <https://github.com/fronzbot/blinkpy/pull/842>`__)
+- Additional logging, fix blinksync json (`@mkmer #844 <https://github.com/fronzbot/blinkpy/pull/844>`__)
+- Log text response (`@mkmer #845 <https://github.com/fronzbot/blinkpy/pull/845>`__)
+- Add tests for logging (`@mkmer #846 <https://github.com/fronzbot/blinkpy/pull/846>`__)
 - Bump ruff to 0.1.11
 - Bump black to 23.12.1
 - Bump coverage to 7.4.0
@@ -38,7 +59,7 @@ Warning: This release removes support for Python 3.8 and adds Python 3.12 suppor
 
 **Bugfixes**
 
-- Allow kwargs to throttled functions, await sleep in throttle (`mkmer #823 <https://github.com/fronzbot/blinkpy/pull/823>`__)
+- Allow kwargs to throttled functions, await sleep in throttle (`@mkmer #823 <https://github.com/fronzbot/blinkpy/pull/823>`__)
 - add missing entry in type_key_map (`@Rosi2143 #813 <https://github.com/fronzbot/blinkpy/pull/813>`__)
 
 ** Other Changes **
