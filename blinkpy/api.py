@@ -22,6 +22,7 @@ async def request_login(
     auth,
     url,
     login_data,
+    notification_key,
     is_retry=False,
 ):
     """
@@ -37,6 +38,9 @@ async def request_login(
         "Content-Type": "application/json",
         "user-agent": DEFAULT_USER_AGENT,
     }
+    if notification_key:
+        headers["notification_key"] = notification_key
+
     data = dumps(
         {
             "email": login_data["username"],
