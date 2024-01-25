@@ -532,8 +532,8 @@ class BlinkCameraMini(BlinkCamera):
         await api.wait_for_command(self.sync.blink, response)
         server = response["server"]
         server_split = server.split(":")
-        server_split[0] = "rtsps:"
-        link = "".join(server_split)
+        server_split[0] = "rtsps"
+        link = ":".join(server_split)
         return link
 
 
