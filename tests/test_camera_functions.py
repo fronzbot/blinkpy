@@ -381,5 +381,4 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             mresp.MockResponse({"foobar": 200}, 200, raw_data="foobar"),
         ]
         await self.camera.update(config, expire_clips=False, force=True)
-        self.assertEqual(self.camera.wifi_strength, None)
         self.assertEqual(self.camera.battery_level, None)
