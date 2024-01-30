@@ -22,6 +22,8 @@ CONFIG = {
     "serial": "12345678",
     "enabled": False,
     "battery_state": "ok",
+    "battery_voltage": 163,
+    "wifi_strength": -38,
     "signals": {"lfr": 5, "wifi": 4, "battery": 3, "temp": 68},
     "thumbnail": "/thumb",
 }
@@ -68,7 +70,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.assertEqual(self.camera.temperature, 68)
         self.assertEqual(self.camera.temperature_c, 20)
         self.assertEqual(self.camera.temperature_calibrated, 71)
-        self.assertEqual(self.camera.wifi_strength, 4)
+        self.assertEqual(self.camera.battery_voltage, 163)
+        self.assertEqual(self.camera.wifi_strength, -38)
         self.assertEqual(
             self.camera.thumbnail, "https://rest-test.immedia-semi.com/thumb.jpg"
         )
