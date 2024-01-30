@@ -30,6 +30,7 @@ class BlinkCamera:
         self._version = None
         self.motion_enabled = None
         self.battery_level = None
+        self.battery_voltage = None
         self.clip = None
         # A clip remains in the recent clips list until is has
         # been downloaded or has been expired.
@@ -59,6 +60,7 @@ class BlinkCamera:
             "temperature_calibrated": self.temperature_calibrated,
             "battery": self.battery,
             "battery_level": self.battery_level,
+            "battery_voltage": self.battery_voltage,
             "thumbnail": self.thumbnail,
             "video": self.clip,
             "recent_clips": self.recent_clips,
@@ -246,14 +248,14 @@ class BlinkCamera:
         self.serial = config.get("serial")
         self._version = config.get("fw_version")
         self.motion_enabled = config.get("enabled", "unknown")
+        self.battery_voltage = config.get("battery_voltage", None)
         self.battery_state = config.get("battery_state") or config.get("battery")
+        self.wifi_strength = config.get("wifi_strength")
         if signals := config.get("signals"):
-            self.wifi_strength = signals.get("wifi")
             self.battery_level = signals.get("battery")
             self.sync_signal_strength = signals.get("lfr")
             self.temperature = signals.get("temp")
         else:
-            self.wifi_strength = config.get("wifi_strength")
             self.temperature = config.get("temperature")
         self.product_type = config.get("type")
 
