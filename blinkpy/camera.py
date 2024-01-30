@@ -82,7 +82,7 @@ class BlinkCamera:
 
     @property
     def battery_voltage(self):
-        """Return battery voltage as a number in 100ths of volts, e.g. 165 means 1.65v."""
+        """Return battery voltage as a number in 100ths of volts, so 165 = 1.65v."""
         return self._battery_voltage
 
     @property
