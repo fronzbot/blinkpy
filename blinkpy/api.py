@@ -514,8 +514,9 @@ async def wait_for_command(blink, json_data: dict) -> bool:
             _LOGGER.debug("Making GET request waiting for command")
             status = await request_command_status(blink, network_id, command_id)
             _LOGGER.debug("command status %s", status)
-            if status.get("status_code", 0) != 908:
-                return False
-            if status.get("complete"):
-                return True
+            if status:
+                if status.get("status_code", 0) != 908:
+                    return False
+                if status.get("complete"):
+                    return True
             await sleep(COMMAND_POLL_TIME)
