@@ -1,7 +1,7 @@
 ruff==0.3.0
 black==23.12.1
 build==1.0.3
-coverage==7.4.0
+coverage==7.4.3
 pytest==8.0.2
 pytest-cov==4.1.0
 pytest-sugar==1.0.0
