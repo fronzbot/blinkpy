@@ -6,11 +6,11 @@ import logging
 import time
 import secrets
 import re
-import aiofiles
 from asyncio import sleep
 from calendar import timegm
 from functools import wraps
 from getpass import getpass
+import aiofiles
 import dateutil.parser
 from blinkpy.helpers import constants as const
 
