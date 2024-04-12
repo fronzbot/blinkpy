@@ -4,7 +4,7 @@ import string
 import datetime
 import traceback
 import asyncio
-import aiofiles
+from aiofiles import open
 from sortedcontainers import SortedSet
 from requests.structures import CaseInsensitiveDict
 from blinkpy import api
@@ -732,7 +732,7 @@ class LocalStorageMediaItem:
             url = blink.urls.base_url + self.url()
             video = await api.http_get(blink, url, json=False)
             if video.status == 200:
-                async with aiofiles.open(file_name, "wb") as vidfile:
+                async with open(file_name, "wb") as vidfile:
                     await vidfile.write(await video.read())  # download the video
                     return True
             seconds = backoff_seconds(retry=retry, default_time=3)
