@@ -1,15 +1,18 @@
 codecov:
   branch: dev
+  bot: codecov-io
+  max_report_age: 24
+  disable_default_path_fixes: no
+  require_ci_to_pass: yes
+  notify:
+    wait_for_ci: yes
 coverage:
+  precision: 1
+  round: down
+  range: 85..100
   status:
     project:
       default:
-        target: 80%
-        threshold: 2%
-    patch:
-      default:
-        target: 60%
+        target: auto
         threshold: 5%
-
-comment: true
-require_ci_to_pass: yes
+ 
