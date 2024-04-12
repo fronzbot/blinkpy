@@ -6,11 +6,11 @@ import logging
 import time
 import secrets
 import re
-from aiofiles import open
 from asyncio import sleep
 from calendar import timegm
 from functools import wraps
 from getpass import getpass
+import aiofiles
 import dateutil.parser
 from blinkpy.helpers import constants as const
 
@@ -21,7 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 async def json_load(file_name):
     """Load json credentials from file."""
     try:
-        async with open(file_name, "r") as json_file:
+        async with aiofiles.open(file_name, "r") as json_file:
             test = await json_file.read()
             data = json.loads(test)
         return data
@@ -34,7 +34,7 @@ async def json_load(file_name):
 
 async def json_save(data, file_name):
     """Save data to file location."""
-    async with open(file_name, "w") as json_file:
+    async with aiofiles.open(file_name, "w") as json_file:
         await json_file.write(json.dumps(data, indent=4))
 
 

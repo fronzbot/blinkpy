@@ -16,8 +16,7 @@ import os.path
 import time
 import logging
 import datetime
-from aiofiles import ospath, open
-
+import aiofiles
 from requests.structures import CaseInsensitiveDict
 from dateutil.parser import parse
 from slugify import slugify
@@ -413,12 +412,12 @@ class Blink:
             filename = os.path.join(path, filename)
 
             if not debug:
-                if await ospath.isfile(filename):
+                if await aiofiles.ospath.isfile(filename):
                     _LOGGER.info("%s already exists, skipping...", filename)
                     continue
 
                 response = await self.do_http_get(address)
-                async with open(filename, "wb") as vidfile:
+                async with aiofiles.open(filename, "wb") as vidfile:
                     await vidfile.write(await response.read())
 
                 _LOGGER.info("Downloaded video to %s", filename)
