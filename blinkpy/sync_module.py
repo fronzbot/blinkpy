@@ -1,4 +1,5 @@
 """Defines a sync module for Blink."""
+
 import logging
 import string
 import datetime

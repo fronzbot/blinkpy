@@ -1,4 +1,5 @@
 """Script to run blinkpy as an blinkapp."""
+
 from os import environ
 import asyncio
 from datetime import datetime, timedelta

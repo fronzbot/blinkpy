@@ -1,4 +1,5 @@
 """Tests camera and system functions."""
+
 from unittest import mock
 from unittest import IsolatedAsyncioTestCase
 import pytest

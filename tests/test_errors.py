@@ -1,4 +1,5 @@
 """Test blink Utils errors."""
+
 import unittest
 from blinkpy.helpers.errors import (
     USERNAME,
