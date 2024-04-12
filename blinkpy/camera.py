@@ -1,4 +1,5 @@
 """Defines Blink cameras."""
+
 import copy
 import string
 import os

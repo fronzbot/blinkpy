@@ -1,4 +1,5 @@
 """Tests camera and system functions."""
+
 from unittest import mock, IsolatedAsyncioTestCase
 import time
 import random

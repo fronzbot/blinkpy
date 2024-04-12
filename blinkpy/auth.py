@@ -1,4 +1,5 @@
 """Login handler for blink."""
+
 import logging
 from aiohttp import (
     ClientSession,
