@@ -17,8 +17,6 @@ import time
 import logging
 import datetime
 import aiofiles
-from aiofiles import ospath
-
 from requests.structures import CaseInsensitiveDict
 from dateutil.parser import parse
 from slugify import slugify
@@ -414,7 +412,7 @@ class Blink:
             filename = os.path.join(path, filename)
 
             if not debug:
-                if await ospath.isfile(filename):
+                if await aiofiles.ospath.isfile(filename):
                     _LOGGER.info("%s already exists, skipping...", filename)
                     continue
 

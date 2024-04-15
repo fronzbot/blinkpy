@@ -1,4 +1,5 @@
 """Defines a sync module for Blink."""
+
 import logging
 import string
 import datetime
@@ -49,10 +50,11 @@ class BlinkSyncModule:
         self.last_records = {}
         self.camera_list = camera_list
         self.available = False
+        # type_key_map is only for the mini's and the doorbells.
+        # Outdoor cameras have their own URL API which must be queried.
         self.type_key_map = {
             "mini": "owls",
             "doorbell": "doorbells",
-            "outdoor": "cameras",
         }
         self._names_table = {}
         self._local_storage = {

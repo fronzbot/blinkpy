@@ -85,7 +85,7 @@ You can then run all of the tests with the following command:
 
 **Tips**
 
-If you only want to see if you can pass the local tests, you can run ``tox -e py37`` (or whatever python version you have installed.  Only ``py36``, ``py37``, and ``py38`` will be accepted).  If you just want to check for style violations, you can run ``tox -e lint``.  Regardless, when you submit a pull request, your code MUST pass both the unit tests, and the linters.
+If you only want to see if you can pass the local tests, you can run ``tox -e py39`` (or whatever python version you have installed.  Only ``py39`` through ``py312`` will be accepted).  If you just want to check for style violations, you can run ``tox -e lint``.  Regardless, when you submit a pull request, your code MUST pass both the unit tests, and the linters.
 
 If you need to change anything in ``requirements.txt`` for any reason, you'll want to regenerate the virtual envrionments used by ``tox`` by running with the ``-r`` flag: ``tox -r``
 
@@ -104,7 +104,7 @@ If your code is taking a while to develop, you may be behind the ``dev`` branch,
 
 If rebase detects conflicts, repeat the following process until all changes have been resolved:
 
-1. ``git status`` shows you the filw with a conflict.  You will need to edit that file and resolve the lines between ``<<<< | >>>>``.
+1. ``git status`` shows you the file with a conflict.  You will need to edit that file and resolve the lines between ``<<<< | >>>>``.
 2. Add the modified file: ``git add <file>`` or ``git add .``.
 3. Continue rebase: ``git rebase --continue``.
 4. Repeat until all conflicts resolved.

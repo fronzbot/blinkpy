@@ -1,4 +1,5 @@
 """Tests camera and system functions."""
+
 import datetime
 import logging
 from unittest import IsolatedAsyncioTestCase
@@ -31,7 +32,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.blink: Blink = Blink(motion_interval=0, session=mock.AsyncMock())
         self.blink.last_refresh = 0
         self.blink.urls = BlinkURLHandler("test")
-        self.blink.sync["test"]: (BlinkSyncModule) = BlinkSyncModule(
+        self.blink.sync["test"]: BlinkSyncModule = BlinkSyncModule(
             self.blink, "test", "1234", []
         )
         self.blink.sync["test"].network_info = {"network": {"armed": True}}

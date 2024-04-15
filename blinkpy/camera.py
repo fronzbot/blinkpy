@@ -1,4 +1,5 @@
 """Defines Blink cameras."""
+
 import copy
 import string
 import os
@@ -30,6 +31,7 @@ class BlinkCamera:
         self._version = None
         self.motion_enabled = None
         self.battery_level = None
+        self._battery_voltage = None
         self.clip = None
         # A clip remains in the recent clips list until is has
         # been downloaded or has been expired.
@@ -59,6 +61,7 @@ class BlinkCamera:
             "temperature_calibrated": self.temperature_calibrated,
             "battery": self.battery,
             "battery_level": self.battery_level,
+            "battery_voltage": self._battery_voltage,
             "thumbnail": self.thumbnail,
             "video": self.clip,
             "recent_clips": self.recent_clips,
@@ -77,6 +80,11 @@ class BlinkCamera:
     def battery(self):
         """Return battery as string."""
         return self.battery_state
+
+    @property
+    def battery_voltage(self):
+        """Return battery voltage as a number in 100ths of volts, so 165 = 1.65v."""
+        return self._battery_voltage
 
     @property
     def temperature_c(self):
@@ -246,14 +254,14 @@ class BlinkCamera:
         self.serial = config.get("serial")
         self._version = config.get("fw_version")
         self.motion_enabled = config.get("enabled", "unknown")
+        self._battery_voltage = config.get("battery_voltage", None)
         self.battery_state = config.get("battery_state") or config.get("battery")
+        self.wifi_strength = config.get("wifi_strength")
         if signals := config.get("signals"):
-            self.wifi_strength = signals.get("wifi")
             self.battery_level = signals.get("battery")
             self.sync_signal_strength = signals.get("lfr")
             self.temperature = signals.get("temp")
         else:
-            self.wifi_strength = config.get("wifi_strength")
             self.temperature = config.get("temperature")
         self.product_type = config.get("type")
 

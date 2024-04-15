@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "blinkpy"
-version = "0.22.6"
+version = "0.22.7"
 license = {text = "MIT"}
 description = "A Blink camera Python Library."
 readme = "README.rst"
@@ -39,7 +39,7 @@ include-package-data = true
 include = ["blinkpy*"]
 
 [tool.ruff]
-select = [
+lint.select = [
     "C",  # complexity
     "D",  # docstrings
     "E",  # pydocstyle
@@ -54,11 +54,11 @@ select = [
     "Q000",  # Double quotes found but single quotes preferred
     "SIM118",  # Use {key} in {dict} instead of {key} in {dict}.keys()
     "TRY004",  # Prefer TypeError exception for invalid type
-    "TRY200",  # Use raise from to specify exception cause
+    "B904",  # Use raise from to specify exception cause
     "UP",  # pyupgrade
     "W",  # pycodestyle
 ]
-ignore = [
+lint.ignore = [
     "D202",  # No blank lines allowed after function docstring
     "D203",  # 1 blank line required before class docstring
     "D212",  # Multi-line docstring summary should start at the first line
@@ -86,10 +86,9 @@ ignore = [
 
 line-length = 88
 
-target-version = "py311"
+target-version = "py312"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 
-
-[tool.ruff.mccabe]
-max-complexity = 25
+[tool.ruff.lint.mccabe]
+    max-complexity = 25

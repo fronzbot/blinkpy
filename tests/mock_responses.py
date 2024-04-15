@@ -1,4 +1,5 @@
 """Simple mock responses definitions."""
+
 from unittest import mock
 
 
