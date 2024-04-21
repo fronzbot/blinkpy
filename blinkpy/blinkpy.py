@@ -17,6 +17,7 @@ import time
 import logging
 import datetime
 import aiofiles
+import aiofiles.ospath
 from requests.structures import CaseInsensitiveDict
 from dateutil.parser import parse
 from slugify import slugify
