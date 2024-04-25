@@ -62,8 +62,9 @@ async def request_login(
 async def request_verify(auth, blink, verify_key):
     """Send verification key to blink servers."""
     url = (
-        f"{blink.urls.base_url}/api/v4/account/{blink.account_id}"
-        f"/client/{blink.client_id}/pin/verify"
+        f"{blink.urls.base_url}/api/v5/accounts/{blink.account_id}"
+        f"/users/{blink.auth.user_id}"
+        f"/clients/{blink.client_id}/client_verification/pin/verify"
     )
     data = dumps({"pin": verify_key})
     return await auth.query(
