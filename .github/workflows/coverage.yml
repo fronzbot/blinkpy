@@ -34,9 +34,8 @@ jobs:
         tox -r -e cov
     - name: Codecov
       uses: codecov/codecov-action@v4
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
         flags: unittests
         file: ./coverage.xml
         name: blinkpy
