@@ -33,7 +33,7 @@ jobs:
       run: |
         tox -r -e cov
     - name: Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v4.3.1
       with:
         fail_ci_if_error: true # optional (default = false)
         files: ./coverage.xml
