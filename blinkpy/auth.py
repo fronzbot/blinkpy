@@ -132,6 +132,7 @@ class Auth:
         self.token = self.login_response["auth"]["token"]
         self.client_id = self.login_response["account"]["client_id"]
         self.account_id = self.login_response["account"]["account_id"]
+        self.user_id = self.login_response["account"]["user_id"]
 
     async def startup(self):
         """Initialize tokens for communication."""
