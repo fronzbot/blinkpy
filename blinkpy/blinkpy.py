@@ -179,6 +179,9 @@ class Blink:
         """Check for mini cameras."""
         network_list = []
         camera_list = []
+        if self.homescreen is None:
+          # Don't try to iterate if homescreen is not defined
+          return camera_list
         try:
             for owl in self.homescreen["owls"]:
                 name = owl["name"]
@@ -203,6 +206,9 @@ class Blink:
         """Check for doorbells cameras."""
         network_list = []
         camera_list = []
+        if self.homescreen is None:
+          # Don't try to iterate if homescreen is not defined
+          return camera_list
         try:
             for lotus in self.homescreen["doorbells"]:
                 name = lotus["name"]
