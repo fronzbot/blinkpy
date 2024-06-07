@@ -1,4 +1,4 @@
-name: build
+name: tests
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ master, dev ]
 
 jobs:
-  build:
+  pytest:
     runs-on: ${{ matrix.platform }}
     strategy:
       max-parallel: 4
@@ -17,7 +17,8 @@ jobs:
         python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Check out code from GitHub
+      uses: actions/checkout@v4.1.6
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
@@ -31,3 +32,32 @@ jobs:
     - name: Tests
       run: |
         tox -r
+    - name: Upload coverage
+      uses: actions/upload-artifact$v4.3.3
+      with:
+        name: coverage-${{ matrix.python-version }}-${{ matrix.platform }}
+        path: coverage.xml
+        overwrite: true
+  coverage:
+    runs-on: ${{ matrix.platform }}
+    matrix:
+      platform:
+        - ubuntu-latest
+      python-version: ['3.11']
+    needs:
+      - pytest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code from GitHub
+        uses: actions/checkout@v4.1.6
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4.1.7
+        with:
+          path: coverage-${{ matrix.python-version }}-${{ matrix.platform }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4.4.1
+        with:
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          name: blinkpy
+    
