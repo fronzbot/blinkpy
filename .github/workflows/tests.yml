@@ -40,10 +40,11 @@ jobs:
         overwrite: true
   coverage:
     runs-on: ${{ matrix.platform }}
-    matrix:
-      platform:
-        - ubuntu-latest
-      python-version: ['3.11']
+    strategy:
+      matrix:
+        platform:
+          - ubuntu-latest
+        python-version: ['3.11']
     needs:
       - pytest
     timeout-minutes: 10
