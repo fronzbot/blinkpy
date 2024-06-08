@@ -192,7 +192,7 @@ class Blink:
                     network_list.append(str(network_id))
                     self.sync[name] = BlinkOwl(self, name, network_id, owl)
                     await self.sync[name].start()
-        except KeyError:
+        except (KeyError, TypeError):
             # No sync-less devices found
             pass
 
@@ -222,7 +222,7 @@ class Blink:
                     network_list.append(str(network_id))
                     self.sync[name] = BlinkLotus(self, name, network_id, lotus)
                     await self.sync[name].start()
-        except KeyError:
+        except (KeyError, TypeError):
             # No sync-less devices found
             pass
 
