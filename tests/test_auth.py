@@ -167,6 +167,7 @@ class TestAuth(IsolatedAsyncioTestCase):
         self.assertEqual(self.auth.token, "foobar")
         self.assertEqual(self.auth.client_id, 1234)
         self.assertEqual(self.auth.account_id, 5678)
+        self.assertEqual(self.auth.user_id, None)
 
         mock_resp.return_value.status = 400
         with self.assertRaises(TokenRefreshFailed):
