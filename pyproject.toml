@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "blinkpy"
-version = "0.23.0b7"
+version = "0.23.0b8"
 license = {text = "MIT"}
 description = "A Blink camera Python Library."
 readme = "README.rst"
