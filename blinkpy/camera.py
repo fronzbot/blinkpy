@@ -516,6 +516,17 @@ class BlinkCameraMini(BlinkCamera):
         await api.wait_for_command(self.sync.blink, response)
         return response
 
+    async def record(self):
+        """Initiate clip recording for a blink mini camera."""
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.network_id}/owls/{self.camera_id}/clip"
+        )
+        response = await api.http_post(self.sync.blink, url)
+        await api.wait_for_command(self.sync.blink, response)
+        return response
+
     async def snap_picture(self):
         """Snap picture for a blink mini camera."""
         url = (
@@ -570,6 +581,18 @@ class BlinkDoorbell(BlinkCamera):
             url = f"{url}/enable"
         else:
             url = f"{url}/disable"
+
+        response = await api.http_post(self.sync.blink, url)
+        await api.wait_for_command(self.sync.blink, response)
+        return response
+
+    async def record(self):
+        """Initiate clip recording for a blink doorbell camera."""
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.sync.network_id}/doorbells/{self.camera_id}/clip"
+        )
 
         response = await api.http_post(self.sync.blink, url)
         await api.wait_for_command(self.sync.blink, response)
