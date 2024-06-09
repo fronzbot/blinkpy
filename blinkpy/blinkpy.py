@@ -144,6 +144,8 @@ class Blink:
     async def setup_post_verify(self):
         """Initialize blink system after verification."""
         try:
+            if not self.homescreen:
+                await self.get_homescreen()
             await self.setup_networks()
             networks = self.setup_network_ids()
             cameras = await self.setup_camera_list()

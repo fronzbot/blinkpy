@@ -192,12 +192,13 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         self.assertTrue(self.blink.key_required)
 
     @mock.patch("blinkpy.blinkpy.Blink.setup_camera_list")
+    @mock.patch("blinkpy.api.request_homescreen")
     @mock.patch("blinkpy.api.request_networks")
     @mock.patch("blinkpy.blinkpy.Blink.setup_owls")
     @mock.patch("blinkpy.blinkpy.Blink.setup_lotus")
     @mock.patch("blinkpy.blinkpy.BlinkSyncModule.start")
     async def test_setup_post_verify(
-        self, mock_sync, mock_lotus, mock_owl, mock_networks, mock_camera
+        self, mock_sync, mock_lotus, mock_owl, mock_networks, mock_home, mock_camera
     ):
         """Test setup after verification."""
         self.blink.available = False
@@ -214,16 +215,19 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         mock_networks.return_value = {
             "summary": {"foo": {"onboarded": True, "name": "bar"}}
         }
+        mock_home.return_value = {}
         mock_camera.return_value = []
         self.assertTrue(await self.blink.setup_post_verify())
         self.assertTrue(self.blink.available)
         self.assertFalse(self.blink.key_required)
 
+    @mock.patch("blinkpy.api.request_homescreen")
     @mock.patch("blinkpy.api.request_networks")
-    async def test_setup_post_verify_failure(self, mock_networks):
+    async def test_setup_post_verify_failure(self, mock_networks, mock_home):
         """Test failed setup after verification."""
         self.blink.available = False
         mock_networks.return_value = {}
+        mock_home.return_value = {}
         self.assertFalse(await self.blink.setup_post_verify())
         self.assertFalse(self.blink.available)
 
