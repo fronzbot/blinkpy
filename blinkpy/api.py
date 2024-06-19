@@ -166,6 +166,38 @@ async def request_system_disarm(blink, network, **kwargs):
     return response
 
 
+async def request_notification_flags(blink, **kwargs):
+    """
+    Get system notification flags.
+
+    :param blink: Blink instance.
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        "/notifications/configuration"
+    )
+    response = await http_get(blink, url)
+    await wait_for_command(blink, response)
+    return response
+
+
+async def request_set_notification_flag(blink, data_dict):
+    """
+    Set a system notification flag.
+
+    :param blink: Blink instance.
+    :param data_dict: Dictionary of notifications to set.
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        "/notifications/configuration"
+    )
+    data = dumps({"notifications": data_dict})
+    response = await http_post(blink, url, data=data, json=False)
+    await wait_for_command(blink, response)
+    return response
+
+
 async def request_command_status(blink, network, command_id):
     """
     Request command status.

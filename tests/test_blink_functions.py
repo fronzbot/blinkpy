@@ -278,3 +278,21 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
         self.blink.cameras = {"bar": MockCamera(self.blink.sync)}
         self.blink.sync["foo"].cameras = self.blink.cameras
         self.assertTrue(await self.blink.refresh())
+
+    @mock.patch("blinkpy.blinkpy.api.request_notification_flags")
+    async def test_get_status(self, mock_req):
+        """Test get of notification flags."""
+        mock_req.return_value = {"notifications": {"foo": True}}
+        self.assertDictEqual(await self.blink.get_status(), {"foo": True})
+
+    @mock.patch("blinkpy.blinkpy.api.request_notification_flags")
+    async def test_get_status_malformed(self, mock_req):
+        """Test get of notification flags with malformed response."""
+        mock_req.return_value = {"nobueno": {"foo": False}}
+        self.assertDictEqual(await self.blink.get_status(), {"nobueno": {"foo": False}})
+
+    @mock.patch("blinkpy.blinkpy.api.request_set_notification_flag")
+    async def test_set_status(self, mock_req):
+        """Test set of notification flags."""
+        mock_req.return_value = True
+        self.assertTrue(await self.blink.set_status())
