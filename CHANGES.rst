@@ -4,6 +4,12 @@ Changelog
 
 A list of changes between each release
 
+0.23.0 (2024-06-19)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See release notes: (`0.23.0 <https://github.com/fronzbot/blinkpy/releases/tag/v0.23.0>`__)
+
+
 0.22.7 (2024-04-15)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
