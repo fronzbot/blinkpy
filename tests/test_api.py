@@ -106,6 +106,23 @@ class TestAPI(IsolatedAsyncioTestCase):
             await api.request_camera_usage(self.blink), {"cameras": "1111"}
         )
 
+    async def test_request_notification_flags(self, mock_resp):
+        """Test notification flag request."""
+        mock_resp.return_value = {"notifications": {"some_key": False}}
+        self.assertEqual(
+            await api.request_notification_flags(self.blink),
+            {"notifications": {"some_key": False}},
+        )
+
+    async def test_request_set_notification_flag(self, mock_resp):
+        """Test set of notifiaction flags."""
+        mock_resp.side_effect = (
+            mresp.MockResponse(COMMAND_RESPONSE, 200),
+            COMMAND_COMPLETE,
+        )
+        response = await api.request_set_notification_flag(self.blink, {})
+        self.assertEqual(response.status, 200)
+
     async def test_request_motion_detection_enable(self, mock_resp):
         """Test  Motion detect enable."""
         mock_resp.side_effect = (

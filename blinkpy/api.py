@@ -62,8 +62,9 @@ async def request_login(
 async def request_verify(auth, blink, verify_key):
     """Send verification key to blink servers."""
     url = (
-        f"{blink.urls.base_url}/api/v4/account/{blink.account_id}"
-        f"/client/{blink.client_id}/pin/verify"
+        f"{blink.urls.base_url}/api/v5/accounts/{blink.account_id}"
+        f"/users/{blink.auth.user_id}"
+        f"/clients/{blink.client_id}/client_verification/pin/verify"
     )
     data = dumps({"pin": verify_key})
     return await auth.query(
@@ -161,6 +162,38 @@ async def request_system_disarm(blink, network, **kwargs):
         f"/networks/{network}/state/disarm"
     )
     response = await http_post(blink, url)
+    await wait_for_command(blink, response)
+    return response
+
+
+async def request_notification_flags(blink, **kwargs):
+    """
+    Get system notification flags.
+
+    :param blink: Blink instance.
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        "/notifications/configuration"
+    )
+    response = await http_get(blink, url)
+    await wait_for_command(blink, response)
+    return response
+
+
+async def request_set_notification_flag(blink, data_dict):
+    """
+    Set a system notification flag.
+
+    :param blink: Blink instance.
+    :param data_dict: Dictionary of notifications to set.
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        "/notifications/configuration"
+    )
+    data = dumps({"notifications": data_dict})
+    response = await http_post(blink, url, data=data, json=False)
     await wait_for_command(blink, response)
     return response
 

@@ -8,13 +8,13 @@ on:
     branches: [ master, dev ]
   pull_request:
     branches: [ master, dev ]
-
 jobs:
   lint:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 2
       matrix:
-        python-version: [3.11]
+        python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
     - uses: actions/checkout@v4
@@ -27,7 +27,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r requirements_test.txt
-        pip install tox
-    - name: Lint
+    - name: Ruff
       run: |
-        tox -r -e lint
+        ruff check blinkpy tests blinkapp
+    - name: Black
+      run: |
+        black --check --color --diff blinkpy tests blinkapp
+    - name: RST-Lint
+      run: |
+        rst-lint README.rst CHANGES.rst CONTRIBUTING.rst

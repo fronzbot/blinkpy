@@ -1,4 +1,4 @@
-name: tests
+name: build
 
 on:
   push:
@@ -7,14 +7,13 @@ on:
     branches: [ master, dev ]
 
 jobs:
-  pytest:
+  build:
     runs-on: ${{ matrix.platform }}
     strategy:
-      max-parallel: 4
       matrix:
         platform:
           - ubuntu-latest
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.11']
     steps:
     - name: Check out code from GitHub
       uses: actions/checkout@v3
@@ -27,11 +26,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r requirements_test.txt
-        pip install .
-    - name: Tests
+        pip install tox
+    - name: Build Wheel
       run: |
-        python -m pytest \
-          --timeout=30 \
-          --durations=10 \
-          --cov=blinkpy \
-          --cov-report term-missing
+        tox -r -e build

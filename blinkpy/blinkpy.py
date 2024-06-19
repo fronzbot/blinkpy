@@ -17,6 +17,7 @@ import time
 import logging
 import datetime
 import aiofiles
+import aiofiles.ospath
 from requests.structures import CaseInsensitiveDict
 from dateutil.parser import parse
 from slugify import slugify
@@ -143,6 +144,8 @@ class Blink:
     async def setup_post_verify(self):
         """Initialize blink system after verification."""
         try:
+            if not self.homescreen:
+                await self.get_homescreen()
             await self.setup_networks()
             networks = self.setup_network_ids()
             cameras = await self.setup_camera_list()
@@ -191,7 +194,7 @@ class Blink:
                     network_list.append(str(network_id))
                     self.sync[name] = BlinkOwl(self, name, network_id, owl)
                     await self.sync[name].start()
-        except KeyError:
+        except (KeyError, TypeError):
             # No sync-less devices found
             pass
 
@@ -221,7 +224,7 @@ class Blink:
                     network_list.append(str(network_id))
                     self.sync[name] = BlinkLotus(self, name, network_id, lotus)
                     await self.sync[name].start()
-        except KeyError:
+        except (KeyError, TypeError):
             # No sync-less devices found
             pass
 
@@ -316,6 +319,21 @@ class Blink:
     async def save(self, file_name):
         """Save login data to file."""
         await util.json_save(self.auth.login_attributes, file_name)
+
+    async def get_status(self):
+        """Get the blink system notification status."""
+        response = await api.request_notification_flags(self)
+        return response.get("notifications", response)
+
+    async def set_status(self, data_dict={}):
+        """
+        Set the blink system notification status.
+
+        :param data_dict: Dictionary of notification keys to modify.
+                          Example: {'low_battery': False, 'motion': False}
+        """
+        response = await api.request_set_notification_flag(self, data_dict)
+        return response
 
     async def download_videos(
         self, path, since=None, camera="all", stop=10, delay=1, debug=False
