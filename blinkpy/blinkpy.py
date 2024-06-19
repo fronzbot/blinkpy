@@ -320,6 +320,21 @@ class Blink:
         """Save login data to file."""
         await util.json_save(self.auth.login_attributes, file_name)
 
+    async def get_status(self):
+        """Get the blink system notification status."""
+        response = await api.request_notification_flags(self)
+        return response.get("notifications", response)
+
+    async def set_status(self, data_dict={}):
+        """
+        Set the blink system notification status.
+
+        :param data_dict: Dictionary of notification keys to modify.
+                          Example: {'low_battery': False, 'motion': False}
+        """
+        response = await api.request_set_notification_flag(self, data_dict)
+        return response
+
     async def download_videos(
         self, path, since=None, camera="all", stop=10, delay=1, debug=False
     ):
