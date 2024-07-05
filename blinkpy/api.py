@@ -491,6 +491,42 @@ async def request_update_config(
         return None
     return await http_post(blink, url, json=False, data=data)
 
+async def request_camera_snooze(
+        blink, network, camera_id, product_type="owl", data=None
+    ):
+        """
+        Update camera snooze configuration.
+
+        :param blink: Blink instance.
+        :param network: Sync module network id.
+        :param camera_id: ID of camera
+        :param product_type: Camera product type "owl" or "catalina"
+        :param data: string w/JSON dict of parameters/values to update
+        """
+        if product_type == "catalina":
+            url = (
+                f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/"
+                f"networks/{network}/cameras/{camera_id}/snooze"
+            )
+        elif product_type == "owl":
+            url = (
+                f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/"
+                f"networks/{network}/owls/{camera_id}/snooze"
+            )
+        elif product_type == "doorbell":
+            url = (
+                f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/"
+                f"networks/{network}/doorbells/{camera_id}/snooze"
+            )
+        else:
+            _LOGGER.info(
+                "Camera %s with product type %s snooze update not implemented.",
+                camera_id,
+                product_type,
+            )
+            return None
+        return await http_post(blink, url, json=False, data=data)
+
 
 async def http_get(
     blink, url, stream=False, json=True, is_retry=False, timeout=TIMEOUT
