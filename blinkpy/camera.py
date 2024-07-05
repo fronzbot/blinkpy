@@ -170,6 +170,31 @@ class BlinkCamera:
             return await res.json()
         return None
 
+    @property
+    async def snooze_till(self):
+        """Return snooze_till status."""
+        res = await api.request_get_config(
+            self.sync.blink,
+            self.network_id,
+            self.camera_id,
+            product_type=self.product_type,
+        )
+        if res is None:
+            return None
+        return res.get("camera", [{}])[0].get("snooze_till")
+
+    async def async_snooze(self, snooze_time=240):
+        """Set camera snooze status."""
+        data = dumps({"snooze_time": snooze_time})
+        res = await api.request_camera_snooze(
+            self.sync.blink,
+            self.network_id,
+            self.camera_id,
+            product_type=self.product_type,
+            data=data,
+        )
+        return res
+
     async def record(self):
         """Initiate clip recording."""
         return await api.request_new_video(
@@ -625,3 +650,17 @@ class BlinkDoorbell(BlinkCamera):
         server = response["server"]
         link = server.replace("immis://", "rtsps://")
         return link
+
+    async def async_snooze(self):
+        """Set camera snooze status."""
+        data = dumps({"snooze_time": 240})
+        res = await api.request_camera_snooze(
+            self.sync.blink,
+            self.network_id,
+            self.camera_id,
+            product_type="doorbell",
+            data=data,
+        )
+        if res and res.status == 200:
+            return await res.json()
+        return None
