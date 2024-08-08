@@ -17,7 +17,7 @@ COMMAND_NOT_COMPLETE = {"complete": False, "status_code": 908}
 class TestAPI(IsolatedAsyncioTestCase):
     """Test the API class in blinkpy."""
 
-    def setUp(self):
+    async def asyncSetUp(self):
         """Set up Login Handler."""
         self.blink = Blink(session=mock.AsyncMock())
         self.auth = Auth()

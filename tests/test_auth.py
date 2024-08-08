@@ -19,7 +19,7 @@ PASSWORD = "deadbeef"
 class TestAuth(IsolatedAsyncioTestCase):
     """Test the Auth class in blinkpy."""
 
-    def setUp(self):
+    async def asyncSetUp(self):
         """Set up Login Handler."""
         self.auth = Auth()
 
@@ -29,7 +29,7 @@ class TestAuth(IsolatedAsyncioTestCase):
 
     @mock.patch("blinkpy.helpers.util.gen_uid")
     @mock.patch("blinkpy.auth.util.getpass")
-    def test_empty_init(self, getpwd, genuid):
+    async def test_empty_init(self, getpwd, genuid):
         """Test initialization with no params."""
         auth = Auth()
         self.assertDictEqual(auth.data, {})
@@ -47,7 +47,7 @@ class TestAuth(IsolatedAsyncioTestCase):
 
     @mock.patch("blinkpy.helpers.util.gen_uid")
     @mock.patch("blinkpy.auth.util.getpass")
-    def test_barebones_init(self, getpwd, genuid):
+    async def test_barebones_init(self, getpwd, genuid):
         """Test basebones initialization."""
         login_data = {"username": "foo", "password": "bar"}
         auth = Auth(login_data)
@@ -64,7 +64,7 @@ class TestAuth(IsolatedAsyncioTestCase):
         }
         self.assertDictEqual(auth.data, expected_data)
 
-    def test_full_init(self):
+    async def test_full_init(self):
         """Test full initialization."""
         login_data = {
             "username": "foo",

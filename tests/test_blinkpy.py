@@ -28,7 +28,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         """Cleanup blink test object."""
         self.blink = None
 
-    def test_initialization(self):
+    async def test_initialization(self):
         """Verify we can initialize blink."""
         blink = Blink()
         self.assertEqual(blink.version, __version__)
