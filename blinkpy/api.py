@@ -526,7 +526,7 @@ async def request_camera_snooze(
             product_type,
         )
         return None
-    return await http_post(blink, url, json=False, data=data)
+    return await http_post(blink, url, json=True, data=data)
 
 
 async def request_sync_snooze(blink, network, data=None):
@@ -541,7 +541,7 @@ async def request_sync_snooze(blink, network, data=None):
         f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
         f"/networks/{network}/snooze"
     )
-    return await http_post(blink, url, json=False, data=data)
+    return await http_post(blink, url, json=True, data=data)
 
 
 async def http_get(

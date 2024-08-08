@@ -185,9 +185,9 @@ class BlinkCamera:
             res = res.get("camera", [{}])[0]["snooze_till"]
         return res
 
-    async def async_snooze(self):
+    async def async_snooze(self, snooze_time=240):
         """Set camera snooze status."""
-        data = dumps({"snooze_time": 240})
+        data = dumps({"snooze_time": snooze_time})
         res = await api.request_camera_snooze(
             self.sync.blink,
             self.network_id,

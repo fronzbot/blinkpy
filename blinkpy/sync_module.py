@@ -132,19 +132,19 @@ class BlinkSyncModule:
     async def snooze_till(self):
         """Return snooze_till status."""
         res = await api.request_sync_snooze(
-            self.sync.blink,
+            self.blink,
             self.network_id,
         )
         if res is None:
             return None
-        res = res.get("camera", [{}])[0]["snooze_till"]
+        res = res.get("snooze_till")
         return res
 
-    async def async_snooze(self):
+    async def async_snooze(self, snooze_time=240):
         """Set sync snooze status."""
-        data = dumps({"snooze_time": 240})
+        data = dumps({"snooze_time": snooze_time})
         res = await api.request_sync_snooze(
-            self.sync.blink,
+            self.blink,
             self.network_id,
             data=data,
         )
