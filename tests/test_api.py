@@ -203,3 +203,25 @@ class TestAPI(IsolatedAsyncioTestCase):
 
         response = await api.wait_for_command(self.blink, None)
         self.assertFalse(response)
+
+    async def test_request_camera_snooze(self, mock_resp):
+        """Test request_camera_snooze."""
+        mock_resp.return_value = mresp.MockResponse({}, 200)
+        response = await api.request_camera_snooze(
+            self.blink, "network", "camera_id", "owl", {}
+        )
+        self.assertEqual(response.status, 200)
+        response = await api.request_camera_snooze(
+            self.blink, "network", "camera_id", "catalina", {}
+        )
+        self.assertEqual(response.status, 200)
+        response = await api.request_camera_snooze(
+            self.blink, "network", "camera_id", "doorbell", {}
+        )
+        self.assertEqual(response.status, 200)
+
+    async def test_request_sync_snooze(self, mock_resp):
+        """Test sync snooze update."""
+        mock_resp.return_value = mresp.MockResponse({}, 200)
+        response = await api.request_sync_snooze(self.blink, "network", {})
+        self.assertEqual(response.status, 200)
