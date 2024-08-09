@@ -328,7 +328,8 @@ async def request_camera_liveview(blink, network, camera_id):
         f"/networks/{network}/cameras/{camera_id}/liveview"
     )
     response = await http_post(blink, url)
-    await wait_for_command(blink, {"id": response["command_id"], "network_id": network})
+    command_id = response.get("id") or response.get("command_id")
+    await wait_for_command(blink, {"id": command_id, "network_id": network})
     return response
 
 
