@@ -1,6 +1,6 @@
 ruff==0.5.5
 black==24.4.2
-build==1.2.1
+build==1.2.2.post1
 coverage==7.6.0
 pytest==8.3.2
 pytest-cov==5.0.0
