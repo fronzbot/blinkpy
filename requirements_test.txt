@@ -7,7 +7,7 @@ pytest-cov==5.0.0
 pytest-sugar==1.0.0
 pytest-timeout==2.3.1
 restructuredtext-lint==1.4.0
-pygments==2.18.0
+pygments==2.19.1
 testtools>=2.4.0
 sortedcontainers~=2.4.0
 pytest-asyncio>=0.21.0
