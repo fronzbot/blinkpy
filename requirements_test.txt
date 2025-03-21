@@ -1,4 +1,4 @@
-ruff==0.5.5
+ruff==0.11.2
 black==24.4.2
 build==1.2.1
 coverage==7.6.0
