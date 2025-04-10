@@ -327,7 +327,8 @@ async def request_camera_liveview(blink, network, camera_id):
         f"{blink.urls.base_url}/api/v5/accounts/{blink.account_id}"
         f"/networks/{network}/cameras/{camera_id}/liveview"
     )
-    response = await http_post(blink, url)
+    data = dumps({"intent": "liveview"})
+    response = await http_post(blink, url, data=data)
     await wait_for_command(blink, response)
     return response
 
