@@ -13,6 +13,7 @@ from requests.compat import urljoin
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
 from blinkpy.helpers.util import to_alphanumeric
+from blinkpy.livestream import BlinkStream
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -411,7 +412,7 @@ class BlinkCamera:
         response = await api.request_camera_liveview(
             self.sync.blink, self.sync.network_id, self.camera_id
         )
-        return response["server"]
+        return BlinkStream(self, response)
 
     async def image_to_file(self, path):
         """
@@ -548,13 +549,10 @@ class BlinkCameraMini(BlinkCamera):
             f"{self.sync.blink.account_id}/networks/"
             f"{self.network_id}/owls/{self.camera_id}/liveview"
         )
-        response = await api.http_post(self.sync.blink, url)
+        data = dumps({"intent": "liveview"})
+        response = await api.http_post(self.sync.blink, url, data=data)
         await api.wait_for_command(self.sync.blink, response)
-        server = response["server"]
-        server_split = server.split(":")
-        server_split[0] = "rtsps"
-        link = ":".join(server_split)
-        return link
+        return BlinkStream(self, response)
 
 
 class BlinkDoorbell(BlinkCamera):
@@ -620,8 +618,7 @@ class BlinkDoorbell(BlinkCamera):
             f"{self.sync.blink.account_id}/networks/"
             f"{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
         )
-        response = await api.http_post(self.sync.blink, url)
+        data = dumps({"intent": "liveview"})
+        response = await api.http_post(self.sync.blink, url, data=data)
         await api.wait_for_command(self.sync.blink, response)
-        server = response["server"]
-        link = server.replace("immis://", "rtsps://")
-        return link
+        return BlinkStream(self, response)
