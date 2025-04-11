@@ -121,6 +121,8 @@ class BlinkStream:
 
                 # Yield control to the event loop
                 await asyncio.sleep(0)
+        except ConnectionResetError:
+            _LOGGER.debug("Client disconnected")
         except Exception:
             _LOGGER.exception("Error while handling client connection")
         finally:
@@ -152,7 +154,8 @@ class BlinkStream:
 
                 # Yield control to the event loop
                 await asyncio.sleep(0)
-
+        except ConnectionResetError:
+            _LOGGER.debug("Target server disconnected")
         except Exception:
             _LOGGER.exception("Error while copying data")
         finally:
