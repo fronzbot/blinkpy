@@ -1,4 +1,4 @@
-"""Handles immis livestream"""
+"""Handles immis livestream."""
 import asyncio
 import logging
 import urllib.parse
