@@ -108,7 +108,6 @@ class BlinkStream:
             # Close all connections
             _LOGGER.debug("Streaming was aborted, stopping server")
             self.stop()
-            await self.server.wait_closed()
 
     async def join(self, client_reader, client_writer):
         """Join client to the stream."""
@@ -127,7 +126,7 @@ class BlinkStream:
         except ConnectionResetError:
             _LOGGER.debug("Client disconnected")
         except Exception:
-            _LOGGER.exception("Error while handling client connection")
+            _LOGGER.exception("Error while handling client")
         finally:
             # Client disconnecting
             self.clients.remove(client_writer)
@@ -138,16 +137,16 @@ class BlinkStream:
             if not self.clients:
                 _LOGGER.debug("Last client disconnected, stopping server")
                 self.stop()
-                await self.server.wait_closed()
 
     async def copy(self):
         """Copy data from one reader to multiple writers."""
         try:
             while not self.target_reader.at_eof():
                 # Read data from the target server
-                data = await self.target_reader.read(1024)
-                if not data:
-                    break
+                async with asyncio.timeout(3):
+                    data = await self.target_reader.read(1024)
+                    if not data:
+                        break
 
                 # Send data to all connected clients
                 for writer in self.clients:
@@ -157,15 +156,9 @@ class BlinkStream:
 
                 # Yield control to the event loop
                 await asyncio.sleep(0)
-        except ConnectionResetError:
-            _LOGGER.debug("Target server disconnected")
-        except Exception:
-            _LOGGER.exception("Error while copying data")
         finally:
-            # Close all connections
-            _LOGGER.debug("Copying was aborted, stopping server")
-            self.stop()
-            await self.server.wait_closed()
+            # Abort ping by closing the target writer
+            self.target_writer.close()
 
     async def ping(self):
         """Send keep-alive messages to the server."""
@@ -174,18 +167,22 @@ class BlinkStream:
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
         ]
-        while not self.target_writer.is_closing():
-            # Sleep and yield for the polling interval
-            await asyncio.sleep(self.polling_interval)
+        try:
+            while not self.target_writer.is_closing():
+                # Sleep and yield for the polling interval
+                await asyncio.sleep(self.polling_interval)
 
-            # Check if the target writer is still open
-            if self.target_writer.is_closing():
-                break
+                # Check if the target writer is still open
+                if self.target_writer.is_closing():
+                    break
 
-            # Send keep-alive frame to the target server
-            _LOGGER.debug("Sending keep-alive frame")
-            self.target_writer.write(bytearray(keepalive_frame))
-            await self.target_writer.drain()
+                # Send keep-alive frame to the target server
+                _LOGGER.debug("Sending keep-alive frame")
+                self.target_writer.write(bytearray(keepalive_frame))
+                await self.target_writer.drain()
+        finally:
+            # Abort copy by closing the target reader
+            self.target_reader.feed_eof()
 
     def stop(self):
         """Stop the stream."""
