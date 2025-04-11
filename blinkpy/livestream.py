@@ -83,9 +83,9 @@ class BlinkStream:
         return f"tcp://{sockname[0]}:{sockname[1]}"
 
     @property
-    def is_streaming(self):
+    def is_serving(self):
         """Check if the stream is active."""
-        return self.server.is_serving()
+        return self.server and self.server.is_serving()
 
     async def stream(self):
         """Connect to and stream from the target server."""
