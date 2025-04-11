@@ -412,6 +412,15 @@ class BlinkCamera:
         response = await api.request_camera_liveview(
             self.sync.blink, self.sync.network_id, self.camera_id
         )
+        return response["server"]
+
+    async def init_livestream(self):
+        """Initialize livestream."""
+        response = await api.request_camera_liveview(
+            self.sync.blink, self.sync.network_id, self.camera_id
+        )
+        if not response["server"].startswith("immis://"):
+            raise NotImplementedError("Unsupported: {}".format(response["server"]))
         return BlinkStream(self, response)
 
     async def image_to_file(self, path):
@@ -552,6 +561,20 @@ class BlinkCameraMini(BlinkCamera):
         data = dumps({"intent": "liveview"})
         response = await api.http_post(self.sync.blink, url, data=data)
         await api.wait_for_command(self.sync.blink, response)
+        return response["server"]
+
+    async def init_livestream(self):
+        """Initialize livestream."""
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.network_id}/owls/{self.camera_id}/liveview"
+        )
+        data = dumps({"intent": "liveview"})
+        response = await api.http_post(self.sync.blink, url, data=data)
+        await api.wait_for_command(self.sync.blink, response)
+        if not response["server"].startswith("immis://"):
+            raise NotImplementedError("Unsupported: {}".format(response["server"]))
         return BlinkStream(self, response)
 
 
@@ -621,4 +644,18 @@ class BlinkDoorbell(BlinkCamera):
         data = dumps({"intent": "liveview"})
         response = await api.http_post(self.sync.blink, url, data=data)
         await api.wait_for_command(self.sync.blink, response)
+        return response["server"]
+
+    async def init_livestream(self):
+        """Initialize livestream."""
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
+        )
+        data = dumps({"intent": "liveview"})
+        response = await api.http_post(self.sync.blink, url, data=data)
+        await api.wait_for_command(self.sync.blink, response)
+        if not response["server"].startswith("immis://"):
+            raise NotImplementedError("Unsupported: {}".format(response["server"]))
         return BlinkStream(self, response)
