@@ -128,7 +128,6 @@ class BlinkStream:
             self.clients.remove(client_writer)
             if not client_writer.is_closing():
                 client_writer.close()
-            await client_writer.wait_closed()
 
             # If no clients are connected, stop everything
             if not self.clients:
