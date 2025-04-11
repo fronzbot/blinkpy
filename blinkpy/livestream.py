@@ -17,7 +17,10 @@ class BlinkStream:
         self.command_id = response["command_id"]
         self.polling_interval = response["polling_interval"]
         self.target = urllib.parse.urlparse(response["server"])
+        self.server = None
         self.clients = []
+        self.target_reader = None
+        self.target_writer = None
 
     def get_auth_frames(self):
         """Get authentication frames."""
