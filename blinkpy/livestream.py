@@ -87,7 +87,7 @@ class BlinkStream:
         """Check if the stream is active."""
         return self.server and self.server.is_serving()
 
-    async def stream(self):
+    async def feed(self):
         """Connect to and stream from the target server."""
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.check_hostname = False
