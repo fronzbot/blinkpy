@@ -1,10 +1,12 @@
 """Handles immis livestream."""
+
 import asyncio
 import logging
 import urllib.parse
 import ssl
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class BlinkStream:
     """Class to initialize individual stream."""
@@ -25,18 +27,21 @@ class BlinkStream:
     def get_auth_frames(self):
         """Get authentication frames."""
         # Frame 1 (unknown)
-        frame1 = [ # fmt: skip
+        # fmt: off
+        frame1 = [
             0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ]
+        # fmt: on
 
         # Frame 2 (Client ID)
         client_id = urllib.parse.parse_qs(self.target.query).get("client_id")[0]
         frame2 = int(client_id).to_bytes(4, byteorder="big")
 
         # Frame 3 (unknown)
-        frame3 = [ # fmt: skip
+        # fmt: off
+        frame3 = [
             0x01, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -48,15 +53,18 @@ class BlinkStream:
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x10,
         ]
+        # fmt: on
 
         # Frame 4 (Connection ID)
         frame4 = self.target.path.split("/")[-1].split("__")[0].encode("ascii")
 
         # Frame 5 (unknown)
-        frame5 = [ # fmt: skip
+        # fmt: off
+        frame5 = [
             0x00, 0x00, 0x00, 0x01, 0x0a, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00,
         ]
+        # fmt: on
 
         return (
             frame1,
@@ -162,11 +170,13 @@ class BlinkStream:
 
     async def ping(self):
         """Send keep-alive messages to the server."""
-        keepalive_frame = [ # fmt: skip
+        # fmt: off
+        keepalive_frame = [
             0x12, 0x00, 0x00, 0x03, 0xe8, 0x00, 0x00, 0x00, 0x18, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
         ]
+        # fmt: on
         try:
             while not self.target_writer.is_closing():
                 # Sleep and yield for the polling interval
