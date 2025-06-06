@@ -9,7 +9,7 @@ from blinkpy.auth import Auth
 from blinkpy.helpers.util import json_load
 
 CREDFILE = environ.get("CREDFILE")
-TIMEDELTA = timedelta(environ.get("TIMEDELTA", 1))
+TIMEDELTA = timedelta(environ.get("TIMEDELTA", "1"))
 
 
 def get_date():
