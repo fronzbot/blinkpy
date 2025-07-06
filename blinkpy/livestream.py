@@ -55,7 +55,7 @@ class BlinkStream:
         auth_header.extend(client_id_field)
         # Total packet length: 28 bytes
 
-        # Unknown prefix field (2-byte static prefix, 4-byte length prefix, 64 unknown bytes)
+        # Unknown prefix field (2-byte prefix, 4-byte length prefix, 64 unknown bytes)
         # fmt: off
         unknown_prefix_field = [
             0x01, 0x08, # Static prefix (2 bytes)
@@ -66,19 +66,20 @@ class BlinkStream:
         # Total packet length: 98 bytes
 
         # Connection ID length field (4-byte length prefix)
-        connection_id_length_prefix = [
+        # fmt: off
+        conn_id_length_prefix = [
             0x00, 0x00, 0x00, 0x10,
         ]
         # fmt: on
-        auth_header.extend(connection_id_length_prefix)
+        auth_header.extend(conn_id_length_prefix)
         # Total packet length: 102 bytes
 
         # Connection ID field (UTF-8-encoded, 16 bytes)
-        connection_id = self.target.path.split("/")[-1].split("__")[0]
-        _LOGGER.debug("Connection ID: %s", connection_id)
-        connection_id_field = connection_id.encode("utf-8")[:16]
-        _LOGGER.debug("Connection ID frame: %s (%d)", connection_id_field, len(connection_id_field))
-        auth_header.extend(connection_id_field)
+        conn_id = self.target.path.split("/")[-1].split("__")[0]
+        _LOGGER.debug("Connection ID: %s", conn_id)
+        conn_id_field = conn_id.encode("utf-8")[:16]
+        _LOGGER.debug("Connection ID field: %s (%d)", conn_id_field, len(conn_id_field))
+        auth_header.extend(conn_id_field)
         # Total packet length: 118 bytes
 
         # Trailer (static 4-byte trailer)
@@ -116,7 +117,7 @@ class BlinkStream:
 
     async def feed(self):
         """Connect to and stream from the target server."""
-        ready = True # For now assume the command is ready, skip the polling
+        ready = True  # For now assume the command is ready, skip the polling
         while not ready:
             # Poll the command API to check if the device is ready
             response = await api.request_command_status(
@@ -129,7 +130,7 @@ class BlinkStream:
                     state_condition = commands.get("state_condition")
                     if state_condition not in ("new", "running"):
                         raise RuntimeError(
-                            f"Command {self.command_id} is not new or running: {state_condition}"
+                            f"Command {self.command_id} is {state_condition}"
                         )
                     state_stage = commands.get("state_stage")
                     if state_stage in ("vs", "lv"):
@@ -290,7 +291,7 @@ class BlinkStream:
 
                     # fmt: off
                     keepalive_packet = [
-                        # [1-byte msgtype, 4-byte sequence (increasing), 4-byte payload length]
+                        # [1-byte msgtype, 4-byte sequence, 4-byte payload length]
                         0x0A, *sequence_bytes, 0x00, 0x00, 0x00, 0x00, # 9-byte header
                         # no payload, just the header
                     ]
