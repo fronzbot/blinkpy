@@ -258,6 +258,9 @@ class BlinkStream:
 
                 # Yield control to the event loop
                 await asyncio.sleep(0)
+        except ssl.SSLError as e:
+            if e.reason != "APPLICATION_DATA_AFTER_CLOSE_NOTIFY":
+                _LOGGER.exception("SSL error while receiving data")
         except Exception:
             _LOGGER.exception("Error while receiving data")
         finally:
