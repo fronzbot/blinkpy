@@ -542,6 +542,7 @@ async def wait_for_command(blink, json_data: dict) -> bool:
         network_id = json_data.get("network_id")
         command_id = json_data.get("id")
     except AttributeError:
+        _LOGGER.exception("No network_id or id in response")
         return False
     if command_id and network_id:
         for _ in range(0, MAX_RETRY):
@@ -554,3 +555,5 @@ async def wait_for_command(blink, json_data: dict) -> bool:
                 if status.get("complete"):
                     return True
             await sleep(COMMAND_POLL_TIME)
+    else:
+        _LOGGER.debug("No network_id or id in response")
