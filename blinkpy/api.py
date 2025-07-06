@@ -210,6 +210,18 @@ async def request_command_status(blink, network, command_id):
     return await http_get(blink, url)
 
 
+async def request_command_done(blink, network, command_id):
+    """
+    Request command to be done.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param command_id: Command id to mark as done.
+    """
+    url = f"{blink.urls.base_url}/network/{network}/command/{command_id}/done/"
+    return await http_post(blink, url)
+
+
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_homescreen(blink, **kwargs):
     """Request homescreen info."""
