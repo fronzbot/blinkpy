@@ -9,13 +9,13 @@ from blinkpy import api
 _LOGGER = logging.getLogger(__name__)
 
 
-class BlinkStream:
+class BlinkLiveStream:
     """Class to initialize individual stream."""
 
     # Reference: https://github.com/amattu2/blink-liveview-middleware
 
     def __init__(self, camera, response):
-        """Initialize BlinkStream."""
+        """Initialize BlinkLiveStream."""
         self.camera = camera
         self.command_id = response["command_id"]
         self.polling_interval = response["polling_interval"]
