@@ -13,7 +13,7 @@ from requests.compat import urljoin
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
 from blinkpy.helpers.util import to_alphanumeric
-from blinkpy.livestream import BlinkStream
+from blinkpy.livestream import BlinkLiveStream
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -421,7 +421,7 @@ class BlinkCamera:
         )
         if not response["server"].startswith("immis://"):
             raise NotImplementedError("Unsupported: {}".format(response["server"]))
-        return BlinkStream(self, response)
+        return BlinkLiveStream(self, response)
 
     async def image_to_file(self, path):
         """
@@ -575,7 +575,7 @@ class BlinkCameraMini(BlinkCamera):
         await api.wait_for_command(self.sync.blink, response)
         if not response["server"].startswith("immis://"):
             raise NotImplementedError("Unsupported: {}".format(response["server"]))
-        return BlinkStream(self, response)
+        return BlinkLiveStream(self, response)
 
 
 class BlinkDoorbell(BlinkCamera):
@@ -658,4 +658,4 @@ class BlinkDoorbell(BlinkCamera):
         await api.wait_for_command(self.sync.blink, response)
         if not response["server"].startswith("immis://"):
             raise NotImplementedError("Unsupported: {}".format(response["server"]))
-        return BlinkStream(self, response)
+        return BlinkLiveStream(self, response)
