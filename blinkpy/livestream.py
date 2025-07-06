@@ -4,6 +4,7 @@ import asyncio
 import logging
 import urllib.parse
 import ssl
+from blinkpy import api
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -115,6 +116,30 @@ class BlinkStream:
 
     async def feed(self):
         """Connect to and stream from the target server."""
+        ready = False
+        while not ready:
+            # Poll the command API to check if the device is ready
+            response = await api.request_command_status(
+                self.camera.sync.blink, self.camera.network_id, self.command_id
+            )
+            _LOGGER.debug("Command status response: %s", response)
+            for commands in response.get("commands", []):
+                if commands.get("id") == self.command_id:
+                    _LOGGER.debug("Command found in response: %s", commands)
+                    state_condition = commands.get("state_condition")
+                    if state_condition not in ("new", "running"):
+                        raise RuntimeError(
+                            f"Command {self.command_id} is not new or running: {state_condition}"
+                        )
+                    state_stage = commands.get("state_stage")
+                    if state_stage in ("vs", "lv"):
+                        ready = True
+                        break
+                    break
+            if not ready:
+                _LOGGER.debug("Not ready, retrying in 1 second")
+                await asyncio.sleep(1)
+
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
