@@ -194,11 +194,60 @@ class BlinkStream:
         try:
             _LOGGER.debug("Starting copy from target to clients")
             while not self.target_reader.at_eof():
-                # Read data from the target server
+                # Read header from the target server
                 async with asyncio.timeout(3):
-                    data = await self.target_reader.read(4096)
+                    data = await self.target_reader.read(9)
                     if not data:
                         break
+
+                # Check if we have enough data for the header
+                if len(data) < 9:
+                    _LOGGER.warning(
+                        "Insufficient data for header: %d bytes, expected 9",
+                        len(data),
+                    )
+                    break
+
+                # Handle the 9-byte IMMI protocol header
+                msgtype = data[0]
+                sequence = int.from_bytes(data[1:5], byteorder="big")
+                payload_length = int.from_bytes(data[5:9], byteorder="big")
+                _LOGGER.debug(
+                    "Received packet: msgtype=%d, sequence=%d, payload_length=%d",
+                    msgtype,
+                    sequence,
+                    payload_length,
+                )
+
+                # Skip packets with invalid payload length
+                if payload_length <= 0:
+                    _LOGGER.debug("Invalid payload length: %d", payload_length)
+                    continue
+
+                # Read payload from the target server
+                async with asyncio.timeout(3):
+                    data = await self.target_reader.read(payload_length)
+                    if not data:
+                        break
+
+                # Check if we have enough data for the payload
+                if len(data) < payload_length:
+                    _LOGGER.warning(
+                        "Insufficient data for payload: %d bytes, expected %d",
+                        len(data),
+                        payload_length,
+                    )
+                    break
+
+                # Skip packets other than msgtype 0x00 (regular video stream)
+                if msgtype != 0x00:
+                    _LOGGER.debug("Skipping unsupported msgtype %d", msgtype)
+                    continue
+
+                # Skip video payloads missing 0x47 (transport stream packet start)
+                if data[0] != 0x47:
+                    _LOGGER.debug("Skipping video payload missing 0x47 at start")
+                    continue
 
                 # Send data to all connected clients
                 _LOGGER.debug("Sending %d bytes to clients", len(data))
