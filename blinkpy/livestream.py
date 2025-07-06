@@ -197,11 +197,15 @@ class BlinkStream:
     def stop(self):
         """Stop the stream."""
         # Close all connections
-        _LOGGER.debug("Stopping server, closing connections")
-        if self.server and not self.server.is_serving():
+        _LOGGER.debug("Stopping server, closing remaining connections")
+        if self.server and self.server.is_serving():
+            _LOGGER.debug("Closing listen server")
             self.server.close()
         if self.target_writer and not self.target_writer.is_closing():
+            _LOGGER.debug("Closing target writer")
             self.target_writer.close()
         for writer in self.clients:
             if not writer.is_closing():
+                _LOGGER.debug("Closing client writer")
                 writer.close()
+        _LOGGER.debug("All remaining connections closed")
