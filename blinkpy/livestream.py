@@ -116,7 +116,7 @@ class BlinkStream:
 
     async def feed(self):
         """Connect to and stream from the target server."""
-        ready = False
+        ready = True # For now assume the command is ready, skip the polling
         while not ready:
             # Poll the command API to check if the device is ready
             response = await api.request_command_status(
