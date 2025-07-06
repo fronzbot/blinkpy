@@ -24,55 +24,73 @@ class BlinkStream:
         self.target_reader = None
         self.target_writer = None
 
-    def get_auth_frames(self):
-        """Get authentication frames."""
-        # Frame 1 (unknown)
+    def get_auth_header(self):
+        """Get authentication header."""
+        auth_header = bytearray()
+
+        # Magic numeber
         # fmt: off
-        frame1 = [
-            0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        magic_number = [
+            0x00, 0x00, 0x00, 0x28, # Magic number (4 bytes)
         ]
         # fmt: on
+        auth_header.extend(magic_number)
+        # Total packet length: 4 bytes
 
-        # Frame 2 (Client ID)
-        client_id = urllib.parse.parse_qs(self.target.query).get("client_id")[0]
-        frame2 = int(client_id).to_bytes(4, byteorder="big")
-
-        # Frame 3 (unknown)
+        # Unknown string field (4-byte length prefix, 16 unknown bytes)
         # fmt: off
-        frame3 = [
-            0x01, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x10,
+        unknown_string_field = [
+            0x00, 0x00, 0x00, 0x00, # Length prefix (4 bytes)
+        ] + ([0x00] * 16) # Unknown bytes (16 bytes)
+        # fmt: on
+        auth_header.extend(unknown_string_field)
+        # Total packet length: 24 bytes
+
+        # Client ID field
+        client_id = urllib.parse.parse_qs(self.target.query).get("client_id", [0])[0]
+        _LOGGER.debug("Client ID: %s", client_id)
+        client_id_field = int(client_id).to_bytes(4, byteorder="big")
+        _LOGGER.debug("Client ID field: %s (%d)", client_id_field, len(client_id_field))
+        auth_header.extend(client_id_field)
+        # Total packet length: 28 bytes
+
+        # Unknown prefix field (2-byte static prefix, 4-byte length prefix, 64 unknown bytes)
+        # fmt: off
+        unknown_prefix_field = [
+            0x01, 0x08, # Static prefix (2 bytes)
+            0x00, 0x00, 0x00, 0x00, # Length prefix (4 bytes)
+        ] + ([0x00] * 64) # Unknown bytes (64 bytes)
+        # fmt: on
+        auth_header.extend(unknown_prefix_field)
+        # Total packet length: 98 bytes
+
+        # Connection ID length field (4-byte length prefix)
+        connection_id_length_prefix = [
+            0x00, 0x00, 0x00, 0x10,
         ]
         # fmt: on
+        auth_header.extend(connection_id_length_prefix)
+        # Total packet length: 102 bytes
 
-        # Frame 4 (Connection ID)
-        frame4 = self.target.path.split("/")[-1].split("__")[0].encode("ascii")
+        # Connection ID field (UTF-8-encoded, 16 bytes)
+        connection_id = self.target.path.split("/")[-1].split("__")[0]
+        _LOGGER.debug("Connection ID: %s", connection_id)
+        connection_id_field = connection_id.encode("utf-8")[:16]
+        _LOGGER.debug("Connection ID frame: %s (%d)", connection_id_field, len(connection_id_field))
+        auth_header.extend(connection_id_field)
+        # Total packet length: 118 bytes
 
-        # Frame 5 (unknown)
+        # Trailer (static 4-byte trailer)
         # fmt: off
-        frame5 = [
-            0x00, 0x00, 0x00, 0x01, 0x0a, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00,
+        trailer_static = [
+            0x00, 0x00, 0x00, 0x01,
         ]
         # fmt: on
+        auth_header.extend(trailer_static)
+        # Total packet length: 122 bytes
 
-        return (
-            frame1,
-            frame2,
-            frame3,
-            frame4,
-            frame5,
-        )
+        _LOGGER.debug("Auth header length: %d", len(auth_header))
+        return auth_header
 
     async def start(self):
         """Start the stream."""
@@ -104,9 +122,9 @@ class BlinkStream:
             self.target.hostname, self.target.port, ssl=ssl_context
         )
 
-        for frame in self.get_auth_frames():
-            self.target_writer.write(bytearray(frame))
-            await self.target_writer.drain()
+        auth_header = self.get_auth_header()
+        self.target_writer.write(auth_header)
+        await self.target_writer.drain()
 
         try:
             await asyncio.gather(self.copy(), self.ping())
