@@ -152,7 +152,7 @@ class BlinkStream:
         await self.target_writer.drain()
 
         try:
-            await asyncio.gather(self.copy(), self.ping())
+            await asyncio.gather(self.recv(), self.send(), self.poll())
         except Exception:
             _LOGGER.exception("Error while handling stream")
         finally:
@@ -189,17 +189,19 @@ class BlinkStream:
                 _LOGGER.debug("Last client disconnected, stopping server")
                 self.stop()
 
-    async def copy(self):
+    async def recv(self):
         """Copy data from one reader to multiple writers."""
         try:
+            _LOGGER.debug("Starting copy from target to clients")
             while not self.target_reader.at_eof():
                 # Read data from the target server
                 async with asyncio.timeout(3):
-                    data = await self.target_reader.read(1024)
+                    data = await self.target_reader.read(4096)
                     if not data:
                         break
 
                 # Send data to all connected clients
+                _LOGGER.debug("Sending %d bytes to clients", len(data))
                 for writer in self.clients:
                     if not writer.is_closing():
                         writer.write(data)
@@ -207,35 +209,81 @@ class BlinkStream:
 
                 # Yield control to the event loop
                 await asyncio.sleep(0)
+        except Exception:
+            _LOGGER.exception("Error while receiving data")
         finally:
-            # Abort ping by closing the target writer
+            # Abort sending by closing the target writer
             self.target_writer.close()
+            _LOGGER.debug("Receiving was aborted, aborting sending")
 
-    async def ping(self):
-        """Send keep-alive messages to the server."""
+    async def send(self):
+        """Send keep-alive and latency-stats messages to the server."""
         # fmt: off
-        keepalive_frame = [
-            0x12, 0x00, 0x00, 0x03, 0xe8, 0x00, 0x00, 0x00, 0x18, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+        latency_stats_packet = [
+            # [1-byte msgtype, 4-byte sequence (static 1000), 4-byte payload length]
+            0x12, 0x00, 0x00, 0x03, 0xe8, 0x00, 0x00, 0x00, 0x18, # 9-byte header
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, # 1/3 of 24-byte payload
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, # 2/3 of 24-byte payload
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, # 3/3 of 24-byte payload
         ]
         # fmt: on
+        every10s = 0
+        sequence = 0
         try:
             while not self.target_writer.is_closing():
+                if (every10s % 10) == 0:
+                    every10s = 0
+                    sequence += 1
+                    sequence_bytes = sequence.to_bytes(4, byteorder="big")
+
+                    # fmt: off
+                    keepalive_packet = [
+                        # [1-byte msgtype, 4-byte sequence (increasing), 4-byte payload length]
+                        0x0A, *sequence_bytes, 0x00, 0x00, 0x00, 0x00, # 9-byte header
+                        # no payload, just the header
+                    ]
+                    # fmt: on
+
+                    # Send keep-alive packet to the target server
+                    _LOGGER.debug("Sending keep-alive packet")
+                    self.target_writer.write(bytearray(keepalive_packet))
+                    await self.target_writer.drain()
+
+                # Send latency-stats packet to the target server
+                _LOGGER.debug("Sending latency-stats packet")
+                self.target_writer.write(bytearray(latency_stats_packet))
+                await self.target_writer.drain()
+
+                # Yield and sleep for the latency-stats interval
+                every10s += 1
+                await asyncio.sleep(1)
+        except Exception:
+            _LOGGER.exception("Error while sending keep-alive or latency-stats")
+        finally:
+            # Abort receiving by closing the target reader
+            self.target_reader.feed_eof()
+            _LOGGER.debug("Sending was aborted, aborting receiving")
+
+    async def poll(self):
+        """Poll the command API for the stream."""
+        try:
+            while not self.target_reader.at_eof():
+                _LOGGER.debug("Polling command API")
+                response = await api.request_command_status(
+                    self.camera.sync.blink, self.camera.network_id, self.command_id
+                )
+                _LOGGER.debug("Polling response: %s", response)
+
                 # Sleep and yield for the polling interval
                 await asyncio.sleep(self.polling_interval)
-
-                # Check if the target writer is still open
-                if self.target_writer.is_closing():
-                    break
-
-                # Send keep-alive frame to the target server
-                _LOGGER.debug("Sending keep-alive frame")
-                self.target_writer.write(bytearray(keepalive_frame))
-                await self.target_writer.drain()
+        except Exception:
+            _LOGGER.exception("Error while polling command API")
         finally:
-            # Abort copy by closing the target reader
-            self.target_reader.feed_eof()
+            _LOGGER.debug("Done polling command API")
+            response = await api.request_command_done(
+                self.camera.sync.blink, self.camera.network_id, self.command_id
+            )
+            _LOGGER.debug("Done polling response: %s", response)
 
     def stop(self):
         """Stop the stream."""
