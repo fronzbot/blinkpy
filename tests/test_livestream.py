@@ -101,7 +101,7 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         self.assertEqual(auth_header[98:102], expected_connection_id_length)
 
         # Check connection ID at position 102-118
-        expected_connection_id = "ABCDEFGHIJKMLNOP".encode("utf-8")
+        expected_connection_id = b"ABCDEFGHIJKMLNOP"
         self.assertEqual(auth_header[102:118], expected_connection_id)
 
         # Check static trailer at end (4 bytes: 0x00, 0x00, 0x00, 0x01)
