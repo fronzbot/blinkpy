@@ -117,30 +117,6 @@ class BlinkLiveStream:
 
     async def feed(self):
         """Connect to and stream from the target server."""
-        ready = True  # For now assume the command is ready, skip the polling
-        while not ready:
-            # Poll the command API to check if the device is ready
-            response = await api.request_command_status(
-                self.camera.sync.blink, self.camera.network_id, self.command_id
-            )
-            _LOGGER.debug("Command status response: %s", response)
-            for commands in response.get("commands", []):
-                if commands.get("id") == self.command_id:
-                    _LOGGER.debug("Command found in response: %s", commands)
-                    state_condition = commands.get("state_condition")
-                    if state_condition not in ("new", "running"):
-                        raise RuntimeError(
-                            f"Command {self.command_id} is {state_condition}"
-                        )
-                    state_stage = commands.get("state_stage")
-                    if state_stage in ("vs", "lv"):
-                        ready = True
-                        break
-                    break
-            if not ready:
-                _LOGGER.debug("Not ready, retrying in 1 second")
-                await asyncio.sleep(1)
-
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
@@ -326,6 +302,24 @@ class BlinkLiveStream:
                     self.camera.sync.blink, self.camera.network_id, self.command_id
                 )
                 _LOGGER.debug("Polling response: %s", response)
+
+                # Check if the response is successful
+                if response.get("status_code", 0) != 908:
+                    _LOGGER.error("Polling command API failed: %s", response)
+                    break
+
+                # Check if the command is still running
+                for commands in response.get("commands", []):
+                    if commands.get("id") == self.command_id:
+                        _LOGGER.debug("Command %d state found", self.command_id)
+                        state_condition = commands.get("state_condition")
+                        _LOGGER.debug("Command state condition: %s", state_condition)
+                        state_stage = commands.get("state_stage")
+                        _LOGGER.debug("Command state stage: %s", state_stage)
+                        if state_condition in ("new", "running"):
+                            break
+                        else:
+                            return
 
                 # Sleep and yield for the polling interval
                 await asyncio.sleep(self.polling_interval)
