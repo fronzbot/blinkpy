@@ -1,5 +1,6 @@
 """Tests for BlinkLiveStream class."""
 
+import asyncio
 import ssl
 import urllib.parse
 from unittest import mock
@@ -225,7 +226,7 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
 
         # Mock coroutines to avoid actual execution
         with (
-            mock.patch("logging.Logger.exception") as mock_logger_exception,
+            mock.patch("logging.Logger.exception") as mock_logger,
             mock.patch("asyncio.gather", new_callable=mock.AsyncMock) as mock_gather,
             mock.patch.object(self.livestream, "recv", new_callable=mock.Mock),
             mock.patch.object(self.livestream, "send", new_callable=mock.Mock),
@@ -237,7 +238,7 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
             await self.livestream.feed()
 
             # Verify exception was logged
-            mock_logger_exception.assert_called_once()
+            mock_logger.assert_called_once()
 
             # Verify stop was called
             mock_stop.assert_called_once()
@@ -271,6 +272,30 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
 
         with mock.patch.object(self.livestream, "stop") as mock_stop:
             await self.livestream.join(mock_reader, mock_writer)
+
+            # Verify client was removed and stop was called
+            self.assertEqual(len(self.livestream.clients), 0)
+            mock_writer.close.assert_called_once()
+            mock_stop.assert_called_once()
+
+    async def test_join_general_exception_logging(self, mock_resp):
+        """Test general exception logging in join method."""
+        mock_reader = mock.Mock()
+        mock_writer = mock.Mock()
+
+        # Mock general exception (not ConnectionResetError)
+        mock_reader.read = mock.AsyncMock()
+        mock_reader.read.side_effect = ValueError("Test join exception")
+        mock_writer.is_closing.return_value = False
+
+        with (
+            mock.patch("logging.Logger.exception") as mock_logger,
+            mock.patch.object(self.livestream, "stop") as mock_stop,
+        ):
+            await self.livestream.join(mock_reader, mock_writer)
+
+            # Verify exception was logged
+            mock_logger.assert_called_once_with("Error while handling client")
 
             # Verify client was removed and stop was called
             self.assertEqual(len(self.livestream.clients), 0)
@@ -454,6 +479,7 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         ssl_error.reason = "APPLICATION_DATA_AFTER_CLOSE_NOTIFY"
         mock_reader.read = mock.AsyncMock()
         mock_reader.read.side_effect = ssl_error
+        mock_reader.at_eof.return_value = False
 
         self.livestream.target_reader = mock_reader
         self.livestream.target_writer = mock_writer
@@ -464,3 +490,161 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
 
         # Verify target writer was closed
         mock_writer.close.assert_called_once()
+
+    async def test_recv_ssl_error_other_reason(self, mock_resp):
+        """Test SSL error handling with other reasons in recv."""
+        mock_reader = mock.Mock()
+        mock_writer = mock.Mock()
+
+        # Mock SSL error with different reason
+        ssl_error = ssl.SSLError()
+        ssl_error.reason = "SOME_OTHER_SSL_ERROR"
+        mock_reader.read = mock.AsyncMock()
+        mock_reader.read.side_effect = ssl_error
+        mock_reader.at_eof.return_value = False
+
+        self.livestream.target_reader = mock_reader
+        self.livestream.target_writer = mock_writer
+        self.livestream.clients = []
+
+        with mock.patch("logging.Logger.exception") as mock_logger:
+            # Should not raise exception for this specific SSL error
+            await self.livestream.recv()
+
+            # Verify exception was logged for non-ignored SSL errors
+            mock_logger.assert_called_once_with("SSL error while receiving data")
+
+        # Verify target writer was closed
+        mock_writer.close.assert_called_once()
+
+    async def test_recv_exception_logging(self, mock_resp):
+        """Test exception logging in recv method."""
+        mock_reader = mock.Mock()
+        mock_writer = mock.Mock()
+
+        # Mock general exception
+        mock_reader.read = mock.AsyncMock()
+        mock_reader.read.side_effect = Exception("Test exception")
+        mock_reader.at_eof.return_value = False
+
+        self.livestream.target_reader = mock_reader
+        self.livestream.target_writer = mock_writer
+        self.livestream.clients = []
+
+        with mock.patch("logging.Logger.exception") as mock_logger:
+            await self.livestream.recv()
+
+            # Verify exception was logged
+            mock_logger.assert_called_once_with("Error while receiving data")
+
+        # Verify target writer was closed
+        mock_writer.close.assert_called_once()
+
+    async def test_recv_timeout_exception(self, mock_resp):
+        """Test timeout exception handling in recv method."""
+        mock_reader = mock.Mock()
+        mock_writer = mock.Mock()
+
+        # Mock asyncio timeout exception
+        mock_reader.read = mock.AsyncMock()
+        mock_reader.read.side_effect = asyncio.TimeoutError()
+        mock_reader.at_eof.return_value = False
+
+        self.livestream.target_reader = mock_reader
+        self.livestream.target_writer = mock_writer
+        self.livestream.clients = []
+
+        with mock.patch("logging.Logger.exception") as mock_logger:
+            await self.livestream.recv()
+
+            # Verify exception was logged
+            mock_logger.assert_called_once_with("Error while receiving data")
+
+        # Verify target writer was closed
+        mock_writer.close.assert_called_once()
+
+    async def test_send_exception_logging(self, mock_resp):
+        """Test exception logging in send method."""
+        mock_writer = mock.Mock()
+
+        # Mock exception during send
+        mock_writer.is_closing.return_value = False
+        mock_writer.write = mock.Mock()
+        mock_writer.drain = mock.AsyncMock()
+        mock_writer.drain.side_effect = Exception("Test send exception")
+
+        self.livestream.target_reader = mock.Mock()
+        self.livestream.target_writer = mock_writer
+
+        with mock.patch("logging.Logger.exception") as mock_logger:
+            await self.livestream.send()
+
+            # Verify exception was logged
+            mock_logger.assert_called_once_with(
+                "Error while sending keep-alive or latency-stats"
+            )
+
+    async def test_send_writer_closing_exception(self, mock_resp):
+        """Test exception when writer is closing during send."""
+        mock_reader = mock.Mock()
+        mock_writer = mock.Mock()
+
+        # Mock exception when checking if writer is closing
+        mock_writer.is_closing.side_effect = Exception("Writer check exception")
+
+        self.livestream.target_reader = mock_reader
+        self.livestream.target_writer = mock_writer
+
+        with mock.patch("logging.Logger.exception") as mock_logger:
+            await self.livestream.send()
+
+            # Verify exception was logged
+            mock_logger.assert_called_once_with(
+                "Error while sending keep-alive or latency-stats"
+            )
+
+    @mock.patch("blinkpy.api.request_command_status")
+    async def test_poll_exception_logging(self, mock_command_status, mock_resp):
+        """Test exception logging in poll method."""
+        mock_reader = mock.Mock()
+        mock_reader.at_eof.return_value = False
+
+        # Mock exception in command status request
+        mock_command_status.side_effect = Exception("Test poll exception")
+
+        self.livestream.target_reader = mock_reader
+
+        with (
+            mock.patch("logging.Logger.exception") as mock_logger,
+            mock.patch("blinkpy.api.request_command_done", new_callable=mock.AsyncMock) as mock_command_done,
+        ):
+            await self.livestream.poll()
+
+            # Verify exception was logged
+            mock_logger.assert_called_once_with("Error while polling command API")
+
+            # Verify command done was called since status failed
+            mock_command_done.assert_called_once()
+
+    @mock.patch("blinkpy.api.request_command_status")
+    @mock.patch("blinkpy.api.request_command_done")
+    async def test_poll_command_done_exception(
+        self, mock_command_done, mock_command_status, mock_resp
+    ):
+        """Test exception handling in poll when command_done fails."""
+        mock_reader = mock.Mock()
+        mock_reader.at_eof.side_effect = [False, True]  # Exit after one iteration
+
+        # Mock successful command status
+        mock_command_status.return_value = self.command_status_response.copy()
+        mock_command_status.return_value["status_code"] = 1337
+        # Mock exception in command done
+        mock_command_done.side_effect = Exception("Command done exception")
+
+        self.livestream.target_reader = mock_reader
+
+        with (
+            mock.patch("asyncio.sleep", new_callable=mock.AsyncMock),
+            self.assertRaises(Exception),
+        ):
+            await self.livestream.poll()
