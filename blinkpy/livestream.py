@@ -174,8 +174,6 @@ class BlinkLiveStream:
                 # Read header from the target server
                 async with asyncio.timeout(3):
                     data = await self.target_reader.read(9)
-                    if not data:
-                        break
 
                 # Check if we have enough data for the header
                 if len(data) < 9:
@@ -204,8 +202,6 @@ class BlinkLiveStream:
                 # Read payload from the target server
                 async with asyncio.timeout(3):
                     data = await self.target_reader.read(payload_length)
-                    if not data:
-                        break
 
                 # Check if we have enough data for the payload
                 if len(data) < payload_length:

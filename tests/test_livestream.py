@@ -348,7 +348,7 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         mock_client = mock.Mock()
 
         # Mock header with invalid msgtype (not 0x00)
-        header_data = bytearray(
+        header_data_invalid = bytearray(
             [
                 0x01,  # invalid msgtype
                 0x00,
@@ -365,7 +365,7 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         payload_data = bytearray([0x47] + [0x00] * 187)  # 188 bytes total
 
         mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = [header_data, payload_data, b""]
+        mock_reader.read.side_effect = [header_data_invalid, payload_data, b""]
         mock_reader.at_eof.side_effect = [False, False, True]
 
         self.livestream.target_reader = mock_reader
@@ -375,6 +375,125 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         await self.livestream.recv()
 
         # Verify data was not written to client (invalid msgtype)
+        mock_client.write.assert_not_called()
+
+    async def test_recv_incomplete_header(self, mock_resp):
+        """Test receiving packet with incomplete header."""
+        mock_reader = mock.Mock()
+        mock_client = mock.Mock()
+
+        # Simulate reading incomplete header
+        mock_reader.read = mock.AsyncMock()
+        mock_reader.read.side_effect = [b"short", b""]
+        mock_reader.at_eof.side_effect = [False, True]
+
+        self.livestream.target_reader = mock_reader
+        self.livestream.target_writer = mock.Mock()
+        self.livestream.clients = [mock_client]
+
+        # Should not raise exception, just log a warning message
+        with mock.patch("logging.Logger.warning") as mock_logger:
+            await self.livestream.recv()
+
+            # Verify that a warning message was logged
+            mock_logger.assert_called_once()
+
+        # Verify no data was written to client (incomplete header)
+        mock_client.write.assert_not_called()
+
+    async def test_recv_empty_payload_skipped(self, mock_resp):
+        """Test skipping packet with empty payload."""
+        mock_reader = mock.Mock()
+        mock_client = mock.Mock()
+
+        # Mock valid IMMI protocol header and empty payload
+        header_data_empty = bytearray(
+            [
+                0x00,  # msgtype (video stream)
+                0x00,
+                0x00,
+                0x00,
+                0x01,  # sequence
+                0x00,
+                0x00,
+                0x00,
+                0x00,  # payload_length (0 bytes)
+            ]
+        )
+
+        # Mock valid IMMI protocol header and payload
+        header_data = bytearray(
+            [
+                0x00,  # msgtype (video stream)
+                0x00,
+                0x00,
+                0x00,
+                0x01,  # sequence
+                0x00,
+                0x00,
+                0x00,
+                0xBC,  # payload_length (188 bytes)
+            ]
+        )
+
+        mock_reader.read = mock.AsyncMock()
+        mock_reader.read.side_effect = [header_data_empty, header_data, b"short", b""]
+        mock_reader.at_eof.side_effect = [False, False, True]
+
+        self.livestream.target_reader = mock_reader
+        self.livestream.target_writer = mock.Mock()
+        self.livestream.clients = [mock_client]
+
+        # Should not raise exception, just log a warning message
+        with mock.patch("logging.Logger.warning") as mock_logger:
+            await self.livestream.recv()
+
+            # Verify that a warning message was logged
+            mock_logger.assert_called_once()
+
+        # Verify that the first payload read was skipped (empty payload)
+        self.assertEqual(mock_reader.read.call_count, 3)  # odd number of reads
+
+        # Verify no data was written to client (incomplete header)
+        mock_client.write.assert_not_called()
+
+    async def test_recv_invalid_stream_marker(self, mock_resp):
+        """Test receiving invalid video packets."""
+        mock_reader = mock.Mock()
+        mock_client = mock.Mock()
+
+        # Mock valid IMMI protocol header and payload
+        header_data = bytearray(
+            [
+                0x00,  # msgtype (video stream)
+                0x00,
+                0x00,
+                0x00,
+                0x01,  # sequence
+                0x00,
+                0x00,
+                0x00,
+                0xBC,  # payload_length (188 bytes)
+            ]
+        )
+
+        # Mock payload starting with 0x42 (invalid transport stream packet start)
+        payload_data = bytearray([0x42] + [0x00] * 187)  # 188 bytes total
+
+        mock_reader.read = mock.AsyncMock()
+        mock_reader.read.side_effect = [header_data, payload_data, b""]
+        mock_reader.at_eof.side_effect = [False, False, True]
+        mock_client.is_closing.return_value = False
+        mock_client.write = mock.Mock()
+        mock_client.drain = mock.AsyncMock()
+
+        self.livestream.target_reader = mock_reader
+        self.livestream.target_writer = mock.Mock()
+        self.livestream.clients = [mock_client]
+
+        await self.livestream.recv()
+
+        # Verify no data was written to client (incomplete header)
         mock_client.write.assert_not_called()
 
     async def test_send_keepalive_and_latency(self, mock_resp):
@@ -616,7 +735,9 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
 
         with (
             mock.patch("logging.Logger.exception") as mock_logger,
-            mock.patch("blinkpy.api.request_command_done", new_callable=mock.AsyncMock) as mock_command_done,
+            mock.patch(
+                "blinkpy.api.request_command_done", new_callable=mock.AsyncMock
+            ) as mock_command_done,
         ):
             await self.livestream.poll()
 
@@ -625,6 +746,35 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
 
             # Verify command done was called since status failed
             mock_command_done.assert_called_once()
+
+    @mock.patch("blinkpy.api.request_command_status")
+    @mock.patch("blinkpy.api.request_command_done")
+    async def test_poll_command_done(
+        self, mock_command_done, mock_command_status, mock_resp
+    ):
+        """Test exception handling in poll when command_done fails."""
+        mock_reader = mock.Mock()
+        mock_reader.at_eof.side_effect = [False, True]  # Exit after one iteration
+
+        # Mock successful command status
+        response = self.command_status_response.copy()
+        response["commands"][0] = response["commands"][0].copy()
+        response["commands"][0]["state_condition"] = "error"
+        mock_command_status.return_value = response
+
+        self.livestream.target_reader = mock_reader
+
+        await self.livestream.poll()
+
+        # Verify command status was polled
+        mock_command_status.assert_called_with(
+            self.camera.sync.blink, self.camera.network_id, self.livestream.command_id
+        )
+
+        # Verify command done was called
+        mock_command_done.assert_called_with(
+            self.camera.sync.blink, self.camera.network_id, self.livestream.command_id
+        )
 
     @mock.patch("blinkpy.api.request_command_status")
     @mock.patch("blinkpy.api.request_command_done")
