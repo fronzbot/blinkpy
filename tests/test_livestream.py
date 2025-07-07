@@ -1,6 +1,5 @@
 """Tests for BlinkLiveStream class."""
 
-import asyncio
 import ssl
 import urllib.parse
 from unittest import mock
@@ -666,7 +665,7 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
 
         # Mock asyncio timeout exception
         mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = asyncio.TimeoutError()
+        mock_reader.read.side_effect = TimeoutError()
         mock_reader.at_eof.return_value = False
 
         self.livestream.target_reader = mock_reader
