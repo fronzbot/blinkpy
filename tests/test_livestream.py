@@ -570,7 +570,7 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         mock_client1.close.assert_called_once()
         mock_client2.close.assert_called_once()
 
-    def test_client_id_parsing(self, mock_resp):
+    def test_server_url_parsing(self, mock_resp):
         """Test client ID parsing from URL query parameters."""
         # Test with different client ID
         test_response = {
@@ -581,11 +581,17 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         test_livestream = BlinkLiveStream(self.camera, test_response)
         auth_header = test_livestream.get_auth_header()
 
-        # Verify client ID was extracted correctly
+        # Check value of client ID field at position 24-28
         expected_client_id = (999888).to_bytes(4, byteorder="big")
-        actual_client_id = auth_header[24:28]
+        self.assertEqual(auth_header[24:28], expected_client_id)
 
-        self.assertEqual(actual_client_id, expected_client_id)
+        # Check value of connection ID length field at position 98-102
+        expected_connection_id_length = (16).to_bytes(4, byteorder="big")
+        self.assertEqual(auth_header[98:102], expected_connection_id_length)
+
+        # Check value of connection ID at position 102-118
+        expected_connection_id = b"ABCDEFGH" + b"\x00" * 8  # Ensure it is 16 bytes
+        self.assertEqual(auth_header[102:118], expected_connection_id)
 
     async def test_recv_ssl_error(self, mock_resp):
         """Test handling SSL errors during receive."""

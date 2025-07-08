@@ -78,6 +78,9 @@ class BlinkLiveStream:
         conn_id = self.target.path.split("/")[-1].split("__")[0]
         _LOGGER.debug("Connection ID: %s", conn_id)
         conn_id_field = conn_id.encode("utf-8")[:16]
+        # Ensure it is exactly 16 bytes long
+        if len(conn_id_field) < 16:
+            conn_id_field += b"\x00" * (16 - len(conn_id_field))
         _LOGGER.debug("Connection ID field: %s (%d)", conn_id_field, len(conn_id_field))
         auth_header.extend(conn_id_field)
         # Total packet length: 118 bytes
