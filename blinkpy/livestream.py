@@ -147,12 +147,13 @@ class BlinkLiveStream:
                 # Read data from the client
                 data = await client_reader.read(1024)
                 if not data:
+                    _LOGGER.debug("Client disconnected")
                     break
 
                 # Yield control to the event loop
                 await asyncio.sleep(0)
         except ConnectionResetError:
-            _LOGGER.debug("Client disconnected")
+            _LOGGER.debug("Client connection reset")
         except Exception:
             _LOGGER.exception("Error while handling client")
         finally:
