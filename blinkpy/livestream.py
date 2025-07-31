@@ -97,9 +97,9 @@ class BlinkLiveStream:
         _LOGGER.debug("Auth header length: %d", len(auth_header))
         return auth_header
 
-    async def start(self):
+    async def start(self, host="127.0.0.1", port=None):
         """Start the stream."""
-        self.server = await asyncio.start_server(self.join, "127.0.0.1")
+        self.server = await asyncio.start_server(self.join, host, port)
         return self.server
 
     @property

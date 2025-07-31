@@ -115,7 +115,9 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
 
             result = await self.livestream.start()
 
-            mock_start_server.assert_called_once_with(self.livestream.join, "127.0.0.1")
+            mock_start_server.assert_called_once_with(
+                self.livestream.join, "127.0.0.1", None
+            )
             self.assertEqual(result, mock_server)
             self.assertEqual(self.livestream.server, mock_server)
 
