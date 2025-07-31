@@ -176,8 +176,7 @@ class BlinkLiveStream:
             _LOGGER.debug("Starting copy from target to clients")
             while not self.target_reader.at_eof():
                 # Read header from the target server
-                async with asyncio.timeout(3):
-                    data = await self.target_reader.read(9)
+                data = await self.target_reader.read(9)
 
                 # Check if we have enough data for the header
                 if len(data) < 9:
@@ -204,8 +203,7 @@ class BlinkLiveStream:
                     continue
 
                 # Read payload from the target server
-                async with asyncio.timeout(3):
-                    data = await self.target_reader.read(payload_length)
+                data = await self.target_reader.read(payload_length)
 
                 # Check if we have enough data for the payload
                 if len(data) < payload_length:
