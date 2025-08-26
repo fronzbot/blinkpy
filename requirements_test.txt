@@ -4,7 +4,7 @@ build==1.2.1
 coverage==7.8.2
 pytest==8.4.0
 pytest-cov==6.1.1
-pytest-sugar==1.0.0
+pytest-sugar==1.1.1
 pytest-timeout==2.4.0
 restructuredtext-lint==1.4.0
 pygments==2.18.0
