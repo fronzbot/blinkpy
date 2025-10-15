@@ -14,6 +14,7 @@ from blinkpy.helpers.constants import (
     APP_BUILD,
     DEFAULT_USER_AGENT,
     LOGIN_ENDPOINT,
+    TIER_ENDPOINT,
     TIMEOUT,
 )
 
@@ -75,7 +76,7 @@ class Auth:
             return None
         return {
             "APP-BUILD": self._app_build,
-            "TOKEN_AUTH": self.token,
+            "Authorization": f"Bearer {self.token}",
             "User-Agent": self._agent,
             "Content-Type": "application/json",
         }
@@ -88,10 +89,15 @@ class Auth:
             self.data = util.prompt_login_data(self.data)
         self.data = util.validate_login_data(self.data)
 
+    def validate_2fa(self):
+        """Check 2FA information and prompt if not available."""
+        self.data["2fa_code"] = self.data.get("2fa_code", None)
+        if not self.no_prompt:
+            self.data = util.prompt_2fa_data(self.data)
+
     async def login(self, login_url=LOGIN_ENDPOINT):
-        """Attempt login to blink servers."""
+        """Attempt OAuth login to blink servers."""
         self.validate_login()
-        _LOGGER.info("Attempting login with %s", login_url)
         response = await api.request_login(
             self,
             login_url,
@@ -101,9 +107,16 @@ class Auth:
         try:
             if response.status == 200:
                 return await response.json()
+            if response.status == 412:
+                self.validate_2fa()
+                return await self.login()
             raise LoginError
         except AttributeError as error:
             raise LoginError from error
+
+    async def get_tier_info(self, tier_url=TIER_ENDPOINT):
+        """Get tier information."""
+        return await api.request_tier(self, tier_url)
 
     def logout(self, blink):
         """Log out."""
@@ -116,6 +129,8 @@ class Auth:
             _LOGGER.info("Token expired, attempting automatic refresh.")
             self.login_response = await self.login()
             self.extract_login_info()
+            self.tier_info = await self.get_tier_info()
+            self.extract_tier_info()
             self.is_errored = False
         except LoginError as error:
             _LOGGER.error("Login endpoint failed. Try again later.")
@@ -127,12 +142,18 @@ class Auth:
 
     def extract_login_info(self):
         """Extract login info from login response."""
-        self.region_id = self.login_response["account"]["tier"]
+        # self.region_id = self.tier_info["tier"]
+        # self.host = f"{self.region_id}.{BLINK_URL}"
+        self.token = self.login_response["access_token"]
+        self.client_id = None
+        # self.account_id = self.tier_info["account_id"]
+        self.user_id = None
+
+    def extract_tier_info(self):
+        """Extract tier info from tier info response."""
+        self.region_id = self.tier_info["tier"]
         self.host = f"{self.region_id}.{BLINK_URL}"
-        self.token = self.login_response["auth"]["token"]
-        self.client_id = self.login_response["account"]["client_id"]
-        self.account_id = self.login_response["account"]["account_id"]
-        self.user_id = self.login_response["account"].get("user_id", None)
+        self.account_id = self.tier_info["account_id"]
 
     async def startup(self):
         """Initialize tokens for communication."""

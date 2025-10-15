@@ -10,7 +10,9 @@ URLS
 BLINK_URL = "immedia-semi.com"
 DEFAULT_URL = f"rest-prod.{BLINK_URL}"
 BASE_URL = f"https://{DEFAULT_URL}"
-LOGIN_ENDPOINT = f"{BASE_URL}/api/v5/account/login"
+OAUTH_BASE_URL = "https://api.oauth.blink.com"
+LOGIN_ENDPOINT = f"{OAUTH_BASE_URL}/oauth/token"
+TIER_ENDPOINT = f"{BASE_URL}/api/v1/users/tier_info"
 
 """
 Dictionaries
@@ -31,3 +33,10 @@ SIZE_NOTIFICATION_KEY = 152
 SIZE_UID = 16
 TIMEOUT = 10
 TIMEOUT_MEDIA = 90
+
+"""
+OAuth Constants
+"""
+OAUTH_CLIENT_ID = "android"
+OAUTH_GRANT_TYPE = "password"
+OAUTH_SCOPE = "client"
