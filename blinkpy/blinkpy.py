@@ -32,7 +32,7 @@ from blinkpy.helpers.constants import (
     TIMEOUT_MEDIA,
 )
 from blinkpy.helpers.constants import __version__
-from blinkpy.auth import Auth, TokenRefreshFailed, LoginError
+from blinkpy.auth import Auth, BlinkTwoFARequiredError, TokenRefreshFailed, LoginError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,6 +89,16 @@ class Blink:
     def account_id(self):
         """Return the account id."""
         return self.auth.account_id
+    
+    async def prompt_2fa(self):
+        """Prompt user for two-factor authentication code."""
+        code = input("Enter the two-factor authentication code: ")
+        await self.send_2fa_code(code)
+    
+    async def send_2fa_code(self, code):
+        """Send the two-factor authentication code to complete login."""
+        self.auth.data['2fa_code'] = code
+        await self.start()
 
     @util.Throttle(seconds=MIN_THROTTLE_TIME)
     async def refresh(self, force=False, force_cache=False):
@@ -127,6 +137,8 @@ class Blink:
             _LOGGER.error("Cannot setup Blink platform.")
             self.available = False
             return False
+        except BlinkTwoFARequiredError:
+            raise
 
         if not self.last_refresh:
             # Initialize last_refresh to be just before the refresh delay period.

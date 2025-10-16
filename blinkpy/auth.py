@@ -96,12 +96,6 @@ class Auth:
             self.data = util.prompt_login_data(self.data)
         self.data = util.validate_login_data(self.data)
 
-    def validate_2fa(self):
-        """Check 2FA information and prompt if not available."""
-        self.data["2fa_code"] = self.data.get("2fa_code", None)
-        if not self.no_prompt:
-            self.data = util.prompt_2fa_data(self.data)
-
     async def login(self, login_url=LOGIN_ENDPOINT, refresh=False):
         """Attempt OAuth login to blink servers."""
         self.validate_login()
@@ -116,8 +110,7 @@ class Auth:
             if response.status == 200:
                 return await response.json()
             if response.status == 412:
-                self.validate_2fa()
-                return await self.login()
+                raise BlinkTwoFARequiredError
             raise LoginError
         except AttributeError as error:
             raise LoginError from error
@@ -140,6 +133,9 @@ class Auth:
             self.tier_info = await self.get_tier_info()
             self.extract_tier_info()
             self.is_errored = False
+        except BlinkTwoFARequiredError:
+            _LOGGER.error("Two-factor authentication required. Waiting for otp.")
+            raise BlinkTwoFARequiredError
         except LoginError as error:
             _LOGGER.error("Login endpoint failed. Try again later.")
             raise TokenRefreshFailed from error
@@ -280,6 +276,9 @@ class LoginError(Exception):
 
 class BlinkBadResponse(Exception):
     """Class to throw bad json response exception."""
+
+class BlinkTwoFARequiredError(Exception):
+    """Class to throw two-factor authentication required exception."""
 
 
 class UnauthorizedError(Exception):
