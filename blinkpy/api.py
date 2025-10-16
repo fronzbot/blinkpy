@@ -9,7 +9,14 @@ from blinkpy.helpers.util import (
     Throttle,
     local_storage_clip_url_template,
 )
-from blinkpy.helpers.constants import TIMEOUT, DEFAULT_USER_AGENT, OAUTH_CLIENT_ID, OAUTH_GRANT_TYPE, OAUTH_SCOPE
+from blinkpy.helpers.constants import (
+    TIMEOUT,
+    DEFAULT_USER_AGENT,
+    OAUTH_CLIENT_ID,
+    OAUTH_GRANT_TYPE_PASSWORD,
+    OAUTH_GRANT_TYPE_REFRESH_TOKEN,
+    OAUTH_SCOPE,
+)   
 from urllib.parse import urlencode
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,6 +30,7 @@ async def request_login(
     auth,
     url,
     login_data,
+    is_refresh=False,
     is_retry=False,
 ):
     """
@@ -48,13 +56,17 @@ async def request_login(
     # Prepare form data for OAuth
     form_data = {
         "username": login_data["username"],
-        "password": login_data["password"],
-        "grant_type": OAUTH_GRANT_TYPE,
         "client_id": OAUTH_CLIENT_ID,
         "scope": OAUTH_SCOPE,
     }
-    
-    # Convert form data to URL-encoded string
+
+    if is_refresh:
+        form_data["grant_type"] = OAUTH_GRANT_TYPE_REFRESH_TOKEN
+        form_data["refresh_token"] = auth._refresh_token
+    else:
+        form_data["grant_type"] = OAUTH_GRANT_TYPE_PASSWORD
+        form_data["password"] = login_data["password"]
+
     data = urlencode(form_data)
 
     return await auth.query(
@@ -64,6 +76,7 @@ async def request_login(
         json_resp=False,
         reqtype="post",
         is_retry=is_retry,
+        skip_refresh_check=True,
     )
 
 async def request_tier(auth, url):
@@ -79,22 +92,6 @@ async def request_tier(auth, url):
         headers=headers,
         json_resp=True,
         reqtype="get",
-    )
-
-async def request_verify(auth, blink, verify_key):
-    """Send verification key to blink servers."""
-    url = (
-        f"{blink.urls.base_url}/api/v5/accounts/{blink.account_id}"
-        f"/users/{blink.auth.user_id}"
-        f"/clients/{blink.client_id}/client_verification/pin/verify"
-    )
-    data = dumps({"pin": verify_key})
-    return await auth.query(
-        url=url,
-        headers=auth.header,
-        data=data,
-        json_resp=False,
-        reqtype="post",
     )
 
 
@@ -236,7 +233,7 @@ async def request_command_status(blink, network, command_id):
 async def request_homescreen(blink, **kwargs):
     """Request homescreen info."""
     url = f"{blink.urls.base_url}/api/v3/accounts/{blink.account_id}/homescreen"
-    return await http_get(blink, url)
+    return await http_get(blink, url, json=False)
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)

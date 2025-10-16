@@ -38,5 +38,6 @@ TIMEOUT_MEDIA = 90
 OAuth Constants
 """
 OAUTH_CLIENT_ID = "android"
-OAUTH_GRANT_TYPE = "password"
+OAUTH_GRANT_TYPE_PASSWORD = "password"
+OAUTH_GRANT_TYPE_REFRESH_TOKEN = "refresh_token"
 OAUTH_SCOPE = "client"

@@ -1,5 +1,6 @@
 """Login handler for blink."""
 
+import time
 import logging
 from aiohttp import (
     ClientSession,
@@ -46,12 +47,16 @@ class Auth:
             login_data = {}
         self.data = login_data
         self.token = login_data.get("token", None)
+        self.expires_in = login_data.get("expires_in", None)
+        self.expiration_date = None
+        self._refresh_token = login_data.get("refresh_token", None)
         self.host = login_data.get("host", None)
         self.region_id = login_data.get("region_id", None)
         self.client_id = login_data.get("client_id", None)
         self.account_id = login_data.get("account_id", None)
         self.user_id = login_data.get("user_id", None)
         self.login_response = None
+        self.tier_info = None
         self.is_errored = False
         self.no_prompt = no_prompt
         self._agent = agent
@@ -62,6 +67,8 @@ class Auth:
     def login_attributes(self):
         """Return a dictionary of login attributes."""
         self.data["token"] = self.token
+        self.data["expires_in"] = self.expires_in
+        self.data["refresh_token"] = self._refresh_token
         self.data["host"] = self.host
         self.data["region_id"] = self.region_id
         self.data["client_id"] = self.client_id
@@ -75,9 +82,9 @@ class Auth:
         if self.token is None:
             return None
         return {
-            "APP-BUILD": self._app_build,
+            # "APP-BUILD": self._app_build,
             "Authorization": f"Bearer {self.token}",
-            "User-Agent": self._agent,
+            # "User-Agent": self._agent,
             "Content-Type": "application/json",
         }
 
@@ -95,13 +102,14 @@ class Auth:
         if not self.no_prompt:
             self.data = util.prompt_2fa_data(self.data)
 
-    async def login(self, login_url=LOGIN_ENDPOINT):
+    async def login(self, login_url=LOGIN_ENDPOINT, refresh=False):
         """Attempt OAuth login to blink servers."""
         self.validate_login()
         response = await api.request_login(
             self,
             login_url,
             self.data,
+            is_refresh=refresh,
             is_retry=False,
         )
         try:
@@ -142,12 +150,10 @@ class Auth:
 
     def extract_login_info(self):
         """Extract login info from login response."""
-        # self.region_id = self.tier_info["tier"]
-        # self.host = f"{self.region_id}.{BLINK_URL}"
         self.token = self.login_response["access_token"]
-        self.client_id = None
-        # self.account_id = self.tier_info["account_id"]
-        self.user_id = None
+        self.expires_in = self.login_response["expires_in"]
+        self.expiration_date = time.time() + self.expires_in
+        self._refresh_token = self.login_response["refresh_token"]
 
     def extract_tier_info(self):
         """Extract tier info from tier info response."""
@@ -181,6 +187,13 @@ class Auth:
 
         self.is_errored = False
         return json_data
+    
+    def need_refresh(self):
+        """Check if token needs refresh."""
+        if self.expiration_date is None:
+            return self._refresh_token is not None
+
+        return self.expiration_date - time.time() < 60
 
     async def query(
         self,
@@ -192,6 +205,7 @@ class Auth:
         json_resp=True,
         is_retry=False,
         timeout=TIMEOUT,
+        skip_refresh_check=False,
     ):
         """Perform server requests.
 
@@ -204,6 +218,9 @@ class Auth:
         :param is_retry: Is this part of a re-auth attempt? True/FALSE
         """
         try:
+            if not skip_refresh_check and self.need_refresh():
+                await self.login(refresh=True)
+
             if reqtype == "get":
                 response = await self.session.get(
                     url=url, data=data, headers=headers, timeout=timeout
@@ -251,33 +268,6 @@ class Auth:
             except TokenRefreshFailed:
                 _LOGGER.error("Unable to refresh token.")
         return None
-
-    async def send_auth_key(self, blink, key):
-        """Send 2FA key to blink servers."""
-        if key is not None:
-            response = await api.request_verify(self, blink, key)
-            try:
-                json_resp = await response.json()
-                blink.available = json_resp["valid"]
-                if not blink.available:
-                    _LOGGER.error("%s", json_resp["message"])
-                    return False
-            except (KeyError, TypeError, ContentTypeError) as er:
-                _LOGGER.error(
-                    "Did not receive valid response from server. Error: %s",
-                    er,
-                )
-                return False
-        return True
-
-    def check_key_required(self):
-        """Check if 2FA key is required."""
-        try:
-            if self.login_response["account"]["client_verification_required"]:
-                return True
-        except (KeyError, TypeError):
-            pass
-        return False
 
 
 class TokenRefreshFailed(Exception):
