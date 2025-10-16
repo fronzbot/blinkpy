@@ -177,60 +177,6 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         with self.assertRaises(BlinkSetupError):
             await self.blink.setup_networks()
 
-    @mock.patch("blinkpy.blinkpy.Auth.send_auth_key")
-    async def test_setup_prompt_2fa(self, mock_key):
-        """Test setup with 2fa prompt."""
-        self.blink.auth.data["username"] = "foobar"
-        self.blink.key_required = True
-        mock_key.return_value = True
-        with mock.patch("builtins.input", return_value="foo"):
-            await self.blink.setup_prompt_2fa()
-        self.assertFalse(self.blink.key_required)
-        mock_key.return_value = False
-        with mock.patch("builtins.input", return_value="foo"):
-            await self.blink.setup_prompt_2fa()
-        self.assertTrue(self.blink.key_required)
-
-    @mock.patch("blinkpy.blinkpy.Blink.setup_camera_list")
-    @mock.patch("blinkpy.api.request_homescreen")
-    @mock.patch("blinkpy.api.request_networks")
-    @mock.patch("blinkpy.blinkpy.Blink.setup_owls")
-    @mock.patch("blinkpy.blinkpy.Blink.setup_lotus")
-    @mock.patch("blinkpy.blinkpy.BlinkSyncModule.start")
-    async def test_setup_post_verify(
-        self, mock_sync, mock_lotus, mock_owl, mock_networks, mock_home, mock_camera
-    ):
-        """Test setup after verification."""
-        self.blink.available = False
-        self.blink.key_required = True
-        mock_lotus.return_value = True
-        mock_owl.return_value = True
-        mock_camera.side_effect = [
-            {
-                "name": "bar",
-                "id": "1323",
-                "type": "default",
-            }
-        ]
-        mock_networks.return_value = {
-            "summary": {"foo": {"onboarded": True, "name": "bar"}}
-        }
-        mock_home.return_value = {}
-        mock_camera.return_value = []
-        self.assertTrue(await self.blink.setup_post_verify())
-        self.assertTrue(self.blink.available)
-        self.assertFalse(self.blink.key_required)
-
-    @mock.patch("blinkpy.api.request_homescreen")
-    @mock.patch("blinkpy.api.request_networks")
-    async def test_setup_post_verify_failure(self, mock_networks, mock_home):
-        """Test failed setup after verification."""
-        self.blink.available = False
-        mock_networks.return_value = {}
-        mock_home.return_value = {}
-        self.assertFalse(await self.blink.setup_post_verify())
-        self.assertFalse(self.blink.available)
-
     def test_merge_cameras(self):
         """Test merging of cameras."""
         self.blink.sync = {
@@ -541,20 +487,14 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
             self.assertTrue(element in expected["1234"])
 
     @mock.patch("blinkpy.blinkpy.Blink.get_homescreen")
-    @mock.patch("blinkpy.blinkpy.Blink.setup_prompt_2fa")
     @mock.patch("blinkpy.auth.Auth.startup")
-    @mock.patch("blinkpy.blinkpy.Blink.setup_login_ids")
     @mock.patch("blinkpy.blinkpy.Blink.setup_urls")
-    @mock.patch("blinkpy.auth.Auth.check_key_required")
     @mock.patch("blinkpy.blinkpy.Blink.setup_post_verify")
     async def test_blink_start(
         self,
-        mock_verify,
-        mock_check_key,
         mock_urls,
-        mock_ids,
         mock_auth_startup,
-        mock_2fa,
+        mock_setup_post_verify,
         mock_homescreen,
     ):
         """Test blink_start funcion."""
@@ -573,7 +513,6 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
 
         self.blink.auth.client_id = 1
         self.blink.auth.account_id = 2
-        self.blink.setup_login_ids()
         self.assertEqual(self.blink.client_id, 1)
         self.assertEqual(self.blink.account_id, 2)
 

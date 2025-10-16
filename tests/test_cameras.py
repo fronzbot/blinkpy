@@ -137,7 +137,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             {"temp": 71},
             mresp.MockResponse({"test": 200}, 200, raw_data="test"),
         ]
-        self.camera.sync.blink.account_id = 9999
+        self.camera.sync.blink.auth.account_id = 9999
         await self.camera.update(CONFIG, expire_clips=False)
         self.assertEqual(self.camera.thumbnail, thumb_endpoint)
 
@@ -172,7 +172,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             {"temp": 71},
             mresp.MockResponse({"test": 200}, 200, raw_data="test"),
         ]
-        self.camera.sync.blink.account_id = 9999
+        self.camera.sync.blink.auth.account_id = 9999
         await self.camera.update(config, expire_clips=False)
         self.assertEqual(
             self.camera.thumbnail, f"https://rest-test.immedia-semi.com{thumb_return}"
