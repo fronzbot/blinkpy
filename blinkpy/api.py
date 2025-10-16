@@ -9,7 +9,15 @@ from blinkpy.helpers.util import (
     Throttle,
     local_storage_clip_url_template,
 )
-from blinkpy.helpers.constants import DEFAULT_URL, TIMEOUT, DEFAULT_USER_AGENT
+from blinkpy.helpers.constants import (
+    TIMEOUT,
+    DEFAULT_USER_AGENT,
+    OAUTH_CLIENT_ID,
+    OAUTH_GRANT_TYPE_PASSWORD,
+    OAUTH_GRANT_TYPE_REFRESH_TOKEN,
+    OAUTH_SCOPE,
+)
+from urllib.parse import urlencode
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,32 +30,44 @@ async def request_login(
     auth,
     url,
     login_data,
+    is_refresh=False,
     is_retry=False,
 ):
     """
-    Login request.
+    OAuth login request.
 
     :param auth: Auth instance.
     :param url: Login url.
     :param login_data: Dictionary containing blink login data.
     :param is_retry:
+    :param two_fa_code: 2FA code if required
     """
+
     headers = {
-        "Host": DEFAULT_URL,
-        "Content-Type": "application/json",
-        "user-agent": DEFAULT_USER_AGENT,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": DEFAULT_USER_AGENT,
+        "hardware_id": login_data.get("device_id", "Blinkpy"),
     }
 
-    data = dumps(
-        {
-            "email": login_data["username"],
-            "password": login_data["password"],
-            "unique_id": login_data["uid"],
-            "device_identifier": login_data["device_id"],
-            "client_name": "Computer",
-            "reauth": True,
-        }
-    )
+    # Add 2FA code to headers if provided
+    if "2fa_code" in login_data:
+        headers["2fa-code"] = login_data["2fa_code"]
+
+    # Prepare form data for OAuth
+    form_data = {
+        "username": login_data["username"],
+        "client_id": OAUTH_CLIENT_ID,
+        "scope": OAUTH_SCOPE,
+    }
+
+    if is_refresh:
+        form_data["grant_type"] = OAUTH_GRANT_TYPE_REFRESH_TOKEN
+        form_data["refresh_token"] = auth._refresh_token
+    else:
+        form_data["grant_type"] = OAUTH_GRANT_TYPE_PASSWORD
+        form_data["password"] = login_data["password"]
+
+    data = urlencode(form_data)
 
     return await auth.query(
         url=url,
@@ -56,23 +76,23 @@ async def request_login(
         json_resp=False,
         reqtype="post",
         is_retry=is_retry,
+        skip_refresh_check=True,
     )
 
 
-async def request_verify(auth, blink, verify_key):
-    """Send verification key to blink servers."""
-    url = (
-        f"{blink.urls.base_url}/api/v5/accounts/{blink.account_id}"
-        f"/users/{blink.auth.user_id}"
-        f"/clients/{blink.client_id}/client_verification/pin/verify"
-    )
-    data = dumps({"pin": verify_key})
+async def request_tier(auth, url):
+    """Get account tier information from blink servers."""
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": DEFAULT_USER_AGENT,
+        "Authorization": f"Bearer {auth.token}",
+    }
+
     return await auth.query(
         url=url,
-        headers=auth.header,
-        data=data,
-        json_resp=False,
-        reqtype="post",
+        headers=headers,
+        json_resp=True,
+        reqtype="get",
     )
 
 
@@ -214,7 +234,7 @@ async def request_command_status(blink, network, command_id):
 async def request_homescreen(blink, **kwargs):
     """Request homescreen info."""
     url = f"{blink.urls.base_url}/api/v3/accounts/{blink.account_id}/homescreen"
-    return await http_get(blink, url)
+    return await http_get(blink, url, json=False)
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
