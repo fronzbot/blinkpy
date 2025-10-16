@@ -93,6 +93,7 @@ def prompt_login_data(data):
 
     return data
 
+
 def prompt_2fa_data(data):
     """Prompt user for 2FA code."""
     if data["2fa_code"] is None:

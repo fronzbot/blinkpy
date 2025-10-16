@@ -154,33 +154,22 @@ class TestAuth(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.auth.Auth.query")
     async def test_refresh_token(self, mock_resp):
         """Test refresh token method."""
-        mock_json = mock.AsyncMock(return_value={
-            "access_token": "foobar",
-            "expires_in": 14400,
-            "refresh_token": "baz1",
-            "scope": "client",
-            "token_type": "Bearer"
-        })
+        mock_json = mock.AsyncMock(
+            return_value={
+                "access_token": "foobar",
+                "expires_in": 14400,
+                "refresh_token": "baz1",
+                "scope": "client",
+                "token_type": "Bearer",
+            }
+        )
         mock_resp.side_effect = [
             # first request simulates otp required
-            mock.AsyncMock(
-                status=412
-            ),
-            mock.AsyncMock(
-                status=200,
-                json=mock_json
-            ),
-            {
-                "tier": "test",
-                "account_id": 5678
-            },
-            mock.AsyncMock(
-                status=400
-            ),
-            mock.AsyncMock(
-                status=200,
-                json=mock.AsyncMock(side_effect=AttributeError)
-            ),
+            mock.AsyncMock(status=412),
+            mock.AsyncMock(status=200, json=mock_json),
+            {"tier": "test", "account_id": 5678},
+            mock.AsyncMock(status=400),
+            mock.AsyncMock(status=200, json=mock.AsyncMock(side_effect=AttributeError)),
         ]
 
         self.auth.no_prompt = True
@@ -254,15 +243,20 @@ class TestAuth(IsolatedAsyncioTestCase):
         mock_validate.side_effect = UnauthorizedError
         self.auth.refresh_token = mock.AsyncMock()
         self.assertIsNone(await self.auth.query("URL", "data", "headers", "post"))
-    
+
     @mock.patch("blinkpy.auth.Auth.validate_response")
     @mock.patch("blinkpy.auth.Auth.validate_login")
-    async def test_query_refresh_token_exists(self, mock_validate_login, mock_validate_response):
-        """Test query functions when expiration date is null but refresh_token exists."""
+    async def test_query_refresh_token_exists(
+        self, mock_validate_login, mock_validate_response
+    ):
+        """Test query functions when refresh_token exists."""
         self.auth.session = mock.AsyncMock()
-        mock_validate_response.side_effect = [mock.AsyncMock(status=200), mock.AsyncMock(status=200)]
+        mock_validate_response.side_effect = [
+            mock.AsyncMock(status=200),
+            mock.AsyncMock(status=200),
+        ]
         self.auth._refresh_token = "baz1"
-        self.auth.data = {"username": "foo", "password": "bar" }
+        self.auth.data = {"username": "foo", "password": "bar"}
         await self.auth.query("URL", "data", "headers", "get")
 
         self.assertEqual(mock_validate_login.call_count, 1)
@@ -275,17 +269,22 @@ class TestAuth(IsolatedAsyncioTestCase):
                 "User-Agent": const.DEFAULT_USER_AGENT,
                 "hardware_id": const.DEVICE_ID,
             },
-            timeout=10
+            timeout=10,
         )
-    
+
     @mock.patch("blinkpy.auth.Auth.validate_response")
     @mock.patch("blinkpy.auth.Auth.validate_login")
-    async def test_query_auth_expired(self, mock_validate_login, mock_validate_response):
-        """Test query functions when expiration date is null but refresh_token exists."""
+    async def test_query_auth_expired(
+        self, mock_validate_login, mock_validate_response
+    ):
+        """Test query functions when auth token is expired."""
         self.auth.session = mock.AsyncMock()
-        mock_validate_response.side_effect = [mock.AsyncMock(status=200), mock.AsyncMock(status=200)]
+        mock_validate_response.side_effect = [
+            mock.AsyncMock(status=200),
+            mock.AsyncMock(status=200),
+        ]
         self.auth.expiration_date = time.time() - 100
-        self.auth.data = {"username": "foo", "password": "bar" }
+        self.auth.data = {"username": "foo", "password": "bar"}
         self.auth._refresh_token = "baz1"
 
         await self.auth.query("URL", "data", "headers", "get")
@@ -300,7 +299,7 @@ class TestAuth(IsolatedAsyncioTestCase):
                 "User-Agent": const.DEFAULT_USER_AGENT,
                 "hardware_id": const.DEVICE_ID,
             },
-            timeout=10
+            timeout=10,
         )
 
 

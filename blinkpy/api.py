@@ -16,7 +16,7 @@ from blinkpy.helpers.constants import (
     OAUTH_GRANT_TYPE_PASSWORD,
     OAUTH_GRANT_TYPE_REFRESH_TOKEN,
     OAUTH_SCOPE,
-)   
+)
 from urllib.parse import urlencode
 
 _LOGGER = logging.getLogger(__name__)
@@ -42,13 +42,13 @@ async def request_login(
     :param is_retry:
     :param two_fa_code: 2FA code if required
     """
-    
+
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": DEFAULT_USER_AGENT,
         "hardware_id": login_data.get("device_id", "Blinkpy"),
     }
-    
+
     # Add 2FA code to headers if provided
     if "2fa_code" in login_data:
         headers["2fa-code"] = login_data["2fa_code"]
@@ -78,6 +78,7 @@ async def request_login(
         is_retry=is_retry,
         skip_refresh_check=True,
     )
+
 
 async def request_tier(auth, url):
     """Get account tier information from blink servers."""

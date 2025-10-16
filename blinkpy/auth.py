@@ -187,7 +187,7 @@ class Auth:
 
         self.is_errored = False
         return json_data
-    
+
     def need_refresh(self):
         """Check if token needs refresh."""
         if self.expiration_date is None:

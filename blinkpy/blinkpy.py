@@ -84,7 +84,7 @@ class Blink:
     def user_id(self):
         """Return the user id."""
         return self.auth.user_id
-    
+
     @property
     def account_id(self):
         """Return the account id."""
@@ -176,6 +176,7 @@ class Blink:
         _LOGGER.debug("homescreen = %s", util.json_dumps(self.homescreen))
 
     async def validate_homescreen(self, response):
+        """Validate and process homescreen response data."""
         self.homescreen = await response.json()
         self.auth.client_id = response.headers.get("Client-Id")
         self.auth.user_id = response.headers.get("User-Id")
