@@ -48,7 +48,7 @@ class Auth:
         self.data = login_data
         self.token = login_data.get("token", None)
         self.expires_in = login_data.get("expires_in", None)
-        self.expiration_date = None
+        self.expiration_date = login_data.get("expiration_date", None)
         self._refresh_token = login_data.get("refresh_token", None)
         self.host = login_data.get("host", None)
         self.region_id = login_data.get("region_id", None)
@@ -68,6 +68,7 @@ class Auth:
         """Return a dictionary of login attributes."""
         self.data["token"] = self.token
         self.data["expires_in"] = self.expires_in
+        self.data["expiration_date"] = self.expiration_date
         self.data["refresh_token"] = self._refresh_token
         self.data["host"] = self.host
         self.data["region_id"] = self.region_id
@@ -133,9 +134,9 @@ class Auth:
             self.tier_info = await self.get_tier_info()
             self.extract_tier_info()
             self.is_errored = False
-        except BlinkTwoFARequiredError:
+        except BlinkTwoFARequiredError as error:
             _LOGGER.error("Two-factor authentication required. Waiting for otp.")
-            raise BlinkTwoFARequiredError
+            raise BlinkTwoFARequiredError from error
         except LoginError as error:
             _LOGGER.error("Login endpoint failed. Try again later.")
             raise TokenRefreshFailed from error
@@ -276,6 +277,7 @@ class LoginError(Exception):
 
 class BlinkBadResponse(Exception):
     """Class to throw bad json response exception."""
+
 
 class BlinkTwoFARequiredError(Exception):
     """Class to throw two-factor authentication required exception."""

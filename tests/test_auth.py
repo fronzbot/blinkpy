@@ -6,6 +6,7 @@ from unittest import IsolatedAsyncioTestCase
 from aiohttp import ClientConnectionError, ContentTypeError
 from blinkpy.auth import (
     Auth,
+    BlinkTwoFARequiredError,
     TokenRefreshFailed,
     BlinkBadResponse,
     UnauthorizedError,
@@ -165,7 +166,6 @@ class TestAuth(IsolatedAsyncioTestCase):
         )
         mock_resp.side_effect = [
             # first request simulates otp required
-            mock.AsyncMock(status=412),
             mock.AsyncMock(status=200, json=mock_json),
             {"tier": "test", "account_id": 5678},
             mock.AsyncMock(status=400),
@@ -184,6 +184,15 @@ class TestAuth(IsolatedAsyncioTestCase):
             await self.auth.refresh_token()
 
         with self.assertRaises(TokenRefreshFailed):
+            await self.auth.refresh_token()
+
+    @mock.patch("blinkpy.auth.Auth.query")
+    async def test_refresh_token_otp_required(self, mock_resp):
+        """Test refresh token method."""
+        mock_resp.side_effect = [mock.AsyncMock(status=412)]
+
+        self.auth.no_prompt = True
+        with self.assertRaises(BlinkTwoFARequiredError):
             await self.auth.refresh_token()
 
     @mock.patch("blinkpy.auth.Auth.login")

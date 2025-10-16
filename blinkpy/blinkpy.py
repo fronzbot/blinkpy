@@ -89,15 +89,15 @@ class Blink:
     def account_id(self):
         """Return the account id."""
         return self.auth.account_id
-    
+
     async def prompt_2fa(self):
         """Prompt user for two-factor authentication code."""
         code = input("Enter the two-factor authentication code: ")
         await self.send_2fa_code(code)
-    
+
     async def send_2fa_code(self, code):
         """Send the two-factor authentication code to complete login."""
-        self.auth.data['2fa_code'] = code
+        self.auth.data["2fa_code"] = code
         await self.start()
 
     @util.Throttle(seconds=MIN_THROTTLE_TIME)
