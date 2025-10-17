@@ -50,7 +50,7 @@ class Auth:
         self.token = login_data.get("token", None)
         self.expires_in = login_data.get("expires_in", None)
         self.expiration_date = login_data.get("expiration_date", None)
-        self._refresh_token = login_data.get("refresh_token", None)
+        self.refresh_token = login_data.get("refresh_token", None)
         self.host = login_data.get("host", None)
         self.region_id = login_data.get("region_id", None)
         self.client_id = login_data.get("client_id", None)
@@ -73,7 +73,7 @@ class Auth:
         self.data["token"] = self.token
         self.data["expires_in"] = self.expires_in
         self.data["expiration_date"] = self.expiration_date
-        self.data["refresh_token"] = self._refresh_token
+        self.data["refresh_token"] = self.refresh_token
         self.data["host"] = self.host
         self.data["region_id"] = self.region_id
         self.data["client_id"] = self.client_id
@@ -128,11 +128,13 @@ class Auth:
         """Log out."""
         return api.request_logout(blink)
 
-    async def refresh_token(self, refresh=False):
-        """Refresh auth token."""
+    async def refresh_tokens(self, refresh=False):
+        """Create or refresh access token."""
         self.is_errored = True
         try:
-            _LOGGER.info("Token expired, attempting automatic refresh.")
+            _LOGGER.info(
+                f"{'Refreshing' if refresh else 'Obtaining'} authentication token."
+            )
             self.login_response = await self.login(refresh=refresh)
             self.extract_login_info()
 
@@ -157,7 +159,7 @@ class Auth:
         self.token = self.login_response["access_token"]
         self.expires_in = self.login_response["expires_in"]
         self.expiration_date = time.time() + self.expires_in
-        self._refresh_token = self.login_response["refresh_token"]
+        self.refresh_token = self.login_response["refresh_token"]
 
     def extract_tier_info(self):
         """Extract tier info from tier info response."""
@@ -169,7 +171,7 @@ class Auth:
         """Initialize tokens for communication."""
         self.validate_login()
         if None in self.login_attributes.values():
-            await self.refresh_token()
+            await self.refresh_tokens()
 
     async def validate_response(self, response: ClientResponse, json_resp):
         """Check for valid response."""
@@ -195,7 +197,7 @@ class Auth:
     def need_refresh(self):
         """Check if token needs refresh."""
         if self.expiration_date is None:
-            return self._refresh_token is not None
+            return self.refresh_token is not None
 
         return self.expiration_date - time.time() < 60
 
@@ -223,7 +225,12 @@ class Auth:
         """
         try:
             if not skip_refresh_check and self.need_refresh():
-                await self.refresh_token(refresh=True)
+                await self.refresh_tokens(refresh=True)
+
+                if "Authorization" in headers:
+                    # update the authorization header with the new token
+                    headers["Authorization"] = f"Bearer {self.token}"
+
                 if self.callback is not None:
                     self.callback()
 
@@ -259,7 +266,7 @@ class Auth:
         except UnauthorizedError:
             try:
                 if not is_retry:
-                    await self.refresh_token()
+                    await self.refresh_tokens()
                     return await self.query(
                         url=url,
                         data=data,
