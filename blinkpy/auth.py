@@ -124,15 +124,18 @@ class Auth:
         """Log out."""
         return api.request_logout(blink)
 
-    async def refresh_token(self):
+    async def refresh_token(self, refresh=False):
         """Refresh auth token."""
         self.is_errored = True
         try:
             _LOGGER.info("Token expired, attempting automatic refresh.")
-            self.login_response = await self.login()
+            self.login_response = await self.login(refresh=refresh)
             self.extract_login_info()
-            self.tier_info = await self.get_tier_info()
-            self.extract_tier_info()
+
+            if not refresh:
+                self.tier_info = await self.get_tier_info()
+                self.extract_tier_info()
+
             self.is_errored = False
         except BlinkTwoFARequiredError as error:
             _LOGGER.error("Two-factor authentication required. Waiting for otp.")
@@ -216,7 +219,7 @@ class Auth:
         """
         try:
             if not skip_refresh_check and self.need_refresh():
-                await self.login(refresh=True)
+                await self.refresh_token(refresh=True)
 
             if reqtype == "get":
                 response = await self.session.get(
