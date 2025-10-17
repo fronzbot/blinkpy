@@ -32,6 +32,7 @@ class Auth:
         session=None,
         agent=DEFAULT_USER_AGENT,
         app_build=APP_BUILD,
+        callback=None,
     ):
         """
         Initialize auth handler.
@@ -62,6 +63,9 @@ class Auth:
         self._agent = agent
         self._app_build = app_build
         self.session = session if session else ClientSession()
+
+        # Callback to notify on token refresh
+        self.callback = callback
 
     @property
     def login_attributes(self):
@@ -220,6 +224,8 @@ class Auth:
         try:
             if not skip_refresh_check and self.need_refresh():
                 await self.refresh_token(refresh=True)
+                if self.callback is not None:
+                    self.callback()
 
             if reqtype == "get":
                 response = await self.session.get(
