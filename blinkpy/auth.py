@@ -32,6 +32,7 @@ class Auth:
         session=None,
         agent=DEFAULT_USER_AGENT,
         app_build=APP_BUILD,
+        callback=None,
     ):
         """
         Initialize auth handler.
@@ -48,8 +49,8 @@ class Auth:
         self.data = login_data
         self.token = login_data.get("token", None)
         self.expires_in = login_data.get("expires_in", None)
-        self.expiration_date = None
-        self._refresh_token = login_data.get("refresh_token", None)
+        self.expiration_date = login_data.get("expiration_date", None)
+        self.refresh_token = login_data.get("refresh_token", None)
         self.host = login_data.get("host", None)
         self.region_id = login_data.get("region_id", None)
         self.client_id = login_data.get("client_id", None)
@@ -63,12 +64,16 @@ class Auth:
         self._app_build = app_build
         self.session = session if session else ClientSession()
 
+        # Callback to notify on token refresh
+        self.callback = callback
+
     @property
     def login_attributes(self):
         """Return a dictionary of login attributes."""
         self.data["token"] = self.token
         self.data["expires_in"] = self.expires_in
-        self.data["refresh_token"] = self._refresh_token
+        self.data["expiration_date"] = self.expiration_date
+        self.data["refresh_token"] = self.refresh_token
         self.data["host"] = self.host
         self.data["region_id"] = self.region_id
         self.data["client_id"] = self.client_id
@@ -96,12 +101,6 @@ class Auth:
             self.data = util.prompt_login_data(self.data)
         self.data = util.validate_login_data(self.data)
 
-    def validate_2fa(self):
-        """Check 2FA information and prompt if not available."""
-        self.data["2fa_code"] = self.data.get("2fa_code", None)
-        if not self.no_prompt:
-            self.data = util.prompt_2fa_data(self.data)
-
     async def login(self, login_url=LOGIN_ENDPOINT, refresh=False):
         """Attempt OAuth login to blink servers."""
         self.validate_login()
@@ -116,8 +115,7 @@ class Auth:
             if response.status == 200:
                 return await response.json()
             if response.status == 412:
-                self.validate_2fa()
-                return await self.login()
+                raise BlinkTwoFARequiredError
             raise LoginError
         except AttributeError as error:
             raise LoginError from error
@@ -130,16 +128,24 @@ class Auth:
         """Log out."""
         return api.request_logout(blink)
 
-    async def refresh_token(self):
-        """Refresh auth token."""
+    async def refresh_tokens(self, refresh=False):
+        """Create or refresh access token."""
         self.is_errored = True
         try:
-            _LOGGER.info("Token expired, attempting automatic refresh.")
-            self.login_response = await self.login()
+            _LOGGER.info(
+                f"{'Refreshing' if refresh else 'Obtaining'} authentication token."
+            )
+            self.login_response = await self.login(refresh=refresh)
             self.extract_login_info()
-            self.tier_info = await self.get_tier_info()
-            self.extract_tier_info()
+
+            if not refresh:
+                self.tier_info = await self.get_tier_info()
+                self.extract_tier_info()
+
             self.is_errored = False
+        except BlinkTwoFARequiredError as error:
+            _LOGGER.error("Two-factor authentication required. Waiting for otp.")
+            raise BlinkTwoFARequiredError from error
         except LoginError as error:
             _LOGGER.error("Login endpoint failed. Try again later.")
             raise TokenRefreshFailed from error
@@ -153,7 +159,7 @@ class Auth:
         self.token = self.login_response["access_token"]
         self.expires_in = self.login_response["expires_in"]
         self.expiration_date = time.time() + self.expires_in
-        self._refresh_token = self.login_response["refresh_token"]
+        self.refresh_token = self.login_response["refresh_token"]
 
     def extract_tier_info(self):
         """Extract tier info from tier info response."""
@@ -165,7 +171,7 @@ class Auth:
         """Initialize tokens for communication."""
         self.validate_login()
         if None in self.login_attributes.values():
-            await self.refresh_token()
+            await self.refresh_tokens()
 
     async def validate_response(self, response: ClientResponse, json_resp):
         """Check for valid response."""
@@ -191,7 +197,7 @@ class Auth:
     def need_refresh(self):
         """Check if token needs refresh."""
         if self.expiration_date is None:
-            return self._refresh_token is not None
+            return self.refresh_token is not None
 
         return self.expiration_date - time.time() < 60
 
@@ -219,7 +225,14 @@ class Auth:
         """
         try:
             if not skip_refresh_check and self.need_refresh():
-                await self.login(refresh=True)
+                await self.refresh_tokens(refresh=True)
+
+                if "Authorization" in headers:
+                    # update the authorization header with the new token
+                    headers["Authorization"] = f"Bearer {self.token}"
+
+                if self.callback is not None:
+                    self.callback()
 
             if reqtype == "get":
                 response = await self.session.get(
@@ -253,7 +266,7 @@ class Auth:
         except UnauthorizedError:
             try:
                 if not is_retry:
-                    await self.refresh_token()
+                    await self.refresh_tokens()
                     return await self.query(
                         url=url,
                         data=data,
@@ -280,6 +293,10 @@ class LoginError(Exception):
 
 class BlinkBadResponse(Exception):
     """Class to throw bad json response exception."""
+
+
+class BlinkTwoFARequiredError(Exception):
+    """Class to throw two-factor authentication required exception."""
 
 
 class UnauthorizedError(Exception):

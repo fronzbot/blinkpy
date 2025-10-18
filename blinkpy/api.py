@@ -62,7 +62,7 @@ async def request_login(
 
     if is_refresh:
         form_data["grant_type"] = OAUTH_GRANT_TYPE_REFRESH_TOKEN
-        form_data["refresh_token"] = auth._refresh_token
+        form_data["refresh_token"] = auth.refresh_token
     else:
         form_data["grant_type"] = OAUTH_GRANT_TYPE_PASSWORD
         form_data["password"] = login_data["password"]
