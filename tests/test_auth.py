@@ -1,10 +1,12 @@
 """Test login handler."""
 
+import time
 from unittest import mock
 from unittest import IsolatedAsyncioTestCase
 from aiohttp import ClientConnectionError, ContentTypeError
 from blinkpy.auth import (
     Auth,
+    BlinkTwoFARequiredError,
     TokenRefreshFailed,
     BlinkBadResponse,
     UnauthorizedError,
@@ -132,9 +134,9 @@ class TestAuth(IsolatedAsyncioTestCase):
         """Test header data."""
         self.auth.token = "bar"
         expected_header = {
-            "APP-BUILD": const.APP_BUILD,
-            "TOKEN_AUTH": "bar",
-            "User-Agent": const.DEFAULT_USER_AGENT,
+            # "APP-BUILD": const.APP_BUILD,
+            "Authorization": "Bearer bar",
+            # "User-Agent": const.DEFAULT_USER_AGENT,
             "Content-Type": "application/json",
         }
         self.assertDictEqual(self.auth.header, expected_header)
@@ -145,38 +147,53 @@ class TestAuth(IsolatedAsyncioTestCase):
         self.assertEqual(self.auth.header, None)
 
     @mock.patch("blinkpy.auth.Auth.validate_login")
-    @mock.patch("blinkpy.auth.Auth.refresh_token")
+    @mock.patch("blinkpy.auth.Auth.refresh_tokens")
     async def test_auth_startup(self, mock_validate, mock_refresh):
         """Test auth startup."""
         await self.auth.startup()
 
     @mock.patch("blinkpy.auth.Auth.query")
-    async def test_refresh_token(self, mock_resp):
+    async def test_refresh_tokens(self, mock_resp):
         """Test refresh token method."""
-        mock_resp.return_value.json = mock.AsyncMock(
+        mock_json = mock.AsyncMock(
             return_value={
-                "account": {"account_id": 5678, "client_id": 1234, "tier": "test"},
-                "auth": {"token": "foobar"},
+                "access_token": "foobar",
+                "expires_in": 14400,
+                "refresh_token": "baz1",
+                "scope": "client",
+                "token_type": "Bearer",
             }
         )
-        mock_resp.return_value.status = 200
+        mock_resp.side_effect = [
+            # first request simulates otp required
+            mock.AsyncMock(status=200, json=mock_json),
+            {"tier": "test", "account_id": 5678},
+            mock.AsyncMock(status=400),
+            mock.AsyncMock(status=200, json=mock.AsyncMock(side_effect=AttributeError)),
+        ]
 
         self.auth.no_prompt = True
-        self.assertTrue(await self.auth.refresh_token())
+        self.assertTrue(await self.auth.refresh_tokens())
         self.assertEqual(self.auth.region_id, "test")
         self.assertEqual(self.auth.token, "foobar")
-        self.assertEqual(self.auth.client_id, 1234)
+        self.assertEqual(self.auth.refresh_token, "baz1")
         self.assertEqual(self.auth.account_id, 5678)
         self.assertEqual(self.auth.user_id, None)
 
-        mock_resp.return_value.status = 400
         with self.assertRaises(TokenRefreshFailed):
-            await self.auth.refresh_token()
+            await self.auth.refresh_tokens()
 
-        mock_resp.return_value.status = 200
-        mock_resp.return_value.json = mock.AsyncMock(side_effect=AttributeError)
         with self.assertRaises(TokenRefreshFailed):
-            await self.auth.refresh_token()
+            await self.auth.refresh_tokens()
+
+    @mock.patch("blinkpy.auth.Auth.query")
+    async def test_refresh_token_otp_required(self, mock_resp):
+        """Test refresh token method."""
+        mock_resp.side_effect = [mock.AsyncMock(status=412)]
+
+        self.auth.no_prompt = True
+        with self.assertRaises(BlinkTwoFARequiredError):
+            await self.auth.refresh_tokens()
 
     @mock.patch("blinkpy.auth.Auth.login")
     async def test_refresh_token_failed(self, mock_login):
@@ -184,19 +201,8 @@ class TestAuth(IsolatedAsyncioTestCase):
         mock_login.return_value = {}
         self.auth.is_errored = False
         with self.assertRaises(TokenRefreshFailed):
-            await self.auth.refresh_token()
+            await self.auth.refresh_tokens()
         self.assertTrue(self.auth.is_errored)
-
-    def test_check_key_required(self):
-        """Check key required method."""
-        self.auth.login_response = {}
-        self.assertFalse(self.auth.check_key_required())
-
-        self.auth.login_response = {"account": {"client_verification_required": False}}
-        self.assertFalse(self.auth.check_key_required())
-
-        self.auth.login_response = {"account": {"client_verification_required": True}}
-        self.assertTrue(self.auth.check_key_required())
 
     @mock.patch("blinkpy.auth.api.request_logout")
     async def test_logout(self, mock_req):
@@ -205,40 +211,11 @@ class TestAuth(IsolatedAsyncioTestCase):
         mock_req.return_value = True
         self.assertTrue(await self.auth.logout(mock_blink))
 
-    @mock.patch("blinkpy.auth.api.request_verify")
-    async def test_send_auth_key(self, mock_req):
-        """Check sending of auth key."""
-        mock_blink = MockBlink(None)
-        mock_req.return_value = mresp.MockResponse({"valid": True}, 200)
-        self.assertTrue(await self.auth.send_auth_key(mock_blink, 1234))
-        self.assertTrue(mock_blink.available)
-
-        mock_req.return_value = mresp.MockResponse(None, 200)
-        self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
-
-        mock_req.return_value = mresp.MockResponse({}, 200)
-        self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
-
-        self.assertTrue(await self.auth.send_auth_key(mock_blink, None))
-
-    @mock.patch("blinkpy.auth.api.request_verify")
-    async def test_send_auth_key_fail(self, mock_req):
-        """Check handling of auth key failure."""
-        mock_blink = MockBlink(None)
-        mock_req.return_value = mresp.MockResponse(None, 200)
-        self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
-        mock_req.return_value = mresp.MockResponse({}, 200)
-        self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
-        mock_req.return_value = mresp.MockResponse(
-            {"valid": False, "message": "Not good"}, 200
-        )
-        self.assertFalse(await self.auth.send_auth_key(mock_blink, 1234))
-
     @mock.patch(
         "blinkpy.auth.Auth.validate_response",
         mock.AsyncMock(side_effect=[UnauthorizedError, "foobar"]),
     )
-    @mock.patch("blinkpy.auth.Auth.refresh_token", mock.AsyncMock(return_value=True))
+    @mock.patch("blinkpy.auth.Auth.refresh_tokens", mock.AsyncMock(return_value=True))
     @mock.patch("blinkpy.auth.Auth.query", mock.AsyncMock(return_value="foobar"))
     async def test_query_retry(self):  # , mock_refresh, mock_validate):
         """Check handling of request retry."""
@@ -246,7 +223,7 @@ class TestAuth(IsolatedAsyncioTestCase):
         self.assertEqual(await self.auth.query(url="http://example.com"), "foobar")
 
     @mock.patch("blinkpy.auth.Auth.validate_response")
-    @mock.patch("blinkpy.auth.Auth.refresh_token")
+    @mock.patch("blinkpy.auth.Auth.refresh_tokens")
     async def test_query_retry_failed(self, mock_refresh, mock_validate):
         """Check handling of failed retry request."""
         self.auth.session = MockSession()
@@ -273,8 +250,66 @@ class TestAuth(IsolatedAsyncioTestCase):
         self.assertIsNone(await self.auth.query("URL", "data", "headers", "post"))
 
         mock_validate.side_effect = UnauthorizedError
-        self.auth.refresh_token = mock.AsyncMock()
+        self.auth.refresh_tokens = mock.AsyncMock()
         self.assertIsNone(await self.auth.query("URL", "data", "headers", "post"))
+
+    @mock.patch("blinkpy.auth.Auth.validate_response")
+    @mock.patch("blinkpy.auth.Auth.validate_login")
+    async def test_query_refresh_token_exists(
+        self, mock_validate_login, mock_validate_response
+    ):
+        """Test query functions when refresh_token exists."""
+        self.auth.session = mock.AsyncMock()
+        mock_validate_response.side_effect = [
+            mock.AsyncMock(status=200),
+            mock.AsyncMock(status=200),
+        ]
+        self.auth.refresh_token = "baz1"
+        self.auth.data = {"username": "foo", "password": "bar"}
+        await self.auth.query("URL", "data", "headers", "get")
+
+        self.assertEqual(mock_validate_login.call_count, 1)
+        self.assertEqual(mock_validate_response.call_count, 2)
+        self.auth.session.post.assert_called_with(
+            url="https://api.oauth.blink.com/oauth/token",
+            data="username=foo&client_id=android&scope=client&grant_type=refresh_token&refresh_token=baz1",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "User-Agent": const.DEFAULT_USER_AGENT,
+                "hardware_id": const.DEVICE_ID,
+            },
+            timeout=10,
+        )
+
+    @mock.patch("blinkpy.auth.Auth.validate_response")
+    @mock.patch("blinkpy.auth.Auth.validate_login")
+    async def test_query_auth_expired(
+        self, mock_validate_login, mock_validate_response
+    ):
+        """Test query functions when auth token is expired."""
+        self.auth.session = mock.AsyncMock()
+        mock_validate_response.side_effect = [
+            mock.AsyncMock(status=200),
+            mock.AsyncMock(status=200),
+        ]
+        self.auth.expiration_date = time.time() - 100
+        self.auth.data = {"username": "foo", "password": "bar"}
+        self.auth.refresh_token = "baz1"
+
+        await self.auth.query("URL", "data", "headers", "get")
+
+        self.assertEqual(mock_validate_login.call_count, 1)
+        self.assertEqual(mock_validate_response.call_count, 2)
+        self.auth.session.post.assert_called_with(
+            url="https://api.oauth.blink.com/oauth/token",
+            data="username=foo&client_id=android&scope=client&grant_type=refresh_token&refresh_token=baz1",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "User-Agent": const.DEFAULT_USER_AGENT,
+                "hardware_id": const.DEVICE_ID,
+            },
+            timeout=10,
+        )
 
 
 class MockSession:
