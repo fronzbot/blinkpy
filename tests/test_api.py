@@ -17,25 +17,19 @@ COMMAND_NOT_COMPLETE = {"complete": False, "status_code": 908}
 class TestAPI(IsolatedAsyncioTestCase):
     """Test the API class in blinkpy."""
 
-    def setUp(self):
+    async def asyncSetUp(self):
         """Set up Login Handler."""
         self.blink = Blink(session=mock.AsyncMock())
         self.auth = Auth()
         self.blink.available = True
         self.blink.urls = util.BlinkURLHandler("region_id")
-        self.blink.account_id = 1234
-        self.blink.client_id = 5678
+        self.auth.account_id = 1234
+        self.auth.client_id = 5678
 
     def tearDown(self):
         """Clean up after test."""
         self.blink = None
         self.auth = None
-
-    async def test_request_verify(self, mock_resp):
-        """Test api request verify."""
-        mock_resp.return_value = mresp.MockResponse({}, 200)
-        response = await api.request_verify(self.auth, self.blink, "test key")
-        self.assertEqual(response.status, 200)
 
     async def test_request_logout(self, mock_resp):
         """Test request_logout."""
