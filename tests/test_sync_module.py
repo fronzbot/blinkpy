@@ -259,7 +259,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
     async def test_update_local_storage_manifest(self, mock_resp) -> None:
         """Test getting the manifest from the sync module."""
-        self.blink.account_id = 10111213
+        self.blink.auth.account_id = 10111213
         test_sync = self.blink.sync["test"]
         test_sync._local_storage["status"] = True
         test_sync.sync_id = 1234
@@ -321,7 +321,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
     async def test_check_new_videos_with_local_storage(self, mock_resp) -> None:
         """Test checking new videos in local storage."""
-        self.blink.account_id = 10111213
+        self.blink.auth.account_id = 10111213
         test_sync = self.blink.sync["test"]
         test_sync._local_storage["status"] = True
         test_sync.sync_id = 1234
@@ -386,7 +386,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self, mock_poll, mock_resp
     ) -> None:
         """Test checking missing ID in local storage update."""
-        self.blink.account_id = 10111213
+        self.blink.auth.account_id = 10111213
         test_sync = self.blink.sync["test"]
         test_sync._local_storage["status"] = True
         test_sync.sync_id = 1234
@@ -405,7 +405,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self, mock_resp
     ) -> None:
         """Test checking missing manifest in update."""
-        self.blink.account_id = 10111213
+        self.blink.auth.account_id = 10111213
         test_sync = self.blink.sync["test"]
         test_sync._local_storage["status"] = True
         test_sync.sync_id = 1234
@@ -447,7 +447,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self, mock_resp
     ) -> None:
         """Test checking malformed clips in update."""
-        self.blink.account_id = 10111213
+        self.blink.auth.account_id = 10111213
         test_sync = self.blink.sync["test"]
         test_sync._local_storage["status"] = True
         test_sync.sync_id = 1234
@@ -486,7 +486,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
     async def test_check_poll_local_storage_manifest_retry(self, mock_resp) -> None:
         """Test checking poll local storage manifest retry logic."""
-        self.blink.account_id = 10111213
+        self.blink.auth.account_id = 10111213
         test_sync = self.blink.sync["test"]
         test_sync._local_storage["status"] = True
         test_sync.sync_id = 1234
