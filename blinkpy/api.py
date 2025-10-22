@@ -230,6 +230,18 @@ async def request_command_status(blink, network, command_id):
     return await http_get(blink, url)
 
 
+async def request_command_done(blink, network, command_id):
+    """
+    Request command to be done.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param command_id: Command id to mark as done.
+    """
+    url = f"{blink.urls.base_url}/network/{network}/command/{command_id}/done/"
+    return await http_post(blink, url)
+
+
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_homescreen(blink, **kwargs):
     """Request homescreen info."""
@@ -347,7 +359,8 @@ async def request_camera_liveview(blink, network, camera_id):
         f"{blink.urls.base_url}/api/v5/accounts/{blink.account_id}"
         f"/networks/{network}/cameras/{camera_id}/liveview"
     )
-    response = await http_post(blink, url)
+    data = dumps({"intent": "liveview"})
+    response = await http_post(blink, url, data=data)
     await wait_for_command(blink, response)
     return response
 
@@ -561,6 +574,7 @@ async def wait_for_command(blink, json_data: dict) -> bool:
         network_id = json_data.get("network_id")
         command_id = json_data.get("id")
     except AttributeError:
+        _LOGGER.exception("No network_id or id in response")
         return False
     if command_id and network_id:
         for _ in range(0, MAX_RETRY):
@@ -573,3 +587,5 @@ async def wait_for_command(blink, json_data: dict) -> bool:
                 if status.get("complete"):
                     return True
             await sleep(COMMAND_POLL_TIME)
+    else:
+        _LOGGER.debug("No network_id or id in response")

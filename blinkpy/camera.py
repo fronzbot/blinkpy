@@ -13,6 +13,7 @@ from requests.compat import urljoin
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
 from blinkpy.helpers.util import to_alphanumeric
+from blinkpy.livestream import BlinkLiveStream
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -413,6 +414,15 @@ class BlinkCamera:
         )
         return response["server"]
 
+    async def init_livestream(self):
+        """Initialize livestream."""
+        response = await api.request_camera_liveview(
+            self.sync.blink, self.sync.network_id, self.camera_id
+        )
+        if not response["server"].startswith("immis://"):
+            raise NotImplementedError("Unsupported: {}".format(response["server"]))
+        return BlinkLiveStream(self, response)
+
     async def image_to_file(self, path):
         """
         Write image to file.
@@ -548,13 +558,24 @@ class BlinkCameraMini(BlinkCamera):
             f"{self.sync.blink.account_id}/networks/"
             f"{self.network_id}/owls/{self.camera_id}/liveview"
         )
-        response = await api.http_post(self.sync.blink, url)
+        data = dumps({"intent": "liveview"})
+        response = await api.http_post(self.sync.blink, url, data=data)
         await api.wait_for_command(self.sync.blink, response)
-        server = response["server"]
-        server_split = server.split(":")
-        server_split[0] = "rtsps"
-        link = ":".join(server_split)
-        return link
+        return response["server"]
+
+    async def init_livestream(self):
+        """Initialize livestream."""
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.network_id}/owls/{self.camera_id}/liveview"
+        )
+        data = dumps({"intent": "liveview"})
+        response = await api.http_post(self.sync.blink, url, data=data)
+        await api.wait_for_command(self.sync.blink, response)
+        if not response["server"].startswith("immis://"):
+            raise NotImplementedError("Unsupported: {}".format(response["server"]))
+        return BlinkLiveStream(self, response)
 
 
 class BlinkDoorbell(BlinkCamera):
@@ -620,8 +641,21 @@ class BlinkDoorbell(BlinkCamera):
             f"{self.sync.blink.account_id}/networks/"
             f"{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
         )
-        response = await api.http_post(self.sync.blink, url)
+        data = dumps({"intent": "liveview"})
+        response = await api.http_post(self.sync.blink, url, data=data)
         await api.wait_for_command(self.sync.blink, response)
-        server = response["server"]
-        link = server.replace("immis://", "rtsps://")
-        return link
+        return response["server"]
+
+    async def init_livestream(self):
+        """Initialize livestream."""
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
+        )
+        data = dumps({"intent": "liveview"})
+        response = await api.http_post(self.sync.blink, url, data=data)
+        await api.wait_for_command(self.sync.blink, response)
+        if not response["server"].startswith("immis://"):
+            raise NotImplementedError("Unsupported: {}".format(response["server"]))
+        return BlinkLiveStream(self, response)
