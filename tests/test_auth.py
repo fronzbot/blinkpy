@@ -225,16 +225,16 @@ class TestAuth(IsolatedAsyncioTestCase):
     @mock.patch("blinkpy.auth.Auth.validate_response")
     @mock.patch("blinkpy.auth.Auth.refresh_tokens")
     async def test_query_retry_failed(self, mock_refresh, mock_validate):
-        """Check handling of failed retry request."""
+        """Check authorization failure is thrown."""
         self.auth.session = MockSession()
         mock_validate.side_effect = [
             BlinkBadResponse,
             UnauthorizedError,
-            TokenRefreshFailed,
         ]
         mock_refresh.return_value = True
         self.assertEqual(await self.auth.query(url="http://example.com"), None)
-        self.assertEqual(await self.auth.query(url="http://example.com"), None)
+        with self.assertRaises(UnauthorizedError):
+            await self.auth.query(url="http://example.com")
 
     @mock.patch("blinkpy.auth.Auth.validate_response")
     async def test_query(self, mock_validate):
@@ -250,8 +250,8 @@ class TestAuth(IsolatedAsyncioTestCase):
         self.assertIsNone(await self.auth.query("URL", "data", "headers", "post"))
 
         mock_validate.side_effect = UnauthorizedError
-        self.auth.refresh_tokens = mock.AsyncMock()
-        self.assertIsNone(await self.auth.query("URL", "data", "headers", "post"))
+        with self.assertRaises(UnauthorizedError):
+            await self.auth.query("URL", "data", "headers", "post")
 
     @mock.patch("blinkpy.auth.Auth.validate_response")
     @mock.patch("blinkpy.auth.Auth.validate_login")
