@@ -114,6 +114,12 @@ class Auth:
         try:
             if response.status == 200:
                 return await response.json()
+            if response.status == 401:
+                _LOGGER.error(
+                    "Unable to refresh token. "
+                    "Invalid refresh token or invalid credentials."
+                )
+                raise UnauthorizedError
             if response.status == 412:
                 raise BlinkTwoFARequiredError
             raise LoginError
@@ -263,23 +269,6 @@ class Auth:
                 code,
                 reason,
             )
-        except UnauthorizedError:
-            try:
-                if not is_retry:
-                    await self.refresh_tokens()
-                    return await self.query(
-                        url=url,
-                        data=data,
-                        headers=self.header,
-                        reqtype=reqtype,
-                        stream=stream,
-                        json_resp=json_resp,
-                        is_retry=True,
-                        timeout=timeout,
-                    )
-                _LOGGER.error("Unable to access %s after token refresh.", url)
-            except TokenRefreshFailed:
-                _LOGGER.error("Unable to refresh token.")
         return None
 
 
