@@ -3,6 +3,7 @@
 import logging
 import string
 import datetime
+from json import dumps
 import traceback
 import asyncio
 import aiofiles
@@ -126,6 +127,30 @@ class BlinkSyncModule:
         if value:
             return await api.request_system_arm(self.blink, self.network_id)
         return await api.request_system_disarm(self.blink, self.network_id)
+
+    @property
+    async def snooze_till(self):
+        """Return snooze_till status."""
+        res = await api.request_sync_snooze(
+            self.blink,
+            self.network_id,
+        )
+        if res is None:
+            return None
+        res = res.get("snooze_till")
+        return res
+
+    async def async_snooze(self, snooze_time=240):
+        """Set sync snooze status."""
+        data = dumps({"snooze_time": snooze_time})
+        res = await api.request_sync_snooze(
+            self.blink,
+            self.network_id,
+            data=data,
+        )
+        if res and res.status == 200:
+            return await res.json()
+        return None
 
     async def start(self):
         """Initialize the system."""
