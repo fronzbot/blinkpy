@@ -32,7 +32,7 @@ from blinkpy.helpers.constants import (
     TIMEOUT_MEDIA,
 )
 from blinkpy.helpers.constants import __version__
-from blinkpy.auth import Auth, TokenRefreshFailed, LoginError
+from blinkpy.auth import Auth, BlinkTwoFARequiredError, TokenRefreshFailed, LoginError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,8 +61,6 @@ class Blink:
                         if you don't have these in your network.
         """
         self.auth = Auth(session=session)
-        self.account_id = None
-        self.client_id = None
         self.network_ids = []
         self.urls = None
         self.sync = CaseInsensitiveDict({})
@@ -74,9 +72,33 @@ class Blink:
         self.motion_interval = motion_interval
         self.version = __version__
         self.available = False
-        self.key_required = False
         self.homescreen = {}
         self.no_owls = no_owls
+
+    @property
+    def client_id(self):
+        """Return the client id."""
+        return self.auth.client_id
+
+    @property
+    def user_id(self):
+        """Return the user id."""
+        return self.auth.user_id
+
+    @property
+    def account_id(self):
+        """Return the account id."""
+        return self.auth.account_id
+
+    async def prompt_2fa(self):
+        """Prompt user for two-factor authentication code."""
+        code = input("Enter the two-factor authentication code: ")
+        await self.send_2fa_code(code)
+
+    async def send_2fa_code(self, code):
+        """Send the two-factor authentication code to complete login."""
+        self.auth.data["2fa_code"] = code
+        await self.start()
 
     @util.Throttle(seconds=MIN_THROTTLE_TIME)
     async def refresh(self, force=False, force_cache=False):
@@ -109,19 +131,14 @@ class Blink:
         """Perform full system setup."""
         try:
             await self.auth.startup()
-            self.setup_login_ids()
             self.setup_urls()
             await self.get_homescreen()
         except (LoginError, TokenRefreshFailed, BlinkSetupError):
             _LOGGER.error("Cannot setup Blink platform.")
             self.available = False
             return False
-
-        self.key_required = self.auth.check_key_required()
-        if self.key_required:
-            if self.auth.no_prompt:
-                return True
-            await self.setup_prompt_2fa()
+        except BlinkTwoFARequiredError:
+            raise
 
         if not self.last_refresh:
             # Initialize last_refresh to be just before the refresh delay period.
@@ -133,13 +150,6 @@ class Blink:
             )
 
         return await self.setup_post_verify()
-
-    async def setup_prompt_2fa(self):
-        """Prompt for 2FA."""
-        email = self.auth.data["username"]
-        pin = input(f"Enter code sent to {email}: ")
-        result = await self.auth.send_auth_key(self, pin)
-        self.key_required = not result
 
     async def setup_post_verify(self):
         """Initialize blink system after verification."""
@@ -160,7 +170,6 @@ class Blink:
         self.cameras = self.merge_cameras()
 
         self.available = True
-        self.key_required = False
         return True
 
     async def setup_sync_module(self, name, network_id, cameras):
@@ -174,8 +183,15 @@ class Blink:
             _LOGGER.debug("Skipping owl extraction.")
             self.homescreen = {}
             return
-        self.homescreen = await api.request_homescreen(self)
+        res = await api.request_homescreen(self)
+        await self.validate_homescreen(res)
         _LOGGER.debug("homescreen = %s", util.json_dumps(self.homescreen))
+
+    async def validate_homescreen(self, response):
+        """Validate and process homescreen response data."""
+        self.homescreen = await response.json()
+        self.auth.client_id = response.headers.get("Client-Id")
+        self.auth.user_id = response.headers.get("User-Id")
 
     async def setup_owls(self):
         """Check for mini cameras."""
@@ -258,18 +274,13 @@ class Blink:
             _LOGGER.error("Unable to retrieve cameras from response %s", response)
             raise BlinkSetupError from ex
 
-    def setup_login_ids(self):
-        """Retrieve login id numbers from login response."""
-        self.client_id = self.auth.client_id
-        self.account_id = self.auth.account_id
-
     def setup_urls(self):
         """Create urls for api."""
         try:
             self.urls = util.BlinkURLHandler(self.auth.region_id)
         except TypeError as ex:
             _LOGGER.error(
-                "Unable to extract region is from response %s", self.auth.login_response
+                "Unable to extract region is from response %s", self.auth.tier_info
             )
             raise BlinkSetupError from ex
 

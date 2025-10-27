@@ -6,9 +6,6 @@ Like the library? Consider buying me a cup of coffee!
 
 `Buy me a Coffee! <https://buymeacoffee.com/kevinfronczak>`__
 
-**BREAKING CHANGE WARNING:**
-As of ``0.22.0`` the library uses asyncio which will break any user scripts used prior to this version. Please see the updated examples below and the ``blinkapp.py`` or ``blinksync.py`` examples in the ``blinkapp/`` directory for examples on how to migrate.
-
 **Disclaimer:**
 Published under the MIT license - See LICENSE file for more details.
 
@@ -54,7 +51,10 @@ The simplest way to use this package from a terminal is to call ``await Blink.st
    
     async def start():
         blink = Blink(session=ClientSession())
-        await blink.start()
+        try:
+            await blink.start()
+        except BlinkTwoFARequiredError:
+            await blink.prompt_2fa()
         return blink
 
     blink = asyncio.run(start()) 
@@ -78,7 +78,10 @@ In some cases, having an interactive command-line session is not desired.  In th
         # Can set no_prompt when initializing auth handler
         auth = Auth({"username": <your username>, "password": <your password>}, no_prompt=True)
         blink.auth = auth
-        await blink.start()
+        try:
+            await blink.start()
+        except BlinkTwoFARequiredError:
+            await blink.prompt_2fa()
         return blink
 
     blink = asyncio.run(start())
@@ -108,7 +111,10 @@ Other use cases may involved loading credentials from a file.  This file must be
         blink = Blink()
         auth = Auth(await json_load("<File Location>"))
         blink.auth = auth
-        await blink.start()
+        try:
+            await blink.start()
+        except BlinkTwoFARequiredError:
+            await blink.prompt_2fa()
         return blink
 
     blink = asyncio.run(start())

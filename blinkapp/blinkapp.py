@@ -5,11 +5,11 @@ import asyncio
 from datetime import datetime, timedelta
 from aiohttp import ClientSession
 from blinkpy.blinkpy import Blink
-from blinkpy.auth import Auth
+from blinkpy.auth import Auth, BlinkTwoFARequiredError
 from blinkpy.helpers.util import json_load
 
 CREDFILE = environ.get("CREDFILE")
-TIMEDELTA = timedelta(environ.get("TIMEDELTA", "1"))
+TIMEDELTA = timedelta(int(environ.get("TIMEDELTA", "1")))
 
 
 def get_date():
@@ -26,7 +26,10 @@ async def start(session: ClientSession):
     """Startup blink app."""
     blink = Blink(session=session)
     blink.auth = Auth(await json_load(CREDFILE), session=session)
-    await blink.start()
+    try:
+        await blink.start()
+    except BlinkTwoFARequiredError:
+        await blink.prompt_2fa()
     return blink
 
 
