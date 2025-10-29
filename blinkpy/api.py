@@ -585,14 +585,20 @@ async def request_camera_action(
     camera_type = camera_type or "default"
     patterns = {
         "mini": {
-            "base": f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/owls/{camera_id}",
+            "base": (
+                f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+                f"/networks/{network}/owls/{camera_id}"
+            ),
             "arm": {"path": "config", "data": {"enabled": arm}},
             "record": {"path": "clip", "data": None},
             "snap": {"path": "thumbnail", "data": None},
             "liveview": {"path": "liveview", "data": {"intent": "liveview"}},
         },
         "doorbell": {
-            "base": f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/networks/{network}/doorbells/{camera_id}",
+            "base": (
+                f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+                f"/networks/{network}/doorbells/{camera_id}"
+            ),
             "arm": {"path": "enable" if arm else "disable", "data": None},
             "record": {"path": "clip", "data": None},
             "snap": {"path": "thumbnail", "data": None},
@@ -604,7 +610,10 @@ async def request_camera_action(
             "record": {"path": "clip", "data": None},
             "snap": {"path": "thumbnail", "data": None},
             "liveview": {
-                "path": f"api/v5/accounts/{blink.account_id}/networks/{network}/cameras/{camera_id}/liveview",
+                "path": (
+                    f"api/v5/accounts/{blink.account_id}"
+                    f"/networks/{network}/cameras/{camera_id}/liveview"
+                ),
                 "data": {"intent": "liveview"},
                 "full_path": True,
             },
