@@ -262,33 +262,33 @@ async def request_sync_events(blink, network, **kwargs):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_new_image(blink, network, camera_id, **kwargs):
+async def request_new_image(blink, network, camera_id, camera_type="", **kwargs):
     """
     Request to capture new thumbnail for camera.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request new image from.
+    :param camera_type: Camera type ("default", "mini", "doorbell").
     """
-    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/thumbnail"
-    response = await http_post(blink, url)
-    await wait_for_command(blink, response)
-    return response
+    return await request_camera_action(
+        blink, network, camera_id, action="snap", camera_type=camera_type
+    )
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_new_video(blink, network, camera_id, **kwargs):
+async def request_new_video(blink, network, camera_id, camera_type="", **kwargs):
     """
     Request to capture new video clip.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request new video from.
+    :param camera_type: Camera type ("default", "mini", "doorbell").
     """
-    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/clip"
-    response = await http_post(blink, url)
-    await wait_for_command(blink, response)
-    return response
+    return await request_camera_action(
+        blink, network, camera_id, action="record", camera_type=camera_type
+    )
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
@@ -347,22 +347,18 @@ async def request_camera_usage(blink):
     return await http_get(blink, url)
 
 
-async def request_camera_liveview(blink, network, camera_id):
+async def request_camera_liveview(blink, network, camera_id, camera_type="", **kwargs):
     """
     Request camera liveview.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request liveview from.
+    :param camera_type: Camera type ("default", "mini", "doorbell").
     """
-    url = (
-        f"{blink.urls.base_url}/api/v5/accounts/{blink.account_id}"
-        f"/networks/{network}/cameras/{camera_id}/liveview"
+    return await request_camera_action(
+        blink, network, camera_id, action="liveview", camera_type=camera_type
     )
-    data = dumps({"intent": "liveview"})
-    response = await http_post(blink, url, data=data)
-    await wait_for_command(blink, response)
-    return response
 
 
 async def request_camera_sensors(blink, network, camera_id):
@@ -378,33 +374,37 @@ async def request_camera_sensors(blink, network, camera_id):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_motion_detection_enable(blink, network, camera_id, **kwargs):
+async def request_motion_detection_enable(
+    blink, network, camera_id, camera_type="", **kwargs
+):
     """
     Enable motion detection for a camera.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to enable.
+    :param camera_type: Camera type ("default", "mini", "doorbell").
     """
-    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/enable"
-    response = await http_post(blink, url)
-    await wait_for_command(blink, response)
-    return response
+    return await request_camera_action(
+        blink, network, camera_id, action="arm", camera_type=camera_type, arm=True
+    )
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_motion_detection_disable(blink, network, camera_id, **kwargs):
+async def request_motion_detection_disable(
+    blink, network, camera_id, camera_type="", **kwargs
+):
     """
     Disable motion detection for a camera.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to disable.
+    :param camera_type: Camera type ("default", "mini", "doorbell").
     """
-    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/disable"
-    response = await http_post(blink, url)
-    await wait_for_command(blink, response)
-    return response
+    return await request_camera_action(
+        blink, network, camera_id, action="arm", camera_type=camera_type, arm=False
+    )
 
 
 async def request_local_storage_manifest(blink, network, sync_id):
@@ -565,6 +565,86 @@ async def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TI
         json_resp=json,
         data=data,
     )
+
+
+async def request_camera_action(
+    blink, network, camera_id, action, camera_type="", arm=None, **kwargs
+):
+    """
+    Perform camera actions for different camera types.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: Camera ID.
+    :param action: Action type ("arm", "record", "snap", "liveview").
+    :param camera_type: Camera type ("default", "mini", "doorbell").
+    :param arm: Value for arm action (True/False), ignored for other actions.
+    """
+    # Define URL patterns for different camera types
+    # owl = mini cameras, catalina = default cameras, lotus = doorbell cameras
+    camera_type = camera_type or "default"
+    patterns = {
+        "mini": {
+            "base": (
+                f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+                f"/networks/{network}/owls/{camera_id}"
+            ),
+            "arm": {"path": "config", "data": {"enabled": arm}},
+            "record": {"path": "clip", "data": None},
+            "snap": {"path": "thumbnail", "data": None},
+            "liveview": {"path": "liveview", "data": {"intent": "liveview"}},
+        },
+        "doorbell": {
+            "base": (
+                f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+                f"/networks/{network}/doorbells/{camera_id}"
+            ),
+            "arm": {"path": "enable" if arm else "disable", "data": None},
+            "record": {"path": "clip", "data": None},
+            "snap": {"path": "thumbnail", "data": None},
+            "liveview": {"path": "liveview", "data": {"intent": "liveview"}},
+        },
+        "default": {
+            "base": f"{blink.urls.base_url}/network/{network}/camera/{camera_id}",
+            "arm": {"path": "enable" if arm else "disable", "data": None},
+            "record": {"path": "clip", "data": None},
+            "snap": {"path": "thumbnail", "data": None},
+            "liveview": {
+                "path": (
+                    f"api/v5/accounts/{blink.account_id}"
+                    f"/networks/{network}/cameras/{camera_id}/liveview"
+                ),
+                "data": {"intent": "liveview"},
+                "full_path": True,
+            },
+        },
+    }
+
+    if camera_type not in patterns:
+        raise ValueError(f"Unsupported camera type: {camera_type}")
+
+    if action not in patterns[camera_type]:
+        raise ValueError(
+            f"Unsupported action '{action}' for camera type '{camera_type}'"
+        )
+
+    config = patterns[camera_type][action]
+
+    # Build URL
+    if config.get("full_path"):
+        url = f"{blink.urls.base_url}/{config['path']}"
+    else:
+        url = f"{patterns[camera_type]['base']}/{config['path']}"
+
+    # Prepare data
+    data = None
+    if config["data"]:
+        data = dumps(config["data"])
+
+    # Execute request
+    response = await http_post(blink, url, data=data)
+    await wait_for_command(blink, response)
+    return response
 
 
 async def wait_for_command(blink, json_data: dict) -> bool:
