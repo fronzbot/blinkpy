@@ -30,7 +30,9 @@ MAX_RETRY = 120
 # Use "data" for static payloads, "data_template" for dynamic payloads
 _CAMERA_ACTION_PATTERNS = {
     "mini": {
-        "base_template": "/api/v1/accounts/{account_id}/networks/{network}/owls/{camera_id}",
+        "base_template": (
+            "/api/v1/accounts/{account_id}/networks/{network}/owls/{camera_id}"
+        ),
         "actions": {
             "arm": {
                 "path": "config",
@@ -45,7 +47,9 @@ _CAMERA_ACTION_PATTERNS = {
         },
     },
     "doorbell": {
-        "base_template": "/api/v1/accounts/{account_id}/networks/{network}/doorbells/{camera_id}",
+        "base_template": (
+            "/api/v1/accounts/{account_id}/networks/{network}/doorbells/{camera_id}"
+        ),
         "actions": {
             "arm": {
                 "path_template": "{arm_action}",  # "enable" or "disable"
@@ -67,7 +71,10 @@ _CAMERA_ACTION_PATTERNS = {
             "record": {"path": "clip"},
             "snap": {"path": "thumbnail"},
             "liveview": {
-                "path": "/api/v5/accounts/{account_id}/networks/{network}/cameras/{camera_id}/liveview",
+                "path": (
+                    "/api/v5/accounts/{account_id}"
+                    "/networks/{network}/cameras/{camera_id}/liveview"
+                ),
                 "data": {"intent": "liveview"},  # static payload
                 "full_path": True,
             },
