@@ -719,5 +719,7 @@ async def wait_for_command(blink, json_data: dict) -> bool:
                 if status.get("complete"):
                     return True
             await sleep(COMMAND_POLL_TIME)
+        return False  # Timeout after MAX_RETRY attempts
     else:
         _LOGGER.debug("No network_id or id in response")
+        return False
