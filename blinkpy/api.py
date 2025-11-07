@@ -25,6 +25,63 @@ MIN_THROTTLE_TIME = 5
 COMMAND_POLL_TIME = 1
 MAX_RETRY = 120
 
+# Camera action URL patterns
+# Templates use {placeholder} for dynamic values filled at runtime
+# Use "data" for static payloads, "data_template" for dynamic payloads
+_CAMERA_ACTION_PATTERNS = {
+    "mini": {
+        "base_template": (
+            "/api/v1/accounts/{account_id}/networks/{network}/owls/{camera_id}"
+        ),
+        "actions": {
+            "arm": {
+                "path": "config",
+                "data_template": lambda p: {"enabled": p.get("arm_action") == "enable"},
+            },
+            "record": {"path": "clip"},
+            "snap": {"path": "thumbnail"},
+            "liveview": {
+                "path": "liveview",
+                "data": {"intent": "liveview"},  # static payload
+            },
+        },
+    },
+    "doorbell": {
+        "base_template": (
+            "/api/v1/accounts/{account_id}/networks/{network}/doorbells/{camera_id}"
+        ),
+        "actions": {
+            "arm": {
+                "path_template": "{arm_action}",  # "enable" or "disable"
+            },
+            "record": {"path": "clip"},
+            "snap": {"path": "thumbnail"},
+            "liveview": {
+                "path": "liveview",
+                "data": {"intent": "liveview"},  # static payload
+            },
+        },
+    },
+    "default": {
+        "base_template": "/network/{network}/camera/{camera_id}",
+        "actions": {
+            "arm": {
+                "path_template": "{arm_action}",  # "enable" or "disable"
+            },
+            "record": {"path": "clip"},
+            "snap": {"path": "thumbnail"},
+            "liveview": {
+                "path": (
+                    "/api/v5/accounts/{account_id}"
+                    "/networks/{network}/cameras/{camera_id}/liveview"
+                ),
+                "data": {"intent": "liveview"},  # static payload
+                "full_path": True,
+            },
+        },
+    },
+}
+
 
 async def request_login(
     auth,
@@ -386,7 +443,12 @@ async def request_motion_detection_enable(
     :param camera_type: Camera type ("default", "mini", "doorbell").
     """
     return await request_camera_action(
-        blink, network, camera_id, action="arm", camera_type=camera_type, arm=True
+        blink,
+        network,
+        camera_id,
+        action="arm",
+        camera_type=camera_type,
+        arm_action="enable",
     )
 
 
@@ -403,7 +465,12 @@ async def request_motion_detection_disable(
     :param camera_type: Camera type ("default", "mini", "doorbell").
     """
     return await request_camera_action(
-        blink, network, camera_id, action="arm", camera_type=camera_type, arm=False
+        blink,
+        network,
+        camera_id,
+        action="arm",
+        camera_type=camera_type,
+        arm_action="disable",
     )
 
 
@@ -568,7 +635,7 @@ async def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TI
 
 
 async def request_camera_action(
-    blink, network, camera_id, action, camera_type="", arm=None, **kwargs
+    blink, network, camera_id, action, camera_type="", **kwargs
 ):
     """
     Perform camera actions for different camera types.
@@ -578,68 +645,60 @@ async def request_camera_action(
     :param camera_id: Camera ID.
     :param action: Action type ("arm", "record", "snap", "liveview").
     :param camera_type: Camera type ("default", "mini", "doorbell").
-    :param arm: Value for arm action (True/False), ignored for other actions.
+    :param **kwargs: Additional parameters for substitution (e.g., arm_action).
     """
-    # Define URL patterns for different camera types
-    # owl = mini cameras, catalina = default cameras, lotus = doorbell cameras
     camera_type = camera_type or "default"
-    patterns = {
-        "mini": {
-            "base": (
-                f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
-                f"/networks/{network}/owls/{camera_id}"
-            ),
-            "arm": {"path": "config", "data": {"enabled": arm}},
-            "record": {"path": "clip", "data": None},
-            "snap": {"path": "thumbnail", "data": None},
-            "liveview": {"path": "liveview", "data": {"intent": "liveview"}},
-        },
-        "doorbell": {
-            "base": (
-                f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
-                f"/networks/{network}/doorbells/{camera_id}"
-            ),
-            "arm": {"path": "enable" if arm else "disable", "data": None},
-            "record": {"path": "clip", "data": None},
-            "snap": {"path": "thumbnail", "data": None},
-            "liveview": {"path": "liveview", "data": {"intent": "liveview"}},
-        },
-        "default": {
-            "base": f"{blink.urls.base_url}/network/{network}/camera/{camera_id}",
-            "arm": {"path": "enable" if arm else "disable", "data": None},
-            "record": {"path": "clip", "data": None},
-            "snap": {"path": "thumbnail", "data": None},
-            "liveview": {
-                "path": (
-                    f"api/v5/accounts/{blink.account_id}"
-                    f"/networks/{network}/cameras/{camera_id}/liveview"
-                ),
-                "data": {"intent": "liveview"},
-                "full_path": True,
-            },
-        },
-    }
-
-    if camera_type not in patterns:
+    if camera_type not in _CAMERA_ACTION_PATTERNS:
         raise ValueError(f"Unsupported camera type: {camera_type}")
 
-    if action not in patterns[camera_type]:
+    pattern = _CAMERA_ACTION_PATTERNS[camera_type]
+    if action not in pattern["actions"]:
         raise ValueError(
             f"Unsupported action '{action}' for camera type '{camera_type}'"
         )
 
-    config = patterns[camera_type][action]
+    # Get action and build base URL
+    action_config = pattern["actions"][action]
+    base_url = pattern["base_template"].format(
+        account_id=blink.account_id,
+        network=network,
+        camera_id=camera_id,
+    )
 
-    # Build URL
-    if config.get("full_path"):
-        url = f"{blink.urls.base_url}/{config['path']}"
+    # Build action path
+    if "path_template" in action_config:
+        # Dynamic path using template substitution
+        path = action_config["path_template"].format(**kwargs)
     else:
-        url = f"{patterns[camera_type]['base']}/{config['path']}"
+        # Static path
+        path = action_config.get("path", "")
 
-    # Prepare data
+    # Build full URL
+    if action_config.get("full_path"):
+        # For liveview on default cameras, path contains full path template
+        url = blink.urls.base_url + path.format(
+            account_id=blink.account_id,
+            network=network,
+            camera_id=camera_id,
+        )
+    else:
+        # Standard URL construction
+        url = f"{blink.urls.base_url}{base_url}/{path}"
+
+    # Prepare request data
     data = None
-    if config["data"]:
-        data = dumps(config["data"])
+    if "data_template" in action_config:
+        # Dynamic payload with runtime value substitution
+        data_dict = {}
+        for key, value in action_config["data_template"].items():
+            if callable(value):
+                data_dict[key] = value(kwargs)
+            else:
+                data_dict[key] = value
+        data = dumps(data_dict)
+    elif "data" in action_config:
+        # Static payload
+        data = dumps(action_config["data"])
 
     # Execute request
     response = await http_post(blink, url, data=data)
@@ -667,5 +726,7 @@ async def wait_for_command(blink, json_data: dict) -> bool:
                 if status.get("complete"):
                     return True
             await sleep(COMMAND_POLL_TIME)
+        return False  # Timeout after MAX_RETRY attempts
     else:
         _LOGGER.debug("No network_id or id in response")
+        return False
