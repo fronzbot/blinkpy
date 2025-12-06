@@ -147,9 +147,10 @@ class TestAuth(IsolatedAsyncioTestCase):
         self.assertEqual(self.auth.header, None)
 
     @mock.patch("blinkpy.auth.Auth.validate_login")
-    @mock.patch("blinkpy.auth.Auth.refresh_tokens")
-    async def test_auth_startup(self, mock_validate, mock_refresh):
+    @mock.patch("blinkpy.auth.Auth._oauth_login_flow")
+    async def test_auth_startup(self, mock_oauth, mock_validate):
         """Test auth startup."""
+        mock_oauth.return_value = True
         await self.auth.startup()
 
     @mock.patch("blinkpy.auth.Auth.query")

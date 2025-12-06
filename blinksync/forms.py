@@ -8,6 +8,7 @@ DELAY = 5
 
 class VideosForm(wx.Dialog):
     """My delete form."""
+
     def __init__(self,manifest):
         wx.Frame.__init__(self, None, wx.ID_ANY, "Select List to Download and Delete",size = (450,550))
 
@@ -20,9 +21,9 @@ class VideosForm(wx.Dialog):
                         style=wx.LC_REPORT
                         |wx.BORDER_SUNKEN
                         )
-        self.list_ctrl.InsertColumn(0, 'Name')
-        self.list_ctrl.InsertColumn(1, 'Camera')
-        self.list_ctrl.InsertColumn(2, 'Date', width=225)
+        self.list_ctrl.InsertColumn(0, "Name")
+        self.list_ctrl.InsertColumn(1, "Camera")
+        self.list_ctrl.InsertColumn(2, "Date", width=225)
         self.list_ctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK,self.download_line)
 
         btn = wx.Button(panel, label="Download")
@@ -78,6 +79,7 @@ class LoginDialog(wx.Dialog):
     """
     Class to define login dialog
     """
+
     #----------------------------------------------------------------------
     def __init__(self):
         """Constructor"""
@@ -115,7 +117,7 @@ class LoginDialog(wx.Dialog):
         Check credentials and login
         """
         self.account = {"username":self.user.Value,"password":self.password.Value}
-        self.EndModal(wx.ID_OK) 
+        self.EndModal(wx.ID_OK)
 
     def getUserPassword(self):
         return self.account

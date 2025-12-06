@@ -2,8 +2,11 @@
 
 import logging
 import string
+import json
 from json import dumps
 from asyncio import sleep
+from urllib.parse import urlencode, urlparse, parse_qs
+from bs4 import BeautifulSoup
 from blinkpy.helpers.util import (
     get_time,
     Throttle,
@@ -16,8 +19,15 @@ from blinkpy.helpers.constants import (
     OAUTH_GRANT_TYPE_PASSWORD,
     OAUTH_GRANT_TYPE_REFRESH_TOKEN,
     OAUTH_SCOPE,
+    OAUTH_AUTHORIZE_URL,
+    OAUTH_SIGNIN_URL,
+    OAUTH_2FA_VERIFY_URL,
+    OAUTH_TOKEN_URL,
+    OAUTH_V2_CLIENT_ID,
+    OAUTH_REDIRECT_URI,
+    OAUTH_USER_AGENT,
+    OAUTH_TOKEN_USER_AGENT,
 )
-from urllib.parse import urlencode
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -730,3 +740,284 @@ async def wait_for_command(blink, json_data: dict) -> bool:
     else:
         _LOGGER.debug("No network_id or id in response")
         return False
+
+
+# OAuth v2 Authorization Code Flow + PKCE functions
+
+
+async def oauth_authorize_request(auth, hardware_id, code_challenge):
+    """
+    Step 1: Initial authorization request.
+
+    Args:
+        auth: Auth instance
+        hardware_id: Device hardware ID (UUID)
+        code_challenge: PKCE code challenge
+
+    Returns:
+        bool: True if successful
+
+    """
+    params = {
+        "app_brand": "blink",
+        "app_version": "50.1",
+        "client_id": OAUTH_V2_CLIENT_ID,
+        "code_challenge": code_challenge,
+        "code_challenge_method": "S256",
+        "device_brand": "Apple",
+        "device_model": "iPhone16,1",
+        "device_os_version": "26.1",
+        "hardware_id": hardware_id,
+        "redirect_uri": OAUTH_REDIRECT_URI,
+        "response_type": "code",
+        "scope": OAUTH_SCOPE,
+    }
+
+    headers = {
+        "User-Agent": OAUTH_USER_AGENT,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    response = await auth.session.get(
+        OAUTH_AUTHORIZE_URL, params=params, headers=headers
+    )
+
+    return response.status == 200
+
+
+async def oauth_get_signin_page(auth):
+    """
+    Step 2: Get signin page and extract CSRF token.
+
+    Args:
+        auth: Auth instance
+
+    Returns:
+        str: CSRF token or None
+
+    """
+    headers = {
+        "User-Agent": OAUTH_USER_AGENT,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    response = await auth.session.get(OAUTH_SIGNIN_URL, headers=headers)
+
+    if response.status != 200:
+        return None
+
+    html = await response.text()
+
+    # Extract CSRF token from oauth-args script tag
+    try:
+        # Parse HTML
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Find oauth-args script
+        oauth_script = soup.find(
+            "script", {"id": "oauth-args", "type": "application/json"}
+        )
+        if oauth_script and oauth_script.string:
+            oauth_data = json.loads(oauth_script.string)
+            csrf_token = oauth_data.get("csrf-token")
+            if csrf_token:
+                return csrf_token
+    except Exception as error:
+        _LOGGER.error("Failed to extract CSRF token: %s", error)
+
+    return None
+
+
+async def oauth_signin(auth, email, password, csrf_token):
+    """
+    Step 3: Submit login credentials.
+
+    Args:
+        auth: Auth instance
+        email: User email
+        password: User password
+        csrf_token: CSRF token from signin page
+
+    Returns:
+        str: "SUCCESS", "2FA_REQUIRED", or None on failure
+
+    """
+    headers = {
+        "User-Agent": OAUTH_USER_AGENT,
+        "Accept": "*/*",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Origin": "https://api.oauth.blink.com",
+        "Referer": OAUTH_SIGNIN_URL,
+    }
+
+    data = {
+        "username": email,
+        "password": password,
+        "csrf-token": csrf_token,
+    }
+
+    response = await auth.session.post(
+        OAUTH_SIGNIN_URL, headers=headers, data=data, allow_redirects=False
+    )
+
+    if response.status == 412:
+        # 2FA required
+        return "2FA_REQUIRED"
+    elif response.status in [301, 302, 303, 307, 308]:
+        # Success without 2FA
+        return "SUCCESS"
+
+    return None
+
+
+async def oauth_verify_2fa(auth, csrf_token, twofa_code):
+    """
+    Step 3b: Verify 2FA code.
+
+    Args:
+        auth: Auth instance
+        csrf_token: CSRF token
+        twofa_code: 2FA code from user
+
+    Returns:
+        bool: True if verification successful
+
+    """
+    headers = {
+        "User-Agent": OAUTH_USER_AGENT,
+        "Accept": "*/*",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Origin": "https://api.oauth.blink.com",
+        "Referer": OAUTH_SIGNIN_URL,
+    }
+
+    data = {
+        "2fa_code": twofa_code,
+        "csrf-token": csrf_token,
+        "remember_me": "false",
+    }
+
+    response = await auth.session.post(OAUTH_2FA_VERIFY_URL, headers=headers, data=data)
+
+    if response.status == 201:
+        try:
+            result = await response.json()
+            return result.get("status") == "auth-completed"
+        except Exception as error:
+            _LOGGER.error("Failed to parse 2FA response: %s", error)
+
+    return False
+
+
+async def oauth_get_authorization_code(auth):
+    """
+    Step 4: Get authorization code from authorize endpoint.
+
+    Args:
+        auth: Auth instance
+
+    Returns:
+        str: Authorization code or None
+
+    """
+    headers = {
+        "User-Agent": OAUTH_USER_AGENT,
+        "Accept": "*/*",
+        "Referer": OAUTH_SIGNIN_URL,
+    }
+
+    response = await auth.session.get(
+        OAUTH_AUTHORIZE_URL, headers=headers, allow_redirects=False
+    )
+
+    if response.status in [301, 302, 303, 307, 308]:
+        location = response.headers.get("Location", "")
+
+        # Extract code from URL: https://blink.com/.../end?code=XXX&state=YYY
+        parsed = urlparse(location)
+        params = parse_qs(parsed.query)
+
+        if "code" in params:
+            return params["code"][0]
+
+    return None
+
+
+async def oauth_exchange_code_for_token(auth, code, code_verifier, hardware_id):
+    """
+    Step 5: Exchange authorization code for access token.
+
+    Args:
+        auth: Auth instance
+        code: Authorization code
+        code_verifier: PKCE code verifier
+        hardware_id: Device hardware ID
+
+    Returns:
+        dict: Token data or None
+
+    """
+    headers = {
+        "User-Agent": OAUTH_TOKEN_USER_AGENT,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "*/*",
+    }
+
+    data = {
+        "app_brand": "blink",
+        "client_id": OAUTH_V2_CLIENT_ID,
+        "code": code,
+        "code_verifier": code_verifier,
+        "grant_type": "authorization_code",
+        "hardware_id": hardware_id,
+        "redirect_uri": OAUTH_REDIRECT_URI,
+        "scope": OAUTH_SCOPE,
+    }
+
+    response = await auth.session.post(
+        OAUTH_TOKEN_URL, headers=headers, data=urlencode(data)
+    )
+
+    if response.status == 200:
+        return await response.json()
+
+    return None
+
+
+async def oauth_refresh_token(auth, refresh_token, hardware_id):
+    """
+    Refresh access token using refresh_token.
+
+    Args:
+        auth: Auth instance
+        refresh_token: Refresh token
+        hardware_id: Device hardware ID
+
+    Returns:
+        dict: Token data or None
+
+    """
+    headers = {
+        "User-Agent": OAUTH_TOKEN_USER_AGENT,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "*/*",
+    }
+
+    data = {
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+        "client_id": OAUTH_V2_CLIENT_ID,
+        "scope": OAUTH_SCOPE,
+        "hardware_id": hardware_id,
+    }
+
+    response = await auth.session.post(
+        OAUTH_TOKEN_URL, headers=headers, data=urlencode(data)
+    )
+
+    if response.status == 200:
+        return await response.json()
+
+    return None

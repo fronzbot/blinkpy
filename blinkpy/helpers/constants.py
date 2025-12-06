@@ -15,6 +15,15 @@ LOGIN_ENDPOINT = f"{OAUTH_BASE_URL}/oauth/token"
 TIER_ENDPOINT = f"{BASE_URL}/api/v1/users/tier_info"
 
 """
+OAuth v2 endpoints (Authorization Code Flow + PKCE)
+"""
+OAUTH_AUTHORIZE_URL = f"{OAUTH_BASE_URL}/oauth/v2/authorize"
+OAUTH_SIGNIN_URL = f"{OAUTH_BASE_URL}/oauth/v2/signin"
+OAUTH_2FA_VERIFY_URL = f"{OAUTH_BASE_URL}/oauth/v2/2fa/verify"
+OAUTH_TOKEN_URL = f"{OAUTH_BASE_URL}/oauth/token"
+
+
+"""
 Dictionaries
 """
 ONLINE = {"online": True, "offline": False}
@@ -41,3 +50,19 @@ OAUTH_CLIENT_ID = "android"
 OAUTH_GRANT_TYPE_PASSWORD = "password"
 OAUTH_GRANT_TYPE_REFRESH_TOKEN = "refresh_token"
 OAUTH_SCOPE = "client"
+
+"""
+OAuth v2 parameters
+"""
+OAUTH_V2_CLIENT_ID = "ios"
+OAUTH_REDIRECT_URI = "immedia-blink://applinks.blink.com/signin/callback"
+
+"""
+User agents for OAuth v2
+"""
+OAUTH_USER_AGENT = (
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) "
+    "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+    "Version/26.1 Mobile/15E148 Safari/604.1"
+)
+OAUTH_TOKEN_USER_AGENT = "Blink/2511191620 CFNetwork/3860.200.71 Darwin/25.1.0"

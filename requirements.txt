@@ -4,3 +4,4 @@ python-slugify>=4.0.1
 sortedcontainers~=2.4.0
 aiohttp>=3.8.4
 aiofiles>=23.1.0
+beautifulsoup4>=4.12.0
