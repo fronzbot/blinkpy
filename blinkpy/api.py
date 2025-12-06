@@ -2,8 +2,11 @@
 
 import logging
 import string
+import json
 from json import dumps
 from asyncio import sleep
+from urllib.parse import urlencode, urlparse, parse_qs
+from bs4 import BeautifulSoup
 from blinkpy.helpers.util import (
     get_time,
     Throttle,
@@ -16,14 +19,78 @@ from blinkpy.helpers.constants import (
     OAUTH_GRANT_TYPE_PASSWORD,
     OAUTH_GRANT_TYPE_REFRESH_TOKEN,
     OAUTH_SCOPE,
+    OAUTH_AUTHORIZE_URL,
+    OAUTH_SIGNIN_URL,
+    OAUTH_2FA_VERIFY_URL,
+    OAUTH_TOKEN_URL,
+    OAUTH_V2_CLIENT_ID,
+    OAUTH_REDIRECT_URI,
+    OAUTH_USER_AGENT,
+    OAUTH_TOKEN_USER_AGENT,
 )
-from urllib.parse import urlencode
 
 _LOGGER = logging.getLogger(__name__)
 
 MIN_THROTTLE_TIME = 5
 COMMAND_POLL_TIME = 1
 MAX_RETRY = 120
+
+# Camera action URL patterns
+# Templates use {placeholder} for dynamic values filled at runtime
+# Use "data" for static payloads, "data_template" for dynamic payloads
+_CAMERA_ACTION_PATTERNS = {
+    "mini": {
+        "base_template": (
+            "/api/v1/accounts/{account_id}/networks/{network}/owls/{camera_id}"
+        ),
+        "actions": {
+            "arm": {
+                "path": "config",
+                "data_template": lambda p: {"enabled": p.get("arm_action") == "enable"},
+            },
+            "record": {"path": "clip"},
+            "snap": {"path": "thumbnail"},
+            "liveview": {
+                "path": "liveview",
+                "data": {"intent": "liveview"},  # static payload
+            },
+        },
+    },
+    "doorbell": {
+        "base_template": (
+            "/api/v1/accounts/{account_id}/networks/{network}/doorbells/{camera_id}"
+        ),
+        "actions": {
+            "arm": {
+                "path_template": "{arm_action}",  # "enable" or "disable"
+            },
+            "record": {"path": "clip"},
+            "snap": {"path": "thumbnail"},
+            "liveview": {
+                "path": "liveview",
+                "data": {"intent": "liveview"},  # static payload
+            },
+        },
+    },
+    "default": {
+        "base_template": "/network/{network}/camera/{camera_id}",
+        "actions": {
+            "arm": {
+                "path_template": "{arm_action}",  # "enable" or "disable"
+            },
+            "record": {"path": "clip"},
+            "snap": {"path": "thumbnail"},
+            "liveview": {
+                "path": (
+                    "/api/v5/accounts/{account_id}"
+                    "/networks/{network}/cameras/{camera_id}/liveview"
+                ),
+                "data": {"intent": "liveview"},  # static payload
+                "full_path": True,
+            },
+        },
+    },
+}
 
 
 async def request_login(
@@ -230,6 +297,18 @@ async def request_command_status(blink, network, command_id):
     return await http_get(blink, url)
 
 
+async def request_command_done(blink, network, command_id):
+    """
+    Request command to be done.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param command_id: Command id to mark as done.
+    """
+    url = f"{blink.urls.base_url}/network/{network}/command/{command_id}/done/"
+    return await http_post(blink, url)
+
+
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_homescreen(blink, **kwargs):
     """Request homescreen info."""
@@ -250,33 +329,33 @@ async def request_sync_events(blink, network, **kwargs):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_new_image(blink, network, camera_id, **kwargs):
+async def request_new_image(blink, network, camera_id, camera_type="", **kwargs):
     """
     Request to capture new thumbnail for camera.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request new image from.
+    :param camera_type: Camera type ("default", "mini", "doorbell").
     """
-    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/thumbnail"
-    response = await http_post(blink, url)
-    await wait_for_command(blink, response)
-    return response
+    return await request_camera_action(
+        blink, network, camera_id, action="snap", camera_type=camera_type
+    )
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_new_video(blink, network, camera_id, **kwargs):
+async def request_new_video(blink, network, camera_id, camera_type="", **kwargs):
     """
     Request to capture new video clip.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request new video from.
+    :param camera_type: Camera type ("default", "mini", "doorbell").
     """
-    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/clip"
-    response = await http_post(blink, url)
-    await wait_for_command(blink, response)
-    return response
+    return await request_camera_action(
+        blink, network, camera_id, action="record", camera_type=camera_type
+    )
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
@@ -335,21 +414,18 @@ async def request_camera_usage(blink):
     return await http_get(blink, url)
 
 
-async def request_camera_liveview(blink, network, camera_id):
+async def request_camera_liveview(blink, network, camera_id, camera_type="", **kwargs):
     """
     Request camera liveview.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request liveview from.
+    :param camera_type: Camera type ("default", "mini", "doorbell").
     """
-    url = (
-        f"{blink.urls.base_url}/api/v5/accounts/{blink.account_id}"
-        f"/networks/{network}/cameras/{camera_id}/liveview"
+    return await request_camera_action(
+        blink, network, camera_id, action="liveview", camera_type=camera_type
     )
-    response = await http_post(blink, url)
-    await wait_for_command(blink, response)
-    return response
 
 
 async def request_camera_sensors(blink, network, camera_id):
@@ -365,33 +441,47 @@ async def request_camera_sensors(blink, network, camera_id):
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_motion_detection_enable(blink, network, camera_id, **kwargs):
+async def request_motion_detection_enable(
+    blink, network, camera_id, camera_type="", **kwargs
+):
     """
     Enable motion detection for a camera.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to enable.
+    :param camera_type: Camera type ("default", "mini", "doorbell").
     """
-    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/enable"
-    response = await http_post(blink, url)
-    await wait_for_command(blink, response)
-    return response
+    return await request_camera_action(
+        blink,
+        network,
+        camera_id,
+        action="arm",
+        camera_type=camera_type,
+        arm_action="enable",
+    )
 
 
 @Throttle(seconds=MIN_THROTTLE_TIME)
-async def request_motion_detection_disable(blink, network, camera_id, **kwargs):
+async def request_motion_detection_disable(
+    blink, network, camera_id, camera_type="", **kwargs
+):
     """
     Disable motion detection for a camera.
 
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to disable.
+    :param camera_type: Camera type ("default", "mini", "doorbell").
     """
-    url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/disable"
-    response = await http_post(blink, url)
-    await wait_for_command(blink, response)
-    return response
+    return await request_camera_action(
+        blink,
+        network,
+        camera_id,
+        action="arm",
+        camera_type=camera_type,
+        arm_action="disable",
+    )
 
 
 async def request_local_storage_manifest(blink, network, sync_id):
@@ -554,6 +644,78 @@ async def http_post(blink, url, is_retry=False, data=None, json=True, timeout=TI
     )
 
 
+async def request_camera_action(
+    blink, network, camera_id, action, camera_type="", **kwargs
+):
+    """
+    Perform camera actions for different camera types.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: Camera ID.
+    :param action: Action type ("arm", "record", "snap", "liveview").
+    :param camera_type: Camera type ("default", "mini", "doorbell").
+    :param **kwargs: Additional parameters for substitution (e.g., arm_action).
+    """
+    camera_type = camera_type or "default"
+    if camera_type not in _CAMERA_ACTION_PATTERNS:
+        raise ValueError(f"Unsupported camera type: {camera_type}")
+
+    pattern = _CAMERA_ACTION_PATTERNS[camera_type]
+    if action not in pattern["actions"]:
+        raise ValueError(
+            f"Unsupported action '{action}' for camera type '{camera_type}'"
+        )
+
+    # Get action and build base URL
+    action_config = pattern["actions"][action]
+    base_url = pattern["base_template"].format(
+        account_id=blink.account_id,
+        network=network,
+        camera_id=camera_id,
+    )
+
+    # Build action path
+    if "path_template" in action_config:
+        # Dynamic path using template substitution
+        path = action_config["path_template"].format(**kwargs)
+    else:
+        # Static path
+        path = action_config.get("path", "")
+
+    # Build full URL
+    if action_config.get("full_path"):
+        # For liveview on default cameras, path contains full path template
+        url = blink.urls.base_url + path.format(
+            account_id=blink.account_id,
+            network=network,
+            camera_id=camera_id,
+        )
+    else:
+        # Standard URL construction
+        url = f"{blink.urls.base_url}{base_url}/{path}"
+
+    # Prepare request data
+    data = None
+    if "data_template" in action_config:
+        # Dynamic payload with runtime value substitution
+        data_dict = {}
+        for key, value in action_config["data_template"].items():
+            if callable(value):
+                data_dict[key] = value(kwargs)
+            else:
+                data_dict[key] = value
+        data = dumps(data_dict)
+    elif "data" in action_config:
+        # Static payload
+        data = dumps(action_config["data"])
+
+    # Execute request
+    response = await http_post(blink, url, data=data)
+    await wait_for_command(blink, response)
+    return response
+
+
 async def wait_for_command(blink, json_data: dict) -> bool:
     """Wait for command to complete."""
     _LOGGER.debug("Command Wait %s", json_data)
@@ -561,6 +723,7 @@ async def wait_for_command(blink, json_data: dict) -> bool:
         network_id = json_data.get("network_id")
         command_id = json_data.get("id")
     except AttributeError:
+        _LOGGER.exception("No network_id or id in response")
         return False
     if command_id and network_id:
         for _ in range(0, MAX_RETRY):
@@ -573,3 +736,288 @@ async def wait_for_command(blink, json_data: dict) -> bool:
                 if status.get("complete"):
                     return True
             await sleep(COMMAND_POLL_TIME)
+        return False  # Timeout after MAX_RETRY attempts
+    else:
+        _LOGGER.debug("No network_id or id in response")
+        return False
+
+
+# OAuth v2 Authorization Code Flow + PKCE functions
+
+
+async def oauth_authorize_request(auth, hardware_id, code_challenge):
+    """
+    Step 1: Initial authorization request.
+
+    Args:
+        auth: Auth instance
+        hardware_id: Device hardware ID (UUID)
+        code_challenge: PKCE code challenge
+
+    Returns:
+        bool: True if successful
+
+    """
+    params = {
+        "app_brand": "blink",
+        "app_version": "50.1",
+        "client_id": OAUTH_V2_CLIENT_ID,
+        "code_challenge": code_challenge,
+        "code_challenge_method": "S256",
+        "device_brand": "Apple",
+        "device_model": "iPhone16,1",
+        "device_os_version": "26.1",
+        "hardware_id": hardware_id,
+        "redirect_uri": OAUTH_REDIRECT_URI,
+        "response_type": "code",
+        "scope": OAUTH_SCOPE,
+    }
+
+    headers = {
+        "User-Agent": OAUTH_USER_AGENT,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    response = await auth.session.get(
+        OAUTH_AUTHORIZE_URL, params=params, headers=headers
+    )
+
+    return response.status == 200
+
+
+async def oauth_get_signin_page(auth):
+    """
+    Step 2: Get signin page and extract CSRF token.
+
+    Args:
+        auth: Auth instance
+
+    Returns:
+        str: CSRF token or None
+
+    """
+    headers = {
+        "User-Agent": OAUTH_USER_AGENT,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    response = await auth.session.get(OAUTH_SIGNIN_URL, headers=headers)
+
+    if response.status != 200:
+        return None
+
+    html = await response.text()
+
+    # Extract CSRF token from oauth-args script tag
+    try:
+        # Parse HTML
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Find oauth-args script
+        oauth_script = soup.find(
+            "script", {"id": "oauth-args", "type": "application/json"}
+        )
+        if oauth_script and oauth_script.string:
+            oauth_data = json.loads(oauth_script.string)
+            csrf_token = oauth_data.get("csrf-token")
+            if csrf_token:
+                return csrf_token
+    except Exception as error:
+        _LOGGER.error("Failed to extract CSRF token: %s", error)
+
+    return None
+
+
+async def oauth_signin(auth, email, password, csrf_token):
+    """
+    Step 3: Submit login credentials.
+
+    Args:
+        auth: Auth instance
+        email: User email
+        password: User password
+        csrf_token: CSRF token from signin page
+
+    Returns:
+        str: "SUCCESS", "2FA_REQUIRED", or None on failure
+
+    """
+    headers = {
+        "User-Agent": OAUTH_USER_AGENT,
+        "Accept": "*/*",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Origin": "https://api.oauth.blink.com",
+        "Referer": OAUTH_SIGNIN_URL,
+    }
+
+    data = {
+        "username": email,
+        "password": password,
+        "csrf-token": csrf_token,
+    }
+
+    response = await auth.session.post(
+        OAUTH_SIGNIN_URL, headers=headers, data=data, allow_redirects=False
+    )
+
+    if response.status == 412:
+        # 2FA required
+        return "2FA_REQUIRED"
+    elif response.status in [301, 302, 303, 307, 308]:
+        # Success without 2FA
+        return "SUCCESS"
+
+    return None
+
+
+async def oauth_verify_2fa(auth, csrf_token, twofa_code):
+    """
+    Step 3b: Verify 2FA code.
+
+    Args:
+        auth: Auth instance
+        csrf_token: CSRF token
+        twofa_code: 2FA code from user
+
+    Returns:
+        bool: True if verification successful
+
+    """
+    headers = {
+        "User-Agent": OAUTH_USER_AGENT,
+        "Accept": "*/*",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Origin": "https://api.oauth.blink.com",
+        "Referer": OAUTH_SIGNIN_URL,
+    }
+
+    data = {
+        "2fa_code": twofa_code,
+        "csrf-token": csrf_token,
+        "remember_me": "false",
+    }
+
+    response = await auth.session.post(OAUTH_2FA_VERIFY_URL, headers=headers, data=data)
+
+    if response.status == 201:
+        try:
+            result = await response.json()
+            return result.get("status") == "auth-completed"
+        except Exception as error:
+            _LOGGER.error("Failed to parse 2FA response: %s", error)
+
+    return False
+
+
+async def oauth_get_authorization_code(auth):
+    """
+    Step 4: Get authorization code from authorize endpoint.
+
+    Args:
+        auth: Auth instance
+
+    Returns:
+        str: Authorization code or None
+
+    """
+    headers = {
+        "User-Agent": OAUTH_USER_AGENT,
+        "Accept": "*/*",
+        "Referer": OAUTH_SIGNIN_URL,
+    }
+
+    response = await auth.session.get(
+        OAUTH_AUTHORIZE_URL, headers=headers, allow_redirects=False
+    )
+
+    if response.status in [301, 302, 303, 307, 308]:
+        location = response.headers.get("Location", "")
+
+        # Extract code from URL: https://blink.com/.../end?code=XXX&state=YYY
+        parsed = urlparse(location)
+        params = parse_qs(parsed.query)
+
+        if "code" in params:
+            return params["code"][0]
+
+    return None
+
+
+async def oauth_exchange_code_for_token(auth, code, code_verifier, hardware_id):
+    """
+    Step 5: Exchange authorization code for access token.
+
+    Args:
+        auth: Auth instance
+        code: Authorization code
+        code_verifier: PKCE code verifier
+        hardware_id: Device hardware ID
+
+    Returns:
+        dict: Token data or None
+
+    """
+    headers = {
+        "User-Agent": OAUTH_TOKEN_USER_AGENT,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "*/*",
+    }
+
+    data = {
+        "app_brand": "blink",
+        "client_id": OAUTH_V2_CLIENT_ID,
+        "code": code,
+        "code_verifier": code_verifier,
+        "grant_type": "authorization_code",
+        "hardware_id": hardware_id,
+        "redirect_uri": OAUTH_REDIRECT_URI,
+        "scope": OAUTH_SCOPE,
+    }
+
+    response = await auth.session.post(
+        OAUTH_TOKEN_URL, headers=headers, data=urlencode(data)
+    )
+
+    if response.status == 200:
+        return await response.json()
+
+    return None
+
+
+async def oauth_refresh_token(auth, refresh_token, hardware_id):
+    """
+    Refresh access token using refresh_token.
+
+    Args:
+        auth: Auth instance
+        refresh_token: Refresh token
+        hardware_id: Device hardware ID
+
+    Returns:
+        dict: Token data or None
+
+    """
+    headers = {
+        "User-Agent": OAUTH_TOKEN_USER_AGENT,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "*/*",
+    }
+
+    data = {
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+        "client_id": OAUTH_V2_CLIENT_ID,
+        "scope": OAUTH_SCOPE,
+        "hardware_id": hardware_id,
+    }
+
+    response = await auth.session.post(
+        OAUTH_TOKEN_URL, headers=headers, data=urlencode(data)
+    )
+
+    if response.status == 200:
+        return await response.json()
+
+    return None

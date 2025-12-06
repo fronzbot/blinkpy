@@ -8,10 +8,12 @@ Blink system is set up.
 
 from unittest import mock
 from unittest import IsolatedAsyncioTestCase
+import pytest
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
+from blinkpy.livestream import BlinkLiveStream
 import tests.mock_responses as mresp
 
 CONFIG = {
@@ -129,6 +131,36 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.assertEqual(await self.camera.get_liveview(), "rtsps://foo.bar")
         self.assertEqual(await mini_camera.get_liveview(), "rtsps://foo.bar")
         self.assertEqual(await doorbell_camera.get_liveview(), "rtsps://foo.bar")
+        with pytest.raises(NotImplementedError):
+            await self.camera.init_livestream()
+        with pytest.raises(NotImplementedError):
+            await mini_camera.init_livestream()
+        with pytest.raises(NotImplementedError):
+            await doorbell_camera.init_livestream()
+
+    async def test_camera_livestream(self, mock_resp):
+        """Test that camera livestream returns correct object."""
+        mock_resp.return_value = {
+            "command_id": 1234567890,
+            "join_available": True,
+            "join_state": "available",
+            "server": "immis://1.2.3.4:443/ABCDEFGHIJKMLNOP__IMDS_1234567812345678?client_id=123",
+            "duration": 300,
+            "extended_duration": 5400,
+            "continue_interval": 300,
+            "continue_warning": 0,
+            "polling_interval": 15,
+            "submit_logs": True,
+            "new_command": True,
+            "media_id": None,
+            "options": {"poor_connection": False},
+            "liveview_token": "abcdefghijklmnopqrstuv",
+        }
+        mini_camera = BlinkCameraMini(self.blink.sync["test"])
+        doorbell_camera = BlinkDoorbell(self.blink.sync["test"])
+        self.assertIsInstance(await self.camera.init_livestream(), BlinkLiveStream)
+        self.assertIsInstance(await mini_camera.init_livestream(), BlinkLiveStream)
+        self.assertIsInstance(await doorbell_camera.init_livestream(), BlinkLiveStream)
 
     async def test_different_thumb_api(self, mock_resp):
         """Test that the correct url is created with new api."""

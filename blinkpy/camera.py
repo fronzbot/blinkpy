@@ -13,6 +13,7 @@ from requests.compat import urljoin
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA
 from blinkpy.helpers.util import to_alphanumeric
+from blinkpy.livestream import BlinkLiveStream
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -122,10 +123,16 @@ class BlinkCamera:
         """Set camera arm status."""
         if value:
             return await api.request_motion_detection_enable(
-                self.sync.blink, self.network_id, self.camera_id
+                self.sync.blink,
+                self.network_id,
+                self.camera_id,
+                camera_type=self.camera_type,
             )
         return await api.request_motion_detection_disable(
-            self.sync.blink, self.network_id, self.camera_id
+            self.sync.blink,
+            self.network_id,
+            self.camera_id,
+            camera_type=self.camera_type,
         )
 
     @property
@@ -173,7 +180,10 @@ class BlinkCamera:
     async def record(self):
         """Initiate clip recording."""
         return await api.request_new_video(
-            self.sync.blink, self.network_id, self.camera_id
+            self.sync.blink,
+            self.network_id,
+            self.camera_id,
+            camera_type=self.camera_type,
         )
 
     async def get_media(self, media_type="image") -> aiohttp.ClientRequest:
@@ -215,7 +225,10 @@ class BlinkCamera:
     async def snap_picture(self):
         """Take a picture with camera to create a new thumbnail."""
         ret_val = await api.request_new_image(
-            self.sync.blink, self.network_id, self.camera_id
+            self.sync.blink,
+            self.network_id,
+            self.camera_id,
+            camera_type=self.camera_type,
         )
         response = await self.get_media()
         if response and response.status == 200:
@@ -229,13 +242,7 @@ class BlinkCamera:
             "Method is deprecated as of v0.16.0 and will be removed in "
             "a future version. Please use the BlinkCamera.arm property instead."
         )
-        if enable:
-            return await api.request_motion_detection_enable(
-                self.sync.blink, self.network_id, self.camera_id
-            )
-        return await api.request_motion_detection_disable(
-            self.sync.blink, self.network_id, self.camera_id
-        )
+        return await self.async_arm(enable)
 
     async def update(self, config, force_cache=False, expire_clips=True, **kwargs):
         """Update camera info."""
@@ -409,9 +416,24 @@ class BlinkCamera:
     async def get_liveview(self):
         """Get liveview rtsps link."""
         response = await api.request_camera_liveview(
-            self.sync.blink, self.sync.network_id, self.camera_id
+            self.sync.blink,
+            self.sync.network_id,
+            self.camera_id,
+            camera_type=self.camera_type,
         )
         return response["server"]
+
+    async def init_livestream(self):
+        """Initialize livestream."""
+        response = await api.request_camera_liveview(
+            self.sync.blink,
+            self.sync.network_id,
+            self.camera_id,
+            camera_type=self.camera_type,
+        )
+        if not response["server"].startswith("immis://"):
+            raise NotImplementedError("Unsupported: {}".format(response["server"]))
+        return BlinkLiveStream(self, response)
 
     async def image_to_file(self, path):
         """
@@ -504,57 +526,8 @@ class BlinkCameraMini(BlinkCamera):
         """Return camera arm status."""
         return self.sync.arm
 
-    async def async_arm(self, value):
-        """Set camera arm status."""
-        url = (
-            f"{self.sync.urls.base_url}/api/v1/accounts/"
-            f"{self.sync.blink.account_id}/networks/"
-            f"{self.network_id}/owls/{self.camera_id}/config"
-        )
-        data = dumps({"enabled": value})
-        response = await api.http_post(self.sync.blink, url, data=data)
-        await api.wait_for_command(self.sync.blink, response)
-        return response
-
-    async def record(self):
-        """Initiate clip recording for a blink mini camera."""
-        url = (
-            f"{self.sync.urls.base_url}/api/v1/accounts/"
-            f"{self.sync.blink.account_id}/networks/"
-            f"{self.network_id}/owls/{self.camera_id}/clip"
-        )
-        response = await api.http_post(self.sync.blink, url)
-        await api.wait_for_command(self.sync.blink, response)
-        return response
-
-    async def snap_picture(self):
-        """Snap picture for a blink mini camera."""
-        url = (
-            f"{self.sync.urls.base_url}/api/v1/accounts/"
-            f"{self.sync.blink.account_id}/networks/"
-            f"{self.network_id}/owls/{self.camera_id}/thumbnail"
-        )
-        response = await api.http_post(self.sync.blink, url)
-        await api.wait_for_command(self.sync.blink, response)
-        return response
-
     async def get_sensor_info(self):
         """Get sensor info for blink mini camera."""
-
-    async def get_liveview(self):
-        """Get liveview link."""
-        url = (
-            f"{self.sync.urls.base_url}/api/v1/accounts/"
-            f"{self.sync.blink.account_id}/networks/"
-            f"{self.network_id}/owls/{self.camera_id}/liveview"
-        )
-        response = await api.http_post(self.sync.blink, url)
-        await api.wait_for_command(self.sync.blink, response)
-        server = response["server"]
-        server_split = server.split(":")
-        server_split[0] = "rtsps"
-        link = ":".join(server_split)
-        return link
 
 
 class BlinkDoorbell(BlinkCamera):
@@ -565,63 +538,5 @@ class BlinkDoorbell(BlinkCamera):
         super().__init__(sync)
         self.camera_type = "doorbell"
 
-    @property
-    def arm(self):
-        """Return camera arm status."""
-        return self.motion_enabled
-
-    async def async_arm(self, value):
-        """Set camera arm status."""
-        url = (
-            f"{self.sync.urls.base_url}/api/v1/accounts/"
-            f"{self.sync.blink.account_id}/networks/"
-            f"{self.sync.network_id}/doorbells/{self.camera_id}"
-        )
-        if value:
-            url = f"{url}/enable"
-        else:
-            url = f"{url}/disable"
-
-        response = await api.http_post(self.sync.blink, url)
-        await api.wait_for_command(self.sync.blink, response)
-        return response
-
-    async def record(self):
-        """Initiate clip recording for a blink doorbell camera."""
-        url = (
-            f"{self.sync.urls.base_url}/api/v1/accounts/"
-            f"{self.sync.blink.account_id}/networks/"
-            f"{self.sync.network_id}/doorbells/{self.camera_id}/clip"
-        )
-
-        response = await api.http_post(self.sync.blink, url)
-        await api.wait_for_command(self.sync.blink, response)
-        return response
-
-    async def snap_picture(self):
-        """Snap picture for a blink doorbell camera."""
-        url = (
-            f"{self.sync.urls.base_url}/api/v1/accounts/"
-            f"{self.sync.blink.account_id}/networks/"
-            f"{self.sync.network_id}/doorbells/{self.camera_id}/thumbnail"
-        )
-
-        response = await api.http_post(self.sync.blink, url)
-        await api.wait_for_command(self.sync.blink, response)
-        return response
-
     async def get_sensor_info(self):
         """Get sensor info for blink doorbell camera."""
-
-    async def get_liveview(self):
-        """Get liveview link."""
-        url = (
-            f"{self.sync.urls.base_url}/api/v1/accounts/"
-            f"{self.sync.blink.account_id}/networks/"
-            f"{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
-        )
-        response = await api.http_post(self.sync.blink, url)
-        await api.wait_for_command(self.sync.blink, response)
-        server = response["server"]
-        link = server.replace("immis://", "rtsps://")
-        return link

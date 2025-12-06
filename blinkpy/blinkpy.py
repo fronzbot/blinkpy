@@ -97,8 +97,30 @@ class Blink:
 
     async def send_2fa_code(self, code):
         """Send the two-factor authentication code to complete login."""
-        self.auth.data["2fa_code"] = code
-        await self.start()
+        # Complete OAuth v2 2FA flow
+        success = await self.auth.complete_2fa_login(code)
+        if not success:
+            _LOGGER.error("OAuth v2 2FA completion failed.")
+            return False
+
+        # Continue setup flow - same steps as start() after auth.startup()
+        try:
+            self.setup_urls()
+            await self.get_homescreen()
+        except BlinkSetupError:
+            _LOGGER.error("Cannot setup Blink platform after 2FA.")
+            self.available = False
+            return False
+
+        if not self.last_refresh:
+            self.last_refresh = int(time.time() - self.refresh_rate * 1.05)
+            _LOGGER.debug(
+                "Initialized last_refresh to %s == %s",
+                self.last_refresh,
+                datetime.datetime.fromtimestamp(self.last_refresh),
+            )
+
+        return await self.setup_post_verify()
 
     @util.Throttle(seconds=MIN_THROTTLE_TIME)
     async def refresh(self, force=False, force_cache=False):

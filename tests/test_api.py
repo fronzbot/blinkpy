@@ -11,6 +11,7 @@ COMMAND_RESPONSE = {"network_id": "12345", "id": "54321"}
 COMMAND_COMPLETE = {"complete": True, "status_code": 908}
 COMMAND_COMPLETE_BAD = {"complete": True, "status_code": 999}
 COMMAND_NOT_COMPLETE = {"complete": False, "status_code": 908}
+COMMAND_DONE = {"message": "Command 1234567890 set to :done", "code": 902}
 
 
 @mock.patch("blinkpy.auth.Auth.query")
@@ -61,6 +62,13 @@ class TestAPI(IsolatedAsyncioTestCase):
             await api.request_command_status(self.blink, "network", "command"),
             {"command": "done"},
         )
+
+    async def test_request_command_done(self, mock_resp):
+        """Test command_done."""
+        mock_resp.return_value = mresp.MockResponse(COMMAND_DONE, 200)
+        response = await api.request_command_done(self.blink, "network", "1234567890")
+        self.assertEqual(response.status, 200)
+        self.assertEqual(await response.json(), COMMAND_DONE)
 
     async def test_request_new_image(self, mock_resp):
         """Test api request new image."""
