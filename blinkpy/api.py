@@ -698,13 +698,7 @@ async def request_camera_action(
     data = None
     if "data_template" in action_config:
         # Dynamic payload with runtime value substitution
-        data_dict = {}
-        for key, value in action_config["data_template"].items():
-            if callable(value):
-                data_dict[key] = value(kwargs)
-            else:
-                data_dict[key] = value
-        data = dumps(data_dict)
+        data = dumps(action_config["data_template"](kwargs))
     elif "data" in action_config:
         # Static payload
         data = dumps(action_config["data"])
