@@ -10,6 +10,7 @@ from asyncio import sleep
 from calendar import timegm
 from functools import wraps
 from getpass import getpass
+from html.parser import HTMLParser
 import aiofiles
 import dateutil.parser
 from blinkpy.helpers import constants as const
@@ -185,3 +186,21 @@ class Throttle:
             return await method(*args, **kwargs)
 
         return wrapper
+
+class BlinkOAuthCSRFParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.reading_script_tag = False
+        self.csrf_token = None
+        
+    def handle_data(self, data):
+        if self.reading_script_tag:
+            oauth_data = json.loads(data)
+            csrf_token = oauth_data.get("csrf-token")
+            if csrf_token:
+                self.csrf_token = csrf_token
+            self.reading_script_tag = False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]):
+        if tag == "script" and ("id", "oauth-args") in attrs and ('type', 'application/json') in attrs:
+            self.reading_script_tag = True
