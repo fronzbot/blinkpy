@@ -188,12 +188,16 @@ class Throttle:
         return wrapper
 
 class BlinkOAuthCSRFParser(HTMLParser):
+    """Class for parsing the csrf-token from the blink OUTH HTML."""
+
     def __init__(self):
+        """Initialize BlinkOAuthCSRFParser class."""
         super().__init__()
         self.reading_script_tag = False
         self.csrf_token = None
         
     def handle_data(self, data):
+        """Handle data in-between opening and closing tags."""
         if self.reading_script_tag:
             oauth_data = json.loads(data)
             csrf_token = oauth_data.get("csrf-token")
@@ -202,5 +206,6 @@ class BlinkOAuthCSRFParser(HTMLParser):
             self.reading_script_tag = False
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]):
+        """Handle start tags."""
         if tag == "script" and ("id", "oauth-args") in attrs and ('type', 'application/json') in attrs:
             self.reading_script_tag = True
