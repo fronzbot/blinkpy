@@ -195,7 +195,7 @@ class BlinkOAuthCSRFParser(HTMLParser):
         super().__init__()
         self.reading_script_tag = False
         self.csrf_token = None
-        
+
     def handle_data(self, data):
         """Handle data in-between opening and closing tags."""
         if self.reading_script_tag:
@@ -207,5 +207,7 @@ class BlinkOAuthCSRFParser(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]):
         """Handle start tags."""
-        if tag == "script" and ("id", "oauth-args") in attrs and ('type', 'application/json') in attrs:
+        id_tag = ("id", "oauth-args")
+        type_tag = ("type", "application/json")
+        if tag == "script" and id_tag in attrs and type_tag in attrs:
             self.reading_script_tag = True
