@@ -2,16 +2,15 @@
 
 import logging
 import string
-import json
 from json import dumps
 from asyncio import sleep
 from urllib.parse import urlencode, urlparse, parse_qs
-from bs4 import BeautifulSoup
 from blinkpy.helpers.util import (
     get_time,
     Throttle,
     local_storage_clip_url_template,
 )
+from blinkpy.helpers.oauth_parser import OAuthArgsParser
 from blinkpy.helpers.constants import (
     TIMEOUT,
     DEFAULT_USER_AGENT,
@@ -812,18 +811,10 @@ async def oauth_get_signin_page(auth):
 
     # Extract CSRF token from oauth-args script tag
     try:
-        # Parse HTML
-        soup = BeautifulSoup(html, "html.parser")
-
-        # Find oauth-args script
-        oauth_script = soup.find(
-            "script", {"id": "oauth-args", "type": "application/json"}
-        )
-        if oauth_script and oauth_script.string:
-            oauth_data = json.loads(oauth_script.string)
-            csrf_token = oauth_data.get("csrf-token")
-            if csrf_token:
-                return csrf_token
+        parser = OAuthArgsParser()
+        parser.feed(html)
+        if parser.csrf_token:
+            return parser.csrf_token
     except Exception as error:
         _LOGGER.error("Failed to extract CSRF token: %s", error)
 
