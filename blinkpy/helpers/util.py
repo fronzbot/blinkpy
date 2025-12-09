@@ -187,6 +187,7 @@ class Throttle:
 
         return wrapper
 
+
 class BlinkOAuthCSRFParser(HTMLParser):
     """Class for parsing the csrf-token from the blink OUTH HTML."""
 
