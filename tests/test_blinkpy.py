@@ -82,7 +82,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         self.assertEqual(self.blink.last_refresh, now)
 
     async def test_not_available_refresh(self):
-        """Check that setup_post_verify executes on refresh when not avialable."""
+        """Check that setup_post_verify executes on refresh when not available."""
         self.blink.available = False
         with (
             mock.patch(
@@ -497,7 +497,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         mock_setup_post_verify,
         mock_homescreen,
     ):
-        """Test blink_start funcion."""
+        """Test blink_start function."""
 
         self.assertTrue(await self.blink.start())
 

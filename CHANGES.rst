@@ -23,7 +23,7 @@ See release notes: (`0.22.7 <https://github.com/fronzbot/blinkpy/releases/tag/v0
 
 - Test for None type in poll_local_storage_manifest (`@mkmer #859 <https://github.com/fronzbot/blinkpy/pull/859>`__)
 - Update image after snap by (`@mkmer #861 <https://github.com/fronzbot/blinkpy/pull/861>`__)
-- fix missing ':' before port number in rtsps adress (`@Rosi2143 #863 <https://github.com/fronzbot/blinkpy/pull/863>`__)
+- fix missing ':' before port number in rtsps address (`@Rosi2143 #863 <https://github.com/fronzbot/blinkpy/pull/863>`__)
 - New temperature location (`@mkmer #867 <https://github.com/fronzbot/blinkpy/pull/867>`__)
 
 **Other changes**
@@ -366,12 +366,12 @@ Same as 0.22.1 (pypi upload issue)
 **New Features:**
 
 - Add is_errored property to Auth class (`@fronzbot #275 <https://github.com/fronzbot/blinkpy/pull/275>`__)
-- Add new endpoint to get user infor (`@fronzbot #280 <https://github.com/fronzbot/blinkpy/pull/280>`__)
+- Add new endpoint to get user info (`@fronzbot #280 <https://github.com/fronzbot/blinkpy/pull/280>`__)
 - Add get_liveview command to camera module (`@fronzbot #289 <https://github.com/fronzbot/blinkpy/pull/289>`__)
 - Add blink Mini Camera support (`@fronzbot #290 <https://github.com/fronzbot/blinkpy/pull/290>`__)
 - Add option to skip homescreen check (`@fronzbot #305 <https://github.com/fronzbot/blinkpy/pull/305>`__)
 - Add different timeout for video and image retrieval (`@fronzbot #323 <https://github.com/fronzbot/blinkpy/pull/323>`__)
-- Modifiy session to use HTTPAdapter and handle retries (`@fronzbot #324 <https://github.com/fronzbot/blinkpy/pull/324>`__)
+- Modify session to use HTTPAdapter and handle retries (`@fronzbot #324 <https://github.com/fronzbot/blinkpy/pull/324>`__)
 - Add retry option overrides (`@fronzbot #339 <https://github.com/fronzbot/blinkpy/pull/339>`__)
 
 **All changes:**
@@ -529,7 +529,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Moved all API calls to own module for easier maintainability
 - Added network ids to sync module and cameras to allow for multi-network use
-- Removed dependency on video existance prior to camera setup (fixes `#93 <https://github.com/fronzbot/blinkpy/issues/#93>`__)
+- Removed dependency on video existence prior to camera setup (fixes `#93 <https://github.com/fronzbot/blinkpy/issues/#93>`__)
 - Camera wifi_strength now reported in wifi "bars" rather than dBm due to API endpoint change
 - Use homescreen thumbnail as fallback in case it's not in the camera endpoint
 - Removed "armed" and "status" attributes from camera (status of camera only reported by "motion_enabled" now)
@@ -569,7 +569,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 - Added support for battery voltage level (fixes `#64 <https://github.com/fronzbot/blinkpy/issues/64>`__)
 - Added motion detection per camera
 - Added fully accessible camera configuration dict
-- Added celcius property to camera (fixes `#60 <https://github.com/fronzbot/blinkpy/issues/60>`__)
+- Added celsius property to camera (fixes `#60 <https://github.com/fronzbot/blinkpy/issues/60>`__)
 
 0.7.1 (2018-05-09)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -591,7 +591,7 @@ Wifi status reported in dBm again, instead of bars (which is great).  Also, the 
 
 0.6.0 (2017-05-12)
 ~~~~~~~~~~~~~~~~~~
-- Removed redundent properties that only called hidden variables
+- Removed redundant properties that only called hidden variables
 - Revised request wrapper function to be more intelligent
 - Added tests to ensure exceptions are caught and handled (100% coverage!)
 - Added auto-reauthorization (token refresh) when a request fails due to an expired token (`@tySwift93 <https://github.com/fronzbot/blinkpy/pull/24>`__)

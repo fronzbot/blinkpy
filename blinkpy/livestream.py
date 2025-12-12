@@ -29,7 +29,7 @@ class BlinkLiveStream:
         """Get authentication header."""
         auth_header = bytearray()
 
-        # Magic numeber
+        # Magic number
         # fmt: off
         magic_number = [
             0x00, 0x00, 0x00, 0x28, # Magic number (4 bytes)

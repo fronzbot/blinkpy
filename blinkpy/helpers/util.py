@@ -39,7 +39,7 @@ async def json_save(data, file_name):
 
 
 def json_dumps(json_in, indent=2):
-    """Return a well formated json string."""
+    """Return a well formatted json string."""
     return json.dumps(json_in, indent=indent)
 
 
