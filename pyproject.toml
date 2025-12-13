@@ -47,7 +47,7 @@ lint.select = [
     "E",  # pydocstyle
     "F",  # pyflakes/autoflake
     "G",  # flake8-logging-format
-    "N815",  # Varible {name} in class scope should not be mixedCase
+    "N815",  # Variable {name} in class scope should not be mixedCase
     "PGH004",  # Use specific rule codes when using noqa
     "PLC",  # pylint
     "PLE",  # pylint
