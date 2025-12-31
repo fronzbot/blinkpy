@@ -38,13 +38,14 @@ class BlinkLiveStream:
         auth_header.extend(magic_number)
         # Total packet length: 4 bytes
 
-        # Unknown string field (4-byte length prefix, 16 unknown bytes)
-        # fmt: off
-        unknown_string_field = [
-            0x00, 0x00, 0x00, 0x00, # Length prefix (4 bytes)
-        ] + ([0x00] * 16) # Unknown bytes (16 bytes)
-        # fmt: on
-        auth_header.extend(unknown_string_field)
+        # Device Serial field
+        serial_max_length = 0x10
+        serial = self.camera.serial[:serial_max_length].encode("utf-8")
+        _LOGGER.debug("Serial number: %s", serial)
+        serial_length = len(serial).to_bytes(4, byteorder="big")
+        _LOGGER.debug("Serial length: %s (%d)", serial_length, len(serial_length))
+        auth_header.extend(serial_length)
+        auth_header.extend(serial)
         # Total packet length: 24 bytes
 
         # Client ID field
@@ -55,14 +56,22 @@ class BlinkLiveStream:
         auth_header.extend(client_id_field)
         # Total packet length: 28 bytes
 
-        # Unknown prefix field (2-byte prefix, 4-byte length prefix, 64 unknown bytes)
+        # Static field
         # fmt: off
-        unknown_prefix_field = [
-            0x01, 0x08, # Static prefix (2 bytes)
-            0x00, 0x00, 0x00, 0x00, # Length prefix (4 bytes)
-        ] + ([0x00] * 64) # Unknown bytes (64 bytes)
+        static_field = [
+            0x01, 0x08, # Static value (2 bytes)
+        ]
         # fmt: on
-        auth_header.extend(unknown_prefix_field)
+        auth_header.extend(static_field)
+        # Total packet length: 30 bytes
+
+        # Auth Token field (4-byte length prefix, 64 unknown bytes)
+        # fmt: off
+        token_field_max_length = 0x40
+        token_length = token_field_max_length.to_bytes(4, byteorder="big")
+        _LOGGER.debug("Token length: %s (%d)", token_length, len(token_length))
+        auth_header.extend(token_length)
+        auth_header.extend([0x00] * token_field_max_length)
         # Total packet length: 98 bytes
 
         # Connection ID length field (4-byte length prefix)
