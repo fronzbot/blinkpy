@@ -3,7 +3,7 @@
 
 if [ "$#" -ne 2 ]; then
     echo ""
-    echo "ERROR: Requries Blink username and password as arguments."
+    echo "ERROR: Requires Blink username and password as arguments."
     echo "bash run.sh [username] [password]"
     echo ""
     exit 1
@@ -28,4 +28,3 @@ docker run -it --name ${IMAGE} \
     -e PASSWORD=${PASSWORD} \
     $USER/$IMAGE \
     /bin/bash
-

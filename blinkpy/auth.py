@@ -1,6 +1,7 @@
 """Login handler for blink."""
 
 import time
+import uuid
 import logging
 from aiohttp import (
     ClientSession,
@@ -10,6 +11,7 @@ from aiohttp import (
 )
 from blinkpy import api
 from blinkpy.helpers import util
+from blinkpy.helpers.pkce import generate_pkce_pair
 from blinkpy.helpers.constants import (
     BLINK_URL,
     APP_BUILD,
@@ -67,6 +69,11 @@ class Auth:
         # Callback to notify on token refresh
         self.callback = callback
 
+        # OAuth v2 attributes
+        self.hardware_id = login_data.get("hardware_id")
+        if not self.hardware_id:
+            self.hardware_id = str(uuid.uuid4()).upper()
+
     @property
     def login_attributes(self):
         """Return a dictionary of login attributes."""
@@ -79,6 +86,7 @@ class Auth:
         self.data["client_id"] = self.client_id
         self.data["account_id"] = self.account_id
         self.data["user_id"] = self.user_id
+        self.data["hardware_id"] = self.hardware_id
         return self.data
 
     @property
@@ -176,8 +184,27 @@ class Auth:
     async def startup(self):
         """Initialize tokens for communication."""
         self.validate_login()
-        if None in self.login_attributes.values():
-            await self.refresh_tokens()
+
+        if self.refresh_token and self.hardware_id:
+            _LOGGER.debug("Attempting OAuth v2 token refresh")
+            try:
+                token_data = await api.oauth_refresh_token(
+                    self, self.refresh_token, self.hardware_id
+                )
+                if token_data:
+                    await self._process_token_data(token_data)
+                    _LOGGER.info("OAuth v2 token refresh successful")
+                    return
+            except Exception as error:
+                _LOGGER.debug("OAuth v2 refresh failed: %s", error)
+
+        _LOGGER.debug("Attempting OAuth v2 login flow")
+        success = await self._oauth_login_flow()
+        if success:
+            _LOGGER.info("OAuth v2 login successful")
+            return
+
+        raise LoginError("OAuth v2 login failed")
 
     async def validate_response(self, response: ClientResponse, json_resp):
         """Check for valid response."""
@@ -270,6 +297,136 @@ class Auth:
                 reason,
             )
         return None
+
+    async def _oauth_login_flow(self):
+        """
+        Execute complete OAuth 2.0 login flow with PKCE.
+
+        Returns:
+            bool: True if successful
+
+        """
+        # Step 1: Generate PKCE
+        code_verifier, code_challenge = generate_pkce_pair()
+
+        # Step 2: Authorization request
+        auth_success = await api.oauth_authorize_request(
+            self, self.hardware_id, code_challenge
+        )
+        if not auth_success:
+            _LOGGER.error("OAuth authorization request failed")
+            return False
+
+        # Step 3: Get CSRF token
+        csrf_token = await api.oauth_get_signin_page(self)
+        if not csrf_token:
+            _LOGGER.error("Failed to get CSRF token")
+            return False
+
+        # Step 4: Login
+        email = self.data.get("username")
+        password = self.data.get("password")
+
+        login_result = await api.oauth_signin(self, email, password, csrf_token)
+
+        # Step 4b: Handle 2FA if needed
+        if login_result == "2FA_REQUIRED":
+            # Store CSRF token and verifier for later use
+            self._oauth_csrf_token = csrf_token
+            self._oauth_code_verifier = code_verifier
+            # Raise exception to let the app handle 2FA prompt
+            _LOGGER.info("Two-factor authentication required.")
+            raise BlinkTwoFARequiredError
+        elif login_result != "SUCCESS":
+            _LOGGER.error("Login failed")
+            return False
+
+        # Step 5: Get authorization code
+        code = await api.oauth_get_authorization_code(self)
+        if not code:
+            _LOGGER.error("Failed to get authorization code")
+            return False
+
+        # Step 6: Exchange code for token
+        token_data = await api.oauth_exchange_code_for_token(
+            self, code, code_verifier, self.hardware_id
+        )
+
+        if not token_data:
+            _LOGGER.error("Failed to exchange code for token")
+            return False
+
+        # Process tokens
+        await self._process_token_data(token_data)
+        return True
+
+    async def _process_token_data(self, token_data):
+        """Process token response data."""
+        self.token = token_data.get("access_token")
+        self.refresh_token = token_data.get("refresh_token")
+
+        # Set expiration
+        expires_in = token_data.get("expires_in", 3600)
+        self.expires_in = expires_in
+        self.expiration_date = time.time() + expires_in
+
+        # Get tier info if needed (for account_id, region_id, host)
+        if not self.host or not self.region_id or not self.account_id:
+            try:
+                self.tier_info = await self.get_tier_info()
+                self.extract_tier_info()
+            except Exception as error:
+                _LOGGER.warning("Failed to get tier info: %s", error)
+
+    async def complete_2fa_login(self, twofa_code):
+        """
+        Complete OAuth v2 login after 2FA verification.
+
+        Args:
+            twofa_code: 2FA code from user
+
+        Returns:
+            bool: True if successful
+
+        """
+        # Check if we have stored OAuth state
+        if not hasattr(self, "_oauth_csrf_token") or not hasattr(
+            self, "_oauth_code_verifier"
+        ):
+            _LOGGER.error("No OAuth 2FA state found. Start login flow first.")
+            return False
+
+        csrf_token = self._oauth_csrf_token
+        code_verifier = self._oauth_code_verifier
+
+        # Verify 2FA
+        if not await api.oauth_verify_2fa(self, csrf_token, twofa_code):
+            _LOGGER.error("2FA verification failed")
+            return False
+
+        # Step 5: Get authorization code
+        code = await api.oauth_get_authorization_code(self)
+        if not code:
+            _LOGGER.error("Failed to get authorization code after 2FA")
+            return False
+
+        # Step 6: Exchange code for token
+        token_data = await api.oauth_exchange_code_for_token(
+            self, code, code_verifier, self.hardware_id
+        )
+
+        if not token_data:
+            _LOGGER.error("Failed to exchange code for token after 2FA")
+            return False
+
+        # Process tokens
+        await self._process_token_data(token_data)
+
+        # Clean up temporary state
+        delattr(self, "_oauth_csrf_token")
+        delattr(self, "_oauth_code_verifier")
+
+        return True
 
 
 class TokenRefreshFailed(Exception):

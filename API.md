@@ -3,7 +3,7 @@ Unofficial documentation for the Client API of the Blink Wire-Free HD Home Monit
 
 Copied from https://github.com/MattTW/BlinkMonitorProtocol
 
-I am not affiliated with the company in any way - this documentation is strictly **"AS-IS"**.  My goal was to uncover enough to arm and disarm the system programatically so that I can issue those commands in sync with my home alarm system arm/disarm.  Just some raw notes at this point but should be enough for creating programmatic APIs.    Lots more to be discovered and documented - feel free to contribute!
+I am not affiliated with the company in any way - this documentation is strictly **"AS-IS"**.  My goal was to uncover enough to arm and disarm the system programmatically so that I can issue those commands in sync with my home alarm system arm/disarm.  Just some raw notes at this point but should be enough for creating programmatic APIs.    Lots more to be discovered and documented - feel free to contribute!
 
 The Client API is a straightforward REST API using JSON and HTTPS.
 
@@ -121,7 +121,7 @@ Get events for a given network (sync module) -- Need network ID from home
 >curl -H "Host: prod.immedia-semi.com" -H "TOKEN_AUTH: *authtoken from login*" --compressed https://rest.prod.immedia-semi.com/events/network/*network__id*
 
 **Response**
-A json list of evets incluing URL's.   Replace the "mp4" with "jpg" extension to get the thumbnail of each clip
+A json list of evets including URL's.   Replace the "mp4" with "jpg" extension to get the thumbnail of each clip
 
 
 **Request**
