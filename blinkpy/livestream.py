@@ -81,13 +81,13 @@ class BlinkLiveStream:
         # Connection ID field (4-byte length prefix, 16 connection ID bytes)
         conn_max_length = 0x10
         conn_id = self.target.path.split("/")[-1].split("__")[0]
-        _LOGGER.debug("Connection ID: %s", conn_id)
+        _LOGGER.debug("Conn ID: %s", conn_id)
         conn_id_field = conn_id.encode("utf-8")[:conn_max_length]
         # Ensure it is padded to be exactly 16 bytes long
         conn_id_field = conn_id_field.ljust(conn_max_length, b"\x00")
-        _LOGGER.debug("Connection ID field: %s (%d)", conn_id_field, len(conn_id_field))
+        _LOGGER.debug("Conn ID field: %s (%d)", conn_id_field, len(conn_id_field))
         conn_id_length = len(conn_id_field).to_bytes(4, byteorder="big")
-        _LOGGER.debug("Connection ID length: %s (%d)", conn_id_length, len(conn_id_length))
+        _LOGGER.debug("Conn ID length: %s (%d)", conn_id_length, len(conn_id_length))
         auth_header.extend(conn_id_length)
         auth_header.extend(conn_id_field)
         # Total packet length: 118 bytes
