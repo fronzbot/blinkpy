@@ -29,7 +29,7 @@ class BlinkLiveStream:
         """Get authentication header."""
         auth_header = bytearray()
 
-        # Magic number
+        # Magic number (4 bytes)
         # fmt: off
         magic_number = [
             0x00, 0x00, 0x00, 0x28, # Magic number (4 bytes)
@@ -38,17 +38,21 @@ class BlinkLiveStream:
         auth_header.extend(magic_number)
         # Total packet length: 4 bytes
 
-        # Device Serial field
+        # Device Serial field (4-byte length prefix, 16 serial bytes)
         serial_max_length = 0x10
-        serial = self.camera.serial[:serial_max_length].encode("utf-8")
-        _LOGGER.debug("Serial number: %s", serial)
-        serial_length = len(serial).to_bytes(4, byteorder="big")
+        serial = self.camera.serial
+        _LOGGER.debug("Serial: %s", serial)
+        serial_field = serial.encode("utf-8")[:serial_max_length]
+        # Ensure it is padded to be exactly 16 bytes long
+        serial_field = serial_field.ljust(serial_max_length, b"\x00")
+        _LOGGER.debug("Serial field: %s", serial_field)
+        serial_length = len(serial_field).to_bytes(4, byteorder="big")
         _LOGGER.debug("Serial length: %s (%d)", serial_length, len(serial_length))
         auth_header.extend(serial_length)
-        auth_header.extend(serial)
+        auth_header.extend(serial_field)
         # Total packet length: 24 bytes
 
-        # Client ID field
+        # Client ID field (4 bytes)
         client_id = urllib.parse.parse_qs(self.target.query).get("client_id", [0])[0]
         _LOGGER.debug("Client ID: %s", client_id)
         client_id_field = int(client_id).to_bytes(4, byteorder="big")
@@ -56,7 +60,7 @@ class BlinkLiveStream:
         auth_header.extend(client_id_field)
         # Total packet length: 28 bytes
 
-        # Static field
+        # Static field (2 bytes)
         # fmt: off
         static_field = [
             0x01, 0x08, # Static value (2 bytes)
@@ -65,7 +69,7 @@ class BlinkLiveStream:
         auth_header.extend(static_field)
         # Total packet length: 30 bytes
 
-        # Auth Token field (4-byte length prefix, 64 unknown bytes)
+        # Auth Token field (4-byte length prefix, 64 null bytes)
         # fmt: off
         token_field_max_length = 0x40
         token_length = token_field_max_length.to_bytes(4, byteorder="big")
@@ -74,23 +78,17 @@ class BlinkLiveStream:
         auth_header.extend([0x00] * token_field_max_length)
         # Total packet length: 98 bytes
 
-        # Connection ID length field (4-byte length prefix)
-        # fmt: off
-        conn_id_length_prefix = [
-            0x00, 0x00, 0x00, 0x10,
-        ]
-        # fmt: on
-        auth_header.extend(conn_id_length_prefix)
-        # Total packet length: 102 bytes
-
-        # Connection ID field (UTF-8-encoded, 16 bytes)
+        # Connection ID field (4-byte length prefix, 16 connection ID bytes)
+        conn_max_length = 0x10
         conn_id = self.target.path.split("/")[-1].split("__")[0]
         _LOGGER.debug("Connection ID: %s", conn_id)
-        conn_id_field = conn_id.encode("utf-8")[:16]
-        # Ensure it is exactly 16 bytes long
-        if len(conn_id_field) < 16:
-            conn_id_field += b"\x00" * (16 - len(conn_id_field))
+        conn_id_field = conn_id.encode("utf-8")[:conn_max_length]
+        # Ensure it is padded to be exactly 16 bytes long
+        conn_id_field = conn_id_field.ljust(conn_max_length, b"\x00")
         _LOGGER.debug("Connection ID field: %s (%d)", conn_id_field, len(conn_id_field))
+        conn_id_length = len(conn_id_field).to_bytes(4, byteorder="big")
+        _LOGGER.debug("Connection ID length: %s (%d)", conn_id_length, len(conn_id_length))
+        auth_header.extend(conn_id_length)
         auth_header.extend(conn_id_field)
         # Total packet length: 118 bytes
 
