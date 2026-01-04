@@ -27,6 +27,7 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         self.camera.name = "test_camera"
         self.camera.camera_id = "5678"
         self.camera.network_id = "1234"
+        self.camera.serial = "PONLMKJIHGFED"
         self.blink.sync["test"].cameras["test_camera"] = self.camera
 
         # Mock response for livestream initialization
@@ -34,7 +35,7 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
             "command_id": 987654321,
             "join_available": True,
             "join_state": "available",
-            "server": "immis://1.2.3.4:443/ABCDEFGHIJKMLNOP__IMDS_1234567812345678?client_id=123456",
+            "server": "immis://1.2.3.4:443/ABCDEFGHIJKML__IMDS_1234567812345678?client_id=123456",
             "duration": 300,
             "extended_duration": 5400,
             "continue_interval": 300,
@@ -92,16 +93,24 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         # Check magic number at start (4 bytes: 0x00, 0x00, 0x00, 0x28)
         self.assertEqual(auth_header[0:4], bytearray([0x00, 0x00, 0x00, 0x28]))
 
-        # Check client ID field at position 24-28
+        # Check camera serial length field at position 4-7
+        expected_serial_length = (16).to_bytes(4, byteorder="big")
+        self.assertEqual(auth_header[4:8], expected_serial_length)
+
+        # Check camera serial at position 8-23
+        expected_serial = b"PONLMKJIHGFED\x00\x00\x00"
+        self.assertEqual(auth_header[8:24], expected_serial)
+
+        # Check client ID field at position 24-27
         expected_client_id = (123456).to_bytes(4, byteorder="big")
         self.assertEqual(auth_header[24:28], expected_client_id)
 
-        # Check connection ID length field at position 98-102
+        # Check connection ID length field at position 98-101
         expected_connection_id_length = (16).to_bytes(4, byteorder="big")
         self.assertEqual(auth_header[98:102], expected_connection_id_length)
 
-        # Check connection ID at position 102-118
-        expected_connection_id = b"ABCDEFGHIJKMLNOP"
+        # Check connection ID at position 102-117
+        expected_connection_id = b"ABCDEFGHIJKML\x00\x00\x00"
         self.assertEqual(auth_header[102:118], expected_connection_id)
 
         # Check static trailer at end (4 bytes: 0x00, 0x00, 0x00, 0x01)
