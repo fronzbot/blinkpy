@@ -28,6 +28,9 @@ class BlinkLiveStream:
     def get_auth_header(self):
         """Get authentication header."""
         auth_header = bytearray()
+        serial_max_length = 16
+        token_field_max_length = 64
+        conn_max_length = 16
 
         # Magic number (4 bytes)
         # fmt: off
@@ -39,7 +42,6 @@ class BlinkLiveStream:
         # Total packet length: 4 bytes
 
         # Device Serial field (4-byte length prefix, 16 serial bytes)
-        serial_max_length = 0x10
         serial = self.camera.serial
         _LOGGER.debug("Serial: %s", serial)
         serial_field = serial.encode("utf-8")[:serial_max_length]
@@ -71,7 +73,6 @@ class BlinkLiveStream:
 
         # Auth Token field (4-byte length prefix, 64 null bytes)
         # fmt: off
-        token_field_max_length = 0x40
         token_length = token_field_max_length.to_bytes(4, byteorder="big")
         _LOGGER.debug("Token length: %s (%d)", token_length, len(token_length))
         auth_header.extend(token_length)
@@ -79,7 +80,6 @@ class BlinkLiveStream:
         # Total packet length: 98 bytes
 
         # Connection ID field (4-byte length prefix, 16 connection ID bytes)
-        conn_max_length = 0x10
         conn_id = self.target.path.split("/")[-1].split("__")[0]
         _LOGGER.debug("Conn ID: %s", conn_id)
         conn_id_field = conn_id.encode("utf-8")[:conn_max_length]
