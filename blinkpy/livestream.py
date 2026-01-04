@@ -25,12 +25,23 @@ class BlinkLiveStream:
         self.target_reader = None
         self.target_writer = None
 
+    def add_auth_header_string_field(self, auth_header, field_string, max_length):
+        """Add string field to authentication header."""
+        _LOGGER.debug("Field string: %s", field_string)
+        field_bytes = field_string.encode("utf-8")[:max_length]
+        field_bytes = field_bytes.ljust(max_length, b"\x00")
+        _LOGGER.debug("Field bytes: %s", field_bytes)
+        field_length = len(field_bytes).to_bytes(4, byteorder="big")
+        _LOGGER.debug("Field length: %s (%d)", field_length, len(field_length))
+        auth_header.extend(field_length)
+        auth_header.extend(field_bytes)
+
     def get_auth_header(self):
         """Get authentication header."""
         auth_header = bytearray()
         serial_max_length = 16
         token_field_max_length = 64
-        conn_max_length = 16
+        conn_id_max_length = 16
 
         # Magic number (4 bytes)
         # fmt: off
@@ -43,15 +54,7 @@ class BlinkLiveStream:
 
         # Device Serial field (4-byte length prefix, 16 serial bytes)
         serial = self.camera.serial
-        _LOGGER.debug("Serial: %s", serial)
-        serial_field = serial.encode("utf-8")[:serial_max_length]
-        # Ensure it is padded to be exactly 16 bytes long
-        serial_field = serial_field.ljust(serial_max_length, b"\x00")
-        _LOGGER.debug("Serial field: %s", serial_field)
-        serial_length = len(serial_field).to_bytes(4, byteorder="big")
-        _LOGGER.debug("Serial length: %s (%d)", serial_length, len(serial_length))
-        auth_header.extend(serial_length)
-        auth_header.extend(serial_field)
+        self.add_auth_header_string_field(auth_header, serial, serial_max_length)
         # Total packet length: 24 bytes
 
         # Client ID field (4 bytes)
@@ -71,25 +74,17 @@ class BlinkLiveStream:
         auth_header.extend(static_field)
         # Total packet length: 30 bytes
 
-        # Auth Token field (4-byte length prefix, 64 null bytes)
+        # Auth Token field (4-byte length prefix, 64 null bytes for now)
         # fmt: off
         token_length = token_field_max_length.to_bytes(4, byteorder="big")
-        _LOGGER.debug("Token length: %s (%d)", token_length, len(token_length))
+        _LOGGER.debug("Null token length: %s (%d)", token_length, len(token_length))
         auth_header.extend(token_length)
         auth_header.extend([0x00] * token_field_max_length)
         # Total packet length: 98 bytes
 
         # Connection ID field (4-byte length prefix, 16 connection ID bytes)
         conn_id = self.target.path.split("/")[-1].split("__")[0]
-        _LOGGER.debug("Conn ID: %s", conn_id)
-        conn_id_field = conn_id.encode("utf-8")[:conn_max_length]
-        # Ensure it is padded to be exactly 16 bytes long
-        conn_id_field = conn_id_field.ljust(conn_max_length, b"\x00")
-        _LOGGER.debug("Conn ID field: %s (%d)", conn_id_field, len(conn_id_field))
-        conn_id_length = len(conn_id_field).to_bytes(4, byteorder="big")
-        _LOGGER.debug("Conn ID length: %s (%d)", conn_id_length, len(conn_id_length))
-        auth_header.extend(conn_id_length)
-        auth_header.extend(conn_id_field)
+        self.add_auth_header_string_field(auth_header, conn_id, conn_id_max_length)
         # Total packet length: 118 bytes
 
         # Trailer (static 4-byte trailer)
