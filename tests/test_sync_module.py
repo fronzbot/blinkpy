@@ -60,7 +60,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.mock_start = None
 
     def test_bad_status(self, mock_resp) -> None:
-        """Check that we mark module unavaiable on bad status."""
+        """Check that we mark module unavailable on bad status."""
         self.blink.sync["test"].status = None
         self.blink.sync["test"].available = True
         self.assertFalse(self.blink.sync["test"].online)
@@ -72,7 +72,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertTrue(await self.blink.sync["test"].async_arm(False))
 
     def test_bad_arm(self, mock_resp) -> None:
-        """Check that we mark module unavaiable if bad arm status."""
+        """Check that we mark module unavailable if bad arm status."""
         self.blink.sync["test"].network_info = None
         self.blink.sync["test"].available = True
         self.assertEqual(self.blink.sync["test"].arm, None)
@@ -92,7 +92,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertEqual(self.blink.sync["test"].get_unique_info("doorbell1"), device)
 
     def test_get_unique_info_invalid_device(self, mock_resp) -> None:
-        """Check what happens if the devide does not exist."""
+        """Check what happens if the device does not exist."""
         device = {
             "enabled": True,
             "name": "doorbell1",

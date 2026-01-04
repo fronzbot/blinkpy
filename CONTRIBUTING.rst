@@ -87,7 +87,7 @@ You can then run all of the tests with the following command:
 
 If you only want to see if you can pass the local tests, you can run ``tox -e py39`` (or whatever python version you have installed.  Only ``py39`` through ``py312`` will be accepted).  If you just want to check for style violations, you can run ``tox -e lint``.  Regardless, when you submit a pull request, your code MUST pass both the unit tests, and the linters.
 
-If you need to change anything in ``requirements.txt`` for any reason, you'll want to regenerate the virtual envrionments used by ``tox`` by running with the ``-r`` flag: ``tox -r``
+If you need to change anything in ``requirements.txt`` for any reason, you'll want to regenerate the virtual environments used by ``tox`` by running with the ``-r`` flag: ``tox -r``
 
 If you want to run a single test (perhaps you only changed a small thing in one file) you can run ``tox -e py37 -- tests/<testname>.py -x``.  This will run the test ``<testname>.py`` and stop testing upon the first failure, making it easier to figure out why a particular test might be failing.  The test structure mimics the library structure, so if you changed something in ``sync_module.py``, the associated test file would be in ``test_sync_module.py`` (ie. the filename is prepended with ``test_``.
 

@@ -25,11 +25,25 @@ class BlinkLiveStream:
         self.target_reader = None
         self.target_writer = None
 
+    def add_auth_header_string_field(self, auth_header, field_string, max_length):
+        """Add string field to authentication header."""
+        _LOGGER.debug("Field string: %s", field_string)
+        field_bytes = field_string.encode("utf-8")[:max_length]
+        field_bytes = field_bytes.ljust(max_length, b"\x00")
+        _LOGGER.debug("Field bytes: %s", field_bytes)
+        field_length = len(field_bytes).to_bytes(4, byteorder="big")
+        _LOGGER.debug("Field length: %s (%d)", field_length, len(field_length))
+        auth_header.extend(field_length)
+        auth_header.extend(field_bytes)
+
     def get_auth_header(self):
         """Get authentication header."""
         auth_header = bytearray()
+        serial_max_length = 16
+        token_field_max_length = 64
+        conn_id_max_length = 16
 
-        # Magic numeber
+        # Magic number (4 bytes)
         # fmt: off
         magic_number = [
             0x00, 0x00, 0x00, 0x28, # Magic number (4 bytes)
@@ -38,16 +52,12 @@ class BlinkLiveStream:
         auth_header.extend(magic_number)
         # Total packet length: 4 bytes
 
-        # Unknown string field (4-byte length prefix, 16 unknown bytes)
-        # fmt: off
-        unknown_string_field = [
-            0x00, 0x00, 0x00, 0x00, # Length prefix (4 bytes)
-        ] + ([0x00] * 16) # Unknown bytes (16 bytes)
-        # fmt: on
-        auth_header.extend(unknown_string_field)
+        # Device Serial field (4-byte length prefix, 16 serial bytes)
+        serial = self.camera.serial
+        self.add_auth_header_string_field(auth_header, serial, serial_max_length)
         # Total packet length: 24 bytes
 
-        # Client ID field
+        # Client ID field (4 bytes)
         client_id = urllib.parse.parse_qs(self.target.query).get("client_id", [0])[0]
         _LOGGER.debug("Client ID: %s", client_id)
         client_id_field = int(client_id).to_bytes(4, byteorder="big")
@@ -55,34 +65,26 @@ class BlinkLiveStream:
         auth_header.extend(client_id_field)
         # Total packet length: 28 bytes
 
-        # Unknown prefix field (2-byte prefix, 4-byte length prefix, 64 unknown bytes)
+        # Static field (2 bytes)
         # fmt: off
-        unknown_prefix_field = [
-            0x01, 0x08, # Static prefix (2 bytes)
-            0x00, 0x00, 0x00, 0x00, # Length prefix (4 bytes)
-        ] + ([0x00] * 64) # Unknown bytes (64 bytes)
-        # fmt: on
-        auth_header.extend(unknown_prefix_field)
-        # Total packet length: 98 bytes
-
-        # Connection ID length field (4-byte length prefix)
-        # fmt: off
-        conn_id_length_prefix = [
-            0x00, 0x00, 0x00, 0x10,
+        static_field = [
+            0x01, 0x08, # Static value (2 bytes)
         ]
         # fmt: on
-        auth_header.extend(conn_id_length_prefix)
-        # Total packet length: 102 bytes
+        auth_header.extend(static_field)
+        # Total packet length: 30 bytes
 
-        # Connection ID field (UTF-8-encoded, 16 bytes)
+        # Auth Token field (4-byte length prefix, 64 null bytes for now)
+        # fmt: off
+        token_length = token_field_max_length.to_bytes(4, byteorder="big")
+        _LOGGER.debug("Null token length: %s (%d)", token_length, len(token_length))
+        auth_header.extend(token_length)
+        auth_header.extend([0x00] * token_field_max_length)
+        # Total packet length: 98 bytes
+
+        # Connection ID field (4-byte length prefix, 16 connection ID bytes)
         conn_id = self.target.path.split("/")[-1].split("__")[0]
-        _LOGGER.debug("Connection ID: %s", conn_id)
-        conn_id_field = conn_id.encode("utf-8")[:16]
-        # Ensure it is exactly 16 bytes long
-        if len(conn_id_field) < 16:
-            conn_id_field += b"\x00" * (16 - len(conn_id_field))
-        _LOGGER.debug("Connection ID field: %s (%d)", conn_id_field, len(conn_id_field))
-        auth_header.extend(conn_id_field)
+        self.add_auth_header_string_field(auth_header, conn_id, conn_id_max_length)
         # Total packet length: 118 bytes
 
         # Trailer (static 4-byte trailer)
@@ -249,9 +251,14 @@ class BlinkLiveStream:
         latency_stats_packet = [
             # [1-byte msgtype, 4-byte sequence (static 1000), 4-byte payload length]
             0x12, 0x00, 0x00, 0x03, 0xe8, 0x00, 0x00, 0x00, 0x18, # 9-byte header
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, # 1/3 of 24-byte payload
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, # 2/3 of 24-byte payload
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, # 3/3 of 24-byte payload
+            0x00, 0x00, 0x00, 0x00, # 4-byte audioAverageLatencyInMS
+            0x00, 0x00, 0x00, 0x00, # 4-byte audioMaxLatencyInMS
+            0x00, 0x00, # 2-byte audioFramesPresented
+            0x00, 0x00, # 2-byte audioFramesDropped
+            0x00, 0x00, 0x00, 0x00, # 4-byte videoAverageLatencyInMS
+            0x00, 0x00, 0x00, 0x00, # 4-byte videoMaxLatencyInMS
+            0x00, 0x00, # 2-byte videoFramesPresented
+            0x00, 0x00, # 2-byte videoFramesDropped
         ]
         # fmt: on
         every10s = 0

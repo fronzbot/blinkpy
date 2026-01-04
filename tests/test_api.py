@@ -117,7 +117,7 @@ class TestAPI(IsolatedAsyncioTestCase):
         )
 
     async def test_request_set_notification_flag(self, mock_resp):
-        """Test set of notifiaction flags."""
+        """Test set of notification flags."""
         mock_resp.side_effect = (
             mresp.MockResponse(COMMAND_RESPONSE, 200),
             COMMAND_COMPLETE,
