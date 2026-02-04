@@ -122,6 +122,18 @@ class BlinkLiveStream:
 
     async def feed(self):
         """Connect to and stream from the target server."""
+        await self.auth()
+        try:
+            await asyncio.gather(self.recv(), self.send(), self.poll())
+        except Exception:
+            _LOGGER.exception("Error while handling stream")
+        finally:
+            # Close all connections
+            _LOGGER.debug("Streaming was aborted, stopping server")
+            self.stop()
+
+    async def auth(self):
+        """Connect to and authenticate with the target server."""
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
@@ -132,15 +144,6 @@ class BlinkLiveStream:
         auth_header = self.get_auth_header()
         self.target_writer.write(auth_header)
         await self.target_writer.drain()
-
-        try:
-            await asyncio.gather(self.recv(), self.send(), self.poll())
-        except Exception:
-            _LOGGER.exception("Error while handling stream")
-        finally:
-            # Close all connections
-            _LOGGER.debug("Streaming was aborted, stopping server")
-            self.stop()
 
     async def join(self, client_reader, client_writer):
         """Join client to the stream."""
