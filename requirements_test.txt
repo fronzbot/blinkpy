@@ -1,5 +1,5 @@
 ruff==0.15.0
-black==25.11.0
+black==26.1.0
 build==1.4.0
 coverage==7.10.7
 pytest==8.4.2
