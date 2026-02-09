@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=68,<81", "wheel~=0.40.0"]
+requires = ["setuptools>=68,<81", "wheel>=0.40,<0.47"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "blinkpy"
-version = "0.26.0b0"
+version = "0.26.0b1"
 license = {text = "MIT"}
 description = "A Blink camera Python Library."
 readme = "README.rst"
@@ -15,7 +15,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -23,7 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Topic :: Home Automation",
 ]
-requires-python = ">=3.9.0"
+requires-python = ">=3.10.0"
 dynamic = ["dependencies"]
 
 [tool.setuptools.dynamic]
@@ -77,6 +76,7 @@ lint.ignore = [
     "PLR0913",  # Too many arguments to function call ({c_args} > {max_args})
     "PLR0915",  # Too many statements ({statements} > {max_statements})
     "PLR2004",  # Magic value used in comparison, consider replacing {value} with a constant variable
+    "PLW0108", # The fix is not always correct, so this is sometimes a false positive
     "PLW2901",  # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
     "UP006",  # keep type annotation style as is
     "UP007",  # keep type annotation style as is
