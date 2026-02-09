@@ -180,15 +180,33 @@ class BlinkCamera:
     @property
     async def snooze_till(self):
         """Return snooze_till status."""
-        res = await api.request_get_config(
-            self.sync.blink,
-            self.network_id,
-            self.camera_id,
-            product_type=self.product_type,
-        )
-        if res is None:
+        if self.product_type == "catalina":
+            # Catalina cameras use the config endpoint
+            res = await api.request_get_config(
+                self.sync.blink,
+                self.network_id,
+                self.camera_id,
+                product_type=self.product_type,
+            )
+            if res is None:
+                return None
+            res = res.get("camera", [{}])[0]
+            return res.get("snooze_till")
+        else:
+            # Owl/hawk/mini cameras get snooze info from homescreen
+            try:
+                for owl in self.sync.blink.homescreen.get("owls", []):
+                    # Compare as integers to handle type mismatch
+                    if int(owl.get("id")) == int(self.camera_id):
+                        if owl.get("snooze"):
+                            return {
+                                "snooze": owl.get("snooze"),
+                                "time_remaining": owl.get("snooze_time_remaining"),
+                            }
+                        return None
+            except (TypeError, KeyError, ValueError):
+                pass
             return None
-        return res.get("camera", [{}])[0].get("snooze_till")
 
     async def async_snooze(self, snooze_time=240):
         """Set camera snooze status."""

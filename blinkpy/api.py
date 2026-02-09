@@ -555,7 +555,7 @@ async def request_get_config(blink, network, camera_id, product_type="owl"):
     :param camera_id: ID of camera
     :param product_type: Camera product type "owl" or "catalina"
     """
-    if product_type == "owl":
+    if product_type in ["owl", "hawk"]:
         url = (
             f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
             f"/networks/{network}/owls/{camera_id}/config"
@@ -584,7 +584,7 @@ async def request_update_config(
     :param product_type: Camera product type "owl" or "catalina"
     :param data: string w/JSON dict of parameters/values to update
     """
-    if product_type == "owl":
+    if product_type in ["owl", "hawk"]:
         url = (
             f"{blink.urls.base_url}/api/v1/accounts/"
             f"{blink.account_id}/networks/{network}/owls/{camera_id}/config"
@@ -610,7 +610,7 @@ async def request_camera_snooze(
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: ID of camera
-    :param product_type: Camera product type "owl" or "catalina"
+    :param product_type: Camera product type "owl", "catalina", "doorbell", or "hawk"
     :param data: string w/JSON dict of parameters/values to update
     """
     if product_type == "catalina":
@@ -618,7 +618,7 @@ async def request_camera_snooze(
             f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/"
             f"networks/{network}/cameras/{camera_id}/snooze"
         )
-    elif product_type == "owl":
+    elif product_type in ["owl", "hawk"]:
         url = (
             f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/"
             f"networks/{network}/owls/{camera_id}/snooze"
