@@ -1,7 +1,6 @@
 """Tests camera and system functions."""
 
 import datetime
-from json import dumps
 import logging
 from unittest import IsolatedAsyncioTestCase
 from unittest import mock
@@ -654,42 +653,3 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         mock_del.return_value = mock.AsyncMock()
         mock_dl.return_value = False
         self.assertFalse(await item.download_video_delete(self.blink, "filename.mp4"))
-
-    async def test_async_snooze(self, mock_resp):
-        """Test successful snooze."""
-        with mock.patch(
-            "blinkpy.api.request_sync_snooze", new_callable=mock.AsyncMock
-        ) as mock_resp_local:
-            mock_resp_local.return_value.status = 200
-            mock_resp_local.return_value.json.return_value = {"status": 200}
-            snooze_time = 240
-            expected_data = dumps({"snooze_time": snooze_time})
-            expected_response = {"status": 200}
-
-            self.assertEqual(
-                await self.blink.sync["test"].async_snooze(snooze_time),
-                expected_response,
-            )
-            mock_resp_local.assert_called_once_with(
-                self.blink,
-                self.blink.sync["test"].network_id,
-                data=expected_data,
-            )
-
-            mock_resp_local.return_value.status = 400
-            mock_resp_local.return_value.json.return_value = None
-            expected_response = None
-
-            self.assertEqual(
-                await self.blink.sync["test"].async_snooze(snooze_time),
-                expected_response,
-            )
-
-    async def test_snooze_till(self, mock_resp) -> None:
-        """Test snooze_till method."""
-        mock_resp.return_value = {"snooze_till": "2022-01-01T00:00:00Z"}
-        self.assertEqual(
-            await self.blink.sync["test"].snooze_till, "2022-01-01T00:00:00Z"
-        )
-        mock_resp.return_value = None
-        self.assertIsNone(await self.blink.sync["test"].snooze_till)

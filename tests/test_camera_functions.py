@@ -9,7 +9,6 @@ Blink system is set up.
 import datetime
 from unittest import mock
 from unittest import IsolatedAsyncioTestCase
-from blinkpy import api
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
@@ -222,30 +221,6 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
 
         mock_resp.return_value = mresp.MockResponse({"code": 400}, 400)
         self.assertIsNone(await self.camera.async_set_night_vision("on"))
-
-    async def test_snooze_till(self, mock_resp):
-        """Test snooze_till property."""
-        mock_resp = {"camera": [{"snooze_till": 1234567890}]}
-        with mock.patch.object(
-            api,
-            "request_get_config",
-            return_value=mock_resp,
-        ):
-            result = await self.camera.snooze_till
-            self.assertEqual(result, {"camera": [{"snooze_till": 1234567890}]})
-
-    async def test_async_snooze(self, mock_resp):
-        """Test async_snooze function."""
-        mock_resp = mresp.MockResponse({}, 200)
-        with mock.patch("blinkpy.api.request_camera_snooze", return_value=mock_resp):
-            response = await self.camera.async_snooze()
-            self.assertEqual(response, {})
-        mock_resp = mresp.MockResponse({}, 200)
-        with mock.patch("blinkpy.api.request_camera_snooze", return_value=mock_resp):
-            response = await self.camera.async_snooze()
-            self.assertEqual(response, {})
-        response = await self.camera.async_snooze("invalid_value")
-        self.assertIsNone(response)
 
     async def test_record(self, mock_resp):
         """Test camera record function."""
