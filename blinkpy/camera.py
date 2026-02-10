@@ -222,11 +222,11 @@ class BlinkCamera:
             )
             return False
 
-    async def async_snooze(self, snooze_time=240):
+    async def async_snooze(self, snooze_time=3600):
         """
         Set camera snooze status.
 
-        :param snooze_time: Time in minutes to snooze camera. Default is 240 (4 hours).
+        :param snooze_time: Time in seconds to snooze camera. Default is 3600 (1 hour).
         """
         data = dumps({"snooze_time": snooze_time})
         res = await api.request_camera_snooze(
