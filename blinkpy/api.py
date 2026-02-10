@@ -613,28 +613,22 @@ async def request_camera_snooze(
     :param product_type: Camera product type "owl", "catalina", "doorbell", or "hawk"
     :param data: string w/JSON dict of parameters/values to update
     """
-    if product_type == "catalina":
-        url = (
-            f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/"
-            f"networks/{network}/cameras/{camera_id}/snooze"
-        )
-    elif product_type in ["owl", "hawk"]:
-        url = (
-            f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/"
-            f"networks/{network}/owls/{camera_id}/snooze"
-        )
-    elif product_type == "doorbell":
-        url = (
-            f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}/"
-            f"networks/{network}/doorbells/{camera_id}/snooze"
-        )
-    else:
+    product_lookup = {
+        "catalina": "cameras",
+        "owl": "owls",
+        "doorbell": "doorbells"
+    }
+    
+    if product_type not in product_lookup:
         _LOGGER.info(
             "Camera %s with product type %s snooze update not implemented.",
             camera_id,
             product_type,
         )
         return None
+    
+    url_root = f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id"}/networks/{network}"
+    url = f"{url_root}/product_lookup[product_type]/{camera_id}/snooze"
     return await http_post(blink, url, json=True, data=data)
 
 
