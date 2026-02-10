@@ -188,10 +188,12 @@ class BlinkCamera:
                 self.camera_id,
                 product_type=self.product_type,
             )
-            if res is None:
+            try:
+                return res["camera"][0]["snooze_till"]
+            except TypeError:
                 return None
-            res = res.get("camera", [{}])[0]
-            return res.get("snooze_till")
+            except (IndexError, KeyError) as e:
+                _LOGGER.warning("Exception %s: Encountered a likely malformed response from the snooze API endpoint. Response: %s", e, res)
         else:
             # Owl/hawk/mini cameras get snooze info from homescreen
             try:
@@ -200,12 +202,14 @@ class BlinkCamera:
                     if int(owl.get("id")) == int(self.camera_id):
                         if owl.get("snooze"):
                             return {
-                                "snooze": owl.get("snooze"),
-                                "time_remaining": owl.get("snooze_time_remaining"),
+                                "snooze": owl["snooze"],
+                                "time_remaining": owl["snooze_time_remaining"],
                             }
                         return None
-            except (TypeError, KeyError, ValueError):
-                pass
+            except TypeError:
+                return None
+            except (KeyError, ValueError) as e:
+                _LOGGER.warning("Exception %s: Encountered a likely malformed response from the snooze API endpoint. Response: %s", e, self.sync.blink.homescreen)
             return None
 
     async def async_snooze(self, snooze_time=240):
