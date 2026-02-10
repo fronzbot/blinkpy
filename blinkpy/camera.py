@@ -203,13 +203,18 @@ class BlinkCamera:
         except TypeError:
             return None
         except (IndexError, KeyError, ValueError) as e:
-            _LOGGER.warning("Exception %s: Encountered a likely malformed response from the snooze API endpoint. Response: %s", e, response_data)
+            _LOGGER.warning(
+                "Exception %s: Encountered a likely malformed response "
+                "from the snooze API endpoint. Response: %s",
+                e,
+                response_data,
+            )
             return None
 
     async def async_snooze(self, snooze_time=240):
         """
         Set camera snooze status.
-        
+
         :param snooze_time: Time in minutes to snooze camera. Default is 240 (4 hours).
         """
         data = dumps({"snooze_time": snooze_time})
