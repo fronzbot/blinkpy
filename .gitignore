@@ -20,3 +20,5 @@ Pipfile.lock
 blink.json
 blinktest.py
 .vscode/*
+creds.json
+test.py
