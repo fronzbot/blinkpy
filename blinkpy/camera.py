@@ -601,16 +601,9 @@ class BlinkDoorbell(BlinkCamera):
         link = server.replace("immis://", "rtsps://")
         return link
 
-    async def async_snooze(self):
+    async def async_snooze(self, snooze_time=240):
         """Set camera snooze status."""
-        data = dumps({"snooze_time": 240})
-        res = await api.request_camera_snooze(
-            self.sync.blink,
-            self.network_id,
-            self.camera_id,
-            product_type="doorbell",
-            data=data,
-        )
+        res = await super().async_snooze(snooze_time=snooze_time)
         if res and res.status == 200:
             return await res.json()
         return None
