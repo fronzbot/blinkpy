@@ -180,36 +180,30 @@ class BlinkCamera:
     @property
     async def snooze_till(self):
         """Return snooze_till status."""
-        if self.product_type == "catalina":
-            # Catalina cameras use the config endpoint
-            res = await api.request_get_config(
-                self.sync.blink,
-                self.network_id,
-                self.camera_id,
-                product_type=self.product_type,
-            )
-            try:
+        response_data = None
+        try:
+            if self.product_type == "catalina":
+                # Catalina cameras use the config endpoint
+                res = await api.request_get_config(
+                    self.sync.blink,
+                    self.network_id,
+                    self.camera_id,
+                    product_type=self.product_type,
+                )
+                response_data = res
                 return res["camera"][0]["snooze_till"]
-            except TypeError:
-                return None
-            except (IndexError, KeyError) as e:
-                _LOGGER.warning("Exception %s: Encountered a likely malformed response from the snooze API endpoint. Response: %s", e, res)
-        else:
-            # Owl/hawk/mini cameras get snooze info from homescreen
-            try:
+            else:
+                # Owl/hawk/mini cameras get snooze info from homescreen
+                response_data = self.sync.blink.homescreen
                 for owl in self.sync.blink.homescreen.get("owls", []):
                     # Compare as integers to handle type mismatch
                     if int(owl.get("id")) == int(self.camera_id):
-                        if owl.get("snooze"):
-                            return {
-                                "snooze": owl["snooze"],
-                                "time_remaining": owl["snooze_time_remaining"],
-                            }
-                        return None
-            except TypeError:
+                        return owl["snooze"]
                 return None
-            except (KeyError, ValueError) as e:
-                _LOGGER.warning("Exception %s: Encountered a likely malformed response from the snooze API endpoint. Response: %s", e, self.sync.blink.homescreen)
+        except TypeError:
+            return None
+        except (IndexError, KeyError, ValueError) as e:
+            _LOGGER.warning("Exception %s: Encountered a likely malformed response from the snooze API endpoint. Response: %s", e, response_data)
             return None
 
     async def async_snooze(self, snooze_time=240):
@@ -226,7 +220,9 @@ class BlinkCamera:
             product_type=self.product_type,
             data=data,
         )
-        return res
+        if res and res.status == 200:
+            return await res.json()
+        return None
 
     async def record(self):
         """Initiate clip recording."""
@@ -604,10 +600,3 @@ class BlinkDoorbell(BlinkCamera):
         server = response["server"]
         link = server.replace("immis://", "rtsps://")
         return link
-
-    async def async_snooze(self, snooze_time=240):
-        """Set camera snooze status."""
-        res = await super().async_snooze(snooze_time=snooze_time)
-        if res and res.status == 200:
-            return await res.json()
-        return None
