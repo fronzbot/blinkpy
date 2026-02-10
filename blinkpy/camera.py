@@ -178,12 +178,12 @@ class BlinkCamera:
         return None
 
     @property
-    async def snooze_till(self):
-        """Return snooze_till status."""
+    async def snoozed(self):
+        """Return snooze status as boolean."""
         response_data = None
         try:
-            if self.product_type == "catalina":
-                # Catalina cameras use the config endpoint
+            if self.product_type in ["catalina", "sedona"]:
+                # Catalina and Sedona cameras have snooze timestamp in config
                 res = await api.request_get_config(
                     self.sync.blink,
                     self.network_id,
@@ -191,17 +191,28 @@ class BlinkCamera:
                     product_type=self.product_type,
                 )
                 response_data = res
-                return res["camera"][0]["snooze_till"]
+                snooze_value = res["camera"][0].get("snooze_till")
+                # Return True if timestamp exists and is not empty
+                return bool(snooze_value)
             else:
-                # Owl/hawk/mini cameras get snooze info from homescreen
+                # Owl/hawk/mini/doorbell/lotus cameras get snooze from homescreen
                 response_data = self.sync.blink.homescreen
-                for owl in self.sync.blink.homescreen.get("owls", []):
+
+                # Determine which homescreen collection to search
+                if self.product_type in ["doorbell", "lotus"]:
+                    collection_key = "doorbells"
+                else:  # owl, hawk, mini
+                    collection_key = "owls"
+
+                for device in self.sync.blink.homescreen.get(collection_key, []):
                     # Compare as integers to handle type mismatch
-                    if int(owl.get("id")) == int(self.camera_id):
-                        return owl["snooze"]
-                return None
+                    if int(device.get("id")) == int(self.camera_id):
+                        snooze_value = device.get("snooze")
+                        # Return True if snooze value exists and is truthy
+                        return bool(snooze_value)
+                return False
         except TypeError:
-            return None
+            return False
         except (IndexError, KeyError, ValueError) as e:
             _LOGGER.warning(
                 "Exception %s: Encountered a likely malformed response "
@@ -209,7 +220,7 @@ class BlinkCamera:
                 e,
                 response_data,
             )
-            return None
+            return False
 
     async def async_snooze(self, snooze_time=240):
         """
@@ -225,9 +236,11 @@ class BlinkCamera:
             product_type=self.product_type,
             data=data,
         )
-        if res and res.status == 200:
-            return await res.json()
-        return None
+        # Refresh homescreen to update snooze status
+        if res and self.product_type not in ["catalina", "sedona"]:
+            # Owl/hawk/mini/doorbell/lotus cameras use homescreen for snooze status
+            await self.sync.blink.get_homescreen()
+        return res
 
     async def record(self):
         """Initiate clip recording."""

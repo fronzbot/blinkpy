@@ -553,14 +553,19 @@ async def request_get_config(blink, network, camera_id, product_type="owl"):
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: ID of camera
-    :param product_type: Camera product type "owl" or "catalina"
+    :param product_type: Camera product type
     """
     if product_type in ["owl", "hawk"]:
         url = (
             f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
             f"/networks/{network}/owls/{camera_id}/config"
         )
-    elif product_type == "catalina":
+    elif product_type in ["doorbell", "lotus"]:
+        url = (
+            f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+            f"/networks/{network}/doorbells/{camera_id}/config"
+        )
+    elif product_type in ["catalina", "sedona"]:
         url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/config"
     else:
         _LOGGER.info(
@@ -610,10 +615,18 @@ async def request_camera_snooze(
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: ID of camera
-    :param product_type: Camera product type "owl", "catalina", "doorbell", or "hawk"
+    :param product_type: Camera product type "owl", "catalina",
+        "doorbell", "hawk", "lotus", or "sedona"
     :param data: string w/JSON dict of parameters/values to update
     """
-    product_lookup = {"catalina": "cameras", "owl": "owls", "doorbell": "doorbells"}
+    product_lookup = {
+        "catalina": "cameras",
+        "sedona": "cameras",  # Older outdoor cameras use same endpoint as catalina
+        "owl": "owls",
+        "hawk": "owls",  # Hawk uses same endpoint as owl
+        "doorbell": "doorbells",
+        "lotus": "doorbells",  # Lotus is internal name for doorbells
+    }
 
     if product_type not in product_lookup:
         _LOGGER.info(
