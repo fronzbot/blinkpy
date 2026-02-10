@@ -128,7 +128,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             self.blink, "get_homescreen", mock.AsyncMock()
         ) as mock_homescreen:
             result = await self.camera.async_snooze(300)
-            # Non-catalina/sedona cameras refresh homescreen
+            # Non-catalina/sedona cameras refresh homescreen even on failure
             mock_homescreen.assert_called_once()
         self.assertEqual(result, {"status": 400})
 
@@ -186,6 +186,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     async def test_camera_snoozed_catalina(self, mock_resp):
         """Test getting snoozed status for catalina camera."""
         self.camera.product_type = "catalina"
+        self.camera.network_id = "5678"
+        self.camera.camera_id = "1234"
         result = await self.camera.snoozed
         self.assertTrue(result)
 
@@ -198,6 +200,9 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         }
         result = await self.camera.snoozed
         self.assertTrue(result)
+        # Verify we're reading from homescreen, not calling API
+        expected_snooze = "2026-02-15T12:00:00+00:00"
+        self.assertEqual(self.blink.homescreen["owls"][0]["snooze"], expected_snooze)
 
     async def test_camera_snoozed_owl_false(self, mock_resp):
         """Test getting snoozed status returns False when not snoozed."""
@@ -208,6 +213,9 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         }
         result = await self.camera.snoozed
         self.assertFalse(result)
+        # Verify camera ID 9999 is not in homescreen
+        camera_ids = [str(cam["id"]) for cam in self.blink.homescreen["owls"]]
+        self.assertNotIn("9999", camera_ids)
 
     async def test_camera_snoozed_doorbell(self, mock_resp):
         """Test getting snoozed status for doorbell camera."""
@@ -218,6 +226,9 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         }
         result = await self.camera.snoozed
         self.assertTrue(result)
+        # Verify we're reading from the doorbells collection
+        self.assertIn("doorbells", self.blink.homescreen)
+        self.assertEqual(self.blink.homescreen["doorbells"][0]["id"], "5678")
 
     async def test_camera_snoozed_lotus(self, mock_resp):
         """Test getting snoozed status for lotus (doorbell) camera."""
@@ -228,6 +239,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         }
         result = await self.camera.snoozed
         self.assertTrue(result)
+        # Verify lotus uses doorbells collection
+        self.assertIn("doorbells", self.blink.homescreen)
 
     async def test_camera_snoozed_hawk(self, mock_resp):
         """Test getting snoozed status for hawk camera."""
@@ -238,6 +251,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         }
         result = await self.camera.snoozed
         self.assertTrue(result)
+        # Verify hawk uses owls collection
+        self.assertIn("owls", self.blink.homescreen)
 
     @mock.patch(
         "blinkpy.api.request_get_config",
@@ -248,6 +263,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     async def test_camera_snoozed_sedona(self, mock_resp):
         """Test getting snoozed status for sedona camera."""
         self.camera.product_type = "sedona"
+        self.camera.network_id = "5678"
+        self.camera.camera_id = "1234"
         result = await self.camera.snoozed
         self.assertTrue(result)
 
@@ -266,6 +283,10 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.blink.homescreen = {"owls": [{"id": "1234", "snooze": False}]}
         result = await self.camera.snoozed
         self.assertFalse(result)
+        # Verify the snooze value is actually False, not missing
+        camera = next(c for c in self.blink.homescreen["owls"] if c["id"] == "1234")
+        self.assertIn("snooze", camera)
+        self.assertFalse(camera["snooze"])
 
     async def test_camera_snoozed_mini(self, mock_resp):
         """Test getting snoozed status for mini camera from homescreen."""
@@ -286,6 +307,29 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         }
         result = await self.camera.snoozed
         self.assertFalse(result)
+        # Verify mini camera ID not found in owls collection
+        camera_ids = [str(cam["id"]) for cam in self.blink.homescreen["owls"]]
+        self.assertNotIn("9999", camera_ids)
+
+    async def test_camera_snoozed_empty_homescreen(self, mock_resp):
+        """Test getting snoozed status with empty homescreen collection."""
+        self.camera.product_type = "owl"
+        self.camera.camera_id = "1234"
+        self.blink.homescreen = {"owls": []}
+        result = await self.camera.snoozed
+        self.assertFalse(result)
+        # Verify owls collection is empty
+        self.assertEqual(len(self.blink.homescreen["owls"]), 0)
+
+    async def test_camera_snoozed_missing_collection(self, mock_resp):
+        """Test getting snoozed status when homescreen collection is missing."""
+        self.camera.product_type = "doorbell"
+        self.camera.camera_id = "5678"
+        self.blink.homescreen = {"owls": []}
+        result = await self.camera.snoozed
+        self.assertFalse(result)
+        # Verify doorbells collection is missing
+        self.assertNotIn("doorbells", self.blink.homescreen)
 
     @mock.patch(
         "blinkpy.api.request_get_config",
@@ -294,6 +338,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     async def test_camera_snoozed_none(self, mock_resp):
         """Test getting snoozed status with None response."""
         self.camera.product_type = "catalina"
+        self.camera.network_id = "5678"
+        self.camera.camera_id = "1234"
         result = await self.camera.snoozed
         self.assertFalse(result)
 
@@ -304,6 +350,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     async def test_camera_snoozed_malformed(self, mock_resp):
         """Test getting snoozed status with malformed response."""
         self.camera.product_type = "catalina"
+        self.camera.network_id = "5678"
+        self.camera.camera_id = "1234"
         result = await self.camera.snoozed
         self.assertFalse(result)
 
@@ -314,6 +362,8 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
     async def test_camera_snoozed_empty_string(self, mock_resp):
         """Test getting snoozed status with empty string."""
         self.camera.product_type = "catalina"
+        self.camera.network_id = "5678"
+        self.camera.camera_id = "1234"
         result = await self.camera.snoozed
         self.assertFalse(result)
 
