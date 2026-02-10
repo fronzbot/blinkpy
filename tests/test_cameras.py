@@ -102,6 +102,221 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             self.assertEqual(await self.doorbell.async_arm(True), "arm")
             self.assertEqual(await self.doorbell.async_arm(False), "disarm")
 
+    @mock.patch(
+        "blinkpy.api.request_camera_snooze",
+        mock.AsyncMock(return_value={"status": 200}),
+    )
+    async def test_camera_snooze(self, mock_resp):
+        """Test camera snooze."""
+        self.camera.product_type = "catalina"
+        with mock.patch.object(
+            self.blink, "get_homescreen", mock.AsyncMock()
+        ) as mock_homescreen:
+            result = await self.camera.async_snooze(300)
+            # Catalina cameras should NOT refresh homescreen
+            mock_homescreen.assert_not_called()
+        self.assertEqual(result, {"status": 200})
+
+    @mock.patch(
+        "blinkpy.api.request_camera_snooze",
+        mock.AsyncMock(return_value={"status": 400}),
+    )
+    async def test_camera_snooze_failure(self, mock_resp):
+        """Test camera snooze failure."""
+        self.camera.product_type = "owl"
+        with mock.patch.object(
+            self.blink, "get_homescreen", mock.AsyncMock()
+        ) as mock_homescreen:
+            result = await self.camera.async_snooze(300)
+            # Non-catalina/sedona cameras refresh homescreen
+            mock_homescreen.assert_called_once()
+        self.assertEqual(result, {"status": 400})
+
+    @mock.patch(
+        "blinkpy.api.request_camera_snooze",
+        mock.AsyncMock(return_value=None),
+    )
+    async def test_camera_snooze_none_response(self, mock_resp):
+        """Test camera snooze with None response."""
+        self.camera.product_type = "doorbell"
+        with mock.patch.object(
+            self.blink, "get_homescreen", mock.AsyncMock()
+        ) as mock_homescreen:
+            result = await self.camera.async_snooze(240)
+            # get_homescreen should not be called when response is None
+            mock_homescreen.assert_not_called()
+        self.assertIsNone(result)
+
+    @mock.patch(
+        "blinkpy.api.request_camera_snooze",
+        mock.AsyncMock(return_value={"status": 200}),
+    )
+    async def test_camera_snooze_mini(self, mock_resp):
+        """Test mini camera snooze refreshes homescreen."""
+        self.camera.product_type = "mini"
+        with mock.patch.object(
+            self.blink, "get_homescreen", mock.AsyncMock()
+        ) as mock_homescreen:
+            result = await self.camera.async_snooze(300)
+            # Mini cameras should refresh homescreen
+            mock_homescreen.assert_called_once()
+        self.assertEqual(result, {"status": 200})
+
+    @mock.patch(
+        "blinkpy.api.request_camera_snooze",
+        mock.AsyncMock(return_value={"status": 200}),
+    )
+    async def test_camera_snooze_sedona(self, mock_resp):
+        """Test sedona camera snooze does not refresh homescreen."""
+        self.camera.product_type = "sedona"
+        with mock.patch.object(
+            self.blink, "get_homescreen", mock.AsyncMock()
+        ) as mock_homescreen:
+            result = await self.camera.async_snooze(300)
+            # Sedona cameras should NOT refresh homescreen
+            mock_homescreen.assert_not_called()
+        self.assertEqual(result, {"status": 200})
+
+    @mock.patch(
+        "blinkpy.api.request_get_config",
+        mock.AsyncMock(
+            return_value={"camera": [{"snooze_till": "2026-02-15T12:00:00+00:00"}]}
+        ),
+    )
+    async def test_camera_snoozed_catalina(self, mock_resp):
+        """Test getting snoozed status for catalina camera."""
+        self.camera.product_type = "catalina"
+        result = await self.camera.snoozed
+        self.assertTrue(result)
+
+    async def test_camera_snoozed_owl(self, mock_resp):
+        """Test getting snoozed status for owl camera."""
+        self.camera.product_type = "owl"
+        self.camera.camera_id = "1234"
+        self.blink.homescreen = {
+            "owls": [{"id": "1234", "snooze": "2026-02-15T12:00:00+00:00"}]
+        }
+        result = await self.camera.snoozed
+        self.assertTrue(result)
+
+    async def test_camera_snoozed_owl_false(self, mock_resp):
+        """Test getting snoozed status returns False when not snoozed."""
+        self.camera.product_type = "owl"
+        self.camera.camera_id = "9999"
+        self.blink.homescreen = {
+            "owls": [{"id": "1234", "snooze": "2026-02-15T12:00:00+00:00"}]
+        }
+        result = await self.camera.snoozed
+        self.assertFalse(result)
+
+    async def test_camera_snoozed_doorbell(self, mock_resp):
+        """Test getting snoozed status for doorbell camera."""
+        self.camera.product_type = "doorbell"
+        self.camera.camera_id = "5678"
+        self.blink.homescreen = {
+            "doorbells": [{"id": "5678", "snooze": "2026-02-15T12:00:00+00:00"}]
+        }
+        result = await self.camera.snoozed
+        self.assertTrue(result)
+
+    async def test_camera_snoozed_lotus(self, mock_resp):
+        """Test getting snoozed status for lotus (doorbell) camera."""
+        self.camera.product_type = "lotus"
+        self.camera.camera_id = "5678"
+        self.blink.homescreen = {
+            "doorbells": [{"id": "5678", "snooze": "2026-02-15T12:00:00+00:00"}]
+        }
+        result = await self.camera.snoozed
+        self.assertTrue(result)
+
+    async def test_camera_snoozed_hawk(self, mock_resp):
+        """Test getting snoozed status for hawk camera."""
+        self.camera.product_type = "hawk"
+        self.camera.camera_id = "1234"
+        self.blink.homescreen = {
+            "owls": [{"id": "1234", "snooze": "2026-02-15T12:00:00+00:00"}]
+        }
+        result = await self.camera.snoozed
+        self.assertTrue(result)
+
+    @mock.patch(
+        "blinkpy.api.request_get_config",
+        mock.AsyncMock(
+            return_value={"camera": [{"snooze_till": "2026-02-15T12:00:00+00:00"}]}
+        ),
+    )
+    async def test_camera_snoozed_sedona(self, mock_resp):
+        """Test getting snoozed status for sedona camera."""
+        self.camera.product_type = "sedona"
+        result = await self.camera.snoozed
+        self.assertTrue(result)
+
+    async def test_camera_snoozed_boolean_true(self, mock_resp):
+        """Test getting snoozed status when snooze is boolean True."""
+        self.camera.product_type = "owl"
+        self.camera.camera_id = "1234"
+        self.blink.homescreen = {"owls": [{"id": "1234", "snooze": True}]}
+        result = await self.camera.snoozed
+        self.assertTrue(result)
+
+    async def test_camera_snoozed_boolean_false(self, mock_resp):
+        """Test getting snoozed status when snooze is boolean False."""
+        self.camera.product_type = "owl"
+        self.camera.camera_id = "1234"
+        self.blink.homescreen = {"owls": [{"id": "1234", "snooze": False}]}
+        result = await self.camera.snoozed
+        self.assertFalse(result)
+
+    async def test_camera_snoozed_mini(self, mock_resp):
+        """Test getting snoozed status for mini camera from homescreen."""
+        self.camera.product_type = "mini"
+        self.camera.camera_id = "1234"
+        self.blink.homescreen = {
+            "owls": [{"id": "1234", "snooze": "2026-02-15T12:00:00+00:00"}]
+        }
+        result = await self.camera.snoozed
+        self.assertTrue(result)
+
+    async def test_camera_snoozed_mini_false(self, mock_resp):
+        """Test getting snoozed status for mini camera returns False."""
+        self.camera.product_type = "mini"
+        self.camera.camera_id = "9999"
+        self.blink.homescreen = {
+            "owls": [{"id": "1234", "snooze": "2026-02-15T12:00:00+00:00"}]
+        }
+        result = await self.camera.snoozed
+        self.assertFalse(result)
+
+    @mock.patch(
+        "blinkpy.api.request_get_config",
+        mock.AsyncMock(return_value=None),
+    )
+    async def test_camera_snoozed_none(self, mock_resp):
+        """Test getting snoozed status with None response."""
+        self.camera.product_type = "catalina"
+        result = await self.camera.snoozed
+        self.assertFalse(result)
+
+    @mock.patch(
+        "blinkpy.api.request_get_config",
+        mock.AsyncMock(return_value={"camera": [{}]}),
+    )
+    async def test_camera_snoozed_malformed(self, mock_resp):
+        """Test getting snoozed status with malformed response."""
+        self.camera.product_type = "catalina"
+        result = await self.camera.snoozed
+        self.assertFalse(result)
+
+    @mock.patch(
+        "blinkpy.api.request_get_config",
+        mock.AsyncMock(return_value={"camera": [{"snooze_till": ""}]}),
+    )
+    async def test_camera_snoozed_empty_string(self, mock_resp):
+        """Test getting snoozed status with empty string."""
+        self.camera.product_type = "catalina"
+        result = await self.camera.snoozed
+        self.assertFalse(result)
+
     def test_missing_attributes(self, mock_resp):
         """Test that attributes return None if missing."""
         self.camera.temperature = None
