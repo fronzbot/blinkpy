@@ -177,6 +177,71 @@ class BlinkCamera:
             return await res.json()
         return None
 
+    @property
+    async def snoozed(self):
+        """Return snooze status as boolean."""
+        response_data = None
+        try:
+            if self.product_type in ["catalina", "sedona"]:
+                # Catalina and Sedona cameras have snooze timestamp in config
+                res = await api.request_get_config(
+                    self.sync.blink,
+                    self.network_id,
+                    self.camera_id,
+                    product_type=self.product_type,
+                )
+                response_data = res
+                snooze_value = res["camera"][0].get("snooze_till")
+                # Return True if timestamp exists and is not empty
+                return bool(snooze_value)
+            else:
+                # Owl/hawk/mini/doorbell/lotus cameras get snooze from homescreen
+                response_data = self.sync.blink.homescreen
+
+                # Determine which homescreen collection to search
+                if self.product_type in ["doorbell", "lotus"]:
+                    collection_key = "doorbells"
+                else:  # owl, hawk, mini
+                    collection_key = "owls"
+
+                for device in self.sync.blink.homescreen.get(collection_key, []):
+                    # Compare as integers to handle type mismatch
+                    if int(device.get("id")) == int(self.camera_id):
+                        snooze_value = device.get("snooze")
+                        # Return True if snooze value exists and is truthy
+                        return bool(snooze_value)
+                return False
+        except TypeError:
+            return False
+        except (IndexError, KeyError, ValueError) as e:
+            _LOGGER.warning(
+                "Exception %s: Encountered a likely malformed response "
+                "from the snooze API endpoint. Response: %s",
+                e,
+                response_data,
+            )
+            return False
+
+    async def async_snooze(self, snooze_time=3600):
+        """
+        Set camera snooze status.
+
+        :param snooze_time: Time in seconds to snooze camera. Default is 3600 (1 hour).
+        """
+        data = dumps({"snooze_time": snooze_time})
+        res = await api.request_camera_snooze(
+            self.sync.blink,
+            self.network_id,
+            self.camera_id,
+            product_type=self.product_type,
+            data=data,
+        )
+        # Refresh homescreen to update snooze status
+        if res and self.product_type not in ["catalina", "sedona"]:
+            # Owl/hawk/mini/doorbell/lotus cameras use homescreen for snooze status
+            await self.sync.blink.get_homescreen()
+        return res
+
     async def record(self):
         """Initiate clip recording."""
         return await api.request_new_video(
@@ -540,3 +605,16 @@ class BlinkDoorbell(BlinkCamera):
 
     async def get_sensor_info(self):
         """Get sensor info for blink doorbell camera."""
+
+    async def get_liveview(self):
+        """Get liveview link."""
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.sync.network_id}/doorbells/{self.camera_id}/liveview"
+        )
+        response = await api.http_post(self.sync.blink, url)
+        await api.wait_for_command(self.sync.blink, response)
+        server = response["server"]
+        link = server.replace("immis://", "rtsps://")
+        return link

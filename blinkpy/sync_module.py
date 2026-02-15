@@ -127,6 +127,43 @@ class BlinkSyncModule:
             return await api.request_system_arm(self.blink, self.network_id)
         return await api.request_system_disarm(self.blink, self.network_id)
 
+    @property
+    async def snoozed(self):
+        """Return snooze status as boolean."""
+        res = None
+        try:
+            res = await api.request_sync_snooze(
+                self.blink,
+                self.network_id,
+            )
+            if res is None:
+                return False
+            snooze_value = res.get("snooze_till")
+            # Return True if timestamp exists and is not empty
+            return bool(snooze_value)
+        except TypeError:
+            return False
+        except KeyError as e:
+            _LOGGER.warning(
+                "Exception %s: Encountered a likely malformed response "
+                "from the snooze API endpoint. Response: %s",
+                e,
+                res,
+            )
+            return False
+
+    async def async_snooze(self, snooze_time=240):
+        """Set sync snooze status."""
+        data = json_dumps({"snooze_time": snooze_time})
+        res = await api.request_sync_snooze(
+            self.blink,
+            self.network_id,
+            data=data,
+        )
+        # Refresh homescreen is not needed for sync-level snooze
+        # as it's retrieved directly from the sync endpoint
+        return res
+
     async def start(self):
         """Initialize the system."""
         _LOGGER.debug("Initializing the sync module")
