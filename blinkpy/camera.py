@@ -43,6 +43,9 @@ class BlinkCamera:
         self.motion_detected = None
         self.wifi_strength = None
         self.last_record = None
+        self.ai_description = None
+        self.ai_description_short = None
+        self.cv_detection = None
         self._cached_image = None
         self._cached_video = None
         self.camera_type = ""
@@ -74,6 +77,9 @@ class BlinkCamera:
             "sync_signal_strength": self.sync_signal_strength,
             "last_record": self.last_record,
             "type": self.product_type,
+            "ai_description": self.ai_description,
+            "ai_description_short": self.ai_description_short,
+            "cv_detection": self.cv_detection,
         }
         return attributes
 
@@ -341,10 +347,22 @@ class BlinkCamera:
                 last_records = sorted(self.sync.last_records[self.name], key=timesort)
                 for rec in last_records:
                     clip_addr = rec["clip"]
-                    self.clip = f"{self.sync.urls.base_url}{clip_addr}"
+                    if clip_addr and clip_addr.startswith("http"):
+                        self.clip = clip_addr
+                    else:
+                        self.clip = f"{self.sync.urls.base_url}{clip_addr}"
                     self.last_record = rec["time"]
+                    # Update AI description and CV detection from latest record
+                    self.ai_description = rec.get("ai_description")
+                    self.ai_description_short = rec.get("ai_description_short")
+                    self.cv_detection = rec.get("cv_detection")
                     if self.motion_detected:
-                        recent = {"time": self.last_record, "clip": self.clip}
+                        recent = {
+                            "time": self.last_record,
+                            "clip": self.clip,
+                            "ai_description": self.ai_description,
+                            "cv_detection": self.cv_detection,
+                        }
                         # Prevent duplicates.
                         if recent not in self.recent_clips:
                             self.recent_clips.append(recent)

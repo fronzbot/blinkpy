@@ -380,6 +380,26 @@ async def request_videos(blink, time=None, page=0):
     return await http_get(blink, url)
 
 
+async def request_videos_v4(blink, page_key=None):
+    """
+    Fetch media via the v4 endpoint which includes AI descriptions.
+
+    Uses POST /api/v4/accounts/{id}/media. Returns richer data than the v1
+    endpoint, including ai_vd (AI video descriptions) and top-level
+    cv_detection fields.
+
+    :param blink: Blink instance.
+    :param page_key: Optional pagination key from previous response.
+    """
+    url = f"{blink.urls.base_url}/api/v4/accounts/{blink.account_id}/media"
+    if page_key:
+        query = urlencode({"pagination_key": page_key})
+        url = f"{url}?{query}"
+
+    body = dumps({"filters": {}})
+    return await http_post(blink, url, data=body)
+
+
 async def request_cameras(blink, network):
     """
     Request all camera information.

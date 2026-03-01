@@ -154,10 +154,20 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.camera.sync.last_records["foobar"].append(record1)
         self.camera.sync.motion["foobar"] = True
         await self.camera.update_images(CONFIG, expire_clips=False)
-        record1["clip"] = self.blink.urls.base_url + "/clip1"
-        record2["clip"] = self.blink.urls.base_url + "/clip2"
-        self.assertEqual(self.camera.recent_clips[0], record1)
-        self.assertEqual(self.camera.recent_clips[1], record2)
+        expected1 = {
+            "clip": self.blink.urls.base_url + "/clip1",
+            "time": "2022-12-01 00:00:00+00:00",
+            "ai_description": None,
+            "cv_detection": None,
+        }
+        expected2 = {
+            "clip": self.blink.urls.base_url + "/clip2",
+            "time": "2022-12-01 00:00:10+00:00",
+            "ai_description": None,
+            "cv_detection": None,
+        }
+        self.assertEqual(self.camera.recent_clips[0], expected1)
+        self.assertEqual(self.camera.recent_clips[1], expected2)
 
     async def test_recent_video_clips_missing_key(self, mock_resp):
         """Tests that the missing key failst."""

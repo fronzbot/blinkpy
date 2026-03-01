@@ -311,7 +311,7 @@ class BlinkSyncModule:
             _LOGGER.info("No new videos since last refresh.")
             return False
 
-        resp = await api.request_videos(self.blink, time=interval, page=1)
+        resp = await api.request_videos_v4(self.blink)
 
         last_record = {}
         for camera in self.cameras:
@@ -331,14 +331,36 @@ class BlinkSyncModule:
             _LOGGER.warning("Could not check for motion. Response: %s", resp)
             return False
 
+        # The v4 endpoint returns all recent media (no server-side time
+        # filter), so we use `interval` as the reference time to filter
+        # entries client-side.
+        interval_iso = datetime.datetime.fromtimestamp(
+            interval, tz=datetime.timezone.utc
+        ).isoformat()
+
         for entry in info:
             try:
                 name = entry["device_name"]
                 clip_url = entry["media"]
                 timestamp = entry["created_at"]
-                if self.check_new_video_time(timestamp):
+
+                if self.check_new_video_time(timestamp, reference=interval_iso):
                     self.motion[name] = True and self.arm
                     record = {"clip": clip_url, "time": timestamp}
+
+                    # Extract AI video description (from v4 endpoint)
+                    ai_vd = entry.get("ai_vd")
+                    if ai_vd and isinstance(ai_vd, dict):
+                        if ai_vd.get("full_description"):
+                            record["ai_description"] = ai_vd["full_description"]
+                        if ai_vd.get("short_description"):
+                            record["ai_description_short"] = ai_vd["short_description"]
+
+                    # Extract CV detection labels
+                    cv = entry.get("cv_detection")
+                    if cv:
+                        record["cv_detection"] = cv
+
                     self.last_records[name].append(record)
             except KeyError:
                 last_refresh = datetime.datetime.fromtimestamp(self.blink.last_refresh)
