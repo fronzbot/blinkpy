@@ -225,8 +225,8 @@ class BlinkSyncModule:
     def get_unique_info(self, name):
         """Extract unique information for Minis and Doorbells."""
         try:
-            for type_key in self.type_key_map.values():
-                for device in self.blink.homescreen[type_key]:
+            for type_name in self.type_key_map:
+                for device in self.blink.get_homescreen_devices(type_name):
                     _LOGGER.debug("checking device %s", device)
                     if device["name"] == name:
                         _LOGGER.debug("Found unique_info %s", device)
@@ -551,7 +551,7 @@ class BlinkOwl(BlinkSyncModule):
     async def get_camera_info(self, camera_id, **kwargs):
         """Retrieve camera information."""
         try:
-            for owl in self.blink.homescreen["owls"]:
+            for owl in self.blink.get_homescreen_devices("mini"):
                 if owl["name"] == self.name:
                     self.status = owl["enabled"]
                     return owl
@@ -614,7 +614,7 @@ class BlinkLotus(BlinkSyncModule):
     async def get_camera_info(self, camera_id, **kwargs):
         """Retrieve camera information."""
         try:
-            for doorbell in self.blink.homescreen["doorbells"]:
+            for doorbell in self.blink.get_homescreen_devices("doorbell"):
                 if doorbell["name"] == self.name:
                     self.status = doorbell["enabled"]
                     return doorbell

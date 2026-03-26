@@ -75,6 +75,51 @@ class Blink:
         self.homescreen = {}
         self.no_owls = no_owls
 
+    def _iter_device_dicts(self, payload):
+        """Yield device-like dictionaries from potentially nested payloads."""
+        if isinstance(payload, list):
+            for item in payload:
+                yield from self._iter_device_dicts(item)
+            return
+        if isinstance(payload, dict):
+            # Treat this as a device entry when it has the minimum fields.
+            if "name" in payload and "network_id" in payload:
+                yield payload
+            for value in payload.values():
+                yield from self._iter_device_dicts(value)
+
+    def get_homescreen_devices(self, kind):
+        """Return homescreen devices for a given kind."""
+        key_candidates = {
+            "mini": ["owls", "mini_cameras", "minis"],
+            "doorbell": ["doorbells", "lotus", "doorbell_cameras"],
+        }
+        devices = []
+        seen = set()
+        for key in key_candidates.get(kind, []):
+            payload = self.homescreen.get(key)
+            for device in self._iter_device_dicts(payload):
+                signature = (
+                    str(device.get("id")),
+                    str(device.get("network_id")),
+                    str(device.get("name")),
+                )
+                if signature in seen:
+                    continue
+                seen.add(signature)
+                devices.append(device)
+        return devices
+
+    def has_sync_module_for_network(self, network_id):
+        """Check whether homescreen reports a real sync module for network."""
+        try:
+            for sync in self.homescreen.get("sync_modules", []):
+                if str(sync.get("network_id")) == str(network_id):
+                    return True
+        except AttributeError:
+            return False
+        return False
+
     @property
     def client_id(self):
         """Return the client id."""
@@ -220,10 +265,12 @@ class Blink:
         network_list = []
         camera_list = []
         try:
-            for owl in self.homescreen["owls"]:
+            for owl in self.get_homescreen_devices("mini"):
                 name = owl["name"]
                 network_id = str(owl["network_id"])
-                if network_id in self.network_ids:
+                if network_id in self.network_ids and self.has_sync_module_for_network(
+                    network_id
+                ):
                     camera_list.append(
                         {network_id: {"name": name, "id": network_id, "type": "mini"}}
                     )
@@ -244,10 +291,12 @@ class Blink:
         network_list = []
         camera_list = []
         try:
-            for lotus in self.homescreen["doorbells"]:
+            for lotus in self.get_homescreen_devices("doorbell"):
                 name = lotus["name"]
                 network_id = str(lotus["network_id"])
-                if network_id in self.network_ids:
+                if network_id in self.network_ids and self.has_sync_module_for_network(
+                    network_id
+                ):
                     camera_list.append(
                         {
                             network_id: {
@@ -287,9 +336,11 @@ class Blink:
             lotus_cameras = await self.setup_lotus()
             for camera in mini_cameras:
                 for network, camera_info in camera.items():
+                    all_cameras.setdefault(network, [])
                     all_cameras[network].append(camera_info)
             for camera in lotus_cameras:
                 for network, camera_info in camera.items():
+                    all_cameras.setdefault(network, [])
                     all_cameras[network].append(camera_info)
             return all_cameras
         except (KeyError, TypeError) as ex:
