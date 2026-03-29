@@ -242,7 +242,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
                     "thumbnail": "/foo/bar",
                     "serial": "abc123",
                 }
-            ],
+            ]
         }
         result = await self.blink.setup_owls()
         self.assertEqual(self.blink.network_ids, ["1234"])
@@ -274,7 +274,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
                     "thumbnail": "/foo/bar",
                     "serial": "abc123",
                 }
-            ],
+            ]
         }
         mock_usage.return_value = {"networks": [{"cameras": [], "network_id": 1234}]}
         result = await self.blink.setup_camera_list()
@@ -336,7 +336,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
                     "thumbnail": "/foo/bar",
                     "serial": "abc123",
                 }
-            ],
+            ]
         }
         mock_usage.return_value = {"networks": [{"cameras": [], "network_id": 1234}]}
         result = await self.blink.setup_camera_list()
@@ -363,7 +363,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
                         "serial": "abc123",
                     }
                 ]
-            },
+            }
         }
         mock_usage.return_value = {"networks": [{"cameras": [], "network_id": 1234}]}
         result = await self.blink.setup_camera_list()
@@ -376,10 +376,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
     async def test_blink_syncless_doorbell_not_in_camera_usage(
         self, mock_usage, mock_lotus_start
     ):
-        """Test that sync-less doorbells initialization.
-
-        Ensure they initialize even without camera_usage network..
-        """
+        """Test that sync-less doorbells initialize even without camera_usage network."""
         mock_lotus_start.return_value = True
         self.blink.network_ids = []
         self.blink.homescreen = {
@@ -428,7 +425,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
                     "thumbnail": "/bar/foo",
                     "serial": "zxc456",
                 },
-            ],
+            ]
         }
         expected = {
             "1234": [
@@ -467,7 +464,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
                     "thumbnail": "/bar/foo",
                     "serial": "zxc456",
                 },
-            ],
+            ]
         }
         expected = {
             "1234": [

@@ -84,10 +84,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
     def test_get_unique_info_valid_device(self, mock_resp) -> None:
         """Check that we get the correct info."""
-        device = {
-            "enabled": True,
-            "name": "doorbell1",
-        }
+        device = {"enabled": True, "name": "doorbell1", "id": 1234, "network_id": 5678}
         self.blink.homescreen = {"doorbells": [device], "owls": []}
         self.assertEqual(self.blink.sync["test"].get_unique_info("doorbell1"), device)
 
