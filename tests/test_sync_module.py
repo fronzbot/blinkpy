@@ -257,7 +257,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertFalse(await sync_module.async_set_scheduler(True))
 
     async def test_async_set_scheduler_disable_network_failure(self, mock_resp) -> None:
-        """Test async_set_scheduler disable handles API failure without modifying cache."""
+        """Test async_set_scheduler disable API error without modifying cache."""
         sync_module = self.blink.sync["test"]
         sync_module.network_info = {
             "network": {"active_program_id": 123},
@@ -270,7 +270,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertEqual(sync_module.network_info["programs"][0]["status"], "enabled")
 
     async def test_async_set_scheduler_enable_network_failure(self, mock_resp) -> None:
-        """Test async_set_scheduler enable handles API failure without modifying cache."""
+        """Test async_set_scheduler enable API error without modifying cache."""
         sync_module = self.blink.sync["test"]
         sync_module.network_info = {
             "network": {"active_program_id": None},
