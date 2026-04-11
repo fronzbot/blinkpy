@@ -112,6 +112,35 @@ class BlinkSyncModule:
             return None
 
     @property
+    def scheduler_enabled(self):
+        """Return boolean status of schedule."""
+        if self.network_info is None:
+            return False
+        try:
+            network = self.network_info.get("network", {})
+            if network.get("active_program_id") is not None or network.get(
+                "autoarm_time_enable", False
+            ):
+                return True
+            # Fallback: check the programs list cached during get_network_info.
+            # If the key is absent the network info has not yet been fully
+            # populated - log a warning so callers are aware.
+            if "programs" not in self.network_info:
+                _LOGGER.warning(
+                    "Programs list not yet populated for network %s; "
+                    "scheduler_enabled may be inaccurate. "
+                    "Call get_network_info() first.",
+                    self.name,
+                )
+                return False
+            for program in self.network_info["programs"]:
+                if program.get("status") == "enabled":
+                    return True
+            return False
+        except (AttributeError, KeyError, TypeError):
+            return False
+
+    @property
     def local_storage(self):
         """Indicate if local storage is activated or not (True/False)."""
         return self._local_storage["status"]
@@ -126,6 +155,102 @@ class BlinkSyncModule:
         if value:
             return await api.request_system_arm(self.blink, self.network_id)
         return await api.request_system_disarm(self.blink, self.network_id)
+
+    async def async_set_scheduler(self, enable):
+        """Enable or disable the Blink native schedule for this network.
+
+        :param enable: True to enable the schedule, False to disable it.
+        """
+        if self.scheduler_enabled == enable:
+            _LOGGER.debug("Schedule already in state %s, skipping.", enable)
+            return True
+
+        # Use the programs list already cached by get_network_info() where
+        # possible to avoid a redundant API call.  Fall back to a fresh fetch
+        # only if the cache is absent (e.g. in tests or before first refresh).
+        cached_programs = (
+            self.network_info.get("programs") if self.network_info else None
+        )
+        if cached_programs is None:
+            _LOGGER.debug("Programs not cached; fetching from API.")
+            cached_programs = await api.request_programs(self.blink, self.network_id)
+
+        if not enable:
+            # Prefer active_program_id from the network summary if present
+            program_id = self.network_info.get("network", {}).get("active_program_id")
+
+            # Otherwise find the currently enabled program from the list
+            if program_id is None:
+                try:
+                    for program in cached_programs:
+                        if program.get("status") == "enabled":
+                            program_id = program.get("id")
+                            break
+                except (KeyError, TypeError):
+                    pass
+
+            if program_id is None:
+                _LOGGER.error("Could not find an active program to disable.")
+                return False
+
+            result = await api.request_program_disable(
+                self.blink, self.network_id, program_id
+            )
+            # Optimistically update the cache so scheduler_enabled reflects
+            # the new state without requiring a full refresh.
+            if result:
+                self._update_cached_program_status(program_id, "disabled")
+            return result
+
+        # To enable, use the first available program from the cached list
+        try:
+            program_id = cached_programs[0]["id"]
+        except (KeyError, IndexError, TypeError):
+            _LOGGER.error(
+                "Could not find a program to enable on network %s.", self.name
+            )
+            return False
+
+        result = await api.request_program_enable(
+            self.blink, self.network_id, program_id
+        )
+        # Optimistically update the cache so scheduler_enabled reflects
+        # the new state without requiring a full refresh.
+        if result:
+            self._update_cached_program_status(program_id, "enabled")
+        return result
+
+    def _update_cached_program_status(self, program_id, status):
+        """Update the cached programs list after an enable/disable call.
+
+        The Blink API response for request_program_enable/disable only returns
+        a generic success message rather than the new program state. By
+        optimistically updating our local cache, scheduler_enabled remains
+        accurate immediately following async_set_scheduler, saving an
+        expensive and redundant network refresh.
+
+        :param program_id: ID of the program that was changed.
+        :param status: New status string, e.g. ``"enabled"`` or ``"disabled"``.
+        """
+        try:
+            for program in self.network_info.get("programs", []):
+                if program.get("id") == program_id:
+                    program["status"] = status
+                    _LOGGER.debug(
+                        "Optimistically updated program %s status to %s.",
+                        program_id,
+                        status,
+                    )
+                    break
+            # active_program_id in the network summary takes priority in
+            # scheduler_enabled, so keep it consistent with the new state.
+            network = self.network_info.get("network", {})
+            if status == "disabled":
+                network.pop("active_program_id", None)
+            else:
+                network["active_program_id"] = program_id
+        except (AttributeError, TypeError):
+            pass
 
     async def start(self):
         """Initialize the system."""
@@ -266,9 +391,18 @@ class BlinkSyncModule:
         self.network_info = await api.request_network_update(
             self.blink, self.network_id
         )
+        if self.network_info is None:
+            self.available = False
+            return False
+
         try:
             if self.network_info["network"]["sync_module_error"]:
                 raise KeyError
+
+            # Fetch programs to ensure scheduler status is accurate
+            programs = await api.request_programs(self.blink, self.network_id)
+            if isinstance(programs, list):
+                self.network_info["programs"] = programs
         except (TypeError, KeyError):
             self.available = False
             return False

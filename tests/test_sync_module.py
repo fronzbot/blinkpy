@@ -32,9 +32,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.blink: Blink = Blink(motion_interval=0, session=mock.AsyncMock())
         self.blink.last_refresh = 0
         self.blink.urls = BlinkURLHandler("test")
-        self.blink.sync["test"]: BlinkSyncModule = BlinkSyncModule(
-            self.blink, "test", "1234", []
-        )
+        self.blink.sync["test"] = BlinkSyncModule(self.blink, "test", "1234", [])
         self.blink.sync["test"].network_info = {"network": {"armed": True}}
         self.camera: BlinkCamera = BlinkCamera(self.blink.sync)
         self.mock_start = [
@@ -142,9 +140,9 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
     async def test_get_network_info(self, mock_resp) -> None:
         """Test network retrieval."""
-        mock_resp.return_value = {"network": {"sync_module_error": False}}
+        mock_resp.side_effect = [{"network": {"sync_module_error": False}}, []]
         self.assertTrue(await self.blink.sync["test"].get_network_info())
-        mock_resp.return_value = {"network": {"sync_module_error": True}}
+        mock_resp.side_effect = [{"network": {"sync_module_error": True}}, []]
         self.assertFalse(await self.blink.sync["test"].get_network_info())
 
     async def test_get_network_info_failure(self, mock_resp) -> None:
@@ -157,6 +155,155 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         mock_resp.side_effect = None
         self.assertFalse(await self.blink.sync["test"].get_network_info())
         self.assertFalse(self.blink.sync["test"].available)
+
+    def test_scheduler_enabled(self, mock_resp) -> None:
+        """Test scheduler_enabled property."""
+        sync_module = self.blink.sync["test"]
+
+        # Primary path: active_program_id present in network summary
+        sync_module.network_info = {"network": {"active_program_id": 123}}
+        self.assertTrue(sync_module.scheduler_enabled)
+        sync_module.network_info = {"network": {"active_program_id": None}}
+        self.assertFalse(sync_module.scheduler_enabled)
+
+        # Primary path: autoarm_time_enable flag
+        sync_module.network_info = {"network": {"autoarm_time_enable": True}}
+        self.assertTrue(sync_module.scheduler_enabled)
+
+        # Fallback path: programs list cached by get_network_info
+        sync_module.network_info = {
+            "network": {},
+            "programs": [{"id": 122793, "status": "enabled"}],
+        }
+        self.assertTrue(sync_module.scheduler_enabled)
+
+        sync_module.network_info = {
+            "network": {},
+            "programs": [{"id": 122793, "status": "disabled"}],
+        }
+        self.assertFalse(sync_module.scheduler_enabled)
+
+        sync_module.network_info = {"network": {}, "programs": []}
+        self.assertFalse(sync_module.scheduler_enabled)
+
+        # No programs key: emits warning, returns False
+        sync_module.network_info = {"network": {}}
+        self.assertFalse(sync_module.scheduler_enabled)
+
+        # None network_info
+        sync_module.network_info = None
+        self.assertFalse(sync_module.scheduler_enabled)
+
+    async def test_async_set_scheduler_disable(self, mock_resp) -> None:
+        """Test async_set_scheduler disable updates the cache optimistically."""
+        sync_module = self.blink.sync["test"]
+        sync_module.network_info = {
+            "network": {"active_program_id": 123},
+            "programs": [{"id": 123, "status": "enabled"}],
+        }
+        mock_resp.return_value = {"status": 200}
+        self.assertEqual(await sync_module.async_set_scheduler(False), {"status": 200})
+        # Cache should be updated immediately without needing a refresh
+        self.assertFalse(sync_module.scheduler_enabled)
+        self.assertEqual(sync_module.network_info["programs"][0]["status"], "disabled")
+
+    async def test_async_set_scheduler_disable_already_disabled(
+        self, mock_resp
+    ) -> None:
+        """Test async_set_scheduler disable when already disabled."""
+        sync_module = self.blink.sync["test"]
+        sync_module.network_info = {"network": {"active_program_id": None}}
+        self.assertTrue(await sync_module.async_set_scheduler(False))
+
+    async def test_async_set_scheduler_enable(self, mock_resp) -> None:
+        """Test async_set_scheduler enable updates the cache optimistically."""
+        sync_module = self.blink.sync["test"]
+        # Pre-populate the cache so no extra API call is made
+        sync_module.network_info = {
+            "network": {"active_program_id": None},
+            "programs": [{"id": 456, "status": "disabled"}],
+        }
+        mock_resp.return_value = {"status": 200}
+        self.assertEqual(await sync_module.async_set_scheduler(True), {"status": 200})
+        # Cache should be updated immediately without needing a refresh
+        self.assertTrue(sync_module.scheduler_enabled)
+        self.assertEqual(sync_module.network_info["programs"][0]["status"], "enabled")
+
+    async def test_async_set_scheduler_enable_uncached(self, mock_resp) -> None:
+        """Test async_set_scheduler fetches programs when cache is absent."""
+        sync_module = self.blink.sync["test"]
+        # No "programs" key → falls back to live API call
+        sync_module.network_info = {"network": {"active_program_id": None}}
+        mock_resp.side_effect = [
+            [{"id": 456}],
+            {"status": 200},
+        ]
+        self.assertEqual(await sync_module.async_set_scheduler(True), {"status": 200})
+
+    async def test_async_set_scheduler_enable_already_enabled(self, mock_resp):
+        """Test async_set_scheduler enable when already enabled."""
+        sync_module = self.blink.sync["test"]
+        sync_module.network_info = {"network": {"active_program_id": 123}}
+        self.assertTrue(await sync_module.async_set_scheduler(True))
+
+    async def test_async_set_scheduler_enable_fail(self, mock_resp) -> None:
+        """Test async_set_scheduler enable failure when no programs exist."""
+        sync_module = self.blink.sync["test"]
+        # Empty cached programs list → nothing to enable
+        sync_module.network_info = {
+            "network": {"active_program_id": None},
+            "programs": [],
+        }
+        self.assertFalse(await sync_module.async_set_scheduler(True))
+
+    async def test_async_set_scheduler_disable_network_failure(self, mock_resp) -> None:
+        """Test async_set_scheduler disable handles API failure without modifying cache."""
+        sync_module = self.blink.sync["test"]
+        sync_module.network_info = {
+            "network": {"active_program_id": 123},
+            "programs": [{"id": 123, "status": "enabled"}],
+        }
+        mock_resp.return_value = None  # Simulate network failure
+        self.assertIsNone(await sync_module.async_set_scheduler(False))
+        # Cache must not be modified since the API failed
+        self.assertTrue(sync_module.scheduler_enabled)
+        self.assertEqual(sync_module.network_info["programs"][0]["status"], "enabled")
+
+    async def test_async_set_scheduler_enable_network_failure(self, mock_resp) -> None:
+        """Test async_set_scheduler enable handles API failure without modifying cache."""
+        sync_module = self.blink.sync["test"]
+        sync_module.network_info = {
+            "network": {"active_program_id": None},
+            "programs": [{"id": 456, "status": "disabled"}],
+        }
+        mock_resp.return_value = None  # Simulate network failure
+        self.assertIsNone(await sync_module.async_set_scheduler(True))
+        # Cache must not be modified since the API failed
+        self.assertFalse(sync_module.scheduler_enabled)
+        self.assertEqual(sync_module.network_info["programs"][0]["status"], "disabled")
+
+    def test_update_cached_program_status(self, mock_resp) -> None:
+        """Test that _update_cached_program_status mutates the cache correctly."""
+        sync_module = self.blink.sync["test"]
+        sync_module.network_info = {
+            "network": {},
+            "programs": [
+                {"id": 100, "status": "enabled"},
+                {"id": 200, "status": "disabled"},
+            ],
+        }
+        sync_module._update_cached_program_status(100, "disabled")
+        self.assertEqual(sync_module.network_info["programs"][0]["status"], "disabled")
+
+        sync_module._update_cached_program_status(200, "enabled")
+        self.assertEqual(sync_module.network_info["programs"][1]["status"], "enabled")
+
+        # Updating a non-existent program ID should not raise
+        sync_module._update_cached_program_status(999, "enabled")
+
+        # Should not raise when network_info is None
+        sync_module.network_info = None
+        sync_module._update_cached_program_status(100, "disabled")
 
     async def test_check_new_videos_startup(self, mock_resp) -> None:
         """Test that check_new_videos does not block startup."""
@@ -542,7 +689,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         item = LocalStorageMediaItem(
             "1234",
             "Backdoor",
-            datetime.datetime.utcnow().isoformat(),
+            (datetime.datetime.utcnow() - datetime.timedelta(seconds=60)).isoformat(),
             "432",
             " manifest_id",
             "url",
