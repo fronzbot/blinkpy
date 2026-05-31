@@ -57,7 +57,7 @@ _CAMERA_ACTION_PATTERNS = {
                 ),
                 "data": {  # static payload
                     "intent": "liveview",
-                    "motion_event_start_time": None
+                    "motion_event_start_time": None,
                 },
             },
         },
@@ -80,7 +80,7 @@ _CAMERA_ACTION_PATTERNS = {
                 ),
                 "data": {  # static payload
                     "intent": "liveview",
-                    "motion_event_start_time": None
+                    "motion_event_start_time": None,
                 },
             },
         },
@@ -101,7 +101,7 @@ _CAMERA_ACTION_PATTERNS = {
                 ),
                 "data": {  # static payload
                     "intent": "liveview",
-                    "motion_event_start_time": None
+                    "motion_event_start_time": None,
                 },
             },
         },
