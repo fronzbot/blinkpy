@@ -847,8 +847,15 @@ async def oauth_signin(auth, email, password, csrf_token):
         OAUTH_SIGNIN_URL, headers=headers, data=data, allow_redirects=False
     )
 
-    if response.status == 412:
-        # 2FA required
+    if response.status in [412, 202]:
+        # 2FA required:
+        #   412 = standard Blink response
+        #   202 = alternate response observed on some accounts (same semantics: SMS/PIN sent)
+        auth._manual_cookie_store = {
+            cookie.key: cookie.value
+            for cookie in auth.session.cookie_jar
+        }
+        _LOGGER.debug("Blink: captured %d cookies for 2FA (status=%s)", len(auth._manual_cookie_store), response.status)
         return "2FA_REQUIRED"
     elif response.status in [301, 302, 303, 307, 308]:
         # Success without 2FA
@@ -884,7 +891,16 @@ async def oauth_verify_2fa(auth, csrf_token, twofa_code):
         "remember_me": "false",
     }
 
-    response = await auth.session.post(OAUTH_2FA_VERIFY_URL, headers=headers, data=data)
+    # Restore cookies that may be lost between oauth_signin and 2FA verification
+    if hasattr(auth, '_manual_cookie_store') and auth._manual_cookie_store:
+        auth.session.cookie_jar.update_cookies(auth._manual_cookie_store)
+        auth.session.cookie_jar._unsafe = True
+        _LOGGER.debug("Blink: restored %d cookies for 2FA verification", len(auth._manual_cookie_store))
+
+    response = await auth.session.post(
+        OAUTH_2FA_VERIFY_URL, headers=headers, data=data,
+        cookies=auth._manual_cookie_store if hasattr(auth, '_manual_cookie_store') else None
+    )
 
     if response.status == 201:
         try:
