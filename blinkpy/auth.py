@@ -8,6 +8,7 @@ from aiohttp import (
     ClientConnectionError,
     ContentTypeError,
     ClientResponse,
+    CookieJar,
 )
 from blinkpy import api
 from blinkpy.helpers import util
@@ -64,7 +65,9 @@ class Auth:
         self.no_prompt = no_prompt
         self._agent = agent
         self._app_build = app_build
-        self.session = session if session else ClientSession()
+        self.session = session if session else ClientSession(
+            cookie_jar=CookieJar(unsafe=True),
+        )
 
         # Callback to notify on token refresh
         self.callback = callback

@@ -847,13 +847,18 @@ async def oauth_signin(auth, email, password, csrf_token):
         OAUTH_SIGNIN_URL, headers=headers, data=data, allow_redirects=False
     )
 
-    if response.status == 412:
-        # 2FA required
+    if response.status in [412, 202]:
+        # 2FA required (some regions return 202 instead of 412)
         return "2FA_REQUIRED"
     elif response.status in [301, 302, 303, 307, 308]:
         # Success without 2FA
         return "SUCCESS"
 
+    _LOGGER.error(
+        "OAuth signin failed with status %d: %s",
+        response.status,
+        await response.text(),
+    )
     return None
 
 

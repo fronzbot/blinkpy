@@ -2,6 +2,7 @@
 
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
+from aiohttp import CookieJar
 from blinkpy.helpers.pkce import generate_pkce_pair
 from blinkpy import api
 from blinkpy.auth import Auth, BlinkTwoFARequiredError
@@ -98,12 +99,30 @@ async def test_oauth_signin_success():
 
 @pytest.mark.asyncio
 async def test_oauth_signin_2fa_required():
-    """Test OAuth signin when 2FA is required."""
+    """Test OAuth signin when 2FA is required (status 412)."""
     auth = Mock()
     auth.session = Mock()
 
     response = Mock()
     response.status = 412  # 2FA required
+    auth.session.post = AsyncMock(return_value=response)
+
+    result = await api.oauth_signin(auth, "test@example.com", "password", "csrf_token")
+
+    assert result == "2FA_REQUIRED"
+
+
+@pytest.mark.asyncio
+async def test_oauth_signin_2fa_required_202():
+    """Test OAuth signin when 2FA is required (status 202).
+
+    Some Blink regions return HTTP 202 instead of 412 to indicate 2FA is needed.
+    """
+    auth = Mock()
+    auth.session = Mock()
+
+    response = Mock()
+    response.status = 202  # 2FA required (alternate status)
     auth.session.post = AsyncMock(return_value=response)
 
     result = await api.oauth_signin(auth, "test@example.com", "password", "csrf_token")
@@ -193,6 +212,23 @@ async def test_oauth_refresh_token():
 
     assert result == token_response
     assert result["access_token"] == "new_access_token"
+
+
+@pytest.mark.asyncio
+async def test_auth_uses_unsafe_cookie_jar():
+    """Test that Auth creates session with unsafe CookieJar for OAuth cookie persistence.
+
+    The OAuth flow requires cookies to persist across redirects between
+    different subdomains (e.g., api.oauth.blink.com → rest-a001.immedia-semi.com).
+    aiohttp's default CookieJar drops cookies on cross-domain redirects,
+    which causes the 'empty_cookies' error during the 2FA step.
+    """
+    auth = Auth({"username": "test@example.com", "password": "password"})
+
+    # Verify the session uses an unsafe cookie jar
+    assert isinstance(auth.session.cookie_jar, CookieJar)
+    # The unsafe flag allows cookies to be set/sent across domains
+    assert auth.session.cookie_jar._unsafe is True
 
 
 @pytest.mark.asyncio
