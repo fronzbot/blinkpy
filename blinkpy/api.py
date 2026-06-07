@@ -1,5 +1,6 @@
 """Implements known blink API calls."""
 
+import json
 import logging
 import string
 from json import dumps
@@ -850,9 +851,31 @@ async def oauth_signin(auth, email, password, csrf_token):
     if response.status == 412:
         # 2FA required
         return "2FA_REQUIRED"
+
+    if response.status == 202:
+        response_text = await response.text()
+        try:
+            response_json = json.loads(response_text)
+        except json.JSONDecodeError:
+            response_json = {}
+
+        if (
+            response_json.get("tsv_state")
+            or response_json.get("tsv_methods")
+            or response_json.get("next_time_in_secs")
+        ):
+            # 2FA required (new response format with 202 status code)
+            return "2FA_REQUIRED"
+
     elif response.status in [301, 302, 303, 307, 308]:
         # Success without 2FA
         return "SUCCESS"
+
+    _LOGGER.error(
+        "OAuth signin failed: status=%s body=%s",
+        response.status,
+        response_text[:800],
+    )
 
     return None
 
