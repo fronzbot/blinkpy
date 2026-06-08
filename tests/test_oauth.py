@@ -101,6 +101,7 @@ async def test_oauth_signin_2fa_required():
     """Test OAuth signin when 2FA is required."""
     auth = Mock()
     auth.session = Mock()
+    auth.session.cookie_jar = []  # iterable, no cookies to capture
 
     response = Mock()
     response.status = 412  # 2FA required
@@ -116,6 +117,7 @@ async def test_oauth_verify_2fa():
     """Test 2FA verification."""
     auth = Mock()
     auth.session = Mock()
+    auth._manual_cookie_store = {}  # empty dict: falsy, skips cookie restore block
 
     response = Mock()
     response.status = 201  # Changed from 200 to 201 to match actual API behavior
