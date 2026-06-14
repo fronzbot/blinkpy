@@ -1,5 +1,6 @@
 """Implements known blink API calls."""
 
+import json
 import logging
 import string
 from json import dumps
@@ -50,8 +51,15 @@ _CAMERA_ACTION_PATTERNS = {
             "record": {"path": "clip"},
             "snap": {"path": "thumbnail"},
             "liveview": {
-                "path": "liveview",
-                "data": {"intent": "liveview"},  # static payload
+                "full_path": True,
+                "path": (
+                    "/api/v2/accounts/{account_id}"
+                    "/networks/{network}/owls/{camera_id}/liveview"
+                ),
+                "data": {  # static payload
+                    "intent": "liveview",
+                    "motion_event_start_time": None,
+                },
             },
         },
     },
@@ -66,8 +74,15 @@ _CAMERA_ACTION_PATTERNS = {
             "record": {"path": "clip"},
             "snap": {"path": "thumbnail"},
             "liveview": {
-                "path": "liveview",
-                "data": {"intent": "liveview"},  # static payload
+                "full_path": True,
+                "path": (
+                    "/api/v2/accounts/{account_id}"
+                    "/networks/{network}/doorbells/{camera_id}/liveview"
+                ),
+                "data": {  # static payload
+                    "intent": "liveview",
+                    "motion_event_start_time": None,
+                },
             },
         },
     },
@@ -80,12 +95,15 @@ _CAMERA_ACTION_PATTERNS = {
             "record": {"path": "clip"},
             "snap": {"path": "thumbnail"},
             "liveview": {
+                "full_path": True,
                 "path": (
-                    "/api/v5/accounts/{account_id}"
+                    "/api/v6/accounts/{account_id}"
                     "/networks/{network}/cameras/{camera_id}/liveview"
                 ),
-                "data": {"intent": "liveview"},  # static payload
-                "full_path": True,
+                "data": {  # static payload
+                    "intent": "liveview",
+                    "motion_event_start_time": None,
+                },
             },
         },
     },
@@ -850,9 +868,31 @@ async def oauth_signin(auth, email, password, csrf_token):
     if response.status == 412:
         # 2FA required
         return "2FA_REQUIRED"
+
+    if response.status == 202:
+        response_text = await response.text()
+        try:
+            response_json = json.loads(response_text)
+        except json.JSONDecodeError:
+            response_json = {}
+
+        if (
+            response_json.get("tsv_state")
+            or response_json.get("tsv_methods")
+            or response_json.get("next_time_in_secs")
+        ):
+            # 2FA required (new response format with 202 status code)
+            return "2FA_REQUIRED"
+
     elif response.status in [301, 302, 303, 307, 308]:
         # Success without 2FA
         return "SUCCESS"
+
+    _LOGGER.error(
+        "OAuth signin failed: status=%s body=%s",
+        response.status,
+        response_text[:800],
+    )
 
     return None
 

@@ -369,7 +369,14 @@ class Blink:
         return response
 
     async def download_videos(
-        self, path, since=None, camera="all", stop=10, delay=1, debug=False
+        self,
+        path,
+        since=None,
+        camera="all",
+        stop=10,
+        delay=1,
+        debug=False,
+        filename_format=None,
     ):
         """
         Download all videos from server since specified time.
@@ -384,12 +391,17 @@ class Blink:
         :param delay: Number of seconds to wait in between subsequent video downloads.
         :param debug: Set to TRUE to prevent downloading of items.
                       Instead of downloading, entries will be printed to log.
+        :param filename_format: Optional callable to format filename.
+                                Signature: filename_format(created_at, camera_name,
+                                path) -> str. If None, uses default slugified format.
         """
         if not isinstance(camera, list):
             camera = [camera]
 
         results = await self.get_videos_metadata(since=since, stop=stop)
-        await self._parse_downloaded_items(results, camera, path, delay, debug)
+        await self._parse_downloaded_items(
+            results, camera, path, delay, debug, filename_format=filename_format
+        )
 
     async def get_videos_metadata(self, since=None, camera="all", stop=10):
         """
@@ -438,8 +450,29 @@ class Blink:
         )
         return response
 
-    async def _parse_downloaded_items(self, result, camera, path, delay, debug):
-        """Parse downloaded videos."""
+    def _format_filename_default(self, created_at, camera_name, path):
+        """Format filename using default slugified format."""
+        filename = f"{camera_name}-{created_at}"
+        filename = f"{slugify(filename)}.mp4"
+        return os.path.join(path, filename)
+
+    async def _parse_downloaded_items(
+        self, result, camera, path, delay, debug, filename_format=None
+    ):
+        """Parse downloaded videos.
+
+        :param result: List of video metadata items.
+        :param camera: Camera name(s) to filter on.
+        :param path: Directory path to save videos.
+        :param delay: Delay between downloads in seconds.
+        :param debug: If True, log instead of downloading.
+        :param filename_format: Optional callable(created_at, camera_name, path) -> str
+                                If None, uses default slugified format.
+        """
+        # Use default formatter if none provided
+        if filename_format is None:
+            filename_format = self._format_filename_default
+
         for item in result:
             try:
                 created_at = item["created_at"]
@@ -458,9 +491,8 @@ class Blink:
                 _LOGGER.debug("%s: %s is marked as deleted.", camera_name, address)
                 continue
 
-            filename = f"{camera_name}-{created_at}"
-            filename = f"{slugify(filename)}.mp4"
-            filename = os.path.join(path, filename)
+            # Use provided format function to create filename
+            filename = filename_format(created_at, camera_name, path)
 
             if not debug:
                 if await aiofiles.ospath.isfile(filename):
