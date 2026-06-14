@@ -50,8 +50,15 @@ _CAMERA_ACTION_PATTERNS = {
             "record": {"path": "clip"},
             "snap": {"path": "thumbnail"},
             "liveview": {
-                "path": "liveview",
-                "data": {"intent": "liveview"},  # static payload
+                "full_path": True,
+                "path": (
+                    "/api/v2/accounts/{account_id}"
+                    "/networks/{network}/owls/{camera_id}/liveview"
+                ),
+                "data": {  # static payload
+                    "intent": "liveview",
+                    "motion_event_start_time": None,
+                },
             },
         },
     },
@@ -66,8 +73,15 @@ _CAMERA_ACTION_PATTERNS = {
             "record": {"path": "clip"},
             "snap": {"path": "thumbnail"},
             "liveview": {
-                "path": "liveview",
-                "data": {"intent": "liveview"},  # static payload
+                "full_path": True,
+                "path": (
+                    "/api/v2/accounts/{account_id}"
+                    "/networks/{network}/doorbells/{camera_id}/liveview"
+                ),
+                "data": {  # static payload
+                    "intent": "liveview",
+                    "motion_event_start_time": None,
+                },
             },
         },
     },
@@ -80,12 +94,15 @@ _CAMERA_ACTION_PATTERNS = {
             "record": {"path": "clip"},
             "snap": {"path": "thumbnail"},
             "liveview": {
+                "full_path": True,
                 "path": (
-                    "/api/v5/accounts/{account_id}"
+                    "/api/v6/accounts/{account_id}"
                     "/networks/{network}/cameras/{camera_id}/liveview"
                 ),
-                "data": {"intent": "liveview"},  # static payload
-                "full_path": True,
+                "data": {  # static payload
+                    "intent": "liveview",
+                    "motion_event_start_time": None,
+                },
             },
         },
     },
