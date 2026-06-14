@@ -119,11 +119,9 @@ async def test_oauth_signin_2fa_required_202():
 
     response = Mock()
     response.status = 202
-    response.text = AsyncMock(
-        return_value='{"tsv_state": "required", \
+    response.text = AsyncMock(return_value='{"tsv_state": "required", \
             "tsv_methods": ["sms"], \
-            "next_time_in_secs": 30}'
-    )
+            "next_time_in_secs": 30}')
     auth.session.post = AsyncMock(return_value=response)
 
     result = await api.oauth_signin(auth, "test@example.com", "password", "csrf_token")

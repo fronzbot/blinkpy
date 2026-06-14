@@ -14,7 +14,6 @@ import aiofiles
 import dateutil.parser
 from blinkpy.helpers import constants as const
 
-
 _LOGGER = logging.getLogger(__name__)
 
 
