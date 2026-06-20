@@ -869,8 +869,13 @@ async def oauth_signin(auth, email, password, csrf_token):
         # 2FA required
         return "2FA_REQUIRED"
 
+    if response.status in [301, 302, 303, 307, 308]:
+        # Success without 2FA
+        return "SUCCESS"
+
+    response_text = await response.text()
+
     if response.status == 202:
-        response_text = await response.text()
         try:
             response_json = json.loads(response_text)
         except json.JSONDecodeError:
@@ -883,10 +888,6 @@ async def oauth_signin(auth, email, password, csrf_token):
         ):
             # 2FA required (new response format with 202 status code)
             return "2FA_REQUIRED"
-
-    elif response.status in [301, 302, 303, 307, 308]:
-        # Success without 2FA
-        return "SUCCESS"
 
     _LOGGER.error(
         "OAuth signin failed: status=%s body=%s",
