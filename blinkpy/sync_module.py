@@ -126,10 +126,9 @@ class BlinkSyncModule:
             # If the key is absent the network info has not yet been fully
             # populated - log a warning so callers are aware.
             if "programs" not in self.network_info:
-                _LOGGER.warning(
+                _LOGGER.debug(
                     "Programs list not yet populated for network %s; "
-                    "scheduler_enabled may be inaccurate. "
-                    "Call get_network_info() first.",
+                    "scheduler_enabled may be inaccurate.",
                     self.name,
                 )
                 return False
@@ -180,17 +179,18 @@ class BlinkSyncModule:
             program_id = self.network_info.get("network", {}).get("active_program_id")
 
             # Otherwise find the currently enabled program from the list
-            if program_id is None:
-                try:
-                    for program in cached_programs:
-                        if program.get("status") == "enabled":
-                            program_id = program.get("id")
-                            break
-                except (KeyError, TypeError):
-                    pass
+            if program_id is None and isinstance(cached_programs, list):
+                program_id = next(
+                    (
+                        p.get("id")
+                        for p in cached_programs
+                        if p.get("status") == "enabled"
+                    ),
+                    None,
+                )
 
             if program_id is None:
-                _LOGGER.error("Could not find an active program to disable.")
+                _LOGGER.warning("Could not find an active program to disable.")
                 return False
 
             result = await api.request_program_disable(
@@ -206,7 +206,7 @@ class BlinkSyncModule:
         try:
             program_id = cached_programs[0]["id"]
         except (KeyError, IndexError, TypeError):
-            _LOGGER.error(
+            _LOGGER.warning(
                 "Could not find a program to enable on network %s.", self.name
             )
             return False
@@ -233,20 +233,27 @@ class BlinkSyncModule:
         :param status: New status string, e.g. ``"enabled"`` or ``"disabled"``.
         """
         try:
-            for program in self.network_info.get("programs", []):
-                if program.get("id") == program_id:
+            programs = (
+                self.network_info.get("programs", []) if self.network_info else []
+            )
+            if isinstance(programs, list):
+                program = next(
+                    (p for p in programs if p.get("id") == program_id), None
+                )
+                if program:
                     program["status"] = status
                     _LOGGER.debug(
                         "Optimistically updated program %s status to %s.",
                         program_id,
                         status,
                     )
-                    break
             # active_program_id in the network summary takes priority in
             # scheduler_enabled, so keep it consistent with the new state.
-            network = self.network_info.get("network", {})
+            network = (
+                self.network_info.get("network", {}) if self.network_info else {}
+            )
             if status == "disabled":
-                network.pop("active_program_id", None)
+                network["active_program_id"] = None
             else:
                 network["active_program_id"] = program_id
         except (AttributeError, TypeError):
@@ -391,10 +398,6 @@ class BlinkSyncModule:
         self.network_info = await api.request_network_update(
             self.blink, self.network_id
         )
-        if self.network_info is None:
-            self.available = False
-            return False
-
         try:
             if self.network_info["network"]["sync_module_error"]:
                 raise KeyError

@@ -240,6 +240,14 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         ]
         self.assertEqual(await sync_module.async_set_scheduler(True), {"status": 200})
 
+    async def test_async_set_scheduler_enable_uncached_none(self, mock_resp) -> None:
+        """Test fallback when request_programs returns None."""
+        sync_module = self.blink.sync["test"]
+        # No "programs" key → falls back to live API call
+        sync_module.network_info = {"network": {"active_program_id": None}}
+        mock_resp.return_value = None
+        self.assertFalse(await sync_module.async_set_scheduler(True))
+
     async def test_async_set_scheduler_enable_already_enabled(self, mock_resp):
         """Test async_set_scheduler enable when already enabled."""
         sync_module = self.blink.sync["test"]
