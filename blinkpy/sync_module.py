@@ -124,7 +124,7 @@ class BlinkSyncModule:
                 return True
             # Fallback: check the programs list cached during get_network_info.
             # If the key is absent the network info has not yet been fully
-            # populated - log a warning so callers are aware.
+            # populated - log a debug message so callers are aware.
             if "programs" not in self.network_info:
                 _LOGGER.debug(
                     "Programs list not yet populated for network %s; "
@@ -205,7 +205,9 @@ class BlinkSyncModule:
                 self._update_cached_program_status(program_id, "disabled")
             return result
 
-        # To enable, use the first available program from the cached list
+        # To enable, use the first available program from the cached list.
+        # Blink networks typically support only a single native schedule (program),
+        # so we default to enabling the first one in the list.
         try:
             program_id = cached_programs[0]["id"]
         except (KeyError, IndexError, TypeError):
@@ -401,7 +403,8 @@ class BlinkSyncModule:
             if self.network_info["network"]["sync_module_error"]:
                 raise KeyError
 
-            # Fetch programs to ensure scheduler status is accurate
+            # Cache the programs list locally during refresh so scheduler_enabled
+            # can check it synchronously without triggering redundant network calls.
             programs = await api.request_programs(self.blink, self.network_id)
             if isinstance(programs, list):
                 self.network_info["programs"] = programs
