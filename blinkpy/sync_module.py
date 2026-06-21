@@ -237,9 +237,7 @@ class BlinkSyncModule:
                 self.network_info.get("programs", []) if self.network_info else []
             )
             if isinstance(programs, list):
-                program = next(
-                    (p for p in programs if p.get("id") == program_id), None
-                )
+                program = next((p for p in programs if p.get("id") == program_id), None)
                 if program:
                     program["status"] = status
                     _LOGGER.debug(
@@ -249,9 +247,7 @@ class BlinkSyncModule:
                     )
             # active_program_id in the network summary takes priority in
             # scheduler_enabled, so keep it consistent with the new state.
-            network = (
-                self.network_info.get("network", {}) if self.network_info else {}
-            )
+            network = self.network_info.get("network", {}) if self.network_info else {}
             if status == "disabled":
                 network["active_program_id"] = None
             else:
@@ -515,8 +511,7 @@ class BlinkSyncModule:
                 # Exit the loop once there are no new videos in the list.
                 if not self.check_new_video_time(iso_timestamp, last_manifest_read):
                     _LOGGER.info(
-                        "No new local storage videos since last manifest "
-                        "read at %s.",
+                        "No new local storage videos since last manifest read at %s.",
                         last_read_local,
                     )
                     break
