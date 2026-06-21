@@ -189,6 +189,9 @@ class BlinkSyncModule:
                     None,
                 )
 
+            # If scheduler_enabled is True but no program ID is found, we cannot call
+            # the API disable endpoint (which requires a program ID). Since the
+            # requested operation fails, this is logged as a warning.
             if program_id is None:
                 _LOGGER.warning("Could not find an active program to disable.")
                 return False
