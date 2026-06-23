@@ -865,7 +865,7 @@ async def oauth_signin(auth, email, password, csrf_token):
         OAUTH_SIGNIN_URL, headers=headers, data=data, allow_redirects=False
     )
 
-    response_text = None
+    response_text = ""
 
     if response.status == 412:
         # 2FA required
@@ -893,7 +893,7 @@ async def oauth_signin(auth, email, password, csrf_token):
     _LOGGER.error(
         "OAuth signin failed: status=%s body=%s",
         response.status,
-        (response_text or "")[:800],
+        response_text[:800],
     )
 
     return None
