@@ -119,16 +119,51 @@ async def test_oauth_signin_2fa_required_202():
 
     response = Mock()
     response.status = 202
-    response.text = AsyncMock(
-        return_value='{"tsv_state": "required", \
+    response.text = AsyncMock(return_value='{"tsv_state": "required", \
             "tsv_methods": ["sms"], \
-            "next_time_in_secs": 30}'
-    )
+            "next_time_in_secs": 30}')
     auth.session.post = AsyncMock(return_value=response)
 
     result = await api.oauth_signin(auth, "test@example.com", "password", "csrf_token")
 
     assert result == "2FA_REQUIRED"
+
+
+@pytest.mark.asyncio
+async def test_oauth_signin_202_without_tsv_fields():
+    """Test oauth_signin returns None when 202 response lacks 2FA indicator fields."""
+    auth = Mock()
+    auth.session = Mock()
+
+    response = Mock()
+    response.status = 202
+    response.text = AsyncMock(return_value='{"some_other_field": "value"}')
+    auth.session.post = AsyncMock(return_value=response)
+
+    result = await api.oauth_signin(auth, "test@example.com", "password", "csrf_token")
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_oauth_signin_unexpected_status_returns_none():
+    """Test oauth_signin returns None without crashing for unexpected status codes.
+
+    Prior to the fix, any status other than 412, 202, or a redirect raised
+    UnboundLocalError because response_text was only assigned inside the
+    202 block but referenced in the error log unconditionally.
+    """
+    auth = Mock()
+    auth.session = Mock()
+
+    response = Mock()
+    response.status = 400
+    response.text = AsyncMock(return_value="Bad Request")
+    auth.session.post = AsyncMock(return_value=response)
+
+    result = await api.oauth_signin(auth, "test@example.com", "password", "csrf_token")
+
+    assert result is None
 
 
 @pytest.mark.asyncio

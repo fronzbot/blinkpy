@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=68,<81", "wheel>=0.40,<0.47"]
+requires = ["setuptools>=68,<83", "wheel>=0.40,<0.48"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "blinkpy"
-version = "0.25.6"
+version = "0.25.7"
 license = {text = "MIT"}
 description = "A Blink camera Python Library."
 readme = "README.rst"
