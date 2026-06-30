@@ -1,5 +1,6 @@
 """Tests for BlinkLiveStream class."""
 
+import asyncio
 import ssl
 import urllib.parse
 from unittest import mock
@@ -259,8 +260,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         mock_writer = mock.Mock()
 
         # Mock client reading data then disconnecting
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = [b"test_data", b""]
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [b"test_data", b""]
         mock_writer.is_closing.return_value = False
 
         # Start the join coroutine
@@ -276,8 +277,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         mock_writer = mock.Mock()
 
         # Mock connection reset error
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = ConnectionResetError()
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = ConnectionResetError()
         mock_writer.is_closing.return_value = False
 
         with mock.patch.object(self.livestream, "stop") as mock_stop:
@@ -294,8 +295,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         mock_writer = mock.Mock()
 
         # Mock general exception (not ConnectionResetError)
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = ValueError("Test join exception")
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = ValueError("Test join exception")
         mock_writer.is_closing.return_value = False
 
         with (
@@ -335,8 +336,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         # Mock payload starting with 0x47 (transport stream packet start)
         payload_data = bytearray([0x47] + [0x00] * 187)  # 188 bytes total
 
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = [header_data, payload_data, b""]
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [header_data, payload_data, asyncio.IncompleteReadError(b"", 9)]
         mock_reader.at_eof.side_effect = [False, False, True]
         mock_client.is_closing.return_value = False
         mock_client.write = mock.Mock()
@@ -374,8 +375,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
 
         payload_data = bytearray([0x47] + [0x00] * 187)  # 188 bytes total
 
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = [header_data_invalid, payload_data, b""]
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [header_data_invalid, payload_data, asyncio.IncompleteReadError(b"", 9)]
         mock_reader.at_eof.side_effect = [False, False, True]
 
         self.livestream.target_reader = mock_reader
@@ -393,8 +394,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         mock_client = mock.Mock()
 
         # Simulate reading incomplete header
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = [b"short", b""]
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [asyncio.IncompleteReadError(b"short", 9)]
         mock_reader.at_eof.side_effect = [False, True]
 
         self.livestream.target_reader = mock_reader
@@ -446,8 +447,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
             ]
         )
 
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = [header_data_empty, header_data, b"short", b""]
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [header_data_empty, header_data, asyncio.IncompleteReadError(b"short", 188)]
         mock_reader.at_eof.side_effect = [False, False, True]
 
         self.livestream.target_reader = mock_reader
@@ -462,7 +463,7 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
             mock_logger.assert_called_once()
 
         # Verify that the first payload read was skipped (empty payload)
-        self.assertEqual(mock_reader.read.call_count, 3)  # odd number of reads
+        self.assertEqual(mock_reader.readexactly.call_count, 3)  # odd number of reads
 
         # Verify no data was written to client (incomplete header)
         mock_client.write.assert_not_called()
@@ -490,8 +491,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         # Mock payload starting with 0x42 (invalid transport stream packet start)
         payload_data = bytearray([0x42] + [0x00] * 187)  # 188 bytes total
 
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = [header_data, payload_data, b""]
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [header_data, payload_data, asyncio.IncompleteReadError(b"", 9)]
         mock_reader.at_eof.side_effect = [False, False, True]
         mock_client.is_closing.return_value = False
         mock_client.write = mock.Mock()
@@ -612,8 +613,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         # Mock SSL error
         ssl_error = ssl.SSLError()
         ssl_error.reason = "APPLICATION_DATA_AFTER_CLOSE_NOTIFY"
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = ssl_error
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = ssl_error
         mock_reader.at_eof.return_value = False
 
         self.livestream.target_reader = mock_reader
@@ -634,8 +635,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         # Mock SSL error with different reason
         ssl_error = ssl.SSLError()
         ssl_error.reason = "SOME_OTHER_SSL_ERROR"
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = ssl_error
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = ssl_error
         mock_reader.at_eof.return_value = False
 
         self.livestream.target_reader = mock_reader
@@ -658,8 +659,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         mock_writer = mock.Mock()
 
         # Mock general exception
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = Exception("Test exception")
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = Exception("Test exception")
         mock_reader.at_eof.return_value = False
 
         self.livestream.target_reader = mock_reader
@@ -681,8 +682,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         mock_writer = mock.Mock()
 
         # Mock asyncio timeout exception
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = TimeoutError()
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = TimeoutError()
         mock_reader.at_eof.return_value = False
 
         self.livestream.target_reader = mock_reader
