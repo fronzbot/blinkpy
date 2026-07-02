@@ -236,6 +236,50 @@ async def request_syncmodule(blink, network):
     return await http_get(blink, url)
 
 
+async def request_programs(blink, network):
+    """
+    Request all programs (schedules) for a network.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/networks/{network}/programs"
+    )
+    return await http_get(blink, url)
+
+
+async def request_program_enable(blink, network, program_id):
+    """
+    Enable a program (schedule) on a network.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param program_id: ID of the program to enable.
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/networks/{network}/programs/{program_id}/enable"
+    )
+    return await http_post(blink, url)
+
+
+async def request_program_disable(blink, network, program_id):
+    """
+    Disable a program (schedule) on a network.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param program_id: ID of the program to disable.
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/networks/{network}/programs/{program_id}/disable"
+    )
+    return await http_post(blink, url)
+
+
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_system_arm(blink, network, **kwargs):
     """
