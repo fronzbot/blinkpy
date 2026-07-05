@@ -727,6 +727,23 @@ async def request_camera_action(
     return response
 
 
+async def request_floodlight(blink, network, camera_id, enable):
+    """
+    Toggle a wired floodlight camera's lights on/off.
+
+    :param blink: Blink instance.
+    :param network: Network (sync module) id.
+    :param camera_id: Camera id.
+    :param enable: True to turn lights on, False for off.
+    """
+    state = "on" if enable else "off"
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/networks/{network}/owls/{camera_id}/lights/{state}"
+    )
+    return await http_post(blink, url)
+
+
 async def wait_for_command(blink, json_data: dict) -> bool:
     """Wait for command to complete."""
     _LOGGER.debug("Command Wait %s", json_data)

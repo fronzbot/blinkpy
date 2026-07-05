@@ -177,6 +177,46 @@ class BlinkCamera:
             return await res.json()
         return None
 
+    @property
+    def floodlight_enabled(self):
+        """Return last-known floodlight state if tracked, else None."""
+        return getattr(self, "_floodlight_enabled", None)
+
+    def get_light_accessories(self):
+        """Return light accessories for this camera from homescreen data."""
+        accessories = (self.sync.blink.homescreen or {}).get("accessories", {})
+        result = []
+        for acc_list in accessories.values():
+            for acc in acc_list:
+                if str(acc.get("target_id")) == str(self.camera_id):
+                    result.append(acc)
+        return result
+
+    async def async_set_floodlight(self, enable):
+        """Turn the wired floodlight on or off.
+
+        Returns None if the network is busy (any camera is actively recording).
+        """
+        if self.product_type != "superior":
+            _LOGGER.warning(
+                "%s is product type %s, not a wired floodlight; "
+                "floodlight toggle may not apply",
+                self.name,
+                self.product_type,
+            )
+        result = await api.request_floodlight(
+            self.sync.blink, self.network_id, self.camera_id, enable
+        )
+        if result is None:
+            return None
+        if isinstance(result, dict) and result.get("code") == 307:
+            _LOGGER.warning(
+                "Floodlight command rejected for %s: camera is busy", self.name
+            )
+            return None
+        self._floodlight_enabled = bool(enable)
+        return result
+
     async def record(self):
         """Initiate clip recording."""
         return await api.request_new_video(
