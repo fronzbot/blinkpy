@@ -182,16 +182,6 @@ class BlinkCamera:
         """Return last-known floodlight state if tracked, else None."""
         return getattr(self, "_floodlight_enabled", None)
 
-    def get_light_accessories(self):
-        """Return light accessories for this camera from homescreen data."""
-        accessories = (self.sync.blink.homescreen or {}).get("accessories", {})
-        result = []
-        for acc_list in accessories.values():
-            for acc in acc_list:
-                if str(acc.get("target_id")) == str(self.camera_id):
-                    result.append(acc)
-        return result
-
     async def async_set_floodlight(self, enable):
         """Turn the wired floodlight on or off.
 
