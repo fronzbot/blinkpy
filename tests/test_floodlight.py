@@ -116,12 +116,15 @@ class TestFloodlightCamera(IsolatedAsyncioTestCase):
         mock.AsyncMock(return_value=BUSY_RESPONSE),
     )
     async def test_async_set_floodlight_busy(self, mock_resp):
-        """Test async_set_floodlight returns None and does not cache when camera is busy."""
+        """Test async_set_floodlight returns None and does not cache when busy."""
         result = await self.camera.async_set_floodlight(True)
         self.assertIsNone(result)
         self.assertIsNone(self.camera.floodlight_enabled)
 
-    @mock.patch("blinkpy.api.request_floodlight", mock.AsyncMock(return_value=COMMAND_RESPONSE))
+    @mock.patch(
+        "blinkpy.api.request_floodlight",
+        mock.AsyncMock(return_value=COMMAND_RESPONSE),
+    )
     async def test_async_set_floodlight_non_superior_warns(self, mock_resp):
         """Test async_set_floodlight logs a warning for non-superior cameras."""
         self.camera.product_type = "hawk"
