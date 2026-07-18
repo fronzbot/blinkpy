@@ -133,8 +133,9 @@ async def request_login(
         "hardware_id": login_data.get("device_id", "Blinkpy"),
     }
 
-    # Add 2FA code to headers if provided
-    if "2fa_code" in login_data:
+    # Add 2FA code to headers if provided; a None value would make
+    # aiohttp raise a TypeError when serializing the headers
+    if login_data.get("2fa_code"):
         headers["2fa-code"] = login_data["2fa_code"]
 
     # Prepare form data for OAuth
@@ -1064,4 +1065,5 @@ async def oauth_refresh_token(auth, refresh_token, hardware_id):
     if response.status == 200:
         return await response.json()
 
+    _LOGGER.error("OAuth token refresh failed with status %s", response.status)
     return None
