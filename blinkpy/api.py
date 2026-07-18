@@ -130,13 +130,9 @@ async def request_login(
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": DEFAULT_USER_AGENT,
-        "hardware_id": login_data.get("device_id", "Blinkpy"),
+        "hardware_id": auth.hardware_id,
+        "2fa-code": login_data.get("2fa_code") or "",
     }
-
-    # Add 2FA code to headers if provided; a None value would make
-    # aiohttp raise a TypeError when serializing the headers
-    if login_data.get("2fa_code"):
-        headers["2fa-code"] = login_data["2fa_code"]
 
     # Prepare form data for OAuth
     form_data = {

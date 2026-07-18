@@ -69,23 +69,12 @@ class Auth:
         # Callback to notify on token refresh
         self.callback = callback
 
-        # OAuth v2 attributes
+        # OAuth v2 attributes; Blink rejects non-UUID hardware_ids with a 406
         self.hardware_id = login_data.get("hardware_id")
-        if not self._is_valid_hardware_id(self.hardware_id):
-            self.hardware_id = str(uuid.uuid4()).upper()
-
-    @staticmethod
-    def _is_valid_hardware_id(hardware_id):
-        """Check that hardware_id is a UUID.
-
-        Blink rejects OAuth requests with a non-UUID hardware_id
-        (HTTP 406), e.g. legacy values migrated from older configs.
-        """
         try:
-            uuid.UUID(str(hardware_id))
-        except ValueError:
-            return False
-        return True
+            uuid.UUID(self.hardware_id)
+        except (TypeError, ValueError):
+            self.hardware_id = str(uuid.uuid4()).upper()
 
     @property
     def login_attributes(self):

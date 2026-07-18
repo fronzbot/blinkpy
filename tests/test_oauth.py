@@ -400,17 +400,19 @@ async def test_auth_keeps_valid_uuid_hardware_id():
 
 
 @pytest.mark.asyncio
-async def test_request_login_skips_none_2fa_code():
-    """Test that a None 2fa_code does not produce a 2fa-code header."""
+async def test_request_login_missing_2fa_code_sends_empty_header():
+    """Test that a missing or None 2fa_code produces an empty 2fa-code header."""
     auth = Mock()
     auth.query = AsyncMock(return_value=Mock(status=200))
     auth.refresh_token = "refresh_token"
+    auth.hardware_id = "726D586E-6A27-49E4-B61B-1BB070908899"
 
     login_data = {"username": "foo", "password": "bar", "2fa_code": None}
     await api.request_login(auth, "https://example.com", login_data, is_refresh=True)
 
     headers = auth.query.call_args.kwargs["headers"]
-    assert "2fa-code" not in headers
+    assert headers["2fa-code"] == ""
+    assert headers["hardware_id"] == auth.hardware_id
 
 
 @pytest.mark.asyncio
@@ -419,6 +421,7 @@ async def test_request_login_sends_2fa_code_header():
     auth = Mock()
     auth.query = AsyncMock(return_value=Mock(status=200))
     auth.refresh_token = "refresh_token"
+    auth.hardware_id = "726D586E-6A27-49E4-B61B-1BB070908899"
 
     login_data = {"username": "foo", "password": "bar", "2fa_code": "123456"}
     await api.request_login(auth, "https://example.com", login_data, is_refresh=True)
