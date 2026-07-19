@@ -277,7 +277,7 @@ class TestAuth(IsolatedAsyncioTestCase):
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
                 "User-Agent": const.DEFAULT_USER_AGENT,
-                "hardware_id": self.auth.hardware_id,
+                "hardware_id": const.DEVICE_ID,
                 "2fa-code": "",
             },
             timeout=10,
@@ -308,7 +308,7 @@ class TestAuth(IsolatedAsyncioTestCase):
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
                 "User-Agent": const.DEFAULT_USER_AGENT,
-                "hardware_id": self.auth.hardware_id,
+                "hardware_id": const.DEVICE_ID,
                 "2fa-code": "",
             },
             timeout=10,
