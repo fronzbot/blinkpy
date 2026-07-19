@@ -363,3 +363,18 @@ async def test_complete_2fa_login():
                 # State should be cleaned up
                 assert not hasattr(auth, "_oauth_csrf_token")
                 assert not hasattr(auth, "_oauth_code_verifier")
+
+
+@pytest.mark.asyncio
+async def test_request_login_sends_auth_hardware_id_header():
+    """Test that request_login sends auth.hardware_id as the hardware_id header."""
+    auth = Mock()
+    auth.query = AsyncMock(return_value=Mock(status=200))
+    auth.refresh_token = "refresh_token"
+    auth.hardware_id = "726D586E-6A27-49E4-B61B-1BB070908899"
+
+    login_data = {"username": "foo", "password": "bar"}
+    await api.request_login(auth, "https://example.com", login_data, is_refresh=True)
+
+    headers = auth.query.call_args.kwargs["headers"]
+    assert headers["hardware_id"] == auth.hardware_id
