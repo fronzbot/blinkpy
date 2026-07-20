@@ -278,6 +278,7 @@ class TestAuth(IsolatedAsyncioTestCase):
                 "Content-Type": "application/x-www-form-urlencoded",
                 "User-Agent": const.DEFAULT_USER_AGENT,
                 "hardware_id": const.DEVICE_ID,
+                "2fa-code": "",
             },
             timeout=10,
         )
@@ -308,6 +309,7 @@ class TestAuth(IsolatedAsyncioTestCase):
                 "Content-Type": "application/x-www-form-urlencoded",
                 "User-Agent": const.DEFAULT_USER_AGENT,
                 "hardware_id": const.DEVICE_ID,
+                "2fa-code": "",
             },
             timeout=10,
         )

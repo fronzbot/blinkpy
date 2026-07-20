@@ -131,11 +131,8 @@ async def request_login(
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": DEFAULT_USER_AGENT,
         "hardware_id": login_data.get("device_id", "Blinkpy"),
+        "2fa-code": login_data.get("2fa_code") or "",
     }
-
-    # Add 2FA code to headers if provided
-    if "2fa_code" in login_data:
-        headers["2fa-code"] = login_data["2fa_code"]
 
     # Prepare form data for OAuth
     form_data = {
@@ -1074,4 +1071,5 @@ async def oauth_refresh_token(auth, refresh_token, hardware_id):
     if response.status == 200:
         return await response.json()
 
+    _LOGGER.error("OAuth token refresh failed with status %s", response.status)
     return None
