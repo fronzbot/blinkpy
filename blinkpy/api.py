@@ -571,14 +571,14 @@ async def request_get_config(blink, network, camera_id, product_type="owl"):
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: ID of camera
-    :param product_type: Camera product type "owl" or "catalina"
+    :param product_type: Camera product type "owl", "catalina", or "sedona"
     """
     if product_type == "owl":
         url = (
             f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
             f"/networks/{network}/owls/{camera_id}/config"
         )
-    elif product_type == "catalina":
+    elif product_type in ["catalina", "sedona"]:
         url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/config"
     else:
         _LOGGER.info(
