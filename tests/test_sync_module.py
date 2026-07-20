@@ -102,7 +102,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
     @mock.patch(
         "blinkpy.api.request_sync_snooze",
-        mock.AsyncMock(return_value={"snooze_till": "2026-02-15T12:00:00+00:00"}),
+        mock.AsyncMock(return_value={"snooze_till": "2099-01-01T12:00:00+00:00"}),
     )
     async def test_snoozed(self, mock_resp) -> None:
         """Check that we get snoozed status."""

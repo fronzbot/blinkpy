@@ -193,7 +193,7 @@ class TestAPI(IsolatedAsyncioTestCase):
         """Test sync snooze request."""
         mock_resp.return_value = {"message": "Sync snoozed"}
         response = await api.request_sync_snooze(
-            self.blink, "network", '{"snooze": 300}'
+            self.blink, "network", '{"snooze_time": 300}'
         )
         self.assertEqual(response, {"message": "Sync snoozed"})
 
