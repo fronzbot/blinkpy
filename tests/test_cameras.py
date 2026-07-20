@@ -139,9 +139,7 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
         self.camera.battery_check_time = None
         config = {"battery_check_time": "2024-01-01T00:00:00+00:00"}
         self.camera.extract_config_info(config)
-        self.assertEqual(
-            self.camera.battery_check_time, "2024-01-01T00:00:00+00:00"
-        )
+        self.assertEqual(self.camera.battery_check_time, "2024-01-01T00:00:00+00:00")
 
     def test_missing_attributes(self, mock_resp):
         """Test that attributes return None if missing."""
