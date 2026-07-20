@@ -11,7 +11,7 @@ import aiohttp
 from aiofiles import open
 from requests.compat import urljoin
 from blinkpy import api
-from blinkpy.helpers.constants import TIMEOUT_MEDIA
+from blinkpy.helpers.constants import TIMEOUT_MEDIA, ONLINE
 from blinkpy.helpers.util import to_alphanumeric
 from blinkpy.livestream import BlinkLiveStream
 
@@ -48,6 +48,8 @@ class BlinkCamera:
         self.camera_type = ""
         self.product_type = None
         self.sync_signal_strength = None
+        self.battery_check_time = None
+        self.status = None
 
     @property
     def attributes(self):
@@ -113,6 +115,15 @@ class BlinkCamera:
     def version(self):
         """Return the camera Firmware version."""
         return self._version
+
+    @property
+    def online(self):
+        """Return boolean camera online status."""
+        try:
+            return ONLINE[self.status]
+        except KeyError:
+            _LOGGER.error("Unknown camera status %s", self.status)
+            return False
 
     @property
     def arm(self):
@@ -301,6 +312,8 @@ class BlinkCamera:
         else:
             self.temperature = config.get("temperature")
         self.product_type = config.get("type")
+        self.battery_check_time = config.get("battery_check_time")
+        self.status = config.get("status")
 
     async def get_sensor_info(self):
         """Retrieve calibrated temperature from special endpoint."""
