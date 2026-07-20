@@ -245,9 +245,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         }
         result = await self.blink.setup_owls()
         self.assertEqual(self.blink.network_ids, ["1234"])
-        self.assertEqual(
-            result, [{"1234": {"name": "foo", "id": 1, "type": "mini"}}]
-        )
+        self.assertEqual(result, [{"1234": {"name": "foo", "id": 1, "type": "mini"}}])
 
         self.blink.no_owls = True
         self.blink.network_ids = []
@@ -276,9 +274,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         }
         mock_usage.return_value = {"networks": [{"cameras": [], "network_id": 1234}]}
         result = await self.blink.setup_camera_list()
-        self.assertEqual(
-            result, {"1234": [{"name": "foo", "id": 1, "type": "mini"}]}
-        )
+        self.assertEqual(result, {"1234": [{"name": "foo", "id": 1, "type": "mini"}]})
 
     @mock.patch("blinkpy.blinkpy.BlinkLotus.start")
     async def test_initialize_blink_doorbells(self, mock_start):

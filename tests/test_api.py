@@ -172,9 +172,7 @@ class TestAPI(IsolatedAsyncioTestCase):
             {"config": "values"},
         )
         self.assertEqual(
-            await api.request_get_config(
-                self.blink, "network", "camera_id", "hawk"
-            ),
+            await api.request_get_config(self.blink, "network", "camera_id", "hawk"),
             {"config": "values"},
         )
 
