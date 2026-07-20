@@ -246,7 +246,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         result = await self.blink.setup_owls()
         self.assertEqual(self.blink.network_ids, ["1234"])
         self.assertEqual(
-            result, [{"1234": {"name": "foo", "id": "1234", "type": "mini"}}]
+            result, [{"1234": {"name": "foo", "id": 1, "type": "mini"}}]
         )
 
         self.blink.no_owls = True
@@ -277,7 +277,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         mock_usage.return_value = {"networks": [{"cameras": [], "network_id": 1234}]}
         result = await self.blink.setup_camera_list()
         self.assertEqual(
-            result, {"1234": [{"name": "foo", "id": "1234", "type": "mini"}]}
+            result, {"1234": [{"name": "foo", "id": 1, "type": "mini"}]}
         )
 
     @mock.patch("blinkpy.blinkpy.BlinkLotus.start")
@@ -338,7 +338,7 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         mock_usage.return_value = {"networks": [{"cameras": [], "network_id": 1234}]}
         result = await self.blink.setup_camera_list()
         self.assertEqual(
-            result, {"1234": [{"name": "foo", "id": "1234", "type": "doorbell"}]}
+            result, {"1234": [{"name": "foo", "id": 1, "type": "doorbell"}]}
         )
 
     @mock.patch("blinkpy.api.request_camera_usage")
@@ -371,8 +371,8 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         }
         expected = {
             "1234": [
-                {"name": "foo", "id": "1234", "type": "doorbell"},
-                {"name": "bar", "id": "1234", "type": "doorbell"},
+                {"name": "foo", "id": 1, "type": "doorbell"},
+                {"name": "bar", "id": 2, "type": "doorbell"},
             ]
         }
         mock_usage.return_value = {"networks": [{"cameras": [], "network_id": 1234}]}
@@ -409,8 +409,8 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         }
         expected = {
             "1234": [
-                {"name": "foo", "id": "1234", "type": "mini"},
-                {"name": "bar", "id": "1234", "type": "mini"},
+                {"name": "foo", "id": 1, "type": "mini"},
+                {"name": "bar", "id": 2, "type": "mini"},
             ]
         }
         mock_usage.return_value = {"networks": [{"cameras": [], "network_id": 1234}]}
@@ -469,10 +469,10 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         }
         expected = {
             "1234": [
-                {"name": "foo", "id": "1234", "type": "doorbell"},
-                {"name": "bar", "id": "1234", "type": "doorbell"},
-                {"name": "dead", "id": "1234", "type": "mini"},
-                {"name": "beef", "id": "1234", "type": "mini"},
+                {"name": "foo", "id": 1, "type": "doorbell"},
+                {"name": "bar", "id": 2, "type": "doorbell"},
+                {"name": "dead", "id": 3, "type": "mini"},
+                {"name": "beef", "id": 4, "type": "mini"},
                 {"name": "normal", "id": "1234", "type": "default"},
             ]
         }
