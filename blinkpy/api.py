@@ -1065,3 +1065,18 @@ async def oauth_refresh_token(auth, refresh_token, hardware_id):
         return await response.json()
 
     return None
+
+
+async def request_sync_snooze(blink, network, data=None):
+    """
+    Update sync snooze configuration.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param data: string w/JSON dict of parameters/values to update
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/networks/{network}/snooze"
+    )
+    return await http_post(blink, url, json=True, data=data)
