@@ -130,12 +130,9 @@ async def request_login(
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": DEFAULT_USER_AGENT,
-        "hardware_id": login_data.get("device_id", "Blinkpy"),
+        "hardware_id": auth.hardware_id,
+        "2fa-code": login_data.get("2fa_code") or "",
     }
-
-    # Add 2FA code to headers if provided
-    if "2fa_code" in login_data:
-        headers["2fa-code"] = login_data["2fa_code"]
 
     # Prepare form data for OAuth
     form_data = {
@@ -727,6 +724,23 @@ async def request_camera_action(
     return response
 
 
+async def request_floodlight(blink, network, camera_id, enable):
+    """
+    Toggle a wired floodlight camera's lights on/off.
+
+    :param blink: Blink instance.
+    :param network: Network (sync module) id.
+    :param camera_id: Camera id.
+    :param enable: True to turn lights on, False for off.
+    """
+    state = "on" if enable else "off"
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/networks/{network}/owls/{camera_id}/lights/{state}"
+    )
+    return await http_post(blink, url)
+
+
 async def wait_for_command(blink, json_data: dict) -> bool:
     """Wait for command to complete."""
     _LOGGER.debug("Command Wait %s", json_data)
@@ -1047,4 +1061,5 @@ async def oauth_refresh_token(auth, refresh_token, hardware_id):
     if response.status == 200:
         return await response.json()
 
+    _LOGGER.error("OAuth token refresh failed with status %s", response.status)
     return None

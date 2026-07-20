@@ -11,7 +11,7 @@ import aiohttp
 from aiofiles import open
 from requests.compat import urljoin
 from blinkpy import api
-from blinkpy.helpers.constants import TIMEOUT_MEDIA
+from blinkpy.helpers.constants import TIMEOUT_MEDIA, ONLINE
 from blinkpy.helpers.util import to_alphanumeric
 from blinkpy.livestream import BlinkLiveStream
 
@@ -48,6 +48,8 @@ class BlinkCamera:
         self.camera_type = ""
         self.product_type = None
         self.sync_signal_strength = None
+        self.battery_check_time = None
+        self.status = None
 
     @property
     def attributes(self):
@@ -115,6 +117,16 @@ class BlinkCamera:
         return self._version
 
     @property
+    def online(self):
+        """Return boolean camera online status."""
+        if self.status is None:
+            return False
+        if self.status not in ONLINE:
+            _LOGGER.error("Unknown camera status %s", self.status)
+            return False
+        return ONLINE[self.status]
+
+    @property
     def arm(self):
         """Return arm status of camera."""
         return self.motion_enabled
@@ -176,6 +188,36 @@ class BlinkCamera:
         if res and res.status == 200:
             return await res.json()
         return None
+
+    @property
+    def floodlight_enabled(self):
+        """Return last-known floodlight state if tracked, else None."""
+        return getattr(self, "_floodlight_enabled", None)
+
+    async def async_set_floodlight(self, enable):
+        """Turn the wired floodlight on or off.
+
+        Returns None if the network is busy (any camera is actively recording).
+        """
+        if self.product_type != "superior":
+            _LOGGER.warning(
+                "%s is product type %s, not a wired floodlight; "
+                "floodlight toggle may not apply",
+                self.name,
+                self.product_type,
+            )
+        result = await api.request_floodlight(
+            self.sync.blink, self.network_id, self.camera_id, enable
+        )
+        if result is None:
+            return None
+        if isinstance(result, dict) and result.get("code") == 307:
+            _LOGGER.warning(
+                "Floodlight command rejected for %s: camera is busy", self.name
+            )
+            return None
+        self._floodlight_enabled = bool(enable)
+        return result
 
     async def record(self):
         """Initiate clip recording."""
@@ -271,6 +313,8 @@ class BlinkCamera:
         else:
             self.temperature = config.get("temperature")
         self.product_type = config.get("type")
+        self.battery_check_time = config.get("battery_check_time")
+        self.status = config.get("status")
 
     async def get_sensor_info(self):
         """Retrieve calibrated temperature from special endpoint."""
