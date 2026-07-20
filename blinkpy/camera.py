@@ -199,7 +199,7 @@ class BlinkCamera:
                 else:
                     collection_key = "owls"
                 for device in self.sync.blink.homescreen.get(collection_key, []):
-                    if int(device.get("id")) == int(self.camera_id):
+                    if str(device.get("id")) == str(self.camera_id):
                         snooze_value = device.get("snooze")
                         return bool(snooze_value)
                 return False

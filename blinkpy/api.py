@@ -596,7 +596,7 @@ async def request_update_config(
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: ID of camera
-    :param product_type: Camera product type "owl" or "catalina"
+    :param product_type: Camera product type "owl", "catalina", or "sedona"
     :param data: string w/JSON dict of parameters/values to update
     """
     if product_type == "owl":
@@ -604,7 +604,7 @@ async def request_update_config(
             f"{blink.urls.base_url}/api/v1/accounts/"
             f"{blink.account_id}/networks/{network}/owls/{camera_id}/config"
         )
-    elif product_type == "catalina":
+    elif product_type in ["catalina", "sedona"]:
         url = f"{blink.urls.base_url}/network/{network}/camera/{camera_id}/update"
     else:
         _LOGGER.info(
