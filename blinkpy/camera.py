@@ -623,6 +623,11 @@ class BlinkCameraHawk(BlinkCamera):
     async def get_sensor_info(self):
         """Get sensor info for blink hawk camera."""
 
+    def extract_config_info(self, config):
+        """Extract config info, preserving hawk product type."""
+        super().extract_config_info(config)
+        self.product_type = "hawk"
+
     async def get_liveview(self):
         """Get liveview link."""
         url = (
