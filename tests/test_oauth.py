@@ -1,6 +1,7 @@
 """Test OAuth v2 functionality."""
 
 import pytest
+import uuid
 from unittest.mock import Mock, AsyncMock, patch
 from blinkpy.helpers.pkce import generate_pkce_pair
 from blinkpy import api
@@ -283,7 +284,7 @@ async def test_auth_hardware_id_generation():
 @pytest.mark.asyncio
 async def test_auth_hardware_id_persistence():
     """Test that hardware_id is preserved from login_data."""
-    hardware_id = "EXISTING-HARDWARE-ID"
+    hardware_id = "0F5B6672-9C43-4C4B-A8B7-3B5C9C0B8A6D"
     auth = Auth(
         {
             "username": "test@example.com",
@@ -363,3 +364,64 @@ async def test_complete_2fa_login():
                 # State should be cleaned up
                 assert not hasattr(auth, "_oauth_csrf_token")
                 assert not hasattr(auth, "_oauth_code_verifier")
+
+
+@pytest.mark.asyncio
+async def test_oauth_refresh_token_failure():
+    """Test refresh token request failing with a non-200 status."""
+    auth = Mock()
+    auth.session = Mock()
+
+    response = Mock()
+    response.status = 406
+    auth.session.post = AsyncMock(return_value=response)
+
+    result = await api.oauth_refresh_token(auth, "old_refresh_token", "hardware_id")
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_auth_regenerates_non_uuid_hardware_id():
+    """Test that a non-UUID hardware_id is replaced with a valid UUID."""
+    auth = Auth({"username": "test@example.com", "hardware_id": "Home Assistant"})
+
+    assert auth.hardware_id != "Home Assistant"
+    uuid.UUID(auth.hardware_id)
+
+
+@pytest.mark.asyncio
+async def test_auth_keeps_valid_uuid_hardware_id():
+    """Test that a valid UUID hardware_id is preserved."""
+    hardware_id = "726D586E-6A27-49E4-B61B-1BB070908899"
+    auth = Auth({"username": "test@example.com", "hardware_id": hardware_id})
+
+    assert auth.hardware_id == hardware_id
+
+
+@pytest.mark.asyncio
+async def test_request_login_missing_2fa_code_sends_empty_header():
+    """Test that a missing or None 2fa_code produces an empty 2fa-code header."""
+    auth = Mock()
+    auth.query = AsyncMock(return_value=Mock(status=200))
+    auth.refresh_token = "refresh_token"
+
+    login_data = {"username": "foo", "password": "bar", "2fa_code": None}
+    await api.request_login(auth, "https://example.com", login_data, is_refresh=True)
+
+    headers = auth.query.call_args.kwargs["headers"]
+    assert headers["2fa-code"] == ""
+
+
+@pytest.mark.asyncio
+async def test_request_login_sends_2fa_code_header():
+    """Test that a real 2fa_code is sent as the 2fa-code header."""
+    auth = Mock()
+    auth.query = AsyncMock(return_value=Mock(status=200))
+    auth.refresh_token = "refresh_token"
+
+    login_data = {"username": "foo", "password": "bar", "2fa_code": "123456"}
+    await api.request_login(auth, "https://example.com", login_data, is_refresh=True)
+
+    headers = auth.query.call_args.kwargs["headers"]
+    assert headers["2fa-code"] == "123456"
