@@ -218,11 +218,13 @@ class BlinkSyncModule:
                 # Check product_type from camera_info to determine correct class
                 product_type = camera_info.get("type") if camera_info else None
                 if product_type == "hawk":
-                    camera_type = BlinkCameraHawk
+                    resolved_camera_type = BlinkCameraHawk
                 elif blink_camera_type in type_map:
-                    camera_type = type_map[blink_camera_type]
+                    resolved_camera_type = type_map[blink_camera_type]
+                else:
+                    resolved_camera_type = camera_type
 
-                self.cameras[name] = camera_type(self)
+                self.cameras[name] = resolved_camera_type(self)
                 self._names_table[to_alphanumeric(name)] = name
                 await self.cameras[name].update(
                     camera_info, force_cache=True, force=True
