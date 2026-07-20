@@ -1065,3 +1065,41 @@ async def oauth_refresh_token(auth, refresh_token, hardware_id):
         return await response.json()
 
     return None
+
+
+async def request_camera_snooze(
+    blink, network, camera_id, product_type="owl", data=None
+):
+    """
+    Update camera snooze configuration.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: ID of camera
+    :param product_type: Camera product type "owl", "catalina",
+        "doorbell", "hawk", "lotus", or "sedona"
+    :param data: string w/JSON dict of parameters/values to update
+    """
+    product_lookup = {
+        "catalina": "cameras",
+        "sedona": "cameras",
+        "owl": "owls",
+        "hawk": "owls",
+        "doorbell": "doorbells",
+        "lotus": "doorbells",
+    }
+
+    if product_type not in product_lookup:
+        _LOGGER.info(
+            "Camera %s with product type %s snooze update not implemented.",
+            camera_id,
+            product_type,
+        )
+        return None
+
+    url_root = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/networks/{network}"
+    )
+    url = f"{url_root}/{product_lookup[product_type]}/{camera_id}/snooze"
+    return await http_post(blink, url, json=True, data=data)

@@ -178,6 +178,61 @@ class BlinkCamera:
         return None
 
     @property
+    async def snoozed(self):
+        """Return snooze status as boolean."""
+        response_data = None
+        try:
+            if self.product_type in ["catalina", "sedona"]:
+                res = await api.request_get_config(
+                    self.sync.blink,
+                    self.network_id,
+                    self.camera_id,
+                    product_type=self.product_type,
+                )
+                response_data = res
+                snooze_value = res["camera"][0].get("snooze_till")
+                return bool(snooze_value)
+            else:
+                response_data = self.sync.blink.homescreen
+                if self.product_type in ["doorbell", "lotus"]:
+                    collection_key = "doorbells"
+                else:
+                    collection_key = "owls"
+                for device in self.sync.blink.homescreen.get(collection_key, []):
+                    if int(device.get("id")) == int(self.camera_id):
+                        snooze_value = device.get("snooze")
+                        return bool(snooze_value)
+                return False
+        except TypeError:
+            return False
+        except (IndexError, KeyError, ValueError) as e:
+            _LOGGER.warning(
+                "Exception %s: Encountered a likely malformed response "
+                "from the snooze API endpoint. Response: %s",
+                e,
+                response_data,
+            )
+            return False
+
+    async def async_snooze(self, snooze_time=3600):
+        """
+        Set camera snooze status.
+
+        :param snooze_time: Time in seconds to snooze camera. Default is 3600 (1 hour).
+        """
+        data = dumps({"snooze_time": snooze_time})
+        res = await api.request_camera_snooze(
+            self.sync.blink,
+            self.network_id,
+            self.camera_id,
+            product_type=self.product_type,
+            data=data,
+        )
+        if res and self.product_type not in ["catalina", "sedona"]:
+            await self.sync.blink.get_homescreen()
+        return res
+
+    @property
     def floodlight_enabled(self):
         """Return last-known floodlight state if tracked, else None."""
         return getattr(self, "_floodlight_enabled", None)
