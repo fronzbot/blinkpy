@@ -9,7 +9,7 @@ import aiofiles
 from sortedcontainers import SortedSet
 from requests.structures import CaseInsensitiveDict
 from blinkpy import api
-from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
+from blinkpy.camera import BlinkCamera, BlinkCameraHawk, BlinkCameraMini, BlinkDoorbell
 from blinkpy.helpers.util import (
     time_to_seconds,
     backoff_seconds,
@@ -193,8 +193,6 @@ class BlinkSyncModule:
 
     async def update_cameras(self, camera_type=BlinkCamera):
         """Update cameras from server."""
-        from blinkpy.camera import BlinkCameraHawk
-
         type_map = {
             "mini": BlinkCameraMini,
             "hawk": BlinkCameraHawk,
@@ -684,8 +682,6 @@ class BlinkHawk(BlinkSyncModule):
 
     async def update_cameras(self, camera_type=None):
         """Update sync-less cameras."""
-        from blinkpy.camera import BlinkCameraHawk
-
         return await super().update_cameras(camera_type=BlinkCameraHawk)
 
     async def get_camera_info(self, camera_id, **kwargs):
