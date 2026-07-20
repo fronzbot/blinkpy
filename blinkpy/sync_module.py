@@ -138,7 +138,7 @@ class BlinkSyncModule:
             snooze_till = res.get("snooze_till")
             if not snooze_till:
                 return False
-            expiry = datetime.datetime.fromisoformat(snooze_till)
+            expiry = datetime.datetime.fromisoformat(snooze_till.replace("Z", "+00:00"))
             if expiry.tzinfo is None:
                 expiry = expiry.replace(tzinfo=datetime.timezone.utc)
             return expiry > datetime.datetime.now(datetime.timezone.utc)
@@ -147,7 +147,7 @@ class BlinkSyncModule:
 
     async def async_snooze(self, snooze_time=240):
         """Set sync snooze status."""
-        data = json_dumps({"snooze_time": snooze_time})
+        data = json_dumps({"snooze_time": snooze_time}, indent=None)
         res = await api.request_sync_snooze(
             self.blink,
             self.network_id,

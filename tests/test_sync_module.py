@@ -138,6 +138,24 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
 
     @mock.patch(
         "blinkpy.api.request_sync_snooze",
+        mock.AsyncMock(return_value={"snooze_till": "2000-01-01T00:00:00+00:00"}),
+    )
+    async def test_snoozed_expired(self, mock_resp) -> None:
+        """Check that expired snooze_till returns False."""
+        result = await self.blink.sync["test"].snoozed
+        self.assertFalse(result)
+
+    @mock.patch(
+        "blinkpy.api.request_sync_snooze",
+        mock.AsyncMock(return_value={"snooze_till": "2099-01-01T00:00:00Z"}),
+    )
+    async def test_snoozed_z_suffix(self, mock_resp) -> None:
+        """Check that Z-suffix timestamps are parsed correctly."""
+        result = await self.blink.sync["test"].snoozed
+        self.assertTrue(result)
+
+    @mock.patch(
+        "blinkpy.api.request_sync_snooze",
         mock.AsyncMock(return_value={"status": 200}),
     )
     async def test_async_snooze(self, mock_resp) -> None:
