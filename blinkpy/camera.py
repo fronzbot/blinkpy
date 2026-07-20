@@ -119,7 +119,12 @@ class BlinkCamera:
     @property
     def online(self):
         """Return boolean camera online status."""
-        return ONLINE.get(self.status, False)
+        if self.status is None:
+            return False
+        if self.status not in ONLINE:
+            _LOGGER.error("Unknown camera status %s", self.status)
+            return False
+        return ONLINE[self.status]
 
     @property
     def arm(self):
