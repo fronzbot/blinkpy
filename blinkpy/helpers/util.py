@@ -8,6 +8,7 @@ import secrets
 import re
 from asyncio import sleep
 from calendar import timegm
+from datetime import datetime, timezone
 from functools import wraps
 from getpass import getpass
 import aiofiles
@@ -69,7 +70,9 @@ def get_time(time_to_convert=None):
     """Create blink-compatible timestamp."""
     if time_to_convert is None:
         time_to_convert = time.time()
-    return time.strftime(const.TIMESTAMP_FORMAT, time.gmtime(time_to_convert))
+    return datetime.fromtimestamp(time_to_convert, timezone.utc).strftime(
+        const.TIMESTAMP_FORMAT
+    )
 
 
 def merge_dicts(dict_a, dict_b):

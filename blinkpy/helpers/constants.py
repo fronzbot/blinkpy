@@ -26,7 +26,7 @@ OAUTH_TOKEN_URL = f"{OAUTH_BASE_URL}/oauth/token"
 """
 Dictionaries
 """
-ONLINE = {"online": True, "offline": False}
+ONLINE = {"online": True, "offline": False, "done": True}
 
 """
 OTHER
