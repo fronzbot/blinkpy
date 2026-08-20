@@ -127,6 +127,34 @@ class BlinkSyncModule:
             return await api.request_system_arm(self.blink, self.network_id)
         return await api.request_system_disarm(self.blink, self.network_id)
 
+    @property
+    async def snoozed(self):
+        """Return snooze status as boolean."""
+        res = None
+        try:
+            res = await api.request_sync_snooze(self.blink, self.network_id)
+            if not isinstance(res, dict):
+                return False
+            snooze_till = res.get("snooze_till")
+            if not snooze_till:
+                return False
+            expiry = datetime.datetime.fromisoformat(snooze_till.replace("Z", "+00:00"))
+            if expiry.tzinfo is None:
+                expiry = expiry.replace(tzinfo=datetime.timezone.utc)
+            return expiry > datetime.datetime.now(datetime.timezone.utc)
+        except (TypeError, ValueError):
+            return False
+
+    async def async_snooze(self, snooze_time=240):
+        """Set sync snooze status."""
+        data = json_dumps({"snooze_time": snooze_time}, indent=None)
+        res = await api.request_sync_snooze(
+            self.blink,
+            self.network_id,
+            data=data,
+        )
+        return res
+
     async def start(self):
         """Initialize the system."""
         _LOGGER.debug("Initializing the sync module")
