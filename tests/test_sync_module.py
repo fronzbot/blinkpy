@@ -88,7 +88,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             "enabled": True,
             "name": "doorbell1",
         }
-        self.blink.homescreen = {"doorbells": [device], "owls": []}
+        self.blink.homescreen = {"doorbells": [device], "owls": [], "hawks": []}
         self.assertEqual(self.blink.sync["test"].get_unique_info("doorbell1"), device)
 
     def test_get_unique_info_invalid_device(self, mock_resp) -> None:
@@ -97,7 +97,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             "enabled": True,
             "name": "doorbell1",
         }
-        self.blink.homescreen = {"doorbells": [device], "owls": []}
+        self.blink.homescreen = {"doorbells": [device], "owls": [], "hawks": []}
         self.assertEqual(self.blink.sync["test"].get_unique_info("doorbell2"), None)
 
     async def test_get_events(self, mock_resp) -> None:

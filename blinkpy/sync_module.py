@@ -9,7 +9,7 @@ import aiofiles
 from sortedcontainers import SortedSet
 from requests.structures import CaseInsensitiveDict
 from blinkpy import api
-from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
+from blinkpy.camera import BlinkCamera, BlinkCameraHawk, BlinkCameraMini, BlinkDoorbell
 from blinkpy.helpers.util import (
     time_to_seconds,
     backoff_seconds,
@@ -54,6 +54,7 @@ class BlinkSyncModule:
         # Outdoor cameras have their own URL API which must be queried.
         self.type_key_map = {
             "mini": "owls",
+            "hawk": "hawks",
             "doorbell": "doorbells",
         }
         self._names_table = {}
@@ -194,6 +195,7 @@ class BlinkSyncModule:
         """Update cameras from server."""
         type_map = {
             "mini": BlinkCameraMini,
+            "hawk": BlinkCameraHawk,
             "doorbell": BlinkDoorbell,
             "default": BlinkCamera,
         }
@@ -207,12 +209,22 @@ class BlinkSyncModule:
                 name = camera_config["name"]
                 self.motion[name] = False
                 unique_info = self.get_unique_info(name)
-                if blink_camera_type in type_map:
-                    camera_type = type_map[blink_camera_type]
-                self.cameras[name] = camera_type(self)
+
+                # Get camera info first to check product_type
                 camera_info = await self.get_camera_info(
                     camera_config["id"], unique_info=unique_info
                 )
+
+                # Check product_type from camera_info to determine correct class
+                product_type = camera_info.get("type") if camera_info else None
+                if product_type == "hawk":
+                    resolved_camera_type = BlinkCameraHawk
+                elif blink_camera_type in type_map:
+                    resolved_camera_type = type_map[blink_camera_type]
+                else:
+                    resolved_camera_type = camera_type
+
+                self.cameras[name] = resolved_camera_type(self)
                 self._names_table[to_alphanumeric(name)] = name
                 await self.cameras[name].update(
                     camera_info, force_cache=True, force=True
@@ -629,6 +641,69 @@ class BlinkLotus(BlinkSyncModule):
     @property
     def network_info(self):
         """Format lotus response to resemble sync module."""
+        return {
+            "network": {
+                "id": self.network_id,
+                "name": self.name,
+                "armed": self.status,
+                "sync_module_error": False,
+                "account_id": self.blink.account_id,
+            }
+        }
+
+    @network_info.setter
+    def network_info(self, value):
+        """Set network_info property."""
+
+
+class BlinkHawk(BlinkSyncModule):
+    """Representation of a sync-less device."""
+
+    def __init__(self, blink, name, network_id, response):
+        """Initialize a sync-less object."""
+        cameras = [{"name": name, "id": response["id"], "type": "hawk"}]
+        super().__init__(blink, name, network_id, cameras)
+        self.sync_id = response["id"]
+        self.serial = response["serial"]
+        self.status = response["enabled"]
+        if not self.serial:
+            self.serial = f"{network_id}-{self.sync_id}"
+
+    async def sync_initialize(self):
+        """Initialize a sync-less module."""
+        self.summary = {
+            "id": self.sync_id,
+            "name": self.name,
+            "serial": self.serial,
+            "status": self.status,
+            "onboarded": True,
+            "account_id": self.blink.account_id,
+            "network_id": self.network_id,
+        }
+        return self.summary
+
+    async def update_cameras(self, camera_type=None):
+        """Update sync-less cameras."""
+        return await super().update_cameras(camera_type=BlinkCameraHawk)
+
+    async def get_camera_info(self, camera_id, **kwargs):
+        """Retrieve camera information."""
+        try:
+            for hawk in self.blink.homescreen["hawks"]:
+                if hawk["name"] == self.name:
+                    self.status = hawk["enabled"]
+                    return hawk
+        except (TypeError, KeyError):
+            pass
+        return None
+
+    async def get_network_info(self):
+        """Get network info for sync-less module."""
+        return True
+
+    @property
+    def network_info(self):
+        """Format hawk response to resemble sync module."""
         return {
             "network": {
                 "id": self.network_id,

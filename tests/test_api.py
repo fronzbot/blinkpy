@@ -171,6 +171,10 @@ class TestAPI(IsolatedAsyncioTestCase):
             ),
             {"config": "values"},
         )
+        self.assertEqual(
+            await api.request_get_config(self.blink, "network", "camera_id", "hawk"),
+            {"config": "values"},
+        )
 
     async def test_request_update_config(self, mock_resp):
         """Test Motion detect enable."""
@@ -181,6 +185,10 @@ class TestAPI(IsolatedAsyncioTestCase):
         self.assertEqual(response.status, 200)
         response = await api.request_update_config(
             self.blink, "network", "camera_id", "catalina"
+        )
+        self.assertEqual(response.status, 200)
+        response = await api.request_update_config(
+            self.blink, "network", "camera_id", "hawk"
         )
         self.assertEqual(response.status, 200)
         self.assertIsNone(
