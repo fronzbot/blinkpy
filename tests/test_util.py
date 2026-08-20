@@ -2,6 +2,7 @@
 
 from unittest import mock, IsolatedAsyncioTestCase
 import time
+from datetime import datetime, timezone
 import aiofiles
 from io import BufferedIOBase
 from blinkpy.helpers.util import (
@@ -194,8 +195,15 @@ class TestUtil(IsolatedAsyncioTestCase):
     def test_get_time(self):
         """Test the get time util."""
         self.assertEqual(
-            get_time(), time.strftime(const.TIMESTAMP_FORMAT, time.gmtime(time.time()))
+            get_time(),
+            datetime.now(timezone.utc).strftime(const.TIMESTAMP_FORMAT),
         )
+
+    def test_get_time_is_utc(self):
+        """Test that get_time reports UTC fields with a UTC offset."""
+        epoch = 1700000000
+        self.assertEqual(get_time(epoch), "2023-11-14T22:13:20+0000")
+        self.assertEqual(time_to_seconds(get_time(epoch)), epoch)
 
     def test_merge_dicts(self):
         """Test for duplicates message in merge dicts."""

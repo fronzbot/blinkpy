@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68,<84", "wheel>=0.40,<0.48"]
+requires = ["setuptools>=68,<85", "wheel>=0.40,<0.49"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -75,6 +75,7 @@ lint.ignore = [
     "PLR0912",  # Too many branches ({branches} > {max_branches})
     "PLR0913",  # Too many arguments to function call ({c_args} > {max_args})
     "PLR0915",  # Too many statements ({statements} > {max_statements})
+    "PLR0917",  # Too many positionsl arguments
     "PLR2004",  # Magic value used in comparison, consider replacing {value} with a constant variable
     "PLW0108", # The fix is not always correct, so this is sometimes a false positive
     "PLW2901",  # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target

@@ -130,7 +130,7 @@ async def request_login(
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": DEFAULT_USER_AGENT,
-        "hardware_id": login_data.get("device_id", "Blinkpy"),
+        "hardware_id": auth.hardware_id,
         "2fa-code": login_data.get("2fa_code") or "",
     }
 

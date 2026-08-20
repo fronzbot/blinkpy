@@ -102,6 +102,45 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
             self.assertEqual(await self.doorbell.async_arm(True), "arm")
             self.assertEqual(await self.doorbell.async_arm(False), "disarm")
 
+    def test_camera_online_status_online(self, mock_resp):
+        """Test that online property returns True for 'online' status."""
+        self.camera.status = "online"
+        self.assertTrue(self.camera.online)
+
+    def test_camera_online_status_done(self, mock_resp):
+        """Test that online property returns True for 'done' status."""
+        self.camera.status = "done"
+        self.assertTrue(self.camera.online)
+
+    def test_camera_online_status_offline(self, mock_resp):
+        """Test that online property returns False for 'offline' status."""
+        self.camera.status = "offline"
+        self.assertFalse(self.camera.online)
+
+    def test_camera_online_status_unknown(self, mock_resp):
+        """Test that online property returns False for unknown status."""
+        self.camera.status = "unknown_status"
+        self.assertFalse(self.camera.online)
+
+    def test_camera_online_status_none(self, mock_resp):
+        """Test that online property returns False when status is None."""
+        self.camera.status = None
+        self.assertFalse(self.camera.online)
+
+    def test_camera_status_set_in_update(self, mock_resp):
+        """Test that status attribute is set from config in extract_config_info."""
+        self.camera.status = None
+        config = {"status": "online"}
+        self.camera.extract_config_info(config)
+        self.assertEqual(self.camera.status, "online")
+
+    def test_battery_check_time_set_in_update(self, mock_resp):
+        """Test that battery_check_time is set from config in extract_config_info."""
+        self.camera.battery_check_time = None
+        config = {"battery_check_time": "2024-01-01T00:00:00+00:00"}
+        self.camera.extract_config_info(config)
+        self.assertEqual(self.camera.battery_check_time, "2024-01-01T00:00:00+00:00")
+
     def test_missing_attributes(self, mock_resp):
         """Test that attributes return None if missing."""
         self.camera.temperature = None
