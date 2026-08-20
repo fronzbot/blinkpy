@@ -1074,15 +1074,17 @@ async def request_camera_snooze(
     :param blink: Blink instance.
     :param network: Sync module network id.
     :param camera_id: ID of camera
-    :param product_type: Camera product type "owl", "catalina",
-        "doorbell", "hawk", "lotus", or "sedona"
+    :param product_type: Camera product type "owl", "catalina", "chickadee",
+        "doorbell", "hawk", "lotus", "sedona", or "sonoran"
     :param data: string w/JSON dict of parameters/values to update
     """
     product_lookup = {
         "catalina": "cameras",
         "sedona": "cameras",
+        "sonoran": "cameras",
         "owl": "owls",
         "hawk": "owls",
+        "chickadee": "owls",
         "doorbell": "doorbells",
         "lotus": "doorbells",
     }

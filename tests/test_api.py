@@ -202,6 +202,11 @@ class TestAPI(IsolatedAsyncioTestCase):
             self.blink, "network", "camera_id", "sedona", '{"snooze_time": 300}'
         )
         self.assertEqual(response, {"message": "Camera snoozed"})
+        # Test sonoran camera
+        response = await api.request_camera_snooze(
+            self.blink, "network", "camera_id", "sonoran", '{"snooze_time": 300}'
+        )
+        self.assertEqual(response, {"message": "Camera snoozed"})
         # Test owl camera
         response = await api.request_camera_snooze(
             self.blink, "network", "camera_id", "owl", '{"snooze_time": 300}'
@@ -210,6 +215,11 @@ class TestAPI(IsolatedAsyncioTestCase):
         # Test hawk camera
         response = await api.request_camera_snooze(
             self.blink, "network", "camera_id", "hawk", '{"snooze_time": 300}'
+        )
+        self.assertEqual(response, {"message": "Camera snoozed"})
+        # Test chickadee camera
+        response = await api.request_camera_snooze(
+            self.blink, "network", "camera_id", "chickadee", '{"snooze_time": 300}'
         )
         self.assertEqual(response, {"message": "Camera snoozed"})
         # Test doorbell camera

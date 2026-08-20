@@ -277,18 +277,54 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
 
     @mock.patch(
         "blinkpy.api.request_camera_snooze",
-        mock.AsyncMock(return_value={"status": 400}),
+        mock.AsyncMock(
+            return_value={"message": "Unsupported value for snooze time", "code": 2800}
+        ),
     )
-    async def test_camera_snooze_failure(self, mock_resp):
-        """Test camera snooze failure."""
+    async def test_camera_snooze_rejected(self, mock_resp):
+        """Test camera snooze rejected by the API (HTTP 200 with error code)."""
         self.camera.product_type = "owl"
         with mock.patch.object(
             self.blink, "get_homescreen", mock.AsyncMock()
         ) as mock_homescreen:
             result = await self.camera.async_snooze(300)
-            # Non-catalina/sedona cameras refresh homescreen even on failure
-            mock_homescreen.assert_called_once()
-        self.assertEqual(result, {"status": 400})
+            # A rejected snooze request should not trigger a homescreen refresh
+            mock_homescreen.assert_not_called()
+        self.assertEqual(
+            result, {"message": "Unsupported value for snooze time", "code": 2800}
+        )
+
+    async def test_camera_snooze_invalid_time_too_low(self, mock_resp):
+        """Test camera snooze rejects a snooze_time of 0 without calling the API."""
+        self.camera.product_type = "owl"
+        with mock.patch(
+            "blinkpy.api.request_camera_snooze", mock.AsyncMock()
+        ) as mock_snooze:
+            result = await self.camera.async_snooze(0)
+            mock_snooze.assert_not_called()
+        self.assertIsNone(result)
+
+    async def test_camera_snooze_invalid_time_too_high(self, mock_resp):
+        """Test camera snooze rejects a snooze_time of 1440 without calling the API."""
+        self.camera.product_type = "owl"
+        with mock.patch(
+            "blinkpy.api.request_camera_snooze", mock.AsyncMock()
+        ) as mock_snooze:
+            result = await self.camera.async_snooze(1440)
+            mock_snooze.assert_not_called()
+        self.assertIsNone(result)
+
+    async def test_camera_snooze_default_time(self, mock_resp):
+        """Test camera snooze uses a 60 minute (1 hour) default."""
+        self.camera.product_type = "catalina"
+        with mock.patch(
+            "blinkpy.api.request_camera_snooze",
+            mock.AsyncMock(return_value={"message": "Snooze set for Camera"}),
+        ) as mock_snooze:
+            await self.camera.async_snooze()
+            self.assertEqual(
+                mock_snooze.call_args.kwargs["data"], '{"snooze_time": 60}'
+            )
 
     @mock.patch(
         "blinkpy.api.request_camera_snooze",

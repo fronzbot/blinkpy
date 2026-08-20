@@ -226,12 +226,24 @@ class BlinkCamera:
             )
             return False
 
-    async def async_snooze(self, snooze_time=3600):
+    async def async_snooze(self, snooze_time=60):
         """
         Set camera snooze status.
 
-        :param snooze_time: Time in seconds to snooze camera. Default is 3600 (1 hour).
+        :param snooze_time: Time in minutes to snooze camera. Default is 60
+            (1 hour). Valid values are 1-1439; the API rejects 0 and values
+            of 1440 or greater. There is no dedicated call to cancel a
+            snooze, so sending snooze_time=1 is the practical way to end one
+            almost immediately.
         """
+        if not 1 <= snooze_time <= 1439:
+            _LOGGER.warning(
+                "Invalid snooze_time %s for camera %s; must be between "
+                "1 and 1439 minutes.",
+                snooze_time,
+                self.camera_id,
+            )
+            return None
         data = dumps({"snooze_time": snooze_time})
         res = await api.request_camera_snooze(
             self.sync.blink,
@@ -240,6 +252,13 @@ class BlinkCamera:
             product_type=self.product_type,
             data=data,
         )
+        if isinstance(res, dict) and "code" in res:
+            _LOGGER.warning(
+                "Camera %s snooze request rejected: %s",
+                self.camera_id,
+                res.get("message"),
+            )
+            return res
         if res and self.product_type not in ["catalina", "sedona"]:
             await self.sync.blink.get_homescreen()
         return res
