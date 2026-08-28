@@ -205,3 +205,25 @@ class TestAPI(IsolatedAsyncioTestCase):
 
         response = await api.wait_for_command(self.blink, None)
         self.assertFalse(response)
+
+    async def test_request_programs(self, mock_resp):
+        """Test request_programs."""
+        programs = [{"id": 123, "status": "enabled", "name": "My Schedule"}]
+        mock_resp.return_value = programs
+        self.assertEqual(await api.request_programs(self.blink, "network"), programs)
+
+    async def test_request_program_enable(self, mock_resp):
+        """Test request_program_enable."""
+        mock_resp.return_value = {"status": 200}
+        self.assertEqual(
+            await api.request_program_enable(self.blink, "network", 123),
+            {"status": 200},
+        )
+
+    async def test_request_program_disable(self, mock_resp):
+        """Test request_program_disable."""
+        mock_resp.return_value = {"status": 200}
+        self.assertEqual(
+            await api.request_program_disable(self.blink, "network", 123),
+            {"status": 200},
+        )
