@@ -5,6 +5,7 @@ import string
 import os
 import logging
 import datetime
+import math
 from json import dumps
 import traceback
 import aiohttp
@@ -50,6 +51,9 @@ class BlinkCamera:
         self.sync_signal_strength = None
         self.battery_check_time = None
         self.status = None
+        self.snooze = None
+        self.snooze_till = None
+        self.snooze_time_remaining = None
 
     @property
     def attributes(self):
@@ -76,6 +80,9 @@ class BlinkCamera:
             "sync_signal_strength": self.sync_signal_strength,
             "last_record": self.last_record,
             "type": self.product_type,
+            "snooze": self.snooze,
+            "snooze_till": self.snooze_till,
+            "snooze_time_remaining": self.snooze_time_remaining,
         }
         return attributes
 
@@ -389,6 +396,31 @@ class BlinkCamera:
         self.product_type = config.get("type")
         self.battery_check_time = config.get("battery_check_time")
         self.status = config.get("status")
+        self.extract_snooze_info(config)
+
+    def extract_snooze_info(self, config):
+        """Normalize snooze status across camera models (wired vs mini/doorbell)."""
+        self.snooze_till = config.get("snooze_till")
+        remaining = config.get("snooze_time_remaining")
+        snoozed = config.get("snooze")
+
+        if remaining is None and self.snooze_till:
+            try:
+                until = datetime.datetime.fromisoformat(self.snooze_till)
+            except (TypeError, ValueError):
+                _LOGGER.warning(
+                    "Could not parse snooze_till %s for %s", self.snooze_till, self.name
+                )
+            else:
+                if until.tzinfo is None:
+                    until = until.replace(tzinfo=datetime.timezone.utc)
+                seconds = (
+                    until - datetime.datetime.now(datetime.timezone.utc)
+                ).total_seconds()
+                remaining = max(0, math.ceil(seconds / 60))
+
+        self.snooze_time_remaining = remaining
+        self.snooze = bool(remaining) if snoozed is None else bool(snoozed)
 
     async def get_sensor_info(self):
         """Retrieve calibrated temperature from special endpoint."""
