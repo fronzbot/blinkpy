@@ -858,7 +858,7 @@ async def oauth_signin(auth, email, password, csrf_token):
         csrf_token: CSRF token from signin page
 
     Returns:
-        str: "SUCCESS", "2FA_REQUIRED", or None on failure
+        str: "SUCCESS", "2FA_REQUIRED", "INVALID_CREDENTIALS", or None on failure
 
     """
     headers = {
@@ -879,30 +879,42 @@ async def oauth_signin(auth, email, password, csrf_token):
         OAUTH_SIGNIN_URL, headers=headers, data=data, allow_redirects=False
     )
 
-    response_text = ""
-
     if response.status == 412:
         # 2FA required
         return "2FA_REQUIRED"
 
-    if response.status == 202:
-        response_text = await response.text()
-        try:
-            response_json = json.loads(response_text)
-        except json.JSONDecodeError:
-            response_json = {}
-
-        if (
-            response_json.get("tsv_state")
-            or response_json.get("tsv_methods")
-            or response_json.get("next_time_in_secs")
-        ):
-            # 2FA required (new response format with 202 status code)
-            return "2FA_REQUIRED"
-
-    elif response.status in [301, 302, 303, 307, 308]:
+    if response.status in [301, 302, 303, 307, 308]:
         # Success without 2FA
         return "SUCCESS"
+
+    # Blink explains itself in the body on every remaining status, so read it once
+    # and use it both for the log and to tell a rejected password apart from a
+    # server-side failure the caller should retry.
+    try:
+        response_text = await response.text()
+    except UnicodeDecodeError:
+        response_text = ""
+
+    try:
+        response_json = json.loads(response_text)
+    except (json.JSONDecodeError, TypeError):
+        response_json = {}
+
+    if response.status == 202 and (
+        response_json.get("tsv_state")
+        or response_json.get("tsv_methods")
+        or response_json.get("next_time_in_secs")
+    ):
+        # 2FA required (new response format with 202 status code)
+        return "2FA_REQUIRED"
+
+    if response.status == 401:
+        # Retrying cannot fix this, the stored password is no longer the account's.
+        _LOGGER.error(
+            "OAuth signin rejected the credentials: %s",
+            response_json.get("error_description") or response_text[:800],
+        )
+        return "INVALID_CREDENTIALS"
 
     _LOGGER.error(
         "OAuth signin failed: status=%s body=%s",
