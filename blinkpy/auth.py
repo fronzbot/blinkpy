@@ -339,7 +339,13 @@ class Auth:
             # Raise exception to let the app handle 2FA prompt
             _LOGGER.info("Two-factor authentication required.")
             raise BlinkTwoFARequiredError
-        elif login_result != "SUCCESS":
+        if login_result == "INVALID_CREDENTIALS":
+            # Raise rather than return False, the same way a 2FA prompt does. Only
+            # new credentials fix this, so the app has to be told to ask for them
+            # instead of retrying a password Blink has already rejected.
+            _LOGGER.error("Login failed: Blink rejected the username or password")
+            raise UnauthorizedError
+        if login_result != "SUCCESS":
             _LOGGER.error("Login failed")
             return False
 

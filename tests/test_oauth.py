@@ -5,7 +5,7 @@ import uuid
 from unittest.mock import Mock, AsyncMock, patch
 from blinkpy.helpers.pkce import generate_pkce_pair
 from blinkpy import api
-from blinkpy.auth import Auth, BlinkTwoFARequiredError
+from blinkpy.auth import Auth, BlinkTwoFARequiredError, UnauthorizedError
 
 
 def test_pkce_generation():
@@ -165,6 +165,61 @@ async def test_oauth_signin_unexpected_status_returns_none():
     result = await api.oauth_signin(auth, "test@example.com", "password", "csrf_token")
 
     assert result is None
+
+
+@pytest.mark.asyncio
+async def test_oauth_signin_invalid_credentials():
+    """Test oauth_signin reports a rejected password distinctly from other failures."""
+    auth = Mock()
+    auth.session = Mock()
+
+    response = Mock()
+    response.status = 401
+    response.text = AsyncMock(
+        return_value=(
+            '{"error":"unauthorized",'
+            '"error_cause":"invalid_user_credentials",'
+            '"error_description":"Invalid user credentials."}'
+        )
+    )
+    auth.session.post = AsyncMock(return_value=response)
+
+    result = await api.oauth_signin(auth, "test@example.com", "password", "csrf_token")
+
+    assert result == "INVALID_CREDENTIALS"
+
+
+@pytest.mark.asyncio
+async def test_oauth_signin_invalid_credentials_non_json_body():
+    """Test a 401 is still reported as invalid credentials when the body is not JSON."""
+    auth = Mock()
+    auth.session = Mock()
+
+    response = Mock()
+    response.status = 401
+    response.text = AsyncMock(return_value="Unauthorized")
+    auth.session.post = AsyncMock(return_value=response)
+
+    result = await api.oauth_signin(auth, "test@example.com", "password", "csrf_token")
+
+    assert result == "INVALID_CREDENTIALS"
+
+
+@pytest.mark.asyncio
+async def test_oauth_signin_logs_body_on_unexpected_status(caplog):
+    """Test the failure log carries the body Blink sent, not an empty string."""
+    auth = Mock()
+    auth.session = Mock()
+
+    response = Mock()
+    response.status = 500
+    response.text = AsyncMock(return_value="upstream exploded")
+    auth.session.post = AsyncMock(return_value=response)
+
+    result = await api.oauth_signin(auth, "test@example.com", "password", "csrf_token")
+
+    assert result is None
+    assert "upstream exploded" in caplog.text
 
 
 @pytest.mark.asyncio
@@ -329,6 +384,40 @@ async def test_oauth_login_flow_raises_2fa_required():
                 # Verify state was saved
                 assert hasattr(auth, "_oauth_csrf_token")
                 assert hasattr(auth, "_oauth_code_verifier")
+
+
+@pytest.mark.asyncio
+async def test_oauth_login_flow_raises_unauthorized_on_bad_credentials():
+    """Test the login flow raises UnauthorizedError when Blink rejects the password."""
+
+    auth = Auth({"username": "test@example.com", "password": "password"})
+
+    with patch("blinkpy.api.oauth_authorize_request", new=AsyncMock(return_value=True)):
+        with patch(
+            "blinkpy.api.oauth_get_signin_page",
+            new=AsyncMock(return_value="csrf_token"),
+        ):
+            with patch(
+                "blinkpy.api.oauth_signin",
+                new=AsyncMock(return_value="INVALID_CREDENTIALS"),
+            ):
+                with pytest.raises(UnauthorizedError):
+                    await auth._oauth_login_flow()
+
+
+@pytest.mark.asyncio
+async def test_oauth_login_flow_returns_false_on_other_failure():
+    """Test a non-credential signin failure still returns False rather than raising."""
+
+    auth = Auth({"username": "test@example.com", "password": "password"})
+
+    with patch("blinkpy.api.oauth_authorize_request", new=AsyncMock(return_value=True)):
+        with patch(
+            "blinkpy.api.oauth_get_signin_page",
+            new=AsyncMock(return_value="csrf_token"),
+        ):
+            with patch("blinkpy.api.oauth_signin", new=AsyncMock(return_value=None)):
+                assert await auth._oauth_login_flow() is False
 
 
 @pytest.mark.asyncio
