@@ -13,6 +13,7 @@ from blinkpy.camera import BlinkCameraMini
 from blinkpy.livestream import (
     BlinkLiveStream,
     build_packet,
+    _resync_ts_packets,
     MSGTYPE_AUDIO,
     MSGTYPE_AUDIO_CONFIG,
     MSGTYPE_KEEPALIVE,
@@ -504,8 +505,10 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
             ]
         )
 
-        # Mock payload starting with 0x42 (invalid transport stream packet start)
-        payload_data = bytearray([0x42] + [0x00] * 187)  # 188 bytes total
+        # Mock payload with no 0x47 sync byte anywhere - nothing in this
+        # payload can be resynced into a valid TS packet, so it's held in
+        # the internal buffer rather than written to any client.
+        payload_data = bytearray([0x42] * 188)  # 188 bytes total
 
         mock_reader.readexactly = mock.AsyncMock()
         mock_reader.readexactly.side_effect = [header_data, payload_data]
@@ -520,8 +523,77 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
 
         await self.livestream.recv()
 
-        # Verify no data was written to client (incomplete header)
+        # Verify no data was written to client (no sync-aligned packet)
         mock_client.write.assert_not_called()
+
+    async def test_recv_realigns_split_ts_packet(self, mock_resp):
+        """Test a TS packet split across two video payloads.
+
+        It should still be reassembled and forwarded, instead of the
+        second payload being dropped for not itself starting with 0x47.
+        """
+        mock_reader = mock.Mock()
+        mock_client = mock.Mock()
+
+        def video_header(payload_length):
+            header = bytearray([0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00])
+            header[5:9] = payload_length.to_bytes(4, byteorder="big")
+            return header
+
+        packet = bytearray([0x47] + [0x11] * 187)  # one valid TS packet
+        first_payload = packet[:100]
+        second_payload = packet[100:]
+
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [
+            video_header(len(first_payload)),
+            first_payload,
+            video_header(len(second_payload)),
+            second_payload,
+        ]
+        mock_reader.at_eof.side_effect = [False, False, True]
+        mock_client.is_closing.return_value = False
+        mock_client.write = mock.Mock()
+        mock_client.drain = mock.AsyncMock()
+
+        self.livestream.target_reader = mock_reader
+        self.livestream.target_writer = mock.Mock()
+        self.livestream.clients = [mock_client]
+
+        await self.livestream.recv()
+
+        # The first (incomplete) payload alone can't be confirmed as a
+        # real sync byte yet (nothing 188 bytes later to check against),
+        # so nothing is written until the second payload completes it.
+        mock_client.write.assert_called_once_with(bytes(packet))
+
+    def test_resync_ts_packets_rejects_stray_sync_byte(self, mock_resp):
+        """Test that a lone, unconfirmed 0x47 byte is skipped, not treated as sync.
+
+        It isn't followed by another 0x47 exactly one packet length
+        later, so it's packet payload data, not a real sync byte. Two
+        trailing real packets give the resync logic enough lookahead to
+        tell the difference.
+        """
+        packet1 = bytearray([0x47] + [0x11] * 187)
+        packet2 = bytearray([0x47] + [0x22] * 187)
+        buf = bytearray([0x47]) + packet1 + packet2  # stray byte, then two real packets
+        result = _resync_ts_packets(buf)
+        self.assertEqual(result, bytes(packet1) + bytes(packet2))
+        self.assertEqual(bytes(buf), b"")
+
+    def test_resync_ts_packets_leaves_partial_trailing_packet(self, mock_resp):
+        """Test that an incomplete trailing packet is left in the buffer.
+
+        It stays there for the next call instead of being dropped or
+        emitted early.
+        """
+        real_packet = bytearray([0x47] + [0x11] * 187)
+        partial = bytearray([0x47] + [0x22] * 50)
+        buf = real_packet + partial
+        result = _resync_ts_packets(buf)
+        self.assertEqual(result, bytes(real_packet))
+        self.assertEqual(bytes(buf), bytes(partial))
 
     async def test_recv_audio_config(self, mock_resp):
         """Test receiving a MSGTYPE_AUDIO_CONFIG message."""

@@ -31,6 +31,10 @@ SESSION_COMMAND_STOP_AUDIO = 4
 # the connection after only a few audio frames.
 AUDIO_SEQUENCE_START = 100_000
 
+# Standard MPEG-TS packet size. The camera's video payloads don't reliably
+# align to this boundary - see _resync_ts_packets().
+TS_PACKET_SIZE = 188
+
 
 def build_packet(msgtype, sequence, payload=b""):
     """Build a 9-byte IMMI packet header plus payload."""
@@ -39,6 +43,37 @@ def build_packet(msgtype, sequence, payload=b""):
     header[1:5] = sequence.to_bytes(4, byteorder="big")
     header[5:9] = len(payload).to_bytes(4, byteorder="big")
     return bytes(header) + payload
+
+
+def _resync_ts_packets(buf):
+    """Extract as many complete, sync-aligned 188-byte MPEG-TS packets.
+
+    Packets currently in buf are extracted, leaving any trailing partial
+    packet in place. Each MSGTYPE_VIDEO payload from the camera is not
+    guaranteed to start or end on a TS packet boundary - it can carry a
+    partial packet at either edge. Treating each payload as a self
+    contained, independently-aligned chunk (dropping it outright unless
+    its very first byte happens to be 0x47) throws away otherwise-valid
+    TS packets and desyncs every downstream demuxer for the rest of the
+    session. Buffering across payloads and resyncing on the 0x47 sync
+    byte - confirming it recurs exactly one packet length later, since a
+    single stray 0x47 inside packet payload data is far more likely than
+    two in a row 188 bytes apart - fixes that without ever needing to
+    drop a payload wholesale.
+    """
+    packets = bytearray()
+    i = 0
+    n = len(buf)
+    while i + TS_PACKET_SIZE <= n:
+        if buf[i] != 0x47 or (
+            i + TS_PACKET_SIZE * 2 <= n and buf[i + TS_PACKET_SIZE] != 0x47
+        ):
+            i += 1
+            continue
+        packets.extend(buf[i : i + TS_PACKET_SIZE])
+        i += TS_PACKET_SIZE
+    del buf[:i]
+    return bytes(packets)
 
 
 class BlinkLiveStream:
@@ -57,6 +92,7 @@ class BlinkLiveStream:
         self.clients = []
         self.target_reader = None
         self.target_writer = None
+        self._ts_buffer = bytearray()
 
         # Two-way audio (talk) state. Sending audio is opt-in: callers
         # that only want video never touch these. See request_audio()
@@ -278,9 +314,12 @@ class BlinkLiveStream:
                     _LOGGER.debug("Skipping unsupported msgtype %d", msgtype)
                     continue
 
-                # Skip video payloads missing 0x47 (transport stream packet start)
-                if data[0] != 0x47:
-                    _LOGGER.debug("Skipping video payload missing 0x47 at start")
+                # Video payloads aren't guaranteed to align to MPEG-TS
+                # packet boundaries - buffer and resync instead of
+                # dropping anything that doesn't happen to start at 0x47.
+                self._ts_buffer.extend(data)
+                data = _resync_ts_packets(self._ts_buffer)
+                if not data:
                     continue
 
                 # Send data to all connected clients
