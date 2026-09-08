@@ -8,6 +8,73 @@ from blinkpy import api
 
 _LOGGER = logging.getLogger(__name__)
 
+# IMMI packet msgtypes. Most are handled generically as
+# [1-byte msgtype][4-byte sequence][4-byte payload_length][payload], but
+# MSGTYPE_AUDIO_CONFIG is a fixed, self-contained 9-byte message (see
+# recv()) with no separate payload.
+MSGTYPE_VIDEO = 0x00
+MSGTYPE_AUDIO = 0x05
+MSGTYPE_KEEPALIVE = 0x0A
+MSGTYPE_AUDIO_CONFIG = 0x0C
+MSGTYPE_LATENCY_STATS = 0x12
+MSGTYPE_SESSION_COMMAND = 0x17
+
+# SESSION_COMMAND sub-commands relevant to two-way audio (the remaining
+# values control lights/siren/clip-saving and are out of scope here).
+SESSION_COMMAND_START_AUDIO = 3
+SESSION_COMMAND_STOP_AUDIO = 4
+
+# Outgoing audio frames use their own sequence range, disjoint from the
+# keep-alive counter below. The server appears to track sequence numbers
+# per-session rather than per-msgtype: reusing small, overlapping sequence
+# numbers between msgtype 0x0A and msgtype 0x05 causes the server to reset
+# the connection after only a few audio frames.
+AUDIO_SEQUENCE_START = 100_000
+
+# Standard MPEG-TS packet size. The camera's video payloads don't reliably
+# align to this boundary - see _resync_ts_packets().
+TS_PACKET_SIZE = 188
+
+
+def build_packet(msgtype, sequence, payload=b""):
+    """Build a 9-byte IMMI packet header plus payload."""
+    header = bytearray(9)
+    header[0] = msgtype
+    header[1:5] = sequence.to_bytes(4, byteorder="big")
+    header[5:9] = len(payload).to_bytes(4, byteorder="big")
+    return bytes(header) + payload
+
+
+def _resync_ts_packets(buf):
+    """Extract as many complete, sync-aligned 188-byte MPEG-TS packets.
+
+    Packets currently in buf are extracted, leaving any trailing partial
+    packet in place. Each MSGTYPE_VIDEO payload from the camera is not
+    guaranteed to start or end on a TS packet boundary - it can carry a
+    partial packet at either edge. Treating each payload as a self
+    contained, independently-aligned chunk (dropping it outright unless
+    its very first byte happens to be 0x47) throws away otherwise-valid
+    TS packets and desyncs every downstream demuxer for the rest of the
+    session. Buffering across payloads and resyncing on the 0x47 sync
+    byte - confirming it recurs exactly one packet length later, since a
+    single stray 0x47 inside packet payload data is far more likely than
+    two in a row 188 bytes apart - fixes that without ever needing to
+    drop a payload wholesale.
+    """
+    packets = bytearray()
+    i = 0
+    n = len(buf)
+    while i + TS_PACKET_SIZE <= n:
+        if buf[i] != 0x47 or (
+            i + TS_PACKET_SIZE * 2 <= n and buf[i + TS_PACKET_SIZE] != 0x47
+        ):
+            i += 1
+            continue
+        packets.extend(buf[i : i + TS_PACKET_SIZE])
+        i += TS_PACKET_SIZE
+    del buf[:i]
+    return bytes(packets)
+
 
 class BlinkLiveStream:
     """Class to initialize individual stream."""
@@ -20,10 +87,20 @@ class BlinkLiveStream:
         self.command_id = response["command_id"]
         self.polling_interval = response["polling_interval"]
         self.target = urllib.parse.urlparse(response["server"])
+        self.liveview_token = response.get("liveview_token", "")
         self.server = None
         self.clients = []
         self.target_reader = None
         self.target_writer = None
+        self._ts_buffer = bytearray()
+
+        # Two-way audio (talk) state. Sending audio is opt-in: callers
+        # that only want video never touch these. See request_audio()
+        # and send_audio().
+        self._audio_sequence = AUDIO_SEQUENCE_START
+        self.audio_format = None
+        self.audio_format_flags = None
+        self.audio_format_received = asyncio.Event()
 
     def add_auth_header_string_field(self, auth_header, field_string, max_length):
         """Add string field to authentication header."""
@@ -74,12 +151,10 @@ class BlinkLiveStream:
         auth_header.extend(static_field)
         # Total packet length: 30 bytes
 
-        # Auth Token field (4-byte length prefix, 64 null bytes for now)
-        # fmt: off
-        token_length = token_field_max_length.to_bytes(4, byteorder="big")
-        _LOGGER.debug("Null token length: %s (%d)", token_length, len(token_length))
-        auth_header.extend(token_length)
-        auth_header.extend([0x00] * token_field_max_length)
+        # Auth Token field (4-byte length prefix, 64 token bytes)
+        self.add_auth_header_string_field(
+            auth_header, self.liveview_token, token_field_max_length
+        )
         # Total packet length: 98 bytes
 
         # Connection ID field (4-byte length prefix, 16 connection ID bytes)
@@ -181,18 +256,34 @@ class BlinkLiveStream:
             _LOGGER.debug("Starting copy from target to clients")
             while not self.target_reader.at_eof():
                 # Read header from the target server
-                data = await self.target_reader.read(9)
-
-                # Check if we have enough data for the header
-                if len(data) < 9:
+                try:
+                    data = await self.target_reader.readexactly(9)
+                except asyncio.IncompleteReadError as err:
                     _LOGGER.warning(
                         "Insufficient data for header: %d bytes, expected 9",
-                        len(data),
+                        len(err.partial),
                     )
                     break
 
                 # Handle the 9-byte IMMI protocol header
                 msgtype = data[0]
+
+                # MSGTYPE_AUDIO_CONFIG is a fixed, self-contained 9-byte
+                # message announcing the AAC-LC audio format (and AEC
+                # support) the camera expects for two-way audio - it does
+                # not follow the [sequence][payload_length] framing every
+                # other msgtype uses, and carries no separate payload.
+                if msgtype == MSGTYPE_AUDIO_CONFIG:
+                    self.audio_format = int.from_bytes(data[1:5], byteorder="big")
+                    self.audio_format_flags = int.from_bytes(data[5:9], byteorder="big")
+                    _LOGGER.debug(
+                        "Received audio format: 0x%08x (flags=0x%08x)",
+                        self.audio_format,
+                        self.audio_format_flags,
+                    )
+                    self.audio_format_received.set()
+                    continue
+
                 sequence = int.from_bytes(data[1:5], byteorder="big")
                 payload_length = int.from_bytes(data[5:9], byteorder="big")
                 _LOGGER.debug(
@@ -208,25 +299,27 @@ class BlinkLiveStream:
                     continue
 
                 # Read payload from the target server
-                data = await self.target_reader.read(payload_length)
-
-                # Check if we have enough data for the payload
-                if len(data) < payload_length:
+                try:
+                    data = await self.target_reader.readexactly(payload_length)
+                except asyncio.IncompleteReadError as err:
                     _LOGGER.warning(
                         "Insufficient data for payload: %d bytes, expected %d",
-                        len(data),
+                        len(err.partial),
                         payload_length,
                     )
                     break
 
                 # Skip packets other than msgtype 0x00 (regular video stream)
-                if msgtype != 0x00:
+                if msgtype != MSGTYPE_VIDEO:
                     _LOGGER.debug("Skipping unsupported msgtype %d", msgtype)
                     continue
 
-                # Skip video payloads missing 0x47 (transport stream packet start)
-                if data[0] != 0x47:
-                    _LOGGER.debug("Skipping video payload missing 0x47 at start")
+                # Video payloads aren't guaranteed to align to MPEG-TS
+                # packet boundaries - buffer and resync instead of
+                # dropping anything that doesn't happen to start at 0x47.
+                self._ts_buffer.extend(data)
+                data = _resync_ts_packets(self._ts_buffer)
+                if not data:
                     continue
 
                 # Send data to all connected clients
@@ -251,9 +344,7 @@ class BlinkLiveStream:
     async def send(self):
         """Send keep-alive and latency-stats messages to the server."""
         # fmt: off
-        latency_stats_packet = [
-            # [1-byte msgtype, 4-byte sequence (static 1000), 4-byte payload length]
-            0x12, 0x00, 0x00, 0x03, 0xe8, 0x00, 0x00, 0x00, 0x18, # 9-byte header
+        latency_stats_payload = bytes([
             0x00, 0x00, 0x00, 0x00, # 4-byte audioAverageLatencyInMS
             0x00, 0x00, 0x00, 0x00, # 4-byte audioMaxLatencyInMS
             0x00, 0x00, # 2-byte audioFramesPresented
@@ -262,8 +353,11 @@ class BlinkLiveStream:
             0x00, 0x00, 0x00, 0x00, # 4-byte videoMaxLatencyInMS
             0x00, 0x00, # 2-byte videoFramesPresented
             0x00, 0x00, # 2-byte videoFramesDropped
-        ]
+        ])
         # fmt: on
+        latency_stats_packet = build_packet(
+            MSGTYPE_LATENCY_STATS, 1000, latency_stats_payload
+        )
         every10s = 0
         sequence = 0
         try:
@@ -271,24 +365,15 @@ class BlinkLiveStream:
                 if (every10s % 10) == 0:
                     every10s = 0
                     sequence += 1
-                    sequence_bytes = sequence.to_bytes(4, byteorder="big")
-
-                    # fmt: off
-                    keepalive_packet = [
-                        # [1-byte msgtype, 4-byte sequence, 4-byte payload length]
-                        0x0A, *sequence_bytes, 0x00, 0x00, 0x00, 0x00, # 9-byte header
-                        # no payload, just the header
-                    ]
-                    # fmt: on
 
                     # Send keep-alive packet to the target server
                     _LOGGER.debug("Sending keep-alive packet")
-                    self.target_writer.write(bytearray(keepalive_packet))
+                    self.target_writer.write(build_packet(MSGTYPE_KEEPALIVE, sequence))
                     await self.target_writer.drain()
 
                 # Send latency-stats packet to the target server
                 _LOGGER.debug("Sending latency-stats packet")
-                self.target_writer.write(bytearray(latency_stats_packet))
+                self.target_writer.write(latency_stats_packet)
                 await self.target_writer.drain()
 
                 # Yield and sleep for the latency-stats interval
@@ -300,6 +385,41 @@ class BlinkLiveStream:
             # Abort receiving by closing the target reader
             self.target_reader.feed_eof()
             _LOGGER.debug("Sending was aborted, aborting receiving")
+
+    async def request_audio(self):
+        """Ask the camera to start two-way audio.
+
+        This only sends the SESSION_COMMAND that arms two-way audio on
+        the camera side - it does not, by itself, mean the camera is
+        ready to receive audio. Await audio_format_received (or poll
+        audio_format) before calling send_audio(), since the camera
+        replies asynchronously with the AAC-LC format (sample rate,
+        channel count) it expects, via a MSGTYPE_AUDIO_CONFIG message.
+        """
+        await self._send_session_command(SESSION_COMMAND_START_AUDIO)
+
+    async def stop_audio(self):
+        """Tell the camera two-way audio is no longer needed."""
+        await self._send_session_command(SESSION_COMMAND_STOP_AUDIO)
+
+    async def _send_session_command(self, command_id):
+        """Send a SESSION_COMMAND message to the target server."""
+        self.target_writer.write(build_packet(MSGTYPE_SESSION_COMMAND, command_id))
+        await self.target_writer.drain()
+
+    async def send_audio(self, payload):
+        """Send one AAC-LC/ADTS audio frame to the camera's speaker.
+
+        blinkpy does not capture or encode audio - as with video, callers
+        are responsible for producing frames in the format the camera
+        announced (see audio_format_received / audio_format) and passing
+        each ADTS frame to this method individually.
+        """
+        self._audio_sequence += 1
+        self.target_writer.write(
+            build_packet(MSGTYPE_AUDIO, self._audio_sequence, payload)
+        )
+        await self.target_writer.drain()
 
     async def poll(self):
         """Poll the command API for the stream."""

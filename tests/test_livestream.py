@@ -1,5 +1,6 @@
 """Tests for BlinkLiveStream class."""
 
+import asyncio
 import ssl
 import urllib.parse
 from unittest import mock
@@ -9,7 +10,17 @@ from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
 from blinkpy.camera import BlinkCameraMini
-from blinkpy.livestream import BlinkLiveStream
+from blinkpy.livestream import (
+    BlinkLiveStream,
+    build_packet,
+    _resync_ts_packets,
+    MSGTYPE_AUDIO,
+    MSGTYPE_AUDIO_CONFIG,
+    MSGTYPE_KEEPALIVE,
+    MSGTYPE_SESSION_COMMAND,
+    SESSION_COMMAND_START_AUDIO,
+    SESSION_COMMAND_STOP_AUDIO,
+)
 
 from .test_api import COMMAND_DONE
 
@@ -335,9 +346,9 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         # Mock payload starting with 0x47 (transport stream packet start)
         payload_data = bytearray([0x47] + [0x00] * 187)  # 188 bytes total
 
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = [header_data, payload_data, b""]
-        mock_reader.at_eof.side_effect = [False, False, True]
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [header_data, payload_data]
+        mock_reader.at_eof.side_effect = [False, True]
         mock_client.is_closing.return_value = False
         mock_client.write = mock.Mock()
         mock_client.drain = mock.AsyncMock()
@@ -374,9 +385,9 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
 
         payload_data = bytearray([0x47] + [0x00] * 187)  # 188 bytes total
 
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = [header_data_invalid, payload_data, b""]
-        mock_reader.at_eof.side_effect = [False, False, True]
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [header_data_invalid, payload_data]
+        mock_reader.at_eof.side_effect = [False, True]
 
         self.livestream.target_reader = mock_reader
         self.livestream.target_writer = mock.Mock()
@@ -393,9 +404,11 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         mock_client = mock.Mock()
 
         # Simulate reading incomplete header
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = [b"short", b""]
-        mock_reader.at_eof.side_effect = [False, True]
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [
+            asyncio.IncompleteReadError(partial=b"short", expected=9)
+        ]
+        mock_reader.at_eof.side_effect = [False]
 
         self.livestream.target_reader = mock_reader
         self.livestream.target_writer = mock.Mock()
@@ -446,9 +459,13 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
             ]
         )
 
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = [header_data_empty, header_data, b"short", b""]
-        mock_reader.at_eof.side_effect = [False, False, True]
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [
+            header_data_empty,
+            header_data,
+            asyncio.IncompleteReadError(partial=b"short", expected=188),
+        ]
+        mock_reader.at_eof.side_effect = [False, False]
 
         self.livestream.target_reader = mock_reader
         self.livestream.target_writer = mock.Mock()
@@ -461,8 +478,9 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
             # Verify that a warning message was logged
             mock_logger.assert_called_once()
 
-        # Verify that the first payload read was skipped (empty payload)
-        self.assertEqual(mock_reader.read.call_count, 3)  # odd number of reads
+        # Verify that the empty-payload header was skipped before the
+        # second header/payload attempt raised the incomplete-read error
+        self.assertEqual(mock_reader.readexactly.call_count, 3)
 
         # Verify no data was written to client (incomplete header)
         mock_client.write.assert_not_called()
@@ -487,11 +505,52 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
             ]
         )
 
-        # Mock payload starting with 0x42 (invalid transport stream packet start)
-        payload_data = bytearray([0x42] + [0x00] * 187)  # 188 bytes total
+        # Mock payload with no 0x47 sync byte anywhere - nothing in this
+        # payload can be resynced into a valid TS packet, so it's held in
+        # the internal buffer rather than written to any client.
+        payload_data = bytearray([0x42] * 188)  # 188 bytes total
 
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = [header_data, payload_data, b""]
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [header_data, payload_data]
+        mock_reader.at_eof.side_effect = [False, True]
+        mock_client.is_closing.return_value = False
+        mock_client.write = mock.Mock()
+        mock_client.drain = mock.AsyncMock()
+
+        self.livestream.target_reader = mock_reader
+        self.livestream.target_writer = mock.Mock()
+        self.livestream.clients = [mock_client]
+
+        await self.livestream.recv()
+
+        # Verify no data was written to client (no sync-aligned packet)
+        mock_client.write.assert_not_called()
+
+    async def test_recv_realigns_split_ts_packet(self, mock_resp):
+        """Test a TS packet split across two video payloads.
+
+        It should still be reassembled and forwarded, instead of the
+        second payload being dropped for not itself starting with 0x47.
+        """
+        mock_reader = mock.Mock()
+        mock_client = mock.Mock()
+
+        def video_header(payload_length):
+            header = bytearray([0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00])
+            header[5:9] = payload_length.to_bytes(4, byteorder="big")
+            return header
+
+        packet = bytearray([0x47] + [0x11] * 187)  # one valid TS packet
+        first_payload = packet[:100]
+        second_payload = packet[100:]
+
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [
+            video_header(len(first_payload)),
+            first_payload,
+            video_header(len(second_payload)),
+            second_payload,
+        ]
         mock_reader.at_eof.side_effect = [False, False, True]
         mock_client.is_closing.return_value = False
         mock_client.write = mock.Mock()
@@ -503,8 +562,66 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
 
         await self.livestream.recv()
 
-        # Verify no data was written to client (incomplete header)
-        mock_client.write.assert_not_called()
+        # The first (incomplete) payload alone can't be confirmed as a
+        # real sync byte yet (nothing 188 bytes later to check against),
+        # so nothing is written until the second payload completes it.
+        mock_client.write.assert_called_once_with(bytes(packet))
+
+    def test_resync_ts_packets_rejects_stray_sync_byte(self, mock_resp):
+        """Test that a lone, unconfirmed 0x47 byte is skipped, not treated as sync.
+
+        It isn't followed by another 0x47 exactly one packet length
+        later, so it's packet payload data, not a real sync byte. Two
+        trailing real packets give the resync logic enough lookahead to
+        tell the difference.
+        """
+        packet1 = bytearray([0x47] + [0x11] * 187)
+        packet2 = bytearray([0x47] + [0x22] * 187)
+        buf = bytearray([0x47]) + packet1 + packet2  # stray byte, then two real packets
+        result = _resync_ts_packets(buf)
+        self.assertEqual(result, bytes(packet1) + bytes(packet2))
+        self.assertEqual(bytes(buf), b"")
+
+    def test_resync_ts_packets_leaves_partial_trailing_packet(self, mock_resp):
+        """Test that an incomplete trailing packet is left in the buffer.
+
+        It stays there for the next call instead of being dropped or
+        emitted early.
+        """
+        real_packet = bytearray([0x47] + [0x11] * 187)
+        partial = bytearray([0x47] + [0x22] * 50)
+        buf = real_packet + partial
+        result = _resync_ts_packets(buf)
+        self.assertEqual(result, bytes(real_packet))
+        self.assertEqual(bytes(buf), bytes(partial))
+
+    async def test_recv_audio_config(self, mock_resp):
+        """Test receiving a MSGTYPE_AUDIO_CONFIG message."""
+        mock_reader = mock.Mock()
+
+        # MSGTYPE_AUDIO_CONFIG is a fixed 9-byte message: [type][4-byte
+        # format][4-byte flags], with no separate payload.
+        audio_config_data = bytearray(
+            [MSGTYPE_AUDIO_CONFIG, 0xA0, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00]
+        )
+
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = [audio_config_data]
+        mock_reader.at_eof.side_effect = [False, True]
+
+        self.livestream.target_reader = mock_reader
+        self.livestream.target_writer = mock.Mock()
+        self.livestream.clients = []
+
+        self.assertFalse(self.livestream.audio_format_received.is_set())
+
+        await self.livestream.recv()
+
+        self.assertEqual(self.livestream.audio_format, 0xA0000003)
+        self.assertEqual(self.livestream.audio_format_flags, 0)
+        self.assertTrue(self.livestream.audio_format_received.is_set())
+        # Only the header is read for this msgtype - no separate payload.
+        mock_reader.readexactly.assert_called_once_with(9)
 
     async def test_send_keepalive_and_latency(self, mock_resp):
         """Test sending keep-alive and latency-stats packets."""
@@ -524,6 +641,68 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         # Verify multiple writes occurred (keep-alive and latency-stats)
         self.assertGreater(mock_writer.write.call_count, 1)
         self.assertGreater(mock_writer.drain.call_count, 1)
+
+    def test_build_packet(self, mock_resp):
+        """Test the build_packet header/payload framing helper."""
+        packet = build_packet(MSGTYPE_KEEPALIVE, 1)
+        self.assertEqual(
+            packet, bytes([0x0A, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00])
+        )
+
+        packet = build_packet(MSGTYPE_AUDIO, 2, b"\x01\x02")
+        self.assertEqual(
+            packet,
+            bytes([0x05, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02]) + b"\x01\x02",
+        )
+
+    async def test_request_audio(self, mock_resp):
+        """Test that request_audio sends the StartAudio SESSION_COMMAND."""
+        mock_writer = mock.Mock()
+        mock_writer.write = mock.Mock()
+        mock_writer.drain = mock.AsyncMock()
+        self.livestream.target_writer = mock_writer
+
+        await self.livestream.request_audio()
+
+        mock_writer.write.assert_called_once_with(
+            build_packet(MSGTYPE_SESSION_COMMAND, SESSION_COMMAND_START_AUDIO)
+        )
+        mock_writer.drain.assert_called_once()
+
+    async def test_stop_audio(self, mock_resp):
+        """Test that stop_audio sends the StopAudio SESSION_COMMAND."""
+        mock_writer = mock.Mock()
+        mock_writer.write = mock.Mock()
+        mock_writer.drain = mock.AsyncMock()
+        self.livestream.target_writer = mock_writer
+
+        await self.livestream.stop_audio()
+
+        mock_writer.write.assert_called_once_with(
+            build_packet(MSGTYPE_SESSION_COMMAND, SESSION_COMMAND_STOP_AUDIO)
+        )
+        mock_writer.drain.assert_called_once()
+
+    async def test_send_audio(self, mock_resp):
+        """Test sending audio frames with an increasing sequence number."""
+        mock_writer = mock.Mock()
+        mock_writer.write = mock.Mock()
+        mock_writer.drain = mock.AsyncMock()
+        self.livestream.target_writer = mock_writer
+
+        start_sequence = self.livestream._audio_sequence
+
+        await self.livestream.send_audio(b"frame1")
+        await self.livestream.send_audio(b"frame2")
+
+        self.assertEqual(mock_writer.write.call_count, 2)
+        mock_writer.write.assert_any_call(
+            build_packet(MSGTYPE_AUDIO, start_sequence + 1, b"frame1")
+        )
+        mock_writer.write.assert_any_call(
+            build_packet(MSGTYPE_AUDIO, start_sequence + 2, b"frame2")
+        )
+        self.assertEqual(mock_writer.drain.call_count, 2)
 
     @mock.patch("blinkpy.api.request_command_status")
     @mock.patch("blinkpy.api.request_command_done")
@@ -612,8 +791,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         # Mock SSL error
         ssl_error = ssl.SSLError()
         ssl_error.reason = "APPLICATION_DATA_AFTER_CLOSE_NOTIFY"
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = ssl_error
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = ssl_error
         mock_reader.at_eof.return_value = False
 
         self.livestream.target_reader = mock_reader
@@ -634,8 +813,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         # Mock SSL error with different reason
         ssl_error = ssl.SSLError()
         ssl_error.reason = "SOME_OTHER_SSL_ERROR"
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = ssl_error
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = ssl_error
         mock_reader.at_eof.return_value = False
 
         self.livestream.target_reader = mock_reader
@@ -658,8 +837,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         mock_writer = mock.Mock()
 
         # Mock general exception
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = Exception("Test exception")
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = Exception("Test exception")
         mock_reader.at_eof.return_value = False
 
         self.livestream.target_reader = mock_reader
@@ -681,8 +860,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         mock_writer = mock.Mock()
 
         # Mock asyncio timeout exception
-        mock_reader.read = mock.AsyncMock()
-        mock_reader.read.side_effect = TimeoutError()
+        mock_reader.readexactly = mock.AsyncMock()
+        mock_reader.readexactly.side_effect = TimeoutError()
         mock_reader.at_eof.return_value = False
 
         self.livestream.target_reader = mock_reader
