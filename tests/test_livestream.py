@@ -337,7 +337,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         payload_data = bytearray([0x47] + [0x00] * 187)  # 188 bytes total
 
         mock_reader.readexactly = mock.AsyncMock()
-        mock_reader.readexactly.side_effect = [header_data, payload_data, asyncio.IncompleteReadError(b"", 9)]
+        mock_reader.readexactly.side_effect = [header_data, payload_data,
+                                               asyncio.IncompleteReadError(b"", 9)]
         mock_reader.at_eof.side_effect = [False, False, True]
         mock_client.is_closing.return_value = False
         mock_client.write = mock.Mock()
@@ -376,7 +377,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         payload_data = bytearray([0x47] + [0x00] * 187)  # 188 bytes total
 
         mock_reader.readexactly = mock.AsyncMock()
-        mock_reader.readexactly.side_effect = [header_data_invalid, payload_data, asyncio.IncompleteReadError(b"", 9)]
+        mock_reader.readexactly.side_effect = [header_data_invalid, payload_data,
+                                               asyncio.IncompleteReadError(b"", 9)]
         mock_reader.at_eof.side_effect = [False, False, True]
 
         self.livestream.target_reader = mock_reader
@@ -448,7 +450,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         )
 
         mock_reader.readexactly = mock.AsyncMock()
-        mock_reader.readexactly.side_effect = [header_data_empty, header_data, asyncio.IncompleteReadError(b"short", 188)]
+        mock_reader.readexactly.side_effect = [header_data_empty, header_data,
+                                               asyncio.IncompleteReadError(b"short", 188)]
         mock_reader.at_eof.side_effect = [False, False, True]
 
         self.livestream.target_reader = mock_reader
@@ -492,7 +495,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         payload_data = bytearray([0x42] + [0x00] * 187)  # 188 bytes total
 
         mock_reader.readexactly = mock.AsyncMock()
-        mock_reader.readexactly.side_effect = [header_data, payload_data, asyncio.IncompleteReadError(b"", 9)]
+        mock_reader.readexactly.side_effect = [header_data, payload_data,
+                                               asyncio.IncompleteReadError(b"", 9)]
         mock_reader.at_eof.side_effect = [False, False, True]
         mock_client.is_closing.return_value = False
         mock_client.write = mock.Mock()
