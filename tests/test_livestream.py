@@ -451,7 +451,8 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
 
         mock_reader.readexactly = mock.AsyncMock()
         mock_reader.readexactly.side_effect = [header_data_empty, header_data,
-                                               asyncio.IncompleteReadError(b"short", 188)]
+                                               asyncio.IncompleteReadError(b"short",
+                                                                           188)]
         mock_reader.at_eof.side_effect = [False, False, True]
 
         self.livestream.target_reader = mock_reader
