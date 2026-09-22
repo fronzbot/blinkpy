@@ -364,7 +364,7 @@ class BlinkSyncModule:
                 .replace(tzinfo=datetime.timezone.utc)
                 .astimezone(tz=None)
             )
-            last_clip_time = None
+            newest_clip_time = None
             num_new = 0
             for item in reversed(manifest):
                 iso_timestamp = item.created_at.isoformat()
@@ -390,17 +390,21 @@ class BlinkSyncModule:
                 self.motion[name] = True
                 record = {"clip": clip_url, "time": iso_timestamp}
                 self.last_records[name].append(record)
-                last_clip_time = item.created_at
+                # The manifest is iterated newest first, so the first
+                # processed item holds the newest creation time.
+                if newest_clip_time is None:
+                    newest_clip_time = item.created_at
                 num_new += 1
 
             # The manifest became ready, and we read recent clips from it.
+            # Advance the reference to the newest clip's creation time rather
+            # than the current time: a clip only appears in the manifest once
+            # its recording has finished, so a clip that started before now
+            # can still show up in a later manifest and must not be skipped.
             if num_new > 0:
-                last_manifest_read = (
-                    datetime.datetime.utcnow() - datetime.timedelta(seconds=10)
-                ).isoformat()
+                last_manifest_read = newest_clip_time.isoformat()
                 self._local_storage["last_manifest_read"] = last_manifest_read
                 _LOGGER.debug("Updated last_manifest_read to %s", last_manifest_read)
-                _LOGGER.debug("Last clip time was %s", last_clip_time)
         # We want to keep the last record when no new motion was detected.
         for camera in self.cameras:
             # Check if there are no new records, indicating motion.
