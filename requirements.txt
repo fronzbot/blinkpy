@@ -1,6 +1,6 @@
 python-dateutil>=2.9.0.post0
 requests>=2.34.2
-python-slugify>=8.0.4
+python-slugify>=9.1.2
 sortedcontainers~=2.4.0
 aiohttp>=3.14.3
 aiofiles>=23.1.0
