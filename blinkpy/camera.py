@@ -584,3 +584,75 @@ class BlinkDoorbell(BlinkCamera):
 
     async def get_sensor_info(self):
         """Get sensor info for blink doorbell camera."""
+
+
+class BlinkCameraHawk(BlinkCamera):
+    """Define a class for a Blink Arc camera."""
+
+    def __init__(self, sync):
+        """Initialize a Blink Arc (Hawk)."""
+        super().__init__(sync)
+        self.camera_type = "hawk"
+        self.product_type = "hawk"
+
+    @property
+    def arm(self):
+        """Return camera arm status."""
+        return self.sync.arm
+
+    async def async_arm(self, value):
+        """Set camera arm status."""
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.network_id}/hawks/{self.camera_id}/config"
+        )
+        data = dumps({"enabled": value})
+        response = await api.http_post(self.sync.blink, url, data=data)
+        await api.wait_for_command(self.sync.blink, response)
+        return response
+
+    async def record(self):
+        """Initiate clip recording for a blink hawk camera."""
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.network_id}/hawks/{self.camera_id}/clip"
+        )
+        response = await api.http_post(self.sync.blink, url)
+        await api.wait_for_command(self.sync.blink, response)
+        return response
+
+    async def snap_picture(self):
+        """Snap picture for a blink hawk camera."""
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.network_id}/hawks/{self.camera_id}/thumbnail"
+        )
+        response = await api.http_post(self.sync.blink, url)
+        await api.wait_for_command(self.sync.blink, response)
+        return response
+
+    async def get_sensor_info(self):
+        """Get sensor info for blink hawk camera."""
+
+    def extract_config_info(self, config):
+        """Extract config info, preserving hawk product type."""
+        super().extract_config_info(config)
+        self.product_type = "hawk"
+
+    async def get_liveview(self):
+        """Get liveview link."""
+        url = (
+            f"{self.sync.urls.base_url}/api/v1/accounts/"
+            f"{self.sync.blink.account_id}/networks/"
+            f"{self.network_id}/hawks/{self.camera_id}/liveview"
+        )
+        response = await api.http_post(self.sync.blink, url)
+        await api.wait_for_command(self.sync.blink, response)
+        server = response["server"]
+        server_split = server.split(":")
+        server_split[0] = "rtsps"
+        link = ":".join(server_split)
+        return link

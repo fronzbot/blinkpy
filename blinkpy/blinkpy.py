@@ -23,7 +23,7 @@ from dateutil.parser import parse
 from slugify import slugify
 
 from blinkpy import api
-from blinkpy.sync_module import BlinkSyncModule, BlinkOwl, BlinkLotus
+from blinkpy.sync_module import BlinkSyncModule, BlinkOwl, BlinkHawk, BlinkLotus
 from blinkpy.helpers import util
 from blinkpy.helpers.constants import (
     DEFAULT_MOTION_INTERVAL,
@@ -225,7 +225,7 @@ class Blink:
                 network_id = str(owl["network_id"])
                 if network_id in self.network_ids:
                     camera_list.append(
-                        {network_id: {"name": name, "id": network_id, "type": "mini"}}
+                        {network_id: {"name": name, "id": owl["id"], "type": "mini"}}
                     )
                     continue
                 if owl["onboarded"]:
@@ -252,7 +252,7 @@ class Blink:
                         {
                             network_id: {
                                 "name": name,
-                                "id": network_id,
+                                "id": lotus["id"],
                                 "type": "doorbell",
                             }
                         }
@@ -261,6 +261,30 @@ class Blink:
                 if lotus["onboarded"]:
                     network_list.append(str(network_id))
                     self.sync[name] = BlinkLotus(self, name, network_id, lotus)
+                    await self.sync[name].start()
+        except (KeyError, TypeError):
+            # No sync-less devices found
+            pass
+
+        self.network_ids.extend(network_list)
+        return camera_list
+
+    async def setup_hawks(self):
+        """Check for blink arc cameras."""
+        network_list = []
+        camera_list = []
+        try:
+            for hawk in self.homescreen["hawks"]:
+                name = hawk["name"]
+                network_id = str(hawk["network_id"])
+                if network_id in self.network_ids:
+                    camera_list.append(
+                        {network_id: {"name": name, "id": hawk["id"], "type": "hawk"}}
+                    )
+                    continue
+                if hawk["onboarded"]:
+                    network_list.append(str(network_id))
+                    self.sync[name] = BlinkHawk(self, name, network_id, hawk)
                     await self.sync[name].start()
         except (KeyError, TypeError):
             # No sync-less devices found
@@ -284,8 +308,12 @@ class Blink:
                         {"name": camera["name"], "id": camera["id"], "type": "default"}
                     )
             mini_cameras = await self.setup_owls()
+            hawk_cameras = await self.setup_hawks()
             lotus_cameras = await self.setup_lotus()
             for camera in mini_cameras:
+                for network, camera_info in camera.items():
+                    all_cameras[network].append(camera_info)
+            for camera in hawk_cameras:
                 for network, camera_info in camera.items():
                     all_cameras[network].append(camera_info)
             for camera in lotus_cameras:

@@ -8,7 +8,7 @@ import pytest
 from blinkpy.blinkpy import Blink
 from blinkpy.helpers.util import BlinkURLHandler
 from blinkpy.sync_module import BlinkSyncModule
-from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell
+from blinkpy.camera import BlinkCamera, BlinkCameraMini, BlinkDoorbell, BlinkCameraHawk
 
 
 @mock.patch("blinkpy.auth.Auth.query")
@@ -178,17 +178,20 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             {"name": "foo", "id": 10, "type": "default"},
             {"name": "bar", "id": 11, "type": "mini"},
             {"name": "fake", "id": 12, "type": "doorbell"},
+            {"name": "hawk_cam", "id": 13, "type": "hawk"},
         ]
 
         self.blink.homescreen = {
             "owls": [{"name": "bar", "id": 3}],
             "doorbells": [{"name": "fake", "id": 12}],
+            "hawks": [{"name": "hawk_cam", "id": 13}],
         }
 
         side_effect = [
             resp_sync,
             resp_network_info,
             resp_videos,
+            resp_empty,
             resp_empty,
             resp_empty,
             resp_empty,
@@ -205,6 +208,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertEqual(test_sync.cameras["foo"].__class__, BlinkCamera)
         self.assertEqual(test_sync.cameras["bar"].__class__, BlinkCameraMini)
         self.assertEqual(test_sync.cameras["fake"].__class__, BlinkDoorbell)
+        self.assertEqual(test_sync.cameras["hawk_cam"].__class__, BlinkCameraHawk)
 
         # Now shuffle the cameras and see if it still works
         for i in range(0, 10):
@@ -220,6 +224,9 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             )
             self.assertEqual(
                 test_sync.cameras["fake"].__class__, BlinkDoorbell, msg=debug_msg
+            )
+            self.assertEqual(
+                test_sync.cameras["hawk_cam"].__class__, BlinkCameraHawk, msg=debug_msg
             )
 
     @pytest.mark.asyncio
