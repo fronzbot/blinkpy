@@ -181,13 +181,12 @@ class BlinkLiveStream:
             _LOGGER.debug("Starting copy from target to clients")
             while not self.target_reader.at_eof():
                 # Read header from the target server
-                data = await self.target_reader.read(9)
-
-                # Check if we have enough data for the header
-                if len(data) < 9:
+                try:
+                    data = await self.target_reader.readexactly(9)
+                except asyncio.IncompleteReadError as err:
                     _LOGGER.warning(
                         "Insufficient data for header: %d bytes, expected 9",
-                        len(data),
+                        len(err.partial),
                     )
                     break
 
@@ -208,13 +207,12 @@ class BlinkLiveStream:
                     continue
 
                 # Read payload from the target server
-                data = await self.target_reader.read(payload_length)
-
-                # Check if we have enough data for the payload
-                if len(data) < payload_length:
+                try:
+                    data = await self.target_reader.readexactly(payload_length)
+                except asyncio.IncompleteReadError as err:
                     _LOGGER.warning(
                         "Insufficient data for payload: %d bytes, expected %d",
-                        len(data),
+                        len(err.partial),
                         payload_length,
                     )
                     break
