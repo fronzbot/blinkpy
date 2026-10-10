@@ -380,6 +380,50 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             + "manifest/4321/clip/request/1568781420",
         )
 
+    @mock.patch("blinkpy.sync_module.LocalStorageMediaItem.prepare_download")
+    async def test_check_new_videos_local_storage_late_clip(
+        self, mock_prepare, mock_resp
+    ) -> None:
+        """Test a clip that appears in a later manifest is not skipped."""
+        test_sync = self.blink.sync["test"]
+        test_sync._local_storage["status"] = True
+        test_sync._local_storage["manifest_stale"] = False
+        test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
+        mock_resp.return_value = {"media": []}
+        now = datetime.datetime.utcnow()
+        test_sync._local_storage["last_manifest_read"] = (
+            now - datetime.timedelta(minutes=10)
+        ).isoformat()
+
+        def clip(item_id, minutes_ago):
+            created_at = now - datetime.timedelta(minutes=minutes_ago)
+            return LocalStorageMediaItem(
+                item_id,
+                "Front_Door",
+                created_at.isoformat(),
+                "100",
+                "4321",
+                "manifest/$manifest_id/clip/request/$clip_id",
+            )
+
+        # The first manifest only holds the clip that finished recording.
+        test_sync._local_storage["manifest"].add(clip("1", 3))
+        self.assertTrue(await test_sync.check_new_videos())
+        self.assertEqual(
+            test_sync.last_records["Front_Door"][0]["clip"],
+            "manifest/4321/clip/request/1",
+        )
+
+        # A clip that started before this read finishes afterwards and only
+        # shows up in the next manifest; it must still be picked up, and the
+        # already processed clip must not be reported again.
+        test_sync._local_storage["manifest"].add(clip("2", 1))
+        self.assertTrue(await test_sync.check_new_videos())
+        self.assertEqual(
+            [r["clip"] for r in test_sync.last_records["Front_Door"]],
+            ["manifest/4321/clip/request/2"],
+        )
+
     @mock.patch("blinkpy.sync_module.BlinkSyncModule.poll_local_storage_manifest")
     # Need to mock out poll_local_storage_manifest due to retries timing out test
     async def test_check_no_missing_id_with_update_local_storage_manifest(
