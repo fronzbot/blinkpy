@@ -100,6 +100,87 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.blink.homescreen = {"doorbells": [device], "owls": []}
         self.assertEqual(self.blink.sync["test"].get_unique_info("doorbell2"), None)
 
+    @mock.patch(
+        "blinkpy.api.request_sync_snooze",
+        mock.AsyncMock(return_value={"snooze_till": "2099-01-01T12:00:00+00:00"}),
+    )
+    async def test_snoozed(self, mock_resp) -> None:
+        """Check that we get snoozed status."""
+        result = await self.blink.sync["test"].snoozed
+        self.assertTrue(result)
+
+    @mock.patch(
+        "blinkpy.api.request_sync_snooze",
+        mock.AsyncMock(return_value=None),
+    )
+    async def test_snoozed_none(self, mock_resp) -> None:
+        """Check that we handle None response."""
+        result = await self.blink.sync["test"].snoozed
+        self.assertFalse(result)
+
+    @mock.patch(
+        "blinkpy.api.request_sync_snooze",
+        mock.AsyncMock(return_value={}),
+    )
+    async def test_snoozed_malformed(self, mock_resp) -> None:
+        """Check that we handle malformed response."""
+        result = await self.blink.sync["test"].snoozed
+        self.assertFalse(result)
+
+    @mock.patch(
+        "blinkpy.api.request_sync_snooze",
+        mock.AsyncMock(return_value={"snooze_till": ""}),
+    )
+    async def test_snoozed_empty_string(self, mock_resp) -> None:
+        """Check that we handle empty string response."""
+        result = await self.blink.sync["test"].snoozed
+        self.assertFalse(result)
+
+    @mock.patch(
+        "blinkpy.api.request_sync_snooze",
+        mock.AsyncMock(return_value={"snooze_till": "2000-01-01T00:00:00+00:00"}),
+    )
+    async def test_snoozed_expired(self, mock_resp) -> None:
+        """Check that expired snooze_till returns False."""
+        result = await self.blink.sync["test"].snoozed
+        self.assertFalse(result)
+
+    @mock.patch(
+        "blinkpy.api.request_sync_snooze",
+        mock.AsyncMock(return_value={"snooze_till": "2099-01-01T00:00:00Z"}),
+    )
+    async def test_snoozed_z_suffix(self, mock_resp) -> None:
+        """Check that Z-suffix timestamps are parsed correctly."""
+        result = await self.blink.sync["test"].snoozed
+        self.assertTrue(result)
+
+    @mock.patch(
+        "blinkpy.api.request_sync_snooze",
+        mock.AsyncMock(return_value={"status": 200}),
+    )
+    async def test_async_snooze(self, mock_resp) -> None:
+        """Check that we can set snooze."""
+        result = await self.blink.sync["test"].async_snooze(300)
+        self.assertEqual(result, {"status": 200})
+
+    @mock.patch(
+        "blinkpy.api.request_sync_snooze",
+        mock.AsyncMock(return_value={"status": 400}),
+    )
+    async def test_async_snooze_failure(self, mock_resp) -> None:
+        """Check that we handle snooze failure."""
+        result = await self.blink.sync["test"].async_snooze(300)
+        self.assertEqual(result, {"status": 400})
+
+    @mock.patch(
+        "blinkpy.api.request_sync_snooze",
+        mock.AsyncMock(return_value=None),
+    )
+    async def test_async_snooze_none_response(self, mock_resp) -> None:
+        """Check that we handle None response when setting snooze."""
+        result = await self.blink.sync["test"].async_snooze(300)
+        self.assertIsNone(result)
+
     async def test_get_events(self, mock_resp) -> None:
         """Test get events function."""
         mock_resp.return_value = {"event": True}

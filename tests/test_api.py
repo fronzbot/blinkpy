@@ -189,6 +189,14 @@ class TestAPI(IsolatedAsyncioTestCase):
             )
         )
 
+    async def test_request_sync_snooze(self, mock_resp):
+        """Test sync snooze request."""
+        mock_resp.return_value = {"message": "Sync snoozed"}
+        response = await api.request_sync_snooze(
+            self.blink, "network", '{"snooze_time": 300}'
+        )
+        self.assertEqual(response, {"message": "Sync snoozed"})
+
     async def test_wait_for_command(self, mock_resp):
         """Test Motion detect enable."""
         mock_resp.side_effect = (COMMAND_NOT_COMPLETE, COMMAND_COMPLETE)
