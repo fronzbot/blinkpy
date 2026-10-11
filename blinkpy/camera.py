@@ -5,6 +5,7 @@ import string
 import os
 import logging
 import datetime
+import math
 from json import dumps
 import traceback
 import aiohttp
@@ -50,6 +51,9 @@ class BlinkCamera:
         self.sync_signal_strength = None
         self.battery_check_time = None
         self.status = None
+        self.snooze = None
+        self.snooze_till = None
+        self.snooze_time_remaining = None
 
     @property
     def attributes(self):
@@ -76,6 +80,9 @@ class BlinkCamera:
             "sync_signal_strength": self.sync_signal_strength,
             "last_record": self.last_record,
             "type": self.product_type,
+            "snooze": self.snooze,
+            "snooze_till": self.snooze_till,
+            "snooze_time_remaining": self.snooze_time_remaining,
         }
         return attributes
 
@@ -188,6 +195,80 @@ class BlinkCamera:
         if res and res.status == 200:
             return await res.json()
         return None
+
+    @property
+    async def snoozed(self):
+        """Return snooze status as boolean."""
+        response_data = None
+        try:
+            if self.product_type in ["catalina", "sedona"]:
+                res = await api.request_get_config(
+                    self.sync.blink,
+                    self.network_id,
+                    self.camera_id,
+                    product_type=self.product_type,
+                )
+                response_data = res
+                snooze_value = res["camera"][0].get("snooze_till")
+                return bool(snooze_value)
+            else:
+                response_data = self.sync.blink.homescreen
+                if self.product_type in ["doorbell", "lotus"]:
+                    collection_key = "doorbells"
+                else:
+                    collection_key = "owls"
+                for device in self.sync.blink.homescreen.get(collection_key, []):
+                    if str(device.get("id")) == str(self.camera_id):
+                        snooze_value = device.get("snooze")
+                        return bool(snooze_value)
+                return False
+        except TypeError:
+            return False
+        except (IndexError, KeyError, ValueError) as e:
+            _LOGGER.warning(
+                "Exception %s: Encountered a likely malformed response "
+                "from the snooze API endpoint. Response: %s",
+                e,
+                response_data,
+            )
+            return False
+
+    async def async_snooze(self, snooze_time=60):
+        """
+        Set camera snooze status.
+
+        :param snooze_time: Time in minutes to snooze camera. Default is 60
+            (1 hour). Valid values are 1-1439; the API rejects 0 and values
+            of 1440 or greater. There is no dedicated call to cancel a
+            snooze, so sending snooze_time=1 is the practical way to end one
+            almost immediately.
+        """
+        if not 1 <= snooze_time <= 1439:
+            _LOGGER.warning(
+                "Invalid snooze_time %s for camera %s; must be between "
+                "1 and 1439 minutes.",
+                snooze_time,
+                self.camera_id,
+            )
+            return None
+        data = dumps({"snooze_time": snooze_time})
+        res = await api.request_camera_snooze(
+            self.sync.blink,
+            self.network_id,
+            self.camera_id,
+            product_type=self.product_type,
+            data=data,
+        )
+        if isinstance(res, dict) and "code" in res:
+            _LOGGER.warning(
+                "Camera %s snooze request rejected: %s",
+                self.camera_id,
+                res.get("message"),
+            )
+            return res
+        if res and self.product_type not in ["catalina", "sedona"]:
+            await self.sync.blink.get_homescreen()
+        return res
 
     @property
     def floodlight_enabled(self):
@@ -315,6 +396,31 @@ class BlinkCamera:
         self.product_type = config.get("type")
         self.battery_check_time = config.get("battery_check_time")
         self.status = config.get("status")
+        self.extract_snooze_info(config)
+
+    def extract_snooze_info(self, config):
+        """Normalize snooze status across camera models (wired vs mini/doorbell)."""
+        self.snooze_till = config.get("snooze_till")
+        remaining = config.get("snooze_time_remaining")
+        snoozed = config.get("snooze")
+
+        if remaining is None and self.snooze_till:
+            try:
+                until = datetime.datetime.fromisoformat(self.snooze_till)
+            except (TypeError, ValueError):
+                _LOGGER.warning(
+                    "Could not parse snooze_till %s for %s", self.snooze_till, self.name
+                )
+            else:
+                if until.tzinfo is None:
+                    until = until.replace(tzinfo=datetime.timezone.utc)
+                seconds = (
+                    until - datetime.datetime.now(datetime.timezone.utc)
+                ).total_seconds()
+                remaining = max(0, math.ceil(seconds / 60))
+
+        self.snooze_time_remaining = remaining
+        self.snooze = bool(remaining) if snoozed is None else bool(snoozed)
 
     async def get_sensor_info(self):
         """Retrieve calibrated temperature from special endpoint."""
