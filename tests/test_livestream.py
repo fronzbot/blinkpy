@@ -73,6 +73,7 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         self.assertEqual(self.livestream.camera, self.camera)
         self.assertEqual(self.livestream.command_id, 987654321)
         self.assertEqual(self.livestream.polling_interval, 15)
+        self.assertEqual(self.livestream.liveview_token, "abcdefghijklmnopqrstuv")
         self.assertIsInstance(self.livestream.target, urllib.parse.ParseResult)
         self.assertEqual(self.livestream.target.hostname, "1.2.3.4")
         self.assertEqual(self.livestream.target.port, 443)
@@ -106,6 +107,14 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
         expected_client_id = (123456).to_bytes(4, byteorder="big")
         self.assertEqual(auth_header[24:28], expected_client_id)
 
+        # Check auth token length field at position 30-33
+        expected_token_length = (64).to_bytes(4, byteorder="big")
+        self.assertEqual(auth_header[30:34], expected_token_length)
+
+        # Check auth token at position 34-97 (liveview_token, null-padded)
+        expected_token = b"abcdefghijklmnopqrstuv" + b"\x00" * 42
+        self.assertEqual(auth_header[34:98], expected_token)
+
         # Check connection ID length field at position 98-101
         expected_connection_id_length = (16).to_bytes(4, byteorder="big")
         self.assertEqual(auth_header[98:102], expected_connection_id_length)
@@ -116,6 +125,33 @@ class TestBlinkLiveStream(IsolatedAsyncioTestCase):
 
         # Check static trailer at end (4 bytes: 0x00, 0x00, 0x00, 0x01)
         self.assertEqual(auth_header[-4:], bytearray([0x00, 0x00, 0x00, 0x01]))
+
+    def test_get_auth_header_no_token_fallback(self, mock_resp):
+        """Test auth header falls back to null token when missing."""
+        response = dict(self.livestream_response)
+        response.pop("liveview_token")
+        livestream = BlinkLiveStream(self.camera, response)
+
+        self.assertIsNone(livestream.liveview_token)
+        auth_header = livestream.get_auth_header()
+
+        self.assertEqual(len(auth_header), 122)
+        self.assertEqual(auth_header[30:34], (64).to_bytes(4, byteorder="big"))
+        self.assertEqual(auth_header[34:98], b"\x00" * 64)
+
+    def test_get_auth_header_camelcase_token(self, mock_resp):
+        """Test auth header accepts camelCase liveViewToken key."""
+        response = dict(self.livestream_response)
+        response.pop("liveview_token")
+        response["liveViewToken"] = "CAMELCASETOKEN"
+        livestream = BlinkLiveStream(self.camera, response)
+
+        self.assertEqual(livestream.liveview_token, "CAMELCASETOKEN")
+        auth_header = livestream.get_auth_header()
+
+        self.assertEqual(len(auth_header), 122)
+        expected_token = b"CAMELCASETOKEN" + b"\x00" * 50
+        self.assertEqual(auth_header[34:98], expected_token)
 
     async def test_start(self, mock_resp):
         """Test starting the server."""
