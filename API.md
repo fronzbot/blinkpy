@@ -100,6 +100,32 @@ After an arm/disarm command, the client appears to poll this URL every second or
 **Known Commands:**
 lv_relay, arm, disarm, thumbnail, clip
 
+## LiveView (current)
+
+The legacy paths above predate the current app, which uses versioned
+account endpoints. LiveView session creation (all camera families):
+
+```text
+POST {base}/api/v6/accounts/{account}/networks/{network}/cameras/{camera}/liveview
+POST {base}/api/v2/accounts/{account}/networks/{network}/owls/{camera}/liveview
+POST {base}/api/v2/accounts/{account}/networks/{network}/doorbells/{camera}/liveview
+```
+
+Body: `{"intent": "liveview", "motion_event_start_time": null}`
+(`"extended_liveview"` requests an extended session where entitled;
+response `type` is `"lv"` or `"elv"`, with 5400 s durations on elv.)
+
+The response carries the relay URL plus everything needed to manage
+the session: `server` (`immis://…`), `liveview_token` (required for
+media auth — null bytes are rejected), `command_id`,
+`polling_interval`, `session_duration`, `continue_interval`,
+`continue_warning`, join/MCLV flags, and media IDs.
+
+Media transport is a proprietary IMMI-over-TLS stream yielding MPEG-TS
+(H.264 + AAC); consumers must send keepalive/latency traffic and poll
+the command, then call `command/done`. Full wire details live in
+[PROTOCOL.md](PROTOCOL.md), and `blinkpy.livestream` implements it.
+
 ## Home Screen
 
 Return information displayed on the home screen of the mobile client
