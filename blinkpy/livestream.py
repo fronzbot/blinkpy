@@ -4,9 +4,98 @@ import asyncio
 import logging
 import urllib.parse
 import ssl
+from dataclasses import dataclass, field
+from collections.abc import AsyncIterator
 from blinkpy import api
 
 _LOGGER = logging.getLogger(__name__)
+
+# IMMI wire protocol constants (see research notes, verified live).
+_IMMI_HEADER_LEN = 9
+_TS_SYNC_BYTE = 0x47
+_SERIAL_MAX_LENGTH = 16
+_TOKEN_MAX_LENGTH = 64
+_CONN_ID_MAX_LENGTH = 16
+
+
+def _first(response: dict, *keys, default=None):
+    """Return the first present key (supports snake_case and camelCase)."""
+    for key in keys:
+        if response.get(key) is not None:
+            return response.get(key)
+    return default
+
+
+@dataclass
+class LiveViewSessionInfo:
+    """Full LiveView session state (nothing thrown away).
+
+    Mirrors the fields returned when a LiveView session is created, so
+    callers can manage polling, continuation and teardown themselves.
+    """
+
+    server: str
+    liveview_token: str | None = None
+    command_id: int | None = None
+    parent_command_id: int | None = None
+    polling_interval: int = 1
+    session_duration: int | None = None
+    continue_interval: int | None = None
+    continue_warning: int | None = None
+    extended_duration: int | None = None
+    liveview_type: str | None = None
+    is_multi_client: bool = False
+    is_first_joiner: bool = False
+    video_id: int | None = None
+    media_id: int | None = None
+    join_available: bool | None = None
+    join_state: str | None = None
+    options: dict | None = field(default=None)
+
+    @classmethod
+    def from_response(cls, response: dict) -> "LiveViewSessionInfo":
+        """Build from a liveview API response (snake_case or camelCase)."""
+        return cls(
+            server=response["server"],
+            liveview_token=_first(response, "liveview_token", "liveViewToken", "token"),
+            command_id=_first(response, "command_id", "commandId"),
+            parent_command_id=_first(response, "parent_command_id", "parentCommandId"),
+            polling_interval=_first(
+                response, "polling_interval", "pollingIntervalInSeconds", default=1
+            ),
+            session_duration=_first(response, "duration", "sessionDuration"),
+            continue_interval=_first(response, "continue_interval", "continueInterval"),
+            continue_warning=_first(response, "continue_warning", "continueWarning"),
+            extended_duration=_first(response, "extended_duration", "extendedDuration"),
+            liveview_type=_first(response, "type", "liveViewType"),
+            is_multi_client=bool(
+                _first(
+                    response,
+                    "is_multi_client_live_view",
+                    "isMultiClientLiveViewSession",
+                    default=False,
+                )
+            ),
+            is_first_joiner=bool(
+                _first(response, "first_joiner", "isFirstJoiner", default=False)
+            ),
+            video_id=_first(response, "video_id", "videoId"),
+            media_id=_first(response, "media_id", "mediaId"),
+            join_available=_first(response, "join_available", "joinAvailable"),
+            join_state=_first(response, "join_state", "joinState"),
+            options=response.get("options"),
+        )
+
+    @property
+    def joined_existing(self) -> bool:
+        """True when this response joined an existing session.
+
+        Prefer joining over creating duplicates when the server offers
+        it (multi-client flag or an available join we did not start).
+        """
+        return bool(
+            self.is_multi_client or (self.join_available and not self.is_first_joiner)
+        )
 
 
 class BlinkLiveStream:
@@ -17,13 +106,17 @@ class BlinkLiveStream:
     def __init__(self, camera, response):
         """Initialize BlinkLiveStream."""
         self.camera = camera
-        self.command_id = response["command_id"]
-        self.polling_interval = response["polling_interval"]
-        self.target = urllib.parse.urlparse(response["server"])
+        self.info = LiveViewSessionInfo.from_response(response)
+        # Backward-compatible attribute access.
+        self.command_id = self.info.command_id
+        self.polling_interval = self.info.polling_interval
+        self.liveview_token = self.info.liveview_token
+        self.target = urllib.parse.urlparse(self.info.server)
         self.server = None
         self.clients = []
         self.target_reader = None
         self.target_writer = None
+        self._closed = False
 
     def add_auth_header_string_field(self, auth_header, field_string, max_length):
         """Add string field to authentication header."""
@@ -39,9 +132,6 @@ class BlinkLiveStream:
     def get_auth_header(self):
         """Get authentication header."""
         auth_header = bytearray()
-        serial_max_length = 16
-        token_field_max_length = 64
-        conn_id_max_length = 16
 
         # Magic number (4 bytes)
         # fmt: off
@@ -54,7 +144,7 @@ class BlinkLiveStream:
 
         # Device Serial field (4-byte length prefix, 16 serial bytes)
         serial = self.camera.serial
-        self.add_auth_header_string_field(auth_header, serial, serial_max_length)
+        self.add_auth_header_string_field(auth_header, serial, _SERIAL_MAX_LENGTH)
         # Total packet length: 24 bytes
 
         # Client ID field (4 bytes)
@@ -74,17 +164,25 @@ class BlinkLiveStream:
         auth_header.extend(static_field)
         # Total packet length: 30 bytes
 
-        # Auth Token field (4-byte length prefix, 64 null bytes for now)
-        # fmt: off
-        token_length = token_field_max_length.to_bytes(4, byteorder="big")
-        _LOGGER.debug("Null token length: %s (%d)", token_length, len(token_length))
-        auth_header.extend(token_length)
-        auth_header.extend([0x00] * token_field_max_length)
+        # Auth Token field (4-byte length prefix, 64-byte token).
+        # Walnut Player.setAuthToken(liveview_token) -> IMMIStreamSource.
+        # Do not log the token value itself. Fall back to nulls only
+        # for backward compat (old captures had no token).
+        token = self.liveview_token or ""
+        token_bytes = token.encode("utf-8")[:_TOKEN_MAX_LENGTH]
+        token_bytes = token_bytes.ljust(_TOKEN_MAX_LENGTH, b"\x00")
+        _LOGGER.debug(
+            "Auth token length: %d (padded to %d)",
+            len(token.encode("utf-8")[:_TOKEN_MAX_LENGTH]),
+            _TOKEN_MAX_LENGTH,
+        )
+        auth_header.extend(len(token_bytes).to_bytes(4, byteorder="big"))
+        auth_header.extend(token_bytes)
         # Total packet length: 98 bytes
 
         # Connection ID field (4-byte length prefix, 16 connection ID bytes)
         conn_id = self.target.path.split("/")[-1].split("__")[0]
-        self.add_auth_header_string_field(auth_header, conn_id, conn_id_max_length)
+        self.add_auth_header_string_field(auth_header, conn_id, _CONN_ID_MAX_LENGTH)
         # Total packet length: 118 bytes
 
         # Trailer (static 4-byte trailer)
@@ -144,6 +242,77 @@ class BlinkLiveStream:
         auth_header = self.get_auth_header()
         self.target_writer.write(auth_header)
         await self.target_writer.drain()
+
+    async def _read_packet(self):
+        """Read one IMMI packet, return (msgtype, payload) or (None, None)."""
+        header = await self.target_reader.readexactly(_IMMI_HEADER_LEN)
+        msgtype = header[0]
+        payload_length = int.from_bytes(header[5:9], byteorder="big")
+        if payload_length <= 0:
+            _LOGGER.debug("Invalid payload length: %d", payload_length)
+            return None, None
+        payload = await self.target_reader.readexactly(payload_length)
+        return msgtype, payload
+
+    async def iter_mpegts(self) -> AsyncIterator[bytes]:
+        """Yield raw MPEG-TS payloads (no TCP proxy needed).
+
+        Owns the full session: authenticate, run keepalive/latency and
+        command polling in the background (relays drop silent consumers),
+        stream until cancelled or the relay ends, then mark done::
+
+            async with camera.liveview() as stream:
+                async for chunk in stream.iter_mpegts():
+                    ...
+        """
+        await self.auth()
+        sender = asyncio.create_task(self.send())
+        poller = asyncio.create_task(self.poll())
+        try:
+            # NOTE: do not exit when the poller finishes; only EOF (or
+            # cancellation) ends iteration. poll() marks command/done itself.
+            while not self.target_reader.at_eof():
+                try:
+                    msgtype, payload = await self._read_packet()
+                except asyncio.IncompleteReadError:
+                    break
+                if payload is None or msgtype != 0x00:
+                    continue
+                if not payload or payload[0] != _TS_SYNC_BYTE:
+                    continue
+                yield payload
+                await asyncio.sleep(0)
+        finally:
+            sender.cancel()
+            poller.cancel()
+            await self.aclose()
+
+    async def aclose(self):
+        """Close target connection and mark the LiveView command done."""
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            if self.target_writer and not self.target_writer.is_closing():
+                self.target_writer.close()
+        finally:
+            try:
+                await api.request_command_done(
+                    self.camera.sync.blink,
+                    self.camera.network_id,
+                    self.command_id,
+                )
+            except Exception:
+                _LOGGER.debug("command/done failed", exc_info=True)
+            self.stop()
+
+    async def __aenter__(self) -> "BlinkLiveStream":
+        """Enter async context (connection opens on first use)."""
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        """Guarantee teardown: sockets, server, command/done."""
+        await self.aclose()
 
     async def join(self, client_reader, client_writer):
         """Join client to the stream."""

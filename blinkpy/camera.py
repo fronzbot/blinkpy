@@ -13,7 +13,7 @@ from requests.compat import urljoin
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA, ONLINE
 from blinkpy.helpers.util import to_alphanumeric
-from blinkpy.livestream import BlinkLiveStream
+from blinkpy.livestream import BlinkLiveStream, LiveViewSessionInfo
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -467,13 +467,36 @@ class BlinkCamera:
         )
         return response["server"]
 
-    async def init_livestream(self):
+    async def get_liveview_info(self, intent="liveview") -> LiveViewSessionInfo:
+        """Get full LiveView session info (nothing thrown away)."""
+        response = await api.request_camera_liveview(
+            self.sync.blink,
+            self.sync.network_id,
+            self.camera_id,
+            camera_type=self.camera_type,
+            intent=intent,
+        )
+        return LiveViewSessionInfo.from_response(response)
+
+    async def liveview(self, intent="liveview") -> BlinkLiveStream:
+        """Start a LiveView session usable as an async context manager.
+
+        Example::
+
+            async with camera.liveview() as stream:
+                async for chunk in stream.iter_mpegts():
+                    ...
+        """
+        return await self.init_livestream(intent=intent)
+
+    async def init_livestream(self, intent="liveview"):
         """Initialize livestream."""
         response = await api.request_camera_liveview(
             self.sync.blink,
             self.sync.network_id,
             self.camera_id,
             camera_type=self.camera_type,
+            intent=intent,
         )
         if not response["server"].startswith("immis://"):
             raise NotImplementedError("Unsupported: {}".format(response["server"]))

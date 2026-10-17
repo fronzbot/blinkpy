@@ -2,6 +2,7 @@
 
 from unittest import mock
 from unittest import IsolatedAsyncioTestCase
+from json import loads
 from blinkpy import api
 from blinkpy.blinkpy import Blink, util
 from blinkpy.auth import Auth
@@ -205,3 +206,43 @@ class TestAPI(IsolatedAsyncioTestCase):
 
         response = await api.wait_for_command(self.blink, None)
         self.assertFalse(response)
+
+    async def test_request_camera_liveview_intent(self, mock_resp):
+        """Test liveview intent override reaches the request body."""
+        captured = {}
+
+        async def fake_post(
+            blink, url, is_retry=False, data=None, json=True, timeout=None
+        ):
+            captured["url"] = url
+            captured["data"] = loads(data)
+            return {"command_id": 1, "network_id": "net"}
+
+        with mock.patch.object(api, "http_post", new=fake_post):
+            with mock.patch.object(api, "wait_for_command", return_value=True):
+                await api.request_camera_liveview(
+                    self.blink,
+                    "net",
+                    "cam",
+                    camera_type="mini",
+                    intent="extended_liveview",
+                )
+        self.assertIn("/owls/cam/liveview", captured["url"])
+        self.assertEqual(captured["data"]["intent"], "extended_liveview")
+
+    async def test_request_camera_liveview_default_intent(self, mock_resp):
+        """Test liveview defaults to the liveview intent."""
+        captured = {}
+
+        async def fake_post(
+            blink, url, is_retry=False, data=None, json=True, timeout=None
+        ):
+            captured["data"] = loads(data)
+            return {"command_id": 1, "network_id": "net"}
+
+        with mock.patch.object(api, "http_post", new=fake_post):
+            with mock.patch.object(api, "wait_for_command", return_value=True):
+                await api.request_camera_liveview(
+                    self.blink, "net", "cam", camera_type="mini"
+                )
+        self.assertEqual(captured["data"]["intent"], "liveview")

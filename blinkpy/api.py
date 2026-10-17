@@ -428,7 +428,9 @@ async def request_camera_usage(blink):
     return await http_get(blink, url)
 
 
-async def request_camera_liveview(blink, network, camera_id, camera_type="", **kwargs):
+async def request_camera_liveview(
+    blink, network, camera_id, camera_type="", intent="liveview", **kwargs
+):
     """
     Request camera liveview.
 
@@ -436,9 +438,15 @@ async def request_camera_liveview(blink, network, camera_id, camera_type="", **k
     :param network: Sync module network id.
     :param camera_id: Camera ID of camera to request liveview from.
     :param camera_type: Camera type ("default", "mini", "doorbell").
+    :param intent: LiveView intent ("liveview" or "extended_liveview").
     """
     return await request_camera_action(
-        blink, network, camera_id, action="liveview", camera_type=camera_type
+        blink,
+        network,
+        camera_id,
+        action="liveview",
+        camera_type=camera_type,
+        intent=intent,
     )
 
 
@@ -715,8 +723,11 @@ async def request_camera_action(
         # Dynamic payload with runtime value substitution
         data = dumps(action_config["data_template"](kwargs))
     elif "data" in action_config:
-        # Static payload
-        data = dumps(action_config["data"])
+        # Static payload (copied: callers may override per-request fields)
+        payload = dict(action_config["data"])
+        if action == "liveview" and "intent" in kwargs:
+            payload["intent"] = kwargs["intent"]
+        data = dumps(payload)
 
     # Execute request
     response = await http_post(blink, url, data=data)
