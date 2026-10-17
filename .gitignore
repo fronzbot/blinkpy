@@ -20,3 +20,10 @@ Pipfile.lock
 blink.json
 blinktest.py
 .vscode/*
+# local secrets / dumps (never commit tokens)
+liveview_dump.json
+blink_auth.json
+/tmp/blink_auth.json
+.env
+*.xapk
+*.apk

@@ -13,7 +13,7 @@ from requests.compat import urljoin
 from blinkpy import api
 from blinkpy.helpers.constants import TIMEOUT_MEDIA, ONLINE
 from blinkpy.helpers.util import to_alphanumeric
-from blinkpy.livestream import BlinkLiveStream
+from blinkpy.livestream import BlinkLiveStream, LiveViewSessionInfo
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -466,6 +466,27 @@ class BlinkCamera:
             camera_type=self.camera_type,
         )
         return response["server"]
+
+    async def get_liveview_info(self) -> LiveViewSessionInfo:
+        """Get full LiveView session info (nothing thrown away)."""
+        response = await api.request_camera_liveview(
+            self.sync.blink,
+            self.sync.network_id,
+            self.camera_id,
+            camera_type=self.camera_type,
+        )
+        return LiveViewSessionInfo.from_response(response)
+
+    async def liveview(self) -> BlinkLiveStream:
+        """Start a LiveView session usable as an async context manager.
+
+        Example::
+
+            async with camera.liveview() as stream:
+                async for chunk in stream.iter_mpegts():
+                    ...
+        """
+        return await self.init_livestream()
 
     async def init_livestream(self):
         """Initialize livestream."""
