@@ -211,6 +211,9 @@ class Blink:
 
     async def validate_homescreen(self, response):
         """Validate and process homescreen response data."""
+        if response is None:
+            # The request failed and was already logged by Auth.query.
+            raise BlinkSetupError
         self.homescreen = await response.json()
         self.auth.client_id = response.headers.get("Client-Id")
         self.auth.user_id = response.headers.get("User-Id")

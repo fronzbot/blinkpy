@@ -148,6 +148,13 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         with self.assertRaises(BlinkSetupError):
             await self.blink.setup_camera_list()
 
+    @mock.patch("blinkpy.api.request_homescreen")
+    async def test_get_homescreen_no_response(self, mock_home):
+        """Check that a failed homescreen request raises a setup error."""
+        mock_home.return_value = None
+        with self.assertRaises(BlinkSetupError):
+            await self.blink.get_homescreen()
+
     def test_setup_urls(self):
         """Check setup of URLS."""
         self.blink.auth.region_id = "test"
@@ -507,6 +514,17 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         mock_homescreen.side_effect = [LoginError, TokenRefreshFailed]
         self.assertFalse(await self.blink.start())
         self.assertFalse(await self.blink.start())
+
+    @mock.patch("blinkpy.api.request_homescreen")
+    @mock.patch("blinkpy.auth.Auth.startup")
+    @mock.patch("blinkpy.blinkpy.Blink.setup_urls")
+    async def test_blink_start_no_homescreen(
+        self, mock_urls, mock_auth_startup, mock_home
+    ):
+        """Check that start fails cleanly when the homescreen request fails."""
+        mock_home.return_value = None
+        self.assertFalse(await self.blink.start())
+        self.assertFalse(self.blink.available)
 
     def test_setup_login_ids(self):
         """Test setup_login_ids function."""
