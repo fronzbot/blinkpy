@@ -18,6 +18,7 @@ import logging
 import datetime
 import aiofiles
 import aiofiles.ospath
+from aiohttp import ContentTypeError
 from requests.structures import CaseInsensitiveDict
 from dateutil.parser import parse
 from slugify import slugify
@@ -214,7 +215,11 @@ class Blink:
         if response is None:
             # The request failed and was already logged by Auth.query.
             raise BlinkSetupError
-        self.homescreen = await response.json()
+        try:
+            self.homescreen = await response.json()
+        except (ContentTypeError, ValueError) as error:
+            _LOGGER.error("Unexpected homescreen response: %s", response.status)
+            raise BlinkSetupError from error
         self.auth.client_id = response.headers.get("Client-Id")
         self.auth.user_id = response.headers.get("User-Id")
 

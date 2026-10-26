@@ -9,9 +9,11 @@ any communication related errors at startup.
 from unittest import mock
 from unittest import IsolatedAsyncioTestCase
 import time
+from aiohttp import ContentTypeError
 from blinkpy.blinkpy import Blink, BlinkSetupError, LoginError, TokenRefreshFailed
 from blinkpy.sync_module import BlinkOwl, BlinkLotus
 from blinkpy.helpers.constants import __version__
+import tests.mock_responses as mresp
 
 SPECIAL = "!@#$%^&*()_+-=[]{}|/<>?,.'"
 
@@ -154,6 +156,14 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         mock_home.return_value = None
         with self.assertRaises(BlinkSetupError):
             await self.blink.get_homescreen()
+
+    @mock.patch("blinkpy.api.request_homescreen")
+    async def test_get_homescreen_bad_response(self, mock_home):
+        """Check that a non-JSON homescreen response raises a setup error."""
+        for error in (ContentTypeError, ValueError):
+            mock_home.return_value = mresp.MockResponse({}, 503, raise_error=error)
+            with self.assertRaises(BlinkSetupError):
+                await self.blink.get_homescreen()
 
     def test_setup_urls(self):
         """Check setup of URLS."""
