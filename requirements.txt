@@ -1,4 +1,4 @@
-python-dateutil>=2.9.0.post0
+python-dateutil>=3.0.0
 requests>=2.34.2
 python-slugify>=8.0.4
 sortedcontainers~=2.4.0
