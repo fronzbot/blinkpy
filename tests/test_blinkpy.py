@@ -9,9 +9,11 @@ any communication related errors at startup.
 from unittest import mock
 from unittest import IsolatedAsyncioTestCase
 import time
+from aiohttp import ContentTypeError
 from blinkpy.blinkpy import Blink, BlinkSetupError, LoginError, TokenRefreshFailed
 from blinkpy.sync_module import BlinkOwl, BlinkLotus
 from blinkpy.helpers.constants import __version__
+import tests.mock_responses as mresp
 
 SPECIAL = "!@#$%^&*()_+-=[]{}|/<>?,.'"
 
@@ -147,6 +149,21 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         mock_home.return_value = None
         with self.assertRaises(BlinkSetupError):
             await self.blink.setup_camera_list()
+
+    @mock.patch("blinkpy.api.request_homescreen")
+    async def test_get_homescreen_no_response(self, mock_home):
+        """Check that a failed homescreen request raises a setup error."""
+        mock_home.return_value = None
+        with self.assertRaises(BlinkSetupError):
+            await self.blink.get_homescreen()
+
+    @mock.patch("blinkpy.api.request_homescreen")
+    async def test_get_homescreen_bad_response(self, mock_home):
+        """Check that a non-JSON homescreen response raises a setup error."""
+        for error in (ContentTypeError, ValueError):
+            mock_home.return_value = mresp.MockResponse({}, 503, raise_error=error)
+            with self.assertRaises(BlinkSetupError):
+                await self.blink.get_homescreen()
 
     def test_setup_urls(self):
         """Check setup of URLS."""
@@ -507,6 +524,17 @@ class TestBlinkSetup(IsolatedAsyncioTestCase):
         mock_homescreen.side_effect = [LoginError, TokenRefreshFailed]
         self.assertFalse(await self.blink.start())
         self.assertFalse(await self.blink.start())
+
+    @mock.patch("blinkpy.api.request_homescreen")
+    @mock.patch("blinkpy.auth.Auth.startup")
+    @mock.patch("blinkpy.blinkpy.Blink.setup_urls")
+    async def test_blink_start_no_homescreen(
+        self, mock_urls, mock_auth_startup, mock_home
+    ):
+        """Check that start fails cleanly when the homescreen request fails."""
+        mock_home.return_value = None
+        self.assertFalse(await self.blink.start())
+        self.assertFalse(self.blink.available)
 
     def test_setup_login_ids(self):
         """Test setup_login_ids function."""
