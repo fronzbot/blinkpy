@@ -68,6 +68,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
             [{"clip": "/foo/bar.mp4", "time": "1990-01-01T00:00:00+00:00"}],
         )
         self.assertEqual(sync_module.motion, {"foo": True})
+        self.assertIn("start_time=1970-01-01", mock_resp.call_args.kwargs["url"])
         mock_resp.return_value = {"media": []}
         self.assertTrue(await sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {"foo": False})
@@ -94,6 +95,23 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         sync_module.blink.last_refresh = 1000
         self.assertTrue(await sync_module.check_new_videos())
         self.assertEqual(sync_module.motion, {"foo": False})
+
+    def test_is_new_cloud_video(self, mock_resp):
+        """Test a clip is new if it ends after the last refresh."""
+        sync_module = self.blink.sync["test"]
+        sync_module.blink.last_refresh = 1000
+        entry = {"created_at": "1970-01-01T00:00:00+00:00"}
+        self.assertFalse(sync_module.is_new_cloud_video(entry))
+        self.assertFalse(sync_module.is_new_cloud_video({**entry, "clip_length": None}))
+        self.assertFalse(sync_module.is_new_cloud_video({**entry, "clip_length": 1000}))
+        self.assertTrue(sync_module.is_new_cloud_video({**entry, "clip_length": 1001}))
+
+    def test_check_new_video_time(self, mock_resp):
+        """Test check_new_video_time compares with the last refresh."""
+        self.blink.last_refresh = 1000
+        sync_module = self.blink.sync["test"]
+        self.assertFalse(sync_module.check_new_video_time("1970-01-01T00:16:40+00:00"))
+        self.assertTrue(sync_module.check_new_video_time("1970-01-01T00:16:41+00:00"))
 
     @pytest.mark.asyncio
     async def test_check_no_motion_if_not_armed(self, mock_resp):

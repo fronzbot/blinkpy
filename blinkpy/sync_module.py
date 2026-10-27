@@ -311,7 +311,7 @@ class BlinkSyncModule:
             _LOGGER.info("No new videos since last refresh.")
             return False
 
-        resp = await api.request_videos(self.blink, time=interval, page=1)
+        resp = await api.request_clips(self.blink, time=interval)
 
         last_record = {}
         for camera in self.cameras:
@@ -336,7 +336,7 @@ class BlinkSyncModule:
                 name = entry["device_name"]
                 clip_url = entry["media"]
                 timestamp = entry["created_at"]
-                if self.check_new_video_time(timestamp):
+                if self.is_new_cloud_video(entry):
                     self.motion[name] = True and self.arm
                     record = {"clip": clip_url, "time": timestamp}
                     self.last_records[name].append(record)
@@ -425,6 +425,12 @@ class BlinkSyncModule:
         if not reference:
             return time_to_seconds(timestamp) > self.blink.last_refresh
         return time_to_seconds(timestamp) > time_to_seconds(reference)
+
+    def is_new_cloud_video(self, media_entry):
+        """Check if the clip of a cloud media entry ended since last refresh."""
+        length = media_entry.get("clip_length") or 0
+        start = time_to_seconds(media_entry["created_at"])
+        return start + length > self.blink.last_refresh
 
     async def update_local_storage_manifest(self):
         """Update local storage manifest, which lists all stored clips."""

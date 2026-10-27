@@ -5,7 +5,7 @@ import logging
 import string
 from json import dumps
 from asyncio import sleep
-from urllib.parse import urlencode, urlparse, parse_qs
+from urllib.parse import urlencode, urlparse, urlsplit, parse_qs
 from blinkpy.helpers.util import (
     get_time,
     Throttle,
@@ -383,16 +383,73 @@ async def request_videos(blink, time=None, page=0):
     """
     Perform a request for videos.
 
+    Kept for compatibility. Use request_clips instead.
+
     :param blink: Blink instance.
     :param time: Get videos since this time.  In epoch seconds.
     :param page: Page number to get videos from.
     """
-    timestamp = get_time(time)
+    response = await request_clips(blink, time=time)
+    for _ in range(1, page):
+        if response is None:
+            return None
+        if not response["pagination_key"]:
+            return {"media": []}
+        response = await request_clips(blink, time, response["pagination_key"])
+    return response
+
+
+async def request_clips(blink, time=None, pagination_key=None):
+    """
+    Perform a request for one page of clips (media entries with a video).
+
+    :param blink: Blink instance.
+    :param time: Get clips since this time.  In epoch seconds.
+    :param pagination_key: Key of the page to get, from the previous response.
+    """
+    page = await _request_clip_page(blink, time, pagination_key)
+    while (
+        page is not None
+        and not page["media"]  # Skip pages without a clip.
+        and page["pagination_key"] not in (None, pagination_key)
+    ):
+        pagination_key = page["pagination_key"]
+        page = await _request_clip_page(blink, time, pagination_key)
+    return page
+
+
+async def _request_clip_page(blink, time, pagination_key):
+    """Request one page of the media list. Keep only the entries with a video."""
+    page = await _request_media_page(blink, time, pagination_key)
+    if page is None:
+        return None
+    clips = [entry for entry in page["media"] if entry.get("media")]
+    return {"media": clips, "pagination_key": page.get("pagination_key")}
+
+
+async def _request_media_page(blink, time, pagination_key):
+    """Request one page of the media list."""
+    query = {"start_time": get_time(time)}
+    if pagination_key:
+        query["pagination_key"] = pagination_key
     url = (
-        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
-        f"/media/changed?since={timestamp}&page={page}"
+        f"{blink.urls.base_url}/api/v4/accounts/{blink.account_id}"
+        f"/media?{urlencode(query)}"
     )
-    return await http_get(blink, url)
+    response = await http_post(blink, url)
+    if not isinstance(response, dict) or not isinstance(response.get("media"), list):
+        return None
+    for entry in response["media"]:
+        _strip_host(entry)
+    return response
+
+
+def _strip_host(media_entry):
+    """Remove the scheme and host from the video and thumbnail URLs."""
+    for key in ("media", "thumbnail"):
+        if media_entry.get(key):
+            url = urlsplit(media_entry[key])._replace(scheme="", netloc="").geturl()
+            media_entry[key] = url if url.startswith("/") else None
 
 
 async def request_cameras(blink, network):
