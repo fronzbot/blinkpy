@@ -271,6 +271,7 @@ class TestBlinkFunctions(IsolatedAsyncioTestCase):
     async def test_refresh(self, mock_req, mock_update):
         """Test ability to refresh system."""
         mock_update.return_value = {"network": {"sync_module_error": False}}
+        mock_req.return_value.status = 200
         mock_req.return_value.json = mock.AsyncMock(return_value={})
         self.blink.last_refresh = 0
         self.blink.available = True
