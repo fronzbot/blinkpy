@@ -18,6 +18,7 @@ import logging
 import datetime
 import aiofiles
 import aiofiles.ospath
+from aiohttp import ContentTypeError
 from requests.structures import CaseInsensitiveDict
 from dateutil.parser import parse
 from slugify import slugify
@@ -211,7 +212,28 @@ class Blink:
 
     async def validate_homescreen(self, response):
         """Validate and process homescreen response data."""
-        self.homescreen = await response.json()
+        if response is None:
+            _LOGGER.error("No homescreen response received.")
+            raise BlinkSetupError
+
+        if response.status != 200:
+            body = await response.text()
+            _LOGGER.error(
+                "Homescreen request failed with status %s: %s",
+                response.status,
+                body[:200],
+            )
+            raise BlinkSetupError
+
+        try:
+            self.homescreen = await response.json()
+        except ContentTypeError as ex:
+            _LOGGER.error(
+                "Expected json homescreen response, got %s",
+                response.headers.get("Content-Type"),
+            )
+            raise BlinkSetupError from ex
+
         self.auth.client_id = response.headers.get("Client-Id")
         self.auth.user_id = response.headers.get("User-Id")
 
