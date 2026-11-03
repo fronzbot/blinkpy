@@ -90,7 +90,7 @@ class TestCustomFilenameFormat(IsolatedAsyncioTestCase):
         assert result.endswith(".mp4")
         assert any(c.isdigit() for c in result)
 
-    @mock.patch("blinkpy.blinkpy.api.request_videos")
+    @mock.patch("blinkpy.blinkpy.api.request_clips")
     async def test_download_with_custom_format(self, mock_req):
         """Test download_videos() accepts filename_format parameter."""
 

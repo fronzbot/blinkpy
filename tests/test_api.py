@@ -93,6 +93,111 @@ class TestAPI(IsolatedAsyncioTestCase):
         mock_resp.return_value = {"count": "10"}
         self.assertEqual(await api.request_video_count(self.blink), {"count": "10"})
 
+    async def test_request_clips_url(self, mock_resp):
+        """Test request_clips posts to the v4 media URL."""
+        self.blink.auth.account_id = 1234
+        mock_resp.return_value = {"media": []}
+        await api.request_clips(self.blink, time=0, pagination_key="k1")
+        self.assertEqual(mock_resp.call_args.kwargs["reqtype"], "post")
+        self.assertEqual(
+            mock_resp.call_args.kwargs["url"],
+            f"{self.blink.urls.base_url}/api/v4/accounts/1234"
+            "/media?start_time=1970-01-01T00%3A00%3A00%2B0000&pagination_key=k1",
+        )
+
+    async def test_request_clips_strip_host(self, mock_resp):
+        """Test request_clips removes the host from the video and thumbnail URLs."""
+        video = "/api/v4/accounts/1/media/2/video/contents?x=1"
+        thumb = "/api/v4/accounts/1/media/2/thumbnail/contents"
+        mock_resp.return_value = {
+            "media": [
+                {"media": f"https://a.test{video}", "thumbnail": f"//a.test{thumb}"},
+                {"media": "http://evil.test/x", "thumbnail": "evil.test"},
+                {"media": "@evil.test/x"},
+                {"media": "evil.test"},
+            ]
+        }
+        self.assertEqual(
+            (await api.request_clips(self.blink))["media"],
+            [{"media": video, "thumbnail": thumb}, {"media": "/x", "thumbnail": None}],
+        )
+
+    async def test_request_clips_bad_response(self, mock_resp):
+        """Test request_clips returns None for a bad response."""
+        for response in (None, {}, {"media": None}, "just a string"):
+            mock_resp.return_value = response
+            self.assertIsNone(await api.request_clips(self.blink))
+
+    async def test_request_clips_skip_no_video(self, mock_resp):
+        """Test request_clips removes entries without a video."""
+        mock_resp.return_value = {
+            "media": [{"media": "/c"}, {"media": None}],
+            "pagination_key": "k1",
+            "page_size": 200,
+        }
+        self.assertEqual(
+            await api.request_clips(self.blink),
+            {"media": [{"media": "/c"}], "pagination_key": "k1"},
+        )
+
+    async def test_request_clips_skip_empty_page(self, mock_resp):
+        """Test request_clips gets the next page if a page has no clip."""
+        mock_resp.side_effect = (
+            {"media": [{"media": None}], "pagination_key": "k1"},
+            {"media": [{"media": "/c"}], "pagination_key": "k2"},
+        )
+        self.assertEqual(
+            await api.request_clips(self.blink),
+            {"media": [{"media": "/c"}], "pagination_key": "k2"},
+        )
+        self.assertEqual(mock_resp.call_count, 2)
+        self.assertIn("&pagination_key=k1", mock_resp.call_args.kwargs["url"])
+
+    async def test_request_clips_empty_last_page(self, mock_resp):
+        """Test request_clips returns an empty page at the end of the list."""
+        mock_resp.side_effect = (
+            {"media": [{"media": None}], "pagination_key": "k1"},
+            {"media": [{"media": None}]},
+        )
+        self.assertEqual(
+            await api.request_clips(self.blink), {"media": [], "pagination_key": None}
+        )
+        self.assertEqual(mock_resp.call_count, 2)
+
+    async def test_request_clips_repeated_key(self, mock_resp):
+        """Test request_clips stops if the next key is the requested key."""
+        mock_resp.side_effect = (
+            {"media": [{"media": None}], "pagination_key": "k1"},
+            {"media": [{"media": None}], "pagination_key": "k1"},
+            {"media": [{"media": "/c"}]},
+        )
+        self.assertEqual(
+            await api.request_clips(self.blink), {"media": [], "pagination_key": "k1"}
+        )
+        self.assertEqual(mock_resp.call_count, 2)
+
+    async def test_request_videos(self, mock_resp):
+        """Test api request videos follows pages."""
+        mock_resp.side_effect = (
+            {"media": [{"media": "/c1"}], "pagination_key": "k1"},
+            {"media": [{"media": "/c2"}], "pagination_key": None},
+        )
+        self.assertEqual(
+            await api.request_videos(self.blink, page=2),
+            {"media": [{"media": "/c2"}], "pagination_key": None},
+        )
+        self.assertIn("&pagination_key=k1", mock_resp.call_args.kwargs["url"])
+        mock_resp.side_effect = ({"media": [{"media": "/c1"}], "pagination_key": None},)
+        self.assertEqual(await api.request_videos(self.blink, page=3), {"media": []})
+
+    async def test_request_videos_bad_response(self, mock_resp):
+        """Test api request videos returns None for a bad response."""
+        mock_resp.side_effect = (None,)
+        self.assertIsNone(await api.request_videos(self.blink, page=3))
+        first_page = {"media": [{"media": "/c"}], "pagination_key": "k1"}
+        mock_resp.side_effect = (first_page, None)
+        self.assertIsNone(await api.request_videos(self.blink, page=3))
+
     async def test_request_cameras(self, mock_resp):
         """Test api request cameras."""
         mock_resp.return_value = {"cameras": {"camera_id": 1}}
