@@ -584,3 +584,12 @@ class BlinkDoorbell(BlinkCamera):
 
     async def get_sensor_info(self):
         """Get sensor info for blink doorbell camera."""
+        resp = await api.request_doorbell_config(
+            self.sync.blink, self.network_id, self.camera_id
+        )
+        if not isinstance(resp, dict) or "wifi_rssi" not in resp:
+            _LOGGER.warning("Could not retrieve doorbell sensor info %s.", resp)
+            return
+        self.wifi_strength = resp.get("wifi_rssi")
+        self.temperature = self.temperature_calibrated = resp.get("temp")
+        self._battery_voltage = (resp.get("last_connect") or {}).get("battery_voltage")
