@@ -570,11 +570,19 @@ class BlinkOwl(BlinkSyncModule):
     @property
     def network_info(self):
         """Format owl response to resemble sync module."""
+        armed = self.status
+        try:
+            for net in (self.blink.homescreen or {}).get("networks", []):
+                if str(net.get("id")) == str(self.network_id):
+                    armed = net.get("armed", armed)
+                    break
+        except (AttributeError, TypeError):
+            pass
         return {
             "network": {
                 "id": self.network_id,
                 "name": self.name,
-                "armed": self.status,
+                "armed": armed,
                 "sync_module_error": False,
                 "account_id": self.blink.account_id,
             }
@@ -633,11 +641,19 @@ class BlinkLotus(BlinkSyncModule):
     @property
     def network_info(self):
         """Format lotus response to resemble sync module."""
+        armed = self.status
+        try:
+            for net in (self.blink.homescreen or {}).get("networks", []):
+                if str(net.get("id")) == str(self.network_id):
+                    armed = net.get("armed", armed)
+                    break
+        except (AttributeError, TypeError):
+            pass
         return {
             "network": {
                 "id": self.network_id,
                 "name": self.name,
-                "armed": self.status,
+                "armed": armed,
                 "sync_module_error": False,
                 "account_id": self.blink.account_id,
             }
