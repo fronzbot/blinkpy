@@ -329,7 +329,8 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
         test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
         created_at = (
-            datetime.datetime.utcnow() - datetime.timedelta(seconds=60)
+            datetime.datetime.now(datetime.timezone.utc)
+            - datetime.timedelta(seconds=60)
         ).isoformat()
         mock_resp.side_effect = [
             COMMAND_RESPONSE,
@@ -390,7 +391,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync._local_storage["manifest_stale"] = False
         test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
         mock_resp.return_value = {"media": []}
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         test_sync._local_storage["last_manifest_read"] = (
             now - datetime.timedelta(minutes=10)
         ).isoformat()
@@ -457,7 +458,8 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
         test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
         created_at = (
-            datetime.datetime.utcnow() - datetime.timedelta(seconds=60)
+            datetime.datetime.now(datetime.timezone.utc)
+            - datetime.timedelta(seconds=60)
         ).isoformat()
 
         mock_resp.side_effect = [
@@ -499,7 +501,8 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         test_sync.cameras["Back Door"] = MockCamera(self.blink.sync)
         test_sync.cameras["Front_Door"] = MockCamera(self.blink.sync)
         created_at = (
-            datetime.datetime.utcnow() - datetime.timedelta(seconds=60)
+            datetime.datetime.now(datetime.timezone.utc)
+            - datetime.timedelta(seconds=60)
         ).isoformat()
 
         mock_resp.side_effect = [
@@ -586,7 +589,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         item = LocalStorageMediaItem(
             "1234",
             "Backdoor",
-            datetime.datetime.utcnow().isoformat(),
+            datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "432",
             " manifest_id",
             "url",
@@ -594,7 +597,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         item2 = LocalStorageMediaItem(
             "1235",
             "Backdoor",
-            datetime.datetime.utcnow().isoformat(),
+            datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "432",
             " manifest_id",
             "url",
@@ -631,7 +634,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         item = LocalStorageMediaItem(
             "1234",
             "Backdoor",
-            datetime.datetime.utcnow().isoformat(),
+            datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "432",
             " manifest_id",
             "url",
@@ -650,7 +653,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         item = LocalStorageMediaItem(
             "1234",
             "Backdoor",
-            datetime.datetime.utcnow().isoformat(),
+            datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "432",
             " manifest_id",
             "url",
@@ -679,7 +682,7 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         item = LocalStorageMediaItem(
             "1234",
             "Backdoor",
-            datetime.datetime.utcnow().isoformat(),
+            datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "432",
             " manifest_id",
             "url",

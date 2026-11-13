@@ -179,7 +179,8 @@ class BlinkSyncModule:
                         mod["local_storage_status"] == "active"
                     )
                     self._local_storage["last_manifest_read"] = (
-                        datetime.datetime.utcnow() - datetime.timedelta(seconds=10)
+                        datetime.datetime.now(datetime.timezone.utc)
+                        - datetime.timedelta(seconds=10)
                     ).isoformat()
                     sync_module = mod
         except (TypeError, KeyError):
