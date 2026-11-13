@@ -590,6 +590,11 @@ class BlinkDoorbell(BlinkCamera):
         if not isinstance(resp, dict) or "wifi_rssi" not in resp:
             _LOGGER.warning("Could not retrieve doorbell sensor info %s.", resp)
             return
-        self.wifi_strength = resp.get("wifi_rssi")
-        self.temperature = self.temperature_calibrated = resp.get("temp")
-        self._battery_voltage = (resp.get("last_connect") or {}).get("battery_voltage")
+        if (wifi_rssi := resp.get("wifi_rssi")) is not None:
+            self.wifi_strength = wifi_rssi
+        if (temp := resp.get("temp")) is not None:
+            self.temperature = temp
+        self.temperature_calibrated = self.temperature
+        last_connect = resp.get("last_connect") or {}
+        if (battery_voltage := last_connect.get("battery_voltage")) is not None:
+            self._battery_voltage = battery_voltage

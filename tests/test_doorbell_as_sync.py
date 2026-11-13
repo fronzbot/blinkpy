@@ -77,3 +77,27 @@ class TestBlinkDoorbell(IsolatedAsyncioTestCase):
                 await doorbell.get_sensor_info()
             self.assertEqual(doorbell.wifi_strength, -60)
             self.assertEqual(doorbell.temperature_calibrated, 72)
+
+    @pytest.mark.asyncio
+    async def test_doorbell_sensor_info_keeps_known_values(self, mock_resp):
+        """Test null doorbell config values keep the homescreen values."""
+        self.blink.auth.account_id = 7
+        doorbell = BlinkDoorbell(self.blink.sync["test"])
+        doorbell.extract_config_info(
+            {
+                "id": 3,
+                "network_id": 1234,
+                "battery_voltage": 160,
+                "signals": {"temp": 70, "battery": 3, "lfr": 5, "wifi": 4},
+            }
+        )
+        mock_resp.return_value = {
+            "temp": None,
+            "wifi_rssi": -60,
+            "last_connect": {"battery_voltage": None},
+        }
+        await doorbell.get_sensor_info()
+        self.assertEqual(doorbell.wifi_strength, -60)
+        self.assertEqual(doorbell.temperature, 70)
+        self.assertEqual(doorbell.temperature_calibrated, 70)
+        self.assertEqual(doorbell.battery_voltage, 160)
