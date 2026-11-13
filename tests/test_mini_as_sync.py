@@ -47,3 +47,22 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.assertTrue(await owl.start())
         self.assertTrue("test" in owl.cameras)
         self.assertEqual(owl.cameras["test"].__class__, BlinkCameraMini)
+
+    def test_owl_arm_from_network(self, mock_resp):
+        """Test that owl arm state reflects the network armed state."""
+        owl = self.blink.sync["test"]
+        # Network is disarmed even though camera enabled is True
+        self.blink.homescreen["networks"] = [{"id": 1234, "armed": False}]
+        self.assertFalse(owl.arm)
+        self.assertFalse(owl.network_info["network"]["armed"])
+
+        # Network is armed
+        self.blink.homescreen["networks"] = [{"id": 1234, "armed": True}]
+        self.assertTrue(owl.arm)
+        self.assertTrue(owl.network_info["network"]["armed"])
+
+    def test_owl_arm_fallback_to_status(self, mock_resp):
+        """Test that owl arm state falls back to status if network not found."""
+        owl = self.blink.sync["test"]
+        self.blink.homescreen = {"owls": []}
+        self.assertTrue(owl.arm)

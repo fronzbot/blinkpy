@@ -47,3 +47,22 @@ class TestBlinkDoorbell(IsolatedAsyncioTestCase):
         self.assertTrue(await lotus.start())
         self.assertTrue("test" in lotus.cameras)
         self.assertEqual(lotus.cameras["test"].__class__, BlinkDoorbell)
+
+    def test_lotus_arm_from_network(self, mock_resp):
+        """Test that lotus arm state reflects the network armed state."""
+        lotus = self.blink.sync["test"]
+        # Network is disarmed even though camera enabled is True
+        self.blink.homescreen["networks"] = [{"id": 1234, "armed": False}]
+        self.assertFalse(lotus.arm)
+        self.assertFalse(lotus.network_info["network"]["armed"])
+
+        # Network is armed
+        self.blink.homescreen["networks"] = [{"id": 1234, "armed": True}]
+        self.assertTrue(lotus.arm)
+        self.assertTrue(lotus.network_info["network"]["armed"])
+
+    def test_lotus_arm_fallback_to_status(self, mock_resp):
+        """Test that lotus arm state falls back to status if network not found."""
+        lotus = self.blink.sync["test"]
+        self.blink.homescreen = {"doorbells": []}
+        self.assertTrue(lotus.arm)
