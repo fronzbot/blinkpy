@@ -454,6 +454,21 @@ async def request_camera_sensors(blink, network, camera_id):
     return await http_get(blink, url)
 
 
+async def request_doorbell_config(blink, network, camera_id):
+    """
+    Request config for one doorbell, which includes its sensor info.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param camera_id: Camera ID of doorbell to request config from.
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/networks/{network}/doorbells/{camera_id}/config"
+    )
+    return await http_get(blink, url)
+
+
 @Throttle(seconds=MIN_THROTTLE_TIME)
 async def request_motion_detection_enable(
     blink, network, camera_id, camera_type="", **kwargs
