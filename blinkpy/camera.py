@@ -501,11 +501,13 @@ class BlinkCamera:
         """
         _LOGGER.debug("Writing video from %s to %s", self.name, path)
         response = await self.get_media(media_type="video")
-        if response is None:
+        if response and response.status == 200:
+            async with open(path, "wb") as vidfile:
+                await vidfile.write(await response.read())
+        elif response:
+            _LOGGER.error("Cannot write video to file, response %s", response.status)
+        else:
             _LOGGER.error("No saved video exists for %s.", self.name)
-            return
-        async with open(path, "wb") as vidfile:
-            await vidfile.write(await response.read())
 
     async def save_recent_clips(
         self, output_dir="/tmp", file_pattern="${created}_${name}.mp4"

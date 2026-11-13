@@ -293,11 +293,24 @@ class TestBlinkCameraSetup(IsolatedAsyncioTestCase):
 
     @mock.patch("blinkpy.camera.open", create=True)
     async def test_video_to_file(self, mock_open, mock_resp):
-        """Test camera vido to file with error."""
-        mock_resp.return_value = mresp.MockResponse({}, 400, raw_data="raw data")
+        """Test camera video to file."""
+        mock_resp.return_value = mresp.MockResponse({}, 200, raw_data="raw data")
         self.camera.clip = "my_clip"
         await self.camera.video_to_file("my_path")
         mock_open.assert_called_once()
+
+    @mock.patch("blinkpy.camera.open", create=True)
+    async def test_video_to_file_error(self, mock_open, mock_resp):
+        """Test camera video to file with error."""
+        mock_resp.return_value = mresp.MockResponse({}, 400, raw_data="raw data")
+        self.camera.clip = "my_clip"
+        with self.assertLogs(level="DEBUG") as dl_log:
+            await self.camera.video_to_file("my_path")
+        self.assertEqual(
+            dl_log.output[2],
+            "ERROR:blinkpy.camera:Cannot write video to file, response 400",
+        )
+        mock_open.assert_not_called()
 
     @mock.patch("blinkpy.camera.open", create=True)
     @mock.patch("blinkpy.camera.BlinkCamera.get_video_clip")
