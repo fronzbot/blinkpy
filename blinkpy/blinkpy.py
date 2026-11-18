@@ -387,7 +387,8 @@ class Blink:
                       July 28th 2018 at 12:33:00
         :param camera: Camera name to retrieve.  Defaults to "all".
                        Use a list for multiple cameras.
-        :param stop: Page to stop on (~25 items per page. Default page 10).
+        :param stop: Page to stop on (default page 10).
+                     A page has up to 200 clips. The number can change.
         :param delay: Number of seconds to wait in between subsequent video downloads.
         :param debug: Set to TRUE to prevent downloading of items.
                       Instead of downloading, entries will be printed to log.
@@ -410,7 +411,8 @@ class Blink:
         :param since: Date and time to get videos from.
                       Ex: "2018/07/28 12:33:00" to retrieve videos since
                       July 28th 2018 at 12:33:00
-        :param stop: Page to stop on (~25 items per page. Default page 10).
+        :param stop: Page to stop on (default page 10).
+                     A page has up to 200 clips. The number can change.
         """
         videos = []
         if since is None:
@@ -422,16 +424,22 @@ class Blink:
         formatted_date = util.get_time(time_to_convert=since_epochs)
         _LOGGER.info("Retrieving videos since %s", formatted_date)
 
+        pagination_key = None
         for page in range(1, stop):
-            response = await api.request_videos(self, time=since_epochs, page=page)
+            response = await api.request_clips(
+                self, time=since_epochs, pagination_key=pagination_key
+            )
             _LOGGER.debug("Processing page %s", page)
             try:
                 result = response["media"]
                 if not result:
                     raise KeyError
                 videos.extend(result)
+                pagination_key = response.get("pagination_key")
             except (KeyError, TypeError):
                 _LOGGER.info("No videos found on page %s. Exiting.", page)
+                break
+            if not pagination_key:
                 break
         return videos
 
