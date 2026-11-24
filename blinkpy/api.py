@@ -498,6 +498,30 @@ async def request_motion_detection_disable(
     )
 
 
+async def request_local_storage_status(blink, network, sync_id):
+    """
+    Request local storage status of a sync module.
+
+    Returns usage and health information reported by the sync module, such
+    as ``usb_storage_used`` (percentage of the USB drive in use),
+    ``usb_storage_full`` and ``sm_backup_enabled``.
+
+    The endpoint is not documented publicly; it was identified by observing
+    the Blink app.  Returns ``None`` when the sync module, its firmware or
+    the API region does not expose it.
+
+    :param blink: Blink instance.
+    :param network: Sync module network id.
+    :param sync_id: ID of sync module.
+    """
+    url = (
+        f"{blink.urls.base_url}/api/v1/accounts/{blink.account_id}"
+        f"/networks/{network}/sync_modules/{sync_id}"
+        f"/local_storage/status"
+    )
+    return await http_get(blink, url)
+
+
 async def request_local_storage_manifest(blink, network, sync_id):
     """
     Update local manifest.

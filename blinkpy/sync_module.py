@@ -66,6 +66,7 @@ class BlinkSyncModule:
             "manifest_stale": True,
             "last_manifest_read": datetime.datetime(1970, 1, 1, 0, 0, 0).isoformat(),
         }
+        self._local_storage_status = {}
 
     @property
     def attributes(self):
@@ -120,6 +121,21 @@ class BlinkSyncModule:
     def local_storage_manifest_ready(self):
         """Indicate if the manifest is up-to-date."""
         return not self._local_storage["manifest_stale"]
+
+    @property
+    def local_storage_status(self):
+        """Return the local storage status reported by the sync module."""
+        return self._local_storage_status
+
+    @property
+    def local_storage_used(self):
+        """Return the percentage of local storage in use, if reported."""
+        return self._local_storage_status.get("usb_storage_used")
+
+    @property
+    def local_storage_full(self):
+        """Indicate if the sync module reports local storage as full."""
+        return self._local_storage_status.get("usb_storage_full", False)
 
     async def async_arm(self, value):
         """Arm or disarm camera."""
@@ -492,6 +508,28 @@ class BlinkSyncModule:
 
         self._local_storage["manifest_stale"] = False
         return True
+
+    async def update_local_storage_status(self):
+        """Update the local storage status (usage and health) from the API.
+
+        The status is exposed through the ``local_storage_status``,
+        ``local_storage_used`` and ``local_storage_full`` properties.
+
+        :returns: The status dict, or ``None`` if local storage is inactive
+            or the sync module does not report a status.
+        """
+        if not self.local_storage:
+            return None
+
+        status = await api.request_local_storage_status(
+            self.blink, self.network_id, self.sync_id
+        )
+        if not status:
+            _LOGGER.debug("No local storage status reported for %s", self.name)
+            return None
+
+        self._local_storage_status = status
+        return status
 
     async def poll_local_storage_manifest(
         self, manifest_request_id=None, max_retries=4
