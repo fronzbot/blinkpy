@@ -158,6 +158,19 @@ class TestAPI(IsolatedAsyncioTestCase):
         )
         self.assertEqual(response.status, 200)
 
+    async def test_request_local_storage_status(self, mock_resp):
+        """Test request local storage status."""
+        status = {
+            "usb_storage_used": 97,
+            "usb_storage_full": False,
+            "sm_backup_enabled": True,
+        }
+        mock_resp.return_value = status
+        response = await api.request_local_storage_status(
+            self.blink, "network", "sync_id"
+        )
+        self.assertEqual(response, status)
+
     async def test_request_get_config(self, mock_resp):
         """Test request get config."""
         mock_resp.return_value = {"config": "values"}

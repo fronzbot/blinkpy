@@ -239,3 +239,45 @@ class TestBlinkSyncModule(IsolatedAsyncioTestCase):
         self.blink.homescreen = json.loads(json_fragment)
         await self.blink.sync["test"]._init_local_storage(123456)
         self.assertTrue(self.blink.sync["test"].local_storage)
+
+    @pytest.mark.asyncio
+    async def test_update_local_storage_status(self, mock_resp):
+        """Test local storage status is stored and exposed."""
+        status = {
+            "usb_storage_used": 97,
+            "usb_storage_full": True,
+            "sm_backup_enabled": True,
+        }
+        mock_resp.return_value = status
+        self.blink.sync["test"]._local_storage["status"] = True
+        self.blink.sync["test"].sync_id = 123456
+
+        response = await self.blink.sync["test"].update_local_storage_status()
+
+        self.assertEqual(response, status)
+        self.assertEqual(self.blink.sync["test"].local_storage_status, status)
+        self.assertEqual(self.blink.sync["test"].local_storage_used, 97)
+        self.assertTrue(self.blink.sync["test"].local_storage_full)
+
+    @pytest.mark.asyncio
+    async def test_update_local_storage_status_inactive(self, mock_resp):
+        """Test local storage status is skipped when storage is inactive."""
+        self.blink.sync["test"]._local_storage["status"] = False
+
+        response = await self.blink.sync["test"].update_local_storage_status()
+
+        self.assertIsNone(response)
+        mock_resp.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_update_local_storage_status_unsupported(self, mock_resp):
+        """Test an unsupported endpoint leaves status empty."""
+        mock_resp.return_value = None
+        self.blink.sync["test"]._local_storage["status"] = True
+
+        response = await self.blink.sync["test"].update_local_storage_status()
+
+        self.assertIsNone(response)
+        self.assertEqual(self.blink.sync["test"].local_storage_status, {})
+        self.assertIsNone(self.blink.sync["test"].local_storage_used)
+        self.assertFalse(self.blink.sync["test"].local_storage_full)
